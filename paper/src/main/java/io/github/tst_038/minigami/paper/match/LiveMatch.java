@@ -40,7 +40,7 @@ public final class LiveMatch {
     private final Plugin plugin;
     private final Mode mode;
     private final Arena arena;
-    private final Location spawn;
+    private final Location waitingSpot;
     private final PlayerSessions sessions;
     private final Messages messages;
     private final Match match;
@@ -54,8 +54,7 @@ public final class LiveMatch {
         this.plugin = plugin;
         this.mode = mode;
         this.arena = arena;
-        // shortcut: everyone waits and plays at one point; spreading over the spawns comes with the spawn setup.
-        this.spawn = arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst());
+        this.waitingSpot = arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst());
         this.sessions = sessions;
         this.messages = messages;
         var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
@@ -115,7 +114,7 @@ public final class LiveMatch {
     }
 
     /**
-     * Saves the player's state, prepares them for the match and brings them to the spawn.
+     * Saves the player's state, prepares them for the match and brings them to the waiting spot.
      *
      * @throws IllegalStateException if the match can't be joined or is full, or the player still has saved state
      *     from an earlier match that wasn't restored
@@ -187,6 +186,12 @@ public final class LiveMatch {
 
     private void startPlaying() {
         startDelay = null;
+        // Before the next phase, so its features never see players moving from the waiting spot to their spawn.
+        var spawns = arena.spawns();
+        var players = members.stream().map(plugin.getServer()::getPlayer).filter(Objects::nonNull).toList();
+        for (int i = 0; i < players.size(); i++) {
+            players.get(i).teleport(spawns.get(i % spawns.size()));
+        }
         match.advancePhase();
     }
 
@@ -213,6 +218,6 @@ public final class LiveMatch {
         player.setFireTicks(0);
         player.setFreezeTicks(0);
         player.setFallDistance(0);
-        player.teleport(spawn);
+        player.teleport(waitingSpot);
     }
 }
