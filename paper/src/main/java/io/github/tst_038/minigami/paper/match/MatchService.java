@@ -59,6 +59,10 @@ public final class MatchService implements Listener {
         return modes.get().ids();
     }
 
+    public boolean isArenaInUse(String arenaId) {
+        return running().stream().anyMatch(match -> match.arena().id().equals(arenaId));
+    }
+
     public void join(Player player, String modeId) {
         if (find(player.getUniqueId()).isPresent()) {
             messages.send(player, "join.already-in-match");

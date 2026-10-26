@@ -1,0 +1,68 @@
+package io.github.tst_038.minigami.paper.arena;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import io.github.tst_038.minigami.api.config.YamlFiles;
+import java.lang.reflect.Proxy;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Test;
+
+class ArenaFileTest {
+
+    private final World world = (World) Proxy.newProxyInstance(World.class.getClassLoader(), new Class<?>[] {World.class},
+            (proxy, method, args) -> switch (method.getName()) {
+                case "getName" -> "world";
+                case "equals" -> proxy == args[0];
+                case "hashCode" -> 1;
+                default -> throw new UnsupportedOperationException(method.getName());
+            });
+
+    /** Saves and loads the file the way the plugin does, so the edits are checked against the real loader. */
+    private Arena reload(YamlConfiguration config) throws Exception {
+        var saved = new YamlConfiguration();
+        saved.loadFromString(config.saveToString());
+        var loaded = ArenaLoader.load(new YamlFiles("arenas", Map.of("winter", saved), List.of()), name -> world);
+        assertEquals(List.of(), loaded.problems());
+        return loaded.entries().find("winter").orElseThrow();
+    }
+
+    @Test
+    void editsLoadBackAsTheArena() throws Exception {
+        var config = new YamlConfiguration();
+        ArenaFile.create(config, world);
+        ArenaFile.addSpawn(config, new Location(world, 0.5, 64, 0.5, 90, 10));
+        ArenaFile.addSpawn(config, new Location(world, 1.23456, 65, 2, -45.06f, 0));
+        ArenaFile.addSpawn(config, new Location(world, 9, 9, 9));
+        ArenaFile.removeSpawn(config, 0);
+        ArenaFile.setWaitingSpot(config, new Location(world, 1, 70, 1));
+
+        var arena = reload(config);
+
+        assertEquals(List.of(new Location(world, 1.23, 65, 2, -45.1f, 0), new Location(world, 9, 9, 9)), arena.spawns());
+        assertEquals(Optional.of(new Location(world, 1, 70, 1)), arena.waitingSpot());
+    }
+
+    @Test
+    void newArenaHasNoSpawns() throws Exception {
+        var config = new YamlConfiguration();
+        ArenaFile.create(config, world);
+
+        assertFalse(reload(config).isPlayable());
+    }
+
+    @Test
+    void removingAMissingSpawnChangesNothing() {
+        var config = new YamlConfiguration();
+        ArenaFile.create(config, world);
+        ArenaFile.addSpawn(config, new Location(world, 0, 64, 0));
+
+        assertFalse(ArenaFile.removeSpawn(config, 1));
+        assertEquals(1, config.getMapList("spawns").size());
+    }
+}

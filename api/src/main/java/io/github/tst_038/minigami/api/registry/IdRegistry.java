@@ -26,10 +26,14 @@ public final class IdRegistry<T> {
         this.idOf = idOf;
     }
 
+    public static boolean isValid(String id) {
+        return VALID_ID.matcher(id).matches();
+    }
+
     /** @throws IllegalArgumentException if the id is malformed or already taken */
     public void register(T entry) {
         var id = idOf.apply(entry);
-        if (!VALID_ID.matcher(id).matches()) {
+        if (!isValid(id)) {
             throw new IllegalArgumentException("Invalid id '" + id + "': use lower case letters, digits and dashes");
         }
         if (entries.putIfAbsent(id, entry) != null) {

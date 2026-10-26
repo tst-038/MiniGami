@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.paper.config;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Function;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -28,6 +30,21 @@ public final class ConfigLocations {
         var yaw = config.has("yaw") ? (float) config.decimal("yaw") : 0;
         var pitch = config.has("pitch") ? (float) config.decimal("pitch") : 0;
         return new Location(world, x, y, z, yaw, pitch);
+    }
+
+    /** The other way round from {@link #read}, rounded so the file stays readable. */
+    public static Map<String, Object> write(Location location) {
+        var map = new LinkedHashMap<String, Object>();
+        map.put("x", round(location.getX(), 100));
+        map.put("y", round(location.getY(), 100));
+        map.put("z", round(location.getZ(), 100));
+        map.put("yaw", round(location.getYaw(), 10));
+        map.put("pitch", round(location.getPitch(), 10));
+        return map;
+    }
+
+    private static double round(double value, int scale) {
+        return Math.round(value * scale) / (double) scale;
     }
 
     /** A location that names its own world: {@code { world: world, x: 0.5, ... }}. */

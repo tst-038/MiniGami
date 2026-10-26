@@ -34,6 +34,26 @@ match:
 void-kills:
   eliminated: "<prefix><red><player></red> fell into the void!"
 
+# Arena setup. <arena>: the arena id, <world>: its world, <number>: a spawn's number as listed by info
+arena:
+  unknown: "<prefix><red>There is no arena called <white><arena></white>."
+  exists: "<prefix><red>An arena called <white><arena></white> already exists."
+  invalid-id: "<prefix><red><white><arena></white> can't be an arena id: use lower case letters, digits and dashes."
+  in-use: "<prefix><red>A match is running in <white><arena></white>; change it once the match has ended."
+  other-world: "<prefix><red><white><arena></white> is in world <white><world></white>; go there to set its points."
+  no-spawn: "<prefix><red><white><arena></white> has no spawn <white><number></white>."
+  save-failed: "<prefix><red>Could not save <white><arena></white>; see the server log."
+  created: "<prefix><green>Created arena <white><arena></white> in <white><world></white>. Add spawns with <white>/mg arena <arena> addspawn</white>."
+  spawn-added: "<prefix><green>Added spawn <white><number></white> to <white><arena></white>."
+  spawn-removed: "<prefix><green>Removed spawn <white><number></white> from <white><arena></white>."
+  waiting-spot-set: "<prefix><green>Set the waiting spot of <white><arena></white>."
+  # <spawns>: how many spawns
+  info: "<prefix><gold><arena></gold> <gray>in <white><world></white>, <white><spawns></white> spawns. Click a point to go there."
+  # <x>, <y>, <z>; wrap text in <teleport>…</teleport> to make it teleport on click
+  info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white>: <x>, <y>, <z></hover></teleport>"
+  info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
+  info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
+
 # <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
 debug:
   summary: "<prefix><gray>Matches: <white><matches></white>, listeners: <white><listeners></white>, players with saved state: <white><snapshots></white>"

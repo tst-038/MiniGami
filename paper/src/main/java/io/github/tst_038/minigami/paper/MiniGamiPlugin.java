@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
+import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
@@ -25,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -38,6 +40,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
+    /** Counts config loads, so one that finishes after a newer one doesn't overwrite it. */
+    private final AtomicInteger configLoads = new AtomicInteger();
 
     @Override
     public void onEnable() {
@@ -50,8 +54,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new VoidKillsFactory());
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
+        var arenaSetup = new ArenaSetup(this, () -> arenas, service::isArenaInUse, messages, this::loadConfig);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));
+                event -> event.registrar().register(GamesCommand.create(service, arenaSetup), "Join, leave and manage minigames"));
         loadConfig();
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
@@ -59,6 +64,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
 
     /** Reads the files off the server thread, then validates them on it, since that looks up worlds. */
     private void loadConfig() {
+        var load = configLoads.incrementAndGet();
         getServer().getAsyncScheduler().runNow(this, task -> {
             var settingsText = readSettings();
             saveExample("arenas");
@@ -69,6 +75,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 return;
             }
             getServer().getGlobalRegionScheduler().execute(this, () -> {
+                if (load != configLoads.get()) {
+                    return;
+                }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
                 var loadedModes = new ModeLoader(games, features)

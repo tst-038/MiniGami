@@ -39,6 +39,6 @@ public final class ArenaLoader {
         var waitingSpot = config.has("waiting-spot")
                 ? Optional.of(ConfigLocations.read(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();
-        return new Arena(id, spawns, waitingSpot);
+        return new Arena(id, world, spawns, waitingSpot);
     }
 }

@@ -3,12 +3,13 @@ package io.github.tst_038.minigami.paper.arena;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.Location;
+import org.bukkit.World;
 
 /**
- * A place matches are played in: where players start and, optionally, where they wait before the
+ * A place in a world that matches are played in: where players start and, optionally, where they wait before the
  * start. Locations are handed out as copies, since Bukkit's are mutable.
  */
-public record Arena(String id, List<Location> spawns, Optional<Location> waitingSpot) {
+public record Arena(String id, World world, List<Location> spawns, Optional<Location> waitingSpot) {
 
     public Arena {
         spawns = spawns.stream().map(Location::clone).toList();
