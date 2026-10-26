@@ -6,12 +6,12 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
+import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
-import io.github.tst_038.minigami.paper.game.TestGame;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchService;
 import io.github.tst_038.minigami.paper.mode.Mode;
@@ -46,7 +46,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
-        games.register(new TestGame());
+        games.register(new LastStanding());
         features.register(new VoidKillsFactory());
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
@@ -61,6 +61,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private void loadConfig() {
         getServer().getAsyncScheduler().runNow(this, task -> {
             var settingsText = readSettings();
+            saveExample("arenas");
+            saveExample("modes");
             var arenaFiles = YamlFiles.read(getDataPath().resolve("arenas"));
             var modeFiles = YamlFiles.read(getDataPath().resolve("modes"));
             if (!isEnabled()) {
@@ -80,6 +82,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 getLogger().info("Loaded arenas: " + arenas.ids() + ", modes: " + modes.ids());
             });
         });
+    }
+
+    /** Blocking IO. On a fresh install, writes the bundled example into the folder so admins have one to copy. */
+    private void saveExample(String folder) {
+        if (!Files.exists(getDataPath().resolve(folder))) {
+            saveResource(folder + "/example.yml", false);
+        }
     }
 
     /** Blocking IO. Writes the bundled file first if the admin has none; an unreadable file counts as empty. */

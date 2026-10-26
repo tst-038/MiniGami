@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.game;
+package io.github.tst_038.minigami.laststanding;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -10,16 +10,12 @@ import java.util.List;
 import java.util.Map;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
-/**
- * Last one standing wins; how players drop out comes from the features of the mode.
- *
- * <p>shortcut: a bare game to exercise the engine; becomes a proper example game with a bundled mode later.
- */
-public final class TestGame implements GameType {
+/** Last one standing wins. How players drop out, such as falling into the void, is up to the mode's features. */
+public final class LastStanding implements GameType {
 
     @Override
     public String id() {
-        return "test";
+        return "last-standing";
     }
 
     @Override

@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":api"))
     implementation(project(":features"))
+    implementation(project(":games:last-standing"))
 
     testImplementation(libs.paper.api)
     testImplementation(platform(libs.junit.bom))
