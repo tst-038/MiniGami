@@ -48,7 +48,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         matches = new ActiveMatches(getLogger());
         games.register(new TestGame());
         features.register(new VoidKillsFactory());
-        var service = new MatchService(this, () -> modes, sessions, messages, matches);
+        var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));

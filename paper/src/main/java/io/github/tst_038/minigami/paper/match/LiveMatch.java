@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.mode.Mode;
+import io.github.tst_038.minigami.paper.mode.Waiting;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -31,6 +33,9 @@ import org.bukkit.plugin.Plugin;
  * A match of a mode in one arena, together with the players in it. Players join during the first
  * phase, up to the mode's maximum, and get their own state back when they leave or the match ends.
  *
+ * <p>Where they wait depends on the mode: in place, untouched until the start; in the lobby, with
+ * their state saved but their inventory kept; or in the arena, already prepared.
+ *
  * <p>Not thread-safe: use it from the server thread only.
  */
 public final class LiveMatch {
@@ -40,21 +45,31 @@ public final class LiveMatch {
     private final Plugin plugin;
     private final Mode mode;
     private final Arena arena;
-    private final Location waitingSpot;
+    /** Where joining players are sent; empty when they wait in place. */
+    private final Optional<Location> waitingSpot;
     private final PlayerSessions sessions;
     private final Messages messages;
     private final Match match;
     /** Players currently in the match, eliminated ones included; the roster also keeps those who left. */
     private final Set<UUID> members = new LinkedHashSet<>();
+    /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
     private MatchClock.Task startDelay;
 
-    /** @param arena must be playable */
-    public LiveMatch(Plugin plugin, Mode mode, Arena arena, PlayerSessions sessions, Messages messages) {
+    /**
+     * @param arena must be playable
+     * @param lobby where players wait in a mode that waits in the lobby
+     * @throws IllegalArgumentException if the mode waits in the lobby and there is none
+     */
+    public LiveMatch(Plugin plugin, Mode mode, Arena arena, Optional<Location> lobby, PlayerSessions sessions, Messages messages) {
         this.plugin = plugin;
         this.mode = mode;
         this.arena = arena;
-        this.waitingSpot = arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst());
+        this.waitingSpot = switch (mode.waiting()) {
+            case IN_PLACE -> Optional.empty();
+            case LOBBY -> Optional.of(lobby.orElseThrow(() -> new IllegalArgumentException(mode.id() + " waits in a lobby, but none is set")));
+            case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst()));
+        };
         this.sessions = sessions;
         this.messages = messages;
         var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
@@ -89,6 +104,11 @@ public final class LiveMatch {
         return members.contains(id);
     }
 
+    /** Whether the player's events belong to the match: a member who no longer waits in place. */
+    public boolean isActive(UUID id) {
+        return restores.containsKey(id);
+    }
+
     public Set<UUID> members() {
         return Collections.unmodifiableSet(members);
     }
@@ -114,7 +134,8 @@ public final class LiveMatch {
     }
 
     /**
-     * Saves the player's state, prepares them for the match and brings them to the waiting spot.
+     * Adds the player. Unless they wait in place, their state is saved now and they are sent to
+     * where they wait; in the arena they are also prepared for the match.
      *
      * @throws IllegalStateException if the match can't be joined or is full, or the player still has saved state
      *     from an earlier match that wasn't restored
@@ -124,12 +145,19 @@ public final class LiveMatch {
             throw new IllegalStateException("The match is not accepting players");
         }
         var id = player.getUniqueId();
-        var restore = sessions.take(player);
-        match.scope().register(restore);
-        restores.put(id, restore);
+        if (!sessions.canTake(id)) {
+            throw new IllegalStateException(player.getName() + " still has a snapshot that hasn't been restored");
+        }
+        if (waitingSpot.isPresent()) {
+            saveState(player);
+            if (mode.waiting() == Waiting.ARENA) {
+                prepare(player);
+            }
+            player.setFallDistance(0);
+            player.teleport(waitingSpot.get());
+        }
         match.roster().add(id);
         members.add(id);
-        prepare(player);
         messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
                 Formatter.number("players", match.roster().size()), Formatter.number("needed", mode.minPlayers()));
         if (startDelay == null && match.roster().size() >= mode.minPlayers()) {
@@ -184,20 +212,52 @@ public final class LiveMatch {
         startPlaying();
     }
 
+    /** Brings everyone to the spawns, round robin, prepared for play. */
     private void startPlaying() {
         startDelay = null;
-        // Before the next phase, so its features never see players moving from the waiting spot to their spawn.
         var spawns = arena.spawns();
-        var players = members.stream().map(plugin.getServer()::getPlayer).filter(Objects::nonNull).toList();
-        for (int i = 0; i < players.size(); i++) {
-            players.get(i).teleport(spawns.get(i % spawns.size()));
+        var next = 0;
+        for (var id : List.copyOf(members)) {
+            var player = plugin.getServer().getPlayer(id);
+            if (player == null) {
+                continue;
+            }
+            if (!isActive(id)) {
+                try {
+                    saveState(player);
+                } catch (IllegalStateException e) {
+                    plugin.getLogger().log(Level.WARNING, player.getName() + " could not be brought into the match", e);
+                    messages.send(player, "join.failed");
+                    members.remove(id);
+                    match.roster().remove(id);
+                    continue;
+                }
+            }
+            prepare(player);
+            player.teleport(spawns.get(next++ % spawns.size()));
         }
+        if (members.isEmpty()) {
+            match.dispose();
+            return;
+        }
+        // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
         match.advancePhase();
     }
 
+    private void saveState(Player player) {
+        var restore = sessions.take(player);
+        match.scope().register(restore);
+        restores.put(player.getUniqueId(), restore);
+    }
+
+    /** Players who waited in place had nothing changed, so there is nothing to give back. */
     private void restore(UUID id) {
+        var restore = restores.remove(id);
+        if (restore == null) {
+            return;
+        }
         try {
-            restores.remove(id).close();
+            restore.close();
         } catch (Exception e) {
             // The snapshot stays on disk, so the player gets their state back on their next join.
             plugin.getLogger().log(Level.SEVERE, "Could not restore the state of " + id, e);
@@ -218,6 +278,5 @@ public final class LiveMatch {
         player.setFireTicks(0);
         player.setFreezeTicks(0);
         player.setFallDistance(0);
-        player.teleport(waitingSpot);
     }
 }

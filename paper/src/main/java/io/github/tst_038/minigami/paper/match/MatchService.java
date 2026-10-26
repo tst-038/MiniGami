@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,17 +34,22 @@ public final class MatchService implements Listener {
 
     private final Plugin plugin;
     private final Supplier<IdRegistry<Mode>> modes;
+    private final Supplier<Optional<Location>> lobby;
     private final PlayerSessions sessions;
     private final Messages messages;
     private final ActiveMatches matches;
     /** Per arena id, its latest match; finished ones are dropped lazily. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
-    /** @param modes the modes currently loaded; config loading replaces the registry */
-    public MatchService(Plugin plugin, Supplier<IdRegistry<Mode>> modes, PlayerSessions sessions, Messages messages,
+    /**
+     * @param modes the modes currently loaded; config loading replaces the registry
+     * @param lobby the lobby currently set
+     */
+    public MatchService(Plugin plugin, Supplier<IdRegistry<Mode>> modes, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
             ActiveMatches matches) {
         this.plugin = plugin;
         this.modes = modes;
+        this.lobby = lobby;
         this.sessions = sessions;
         this.messages = messages;
         this.matches = matches;
@@ -150,7 +156,7 @@ public final class MatchService implements Listener {
     }
 
     private LiveMatch open(Mode mode, Arena arena) {
-        var match = new LiveMatch(plugin, mode, arena, sessions, messages);
+        var match = new LiveMatch(plugin, mode, arena, lobby.get(), sessions, messages);
         try {
             match.start();
         } catch (RuntimeException e) {

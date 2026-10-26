@@ -31,7 +31,7 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     /**
-     * Only players currently in the match count; one who left is no longer this match's concern.
+     * Only players currently in the match count, and not while they still wait in place; one who left is no longer this match's concern.
      *
      * @throws IllegalArgumentException if events of this type can't be traced to a player
      */
@@ -43,7 +43,7 @@ public final class PaperMatchContext implements MatchContext {
         var listener = new Listener() {};
         plugin.getServer().getPluginManager().registerEvent(type, listener, EventPriority.NORMAL, (ignored, event) -> {
             // Bukkit also calls the executor for subclasses of type; isInstance keeps the cast safe.
-            if (type.isInstance(event) && EventOwnership.belongsTo(event, match::isMember)) {
+            if (type.isInstance(event) && EventOwnership.belongsTo(event, match::isActive)) {
                 handler.accept(type.cast(event));
             }
         }, plugin);

@@ -38,6 +38,11 @@ public final class PlayerSessions implements Listener {
         this.logger = logger;
     }
 
+    /** Whether {@link #take} would succeed: the player has no snapshot left from an earlier match. */
+    public boolean canTake(UUID id) {
+        return !active.containsKey(id) && !recovered.containsKey(id) && !unrecoverable.contains(id);
+    }
+
     /**
      * Saves the player's state and returns its restore, to be registered in the match scope. If the
      * player is offline when it runs, they get their state back on their next join instead.
@@ -46,7 +51,7 @@ public final class PlayerSessions implements Listener {
      */
     public AutoCloseable take(Player player) {
         var id = player.getUniqueId();
-        if (active.containsKey(id) || recovered.containsKey(id) || unrecoverable.contains(id)) {
+        if (!canTake(id)) {
             throw new IllegalStateException(player.getName() + " still has a snapshot that hasn't been restored");
         }
         var snapshot = PlayerSnapshot.capture(player);
