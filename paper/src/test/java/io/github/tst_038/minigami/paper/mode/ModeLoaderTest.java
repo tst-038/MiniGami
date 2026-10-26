@@ -43,11 +43,6 @@ class ModeLoaderTest {
         public WinCondition winCondition() {
             return new LastManStanding();
         }
-
-        @Override
-        public int minPlayers() {
-            return 2;
-        }
     };
 
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);

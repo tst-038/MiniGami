@@ -21,7 +21,4 @@ public interface GameType {
 
     /** A fresh one per match. */
     WinCondition winCondition();
-
-    /** Once this many players have joined, the match starts after a short delay. */
-    int minPlayers();
 }

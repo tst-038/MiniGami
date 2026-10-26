@@ -4,7 +4,10 @@ prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
 
 join:
   already-in-match: "<prefix><red>You are already in a match. Use <white>/mg leave</white> first."
-  match-in-progress: "<prefix><red>A match is in progress. Try again when it has ended."
+  # <mode>: the mode as typed
+  unknown-mode: "<prefix><red>There is no mode called <white><mode></white>."
+  # <mode>: the mode's name
+  no-free-arena: "<prefix><red>All arenas of <mode><red> are busy or full. Try again later."
   failed: "<prefix><red>You can't join right now. Your items from an earlier match still need to be restored; please rejoin the server or ask staff."
 
 leave:
@@ -31,7 +34,7 @@ match:
 void-kills:
   eliminated: "<prefix><red><player></red> fell into the void!"
 
-# <matches>, <listeners>, <snapshots>; per match: <game>, <phase>, <members>, <alive>, <tick>
+# <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
 debug:
   summary: "<prefix><gray>Matches: <white><matches></white>, listeners: <white><listeners></white>, players with saved state: <white><snapshots></white>"
-  match: "<prefix><gray><game>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"
+  match: "<prefix><gray><mode> on <arena>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"

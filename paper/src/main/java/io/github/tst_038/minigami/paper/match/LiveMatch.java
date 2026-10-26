@@ -1,20 +1,22 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
-import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
-import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -26,8 +28,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * A match on this server together with the players in it. Players join during the first phase and
- * get their own state back when they leave or the match ends.
+ * A match of a mode in one arena, together with the players in it. Players join during the first
+ * phase, up to the mode's maximum, and get their own state back when they leave or the match ends.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -36,9 +38,9 @@ public final class LiveMatch {
     private static final long START_DELAY_TICKS = 5 * 20;
 
     private final Plugin plugin;
-    private final GameType type;
-    private final Function<Scope, Location> arena;
-    private Location spawn;
+    private final Mode mode;
+    private final Arena arena;
+    private final Location spawn;
     private final PlayerSessions sessions;
     private final Messages messages;
     private final Match match;
@@ -47,20 +49,28 @@ public final class LiveMatch {
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
     private MatchClock.Task startDelay;
 
-    /** @param arena sets up the arena, owned by the given match scope, and returns its spawn */
-    public LiveMatch(Plugin plugin, GameType type, Function<Scope, Location> arena, PlayerSessions sessions, Messages messages) {
+    /** @param arena must be playable */
+    public LiveMatch(Plugin plugin, Mode mode, Arena arena, PlayerSessions sessions, Messages messages) {
         this.plugin = plugin;
-        this.type = type;
+        this.mode = mode;
         this.arena = arena;
+        // shortcut: everyone waits and plays at one point; spreading over the spawns comes with the spawn setup.
+        this.spawn = arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst());
         this.sessions = sessions;
         this.messages = messages;
-        var features = new PhaseFeatures(type.features(), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
-        this.match = new Match(type.phases(), type.winCondition(), features);
+        var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
+        this.match = new Match(mode.game().phases(), mode.game().winCondition(), features);
+    }
+
+    /** The game's own features per phase, followed by those the mode configures. */
+    private static Map<String, List<Feature>> features(Mode mode) {
+        var merged = new HashMap<String, List<Feature>>();
+        mode.game().features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
+        mode.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
+        return merged;
     }
 
     public void start() {
-        // Registered first, so the arena is torn down only after every player has been restored and moved out.
-        spawn = arena.apply(match.scope());
         match.start();
     }
 
@@ -68,8 +78,12 @@ public final class LiveMatch {
         return match;
     }
 
-    public GameType type() {
-        return type;
+    public Mode mode() {
+        return mode;
+    }
+
+    public Arena arena() {
+        return arena;
     }
 
     public boolean isMember(UUID id) {
@@ -91,18 +105,23 @@ public final class LiveMatch {
 
     /** Whether the match is still gathering players, i.e. in its first phase. */
     public boolean isJoinable() {
-        var first = type.phases().getFirst();
+        var first = mode.game().phases().getFirst();
         return !match.isFinished() && match.currentPhase().filter(first::equals).isPresent();
+    }
+
+    /** Whether another player fits in before the mode's maximum is reached. */
+    public boolean hasRoom() {
+        return match.roster().size() < mode.maxPlayers();
     }
 
     /**
      * Saves the player's state, prepares them for the match and brings them to the spawn.
      *
-     * @throws IllegalStateException if the match can't be joined, or the player still has saved state
+     * @throws IllegalStateException if the match can't be joined or is full, or the player still has saved state
      *     from an earlier match that wasn't restored
      */
     public void join(Player player) {
-        if (!isJoinable()) {
+        if (!isJoinable() || !hasRoom()) {
             throw new IllegalStateException("The match is not accepting players");
         }
         var id = player.getUniqueId();
@@ -113,8 +132,8 @@ public final class LiveMatch {
         members.add(id);
         prepare(player);
         messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
-                Formatter.number("players", match.roster().size()), Formatter.number("needed", type.minPlayers()));
-        if (startDelay == null && match.roster().size() >= type.minPlayers()) {
+                Formatter.number("players", match.roster().size()), Formatter.number("needed", mode.minPlayers()));
+        if (startDelay == null && match.roster().size() >= mode.minPlayers()) {
             startDelay = match.clock().schedule(START_DELAY_TICKS, this::startPlaying);
             match.scope().register(startDelay);
             messages.send(audience(), "match.starting", Formatter.number("seconds", START_DELAY_TICKS / 20));
@@ -134,7 +153,7 @@ public final class LiveMatch {
         }
         if (isJoinable()) {
             match.roster().remove(id);
-            if (startDelay != null && match.roster().size() < type.minPlayers()) {
+            if (startDelay != null && match.roster().size() < mode.minPlayers()) {
                 startDelay.close();
                 startDelay = null;
                 messages.send(audience(), "match.start-cancelled");
