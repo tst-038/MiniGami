@@ -1,7 +1,7 @@
 package io.github.tst_038.minigami.core;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 /**
  * The time of one match, counted in ticks. It only advances when {@link #tick()} is called and
@@ -11,21 +11,44 @@ import java.util.List;
  */
 public final class MatchClock {
 
-    private final List<Task> tasks = new ArrayList<>();
+    // Ties on the same tick are broken by scheduling order, so runs are deterministic.
+    private final PriorityQueue<Task> queue = new PriorityQueue<>(
+            Comparator.<Task>comparingLong(task -> task.dueAt).thenComparingLong(task -> task.sequence));
+    private long nextSequence;
     private long elapsedTicks;
     private boolean paused;
 
-    /** Advances the clock by one tick and runs every task that is due. Does nothing while paused. */
+    /**
+     * Advances the clock by one tick and runs every task that is due, in scheduling order. Does
+     * nothing while paused. A failing task doesn't stop the others; failures are rethrown
+     * afterwards as one {@link IllegalStateException}.
+     */
     public void tick() {
         if (paused) {
             return;
         }
         elapsedTicks++;
-        // Iterate a copy: tasks may schedule or cancel other tasks while running.
-        for (Task task : List.copyOf(tasks)) {
-            if (!task.cancelled && task.dueAt <= elapsedTicks) {
-                task.run();
+        IllegalStateException failure = null;
+        while (!queue.isEmpty() && queue.peek().dueAt <= elapsedTicks) {
+            Task task = queue.poll();
+            // Re-queue before running, so the action can still cancel its own next run.
+            if (task.periodTicks > 0) {
+                enqueue(task, task.dueAt + task.periodTicks);
+            } else {
+                task.cancelled = true;
             }
+            try {
+                task.action.run();
+            } catch (RuntimeException e) {
+                if (failure == null) {
+                    failure = new IllegalStateException("A scheduled task failed", e);
+                } else {
+                    failure.addSuppressed(e);
+                }
+            }
+        }
+        if (failure != null) {
+            throw failure;
         }
     }
 
@@ -59,9 +82,15 @@ public final class MatchClock {
         if (delayTicks < 1) {
             throw new IllegalArgumentException("Delay and period must be at least 1 tick, got " + delayTicks);
         }
-        var task = new Task(elapsedTicks + delayTicks, periodTicks, action);
-        tasks.add(task);
+        var task = new Task(periodTicks, action);
+        enqueue(task, elapsedTicks + delayTicks);
         return task;
+    }
+
+    private void enqueue(Task task, long dueAt) {
+        task.dueAt = dueAt;
+        task.sequence = nextSequence++;
+        queue.add(task);
     }
 
     /** A scheduled action. Closing it cancels it, so it can be owned by a {@link Scope}. */
@@ -70,21 +99,12 @@ public final class MatchClock {
         private final long periodTicks;
         private final Runnable action;
         private long dueAt;
+        private long sequence;
         private boolean cancelled;
 
-        private Task(long dueAt, long periodTicks, Runnable action) {
-            this.dueAt = dueAt;
+        private Task(long periodTicks, Runnable action) {
             this.periodTicks = periodTicks;
             this.action = action;
-        }
-
-        private void run() {
-            if (periodTicks > 0) {
-                dueAt += periodTicks;
-            } else {
-                close();
-            }
-            action.run();
         }
 
         public boolean isCancelled() {
@@ -94,7 +114,7 @@ public final class MatchClock {
         @Override
         public void close() {
             cancelled = true;
-            tasks.remove(this);
+            queue.remove(this);
         }
     }
 }

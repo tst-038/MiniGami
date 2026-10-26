@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -130,6 +131,42 @@ class MatchClockTest {
         tick(2);
 
         assertEquals(List.of(1L, 2L), runs);
+    }
+
+    @Test
+    void tasksDueOnTheSameTickRunInScheduleOrder() {
+        var order = new ArrayList<String>();
+        clock.schedule(3, () -> order.add("a"));
+        tick(1);
+        clock.schedule(2, () -> order.add("b"));
+        clock.schedule(2, () -> order.add("c"));
+
+        tick(2);
+
+        assertEquals(List.of("a", "b", "c"), order);
+    }
+
+    @Test
+    void failingTaskDoesNotStopTheOthers() {
+        var failing = clock.repeat(1, () -> { throw new IllegalArgumentException("boom"); });
+        clock.schedule(1, record());
+
+        var thrown = assertThrows(IllegalStateException.class, clock::tick);
+
+        assertEquals(List.of(1L), runs);
+        assertEquals("boom", thrown.getCause().getMessage());
+        assertFalse(failing.isCancelled());
+    }
+
+    @Test
+    void laterFailuresInTheSameTickAreAttachedAsSuppressed() {
+        clock.schedule(1, () -> { throw new IllegalArgumentException("first"); });
+        clock.schedule(1, () -> { throw new IllegalArgumentException("second"); });
+
+        var thrown = assertThrows(IllegalStateException.class, clock::tick);
+
+        assertEquals("first", thrown.getCause().getMessage());
+        assertEquals("second", thrown.getSuppressed()[0].getMessage());
     }
 
     @Test
