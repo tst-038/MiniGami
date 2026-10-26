@@ -1,10 +1,13 @@
 package io.github.tst_038.minigami.paper;
 
+import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
+import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.game.TestArena;
 import io.github.tst_038.minigami.paper.game.TestGame;
@@ -26,6 +29,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
 
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
+    private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ActiveMatches matches;
     private SnapshotStore snapshots;
 
@@ -47,8 +51,24 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(service, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));
+        loadArenas();
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
+    }
+
+    private void loadArenas() {
+        getServer().getAsyncScheduler().runNow(this, task -> {
+            var files = YamlFiles.read(getDataPath().resolve("arenas"));
+            if (!isEnabled()) {
+                return;
+            }
+            getServer().getGlobalRegionScheduler().execute(this, () -> {
+                var loaded = ArenaLoader.load(files, getServer()::getWorld);
+                loaded.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
+                arenas = loaded.arenas();
+                getLogger().info("Loaded arenas: " + arenas.ids());
+            });
+        });
     }
 
     @Override
