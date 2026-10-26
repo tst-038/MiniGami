@@ -59,6 +59,21 @@ arena:
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
 
 # <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
+snapshot:
+  none: "<prefix><gray><player> has no saved state."
+  in-match: "<prefix><red><player> is in a match; their state comes back when they leave it."
+  unreadable: "<prefix><red>The saved state of <player> can't be read; the server log names the file to fix."
+  saved: "<prefix><gold><player></gold><gray>: state saved for a match, not given back yet."
+  last: "<prefix><gold><player></gold><gray>: state given back last."
+  details: "<gray> <game-mode> at <x>, <y>, <z> in <world>, health <health>, food <food>, level <level>"
+  items: "<gray> Items: <white><items>"
+  effects: "<gray> Effects: <white><effects>"
+  restore-hint: "<gray> Give it back with <white>/mg snapshot <player> restore</white>."
+  restore-last-hint: "<gray> Put it back with <white>/mg snapshot <player> restore</white>; their current state is kept, so doing it again undoes it."
+  restored: "<prefix><green>Gave <player> their saved state back."
+  restored-last: "<prefix><green>Put the last state of <player> back. Run it again to undo."
+  restore-failed: "<prefix><red>Could not give <player> their state back; see the server log."
+
 debug:
   summary: "<prefix><gray>Matches: <white><matches></white>, listeners: <white><listeners></white>, players with saved state: <white><snapshots></white>"
   match: "<prefix><gray><mode> on <arena>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"

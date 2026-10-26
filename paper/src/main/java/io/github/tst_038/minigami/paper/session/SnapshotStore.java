@@ -21,9 +21,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Snapshots on disk, one file per player, so they survive a restart or crash. All file access runs
- * on one background thread, in the order it was asked for, so a load never sees a save or delete
- * that was asked for earlier as not yet done.
+ * Snapshots on disk, one file per player, so they survive a restart or crash. A restored snapshot
+ * is kept as the player's last one, so staff can still look at it or put it back. All file access
+ * runs on one background thread, in the order it was asked for, so a load never sees a save or
+ * retire that was asked for earlier as not yet done.
  */
 public final class SnapshotStore implements AutoCloseable {
 
@@ -36,37 +37,70 @@ public final class SnapshotStore implements AutoCloseable {
         this.logger = logger;
     }
 
-    /** Writes in the background. The text is made here, on the calling thread. */
+    /** Writes the snapshot still to be restored, in the background. The text is made here, on the calling thread. */
     public void save(UUID id, PlayerSnapshot snapshot) {
-        var bytes = snapshot.toYaml().getBytes(StandardCharsets.UTF_8);
-        io.execute(() -> {
-            try {
-                write(id, bytes);
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, "Could not save the snapshot of " + id, e);
-            }
-        });
+        save(file(id), snapshot);
     }
 
-    public void delete(UUID id) {
+    /** Replaces the player's last snapshot, in the background. */
+    public void saveLast(UUID id, PlayerSnapshot snapshot) {
+        save(lastFile(id), snapshot);
+    }
+
+    /** Makes the snapshot still to be restored the player's last one, replacing the previous last one. */
+    public void retire(UUID id) {
         io.execute(() -> {
             try {
-                Files.deleteIfExists(file(id));
+                Files.move(file(id), lastFile(id), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (NoSuchFileException e) {
+                // Nothing was saved, so there is nothing to keep.
             } catch (IOException e) {
-                logger.log(Level.SEVERE, "Could not delete the snapshot of " + id, e);
+                logger.log(Level.SEVERE, "Could not retire the snapshot of " + id, e);
             }
         });
     }
 
     /**
-     * Blocks until the file is read, so never call it from the server thread.
+     * The snapshot still to be restored. Blocks until the file is read, so never call it from the server thread.
      *
      * @throws IllegalStateException if the file exists but can't be read
      */
     public Optional<PlayerSnapshot> load(UUID id) {
+        return load(file(id));
+    }
+
+    /**
+     * The snapshot that was restored last. Blocks like {@link #load}.
+     *
+     * @throws IllegalStateException if the file exists but can't be read
+     */
+    public Optional<PlayerSnapshot> loadLast(UUID id) {
+        return load(lastFile(id));
+    }
+
+    private Path file(UUID id) {
+        return directory.resolve(id + ".yml");
+    }
+
+    private Path lastFile(UUID id) {
+        return directory.resolve(id + ".last.yml");
+    }
+
+    private void save(Path file, PlayerSnapshot snapshot) {
+        var bytes = snapshot.toYaml().getBytes(StandardCharsets.UTF_8);
+        io.execute(() -> {
+            try {
+                write(file, bytes);
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, "Could not save " + file, e);
+            }
+        });
+    }
+
+    private Optional<PlayerSnapshot> load(Path file) {
         var text = CompletableFuture.supplyAsync(() -> {
             try {
-                return Optional.of(Files.readString(file(id)));
+                return Optional.of(Files.readString(file));
             } catch (NoSuchFileException e) {
                 return Optional.<String>empty();
             } catch (IOException e) {
@@ -76,7 +110,7 @@ public final class SnapshotStore implements AutoCloseable {
         try {
             return text.join().map(PlayerSnapshot::fromYaml);
         } catch (CompletionException | IllegalArgumentException e) {
-            throw new IllegalStateException("Could not read the snapshot of " + id, e instanceof CompletionException ? e.getCause() : e);
+            throw new IllegalStateException("Could not read " + file, e instanceof CompletionException ? e.getCause() : e);
         }
     }
 
@@ -94,18 +128,14 @@ public final class SnapshotStore implements AutoCloseable {
     }
 
     // Write to a temporary file, flush it to the disk, then swap it in: a crash leaves either the old or the new file, never half of one.
-    private void write(UUID id, byte[] bytes) throws IOException {
+    private void write(Path file, byte[] bytes) throws IOException {
         Files.createDirectories(directory);
-        var temporary = directory.resolve(id + ".yml.tmp");
+        var temporary = directory.resolve(file.getFileName() + ".tmp");
         try (var channel = FileChannel.open(temporary, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING)) {
             channel.write(ByteBuffer.wrap(bytes));
             channel.force(true);
         }
-        Files.move(temporary, file(id), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    private Path file(UUID id) {
-        return directory.resolve(id + ".yml");
+        Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     }
 }

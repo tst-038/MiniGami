@@ -5,13 +5,17 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.config.LobbySetup;
 import io.github.tst_038.minigami.paper.match.MatchService;
+import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -20,7 +24,8 @@ import org.bukkit.entity.Player;
 
 /**
  * {@code /mg join <mode>|leave|start|debug|setlobby}, and for admins
- * {@code /mg arena create <id>} and {@code /mg arena <id> addspawn|removespawn <n>|setwaiting|info}.
+ * {@code /mg arena create <id>}, {@code /mg arena <id> addspawn|removespawn <n>|setwaiting|info}
+ * and {@code /mg snapshot <player> [restore]}.
  */
 public final class GamesCommand {
 
@@ -29,7 +34,8 @@ public final class GamesCommand {
     private GamesCommand() {
     }
 
-    public static LiteralCommandNode<CommandSourceStack> create(MatchService service, ArenaSetup arenas, LobbySetup lobby) {
+    public static LiteralCommandNode<CommandSourceStack> create(MatchService service, ArenaSetup arenas, LobbySetup lobby,
+            SnapshotAdmin snapshots) {
         return Commands.literal("mg")
                 .then(Commands.literal("join")
                         .requires(source -> source.getExecutor() instanceof Player)
@@ -72,11 +78,27 @@ public final class GamesCommand {
                                                         player, arena(context), IntegerArgumentType.getInteger(context, "number"))))))
                                 .then(arenaAction("setwaiting", arenas::setWaitingSpot))
                                 .then(arenaAction("info", arenas::info))))
+                .then(Commands.literal("snapshot")
+                        .requires(source -> source.getSender().hasPermission(ADMIN_PERMISSION))
+                        .then(Commands.argument("player", ArgumentTypes.player())
+                                .executes(context -> {
+                                    snapshots.inspect(context.getSource().getSender(), target(context));
+                                    return Command.SINGLE_SUCCESS;
+                                })
+                                .then(Commands.literal("restore")
+                                        .executes(context -> {
+                                            snapshots.restore(context.getSource().getSender(), target(context));
+                                            return Command.SINGLE_SUCCESS;
+                                        }))))
                 .build();
     }
 
     private static ArgumentBuilder<CommandSourceStack, ?> arenaAction(String name, BiConsumer<Player, String> action) {
         return Commands.literal(name).executes(context -> asPlayer(context.getSource(), player -> action.accept(player, arena(context))));
+    }
+
+    private static Player target(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return context.getArgument("player", PlayerSelectorArgumentResolver.class).resolve(context.getSource()).getFirst();
     }
 
     private static String arena(CommandContext<CommandSourceStack> context) {

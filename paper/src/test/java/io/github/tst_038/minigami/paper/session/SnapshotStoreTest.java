@@ -50,11 +50,22 @@ class SnapshotStoreTest {
     }
 
     @Test
-    void deletedSnapshotIsGone() {
-        store().save(id, PlayerSnapshotTest.sample());
-        store.delete(id);
+    void retiredSnapshotIsKeptAsTheLastOne() {
+        var snapshot = PlayerSnapshotTest.sample();
+        store().save(id, snapshot);
+        store.retire(id);
 
         assertEquals(Optional.empty(), store.load(id));
+        assertEquals(Optional.of(snapshot), store.loadLast(id));
+    }
+
+    @Test
+    void retiringWithoutASnapshotKeepsTheLastOne() {
+        var snapshot = PlayerSnapshotTest.sample();
+        store().saveLast(id, snapshot);
+        store.retire(id);
+
+        assertEquals(Optional.of(snapshot), store.loadLast(id));
     }
 
     @Test

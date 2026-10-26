@@ -19,6 +19,7 @@ import io.github.tst_038.minigami.paper.match.MatchService;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.mode.ModeLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
+import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
@@ -57,8 +58,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(service, this);
         var lobbySetup = new LobbySetup(this, messages, this::loadConfig);
         var arenaSetup = new ArenaSetup(this, () -> arenas, service::isArenaInUse, messages, this::loadConfig);
+        var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(service, arenaSetup, lobbySetup), "Join, leave and manage minigames"));
+                event -> event.registrar().register(GamesCommand.create(service, arenaSetup, lobbySetup, snapshotAdmin), "Join, leave and manage minigames"));
         loadConfig();
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);

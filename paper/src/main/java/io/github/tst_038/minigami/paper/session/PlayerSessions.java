@@ -69,6 +69,28 @@ public final class PlayerSessions implements Listener {
         };
     }
 
+    /** Whether the player is in a match with their state saved; it comes back when they leave, so staff mustn't put any back. */
+    public boolean isInMatch(UUID id) {
+        return active.containsKey(id);
+    }
+
+    /** For staff: puts back the snapshot still on disk, e.g. once its broken file was fixed. Not while {@link #isInMatch}. */
+    public void restoreSaved(Player player, PlayerSnapshot snapshot) {
+        recovered.remove(player.getUniqueId());
+        restore(player, snapshot);
+        unrecoverable.remove(player.getUniqueId());
+    }
+
+    /**
+     * For staff: puts back the snapshot restored last. The state it replaces becomes the last one, so
+     * doing it again undoes it. Not while {@link #isInMatch} or a snapshot is still on disk.
+     */
+    public void restoreLast(Player player, PlayerSnapshot last) {
+        var current = PlayerSnapshot.capture(player);
+        apply(player, last);
+        store.saveLast(player.getUniqueId(), current);
+    }
+
     /** Snapshots of players currently in a match. */
     public int pending() {
         return active.size();
@@ -104,10 +126,14 @@ public final class PlayerSessions implements Listener {
         }
     }
 
-    // The file is only deleted once the restore went through, so a failed restore is retried at the next join.
+    // The file is only retired once the restore went through, so a failed restore is retried at the next join.
     private void restore(Player player, PlayerSnapshot snapshot) {
+        apply(player, snapshot);
+        store.retire(player.getUniqueId());
+    }
+
+    private void apply(Player player, PlayerSnapshot snapshot) {
         snapshot.restore(player);
-        store.delete(player.getUniqueId());
         // Max health from equipment is applied a tick after the inventory is set, so health may have been clamped.
         // At shutdown there is no next tick, and the clamped value is what gets saved.
         if (plugin.isEnabled()) {
