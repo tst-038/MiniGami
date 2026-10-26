@@ -2,10 +2,11 @@ package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.logging.Level;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -28,17 +29,18 @@ public final class MatchService implements Listener {
 
     private final Plugin plugin;
     private final GameType game;
-    private final Supplier<Location> spawn;
+    private final Function<Scope, Location> arena;
     private final PlayerSessions sessions;
     private final Messages messages;
     private final ActiveMatches matches;
     private LiveMatch current;
 
-    public MatchService(Plugin plugin, GameType game, Supplier<Location> spawn, PlayerSessions sessions, Messages messages,
+    /** @param arena sets up the arena for a new match, owned by the given match scope, and returns its spawn */
+    public MatchService(Plugin plugin, GameType game, Function<Scope, Location> arena, PlayerSessions sessions, Messages messages,
             ActiveMatches matches) {
         this.plugin = plugin;
         this.game = game;
-        this.spawn = spawn;
+        this.arena = arena;
         this.sessions = sessions;
         this.messages = messages;
         this.matches = matches;
@@ -112,7 +114,7 @@ public final class MatchService implements Listener {
 
     private LiveMatch openMatch() {
         if (current == null || current.match().isFinished()) {
-            var match = new LiveMatch(plugin, game, spawn.get(), sessions, messages);
+            var match = new LiveMatch(plugin, game, arena, sessions, messages);
             try {
                 match.start();
             } catch (RuntimeException e) {

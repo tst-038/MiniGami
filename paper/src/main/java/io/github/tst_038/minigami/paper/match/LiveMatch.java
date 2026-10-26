@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
+import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -35,7 +37,8 @@ public final class LiveMatch {
 
     private final Plugin plugin;
     private final GameType type;
-    private final Location spawn;
+    private final Function<Scope, Location> arena;
+    private Location spawn;
     private final PlayerSessions sessions;
     private final Messages messages;
     private final Match match;
@@ -44,10 +47,11 @@ public final class LiveMatch {
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
     private MatchClock.Task startDelay;
 
-    public LiveMatch(Plugin plugin, GameType type, Location spawn, PlayerSessions sessions, Messages messages) {
+    /** @param arena sets up the arena, owned by the given match scope, and returns its spawn */
+    public LiveMatch(Plugin plugin, GameType type, Function<Scope, Location> arena, PlayerSessions sessions, Messages messages) {
         this.plugin = plugin;
         this.type = type;
-        this.spawn = spawn;
+        this.arena = arena;
         this.sessions = sessions;
         this.messages = messages;
         var features = new PhaseFeatures(type.features(), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
@@ -55,6 +59,8 @@ public final class LiveMatch {
     }
 
     public void start() {
+        // Registered first, so the arena is torn down only after every player has been restored and moved out.
+        spawn = arena.apply(match.scope());
         match.start();
     }
 

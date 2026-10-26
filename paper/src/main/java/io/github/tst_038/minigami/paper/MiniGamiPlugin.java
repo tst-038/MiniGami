@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
+import io.github.tst_038.minigami.paper.game.TestArena;
 import io.github.tst_038.minigami.paper.game.TestGame;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchService;
@@ -29,9 +30,12 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
-        // shortcut: one hardcoded game at the main world's spawn; arenas and modes come from config later.
-        var service = new MatchService(this, new TestGame(), () -> getServer().getWorlds().getFirst().getSpawnLocation(),
-                sessions, messages, matches);
+        // shortcut: one hardcoded game on a platform above the main world's spawn; arenas and modes come from config later.
+        var world = getServer().getWorlds().getFirst();
+        var center = world.getSpawnLocation().add(0, 40, 0);
+        center.setY(Math.min(center.getY(), world.getMaxHeight() - 3));
+        var arena = new TestArena(center);
+        var service = new MatchService(this, new TestGame(arena), arena::build, sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));

@@ -23,6 +23,9 @@ match:
   # <player>: the player who left
   left: "<prefix><yellow><player></yellow> left the match."
   you-left: "<prefix><gray>You left the match."
+  # <player>: the winner
+  winner: "<prefix><gold><player></gold> wins the match!"
+  no-winner: "<prefix><gray>The match ended without a winner."
 
 # <player>: the player who fell
 void-kills:
