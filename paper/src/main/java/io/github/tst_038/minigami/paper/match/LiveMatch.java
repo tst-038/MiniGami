@@ -7,7 +7,6 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.mode.Mode;
-import io.github.tst_038.minigami.paper.mode.Waiting;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,8 +32,8 @@ import org.bukkit.plugin.Plugin;
  * A match of a mode in one arena, together with the players in it. Players join during the first
  * phase, up to the mode's maximum, and get their own state back when they leave or the match ends.
  *
- * <p>Where they wait depends on the mode: in place, untouched until the start; in the lobby, with
- * their state saved but their inventory kept; or in the arena, already prepared.
+ * <p>Where they wait depends on the mode: in place, untouched until the start; or in the lobby or
+ * the arena, with their state saved and already prepared.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -134,8 +133,8 @@ public final class LiveMatch {
     }
 
     /**
-     * Adds the player. Unless they wait in place, their state is saved now and they are sent to
-     * where they wait; in the arena they are also prepared for the match.
+     * Adds the player. Unless they wait in place, their state is saved now, they are prepared for
+     * the match and sent to where they wait.
      *
      * @throws IllegalStateException if the match can't be joined or is full, or the player still has saved state
      *     from an earlier match that wasn't restored
@@ -150,10 +149,7 @@ public final class LiveMatch {
         }
         if (waitingSpot.isPresent()) {
             saveState(player);
-            if (mode.waiting() == Waiting.ARENA) {
-                prepare(player);
-            }
-            player.setFallDistance(0);
+            prepare(player);
             player.teleport(waitingSpot.get());
         }
         match.roster().add(id);

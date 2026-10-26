@@ -4,7 +4,7 @@ name: "<gold>Void Fall"
 min-players: 2
 max-players: 8
 # in-place: players stay where they are until the start; lobby: they wait in the lobby from config.yml;
-# arena: they wait in the arena, already prepared.
+# arena: they wait in the arena. In the lobby and the arena their own state is saved and cleared at once.
 waiting: arena
 # Free arenas are picked in this order; each must have spawns.
 arenas: [example]
