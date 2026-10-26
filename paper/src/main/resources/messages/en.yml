@@ -1,0 +1,3 @@
+# Player-facing text, in MiniMessage: https://docs.papermc.io/adventure/minimessage/format
+# <prefix> works in every message. Other placeholders are listed per message.
+prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
