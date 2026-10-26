@@ -32,6 +32,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // shortcut: one hardcoded game at the main world's spawn; arenas and modes come from config later.
         var service = new MatchService(this, new TestGame(), () -> getServer().getWorlds().getFirst().getSpawnLocation(),
                 sessions, messages, matches);
+        getServer().getPluginManager().registerEvents(service, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.

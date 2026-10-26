@@ -12,7 +12,10 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -21,7 +24,7 @@ import org.bukkit.plugin.Plugin;
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
-public final class MatchService {
+public final class MatchService implements Listener {
 
     private final Plugin plugin;
     private final GameType game;
@@ -91,6 +94,16 @@ public final class MatchService {
                     Formatter.number("alive", match.roster().alive().size()),
                     Formatter.number("tick", match.clock().elapsedTicks()));
         }
+    }
+
+    /**
+     * A player who quits leaves their match: before it starts they are simply removed, after that
+     * they count as eliminated. Bukkit saves the player after this event, so their restored state is
+     * what gets saved.
+     */
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        find(event.getPlayer().getUniqueId()).ifPresent(match -> match.leave(event.getPlayer()));
     }
 
     private Optional<LiveMatch> find(UUID id) {
