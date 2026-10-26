@@ -1,6 +1,10 @@
 package io.github.tst_038.minigami.paper;
 
+import io.github.tst_038.minigami.api.feature.FeatureFactory;
+import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.game.TestArena;
 import io.github.tst_038.minigami.paper.game.TestGame;
@@ -20,6 +24,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MiniGamiPlugin extends JavaPlugin {
 
+    private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
+    private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private ActiveMatches matches;
     private SnapshotStore snapshots;
 
@@ -35,7 +41,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var center = world.getSpawnLocation().add(0, 40, 0);
         center.setY(Math.min(center.getY(), world.getMaxHeight() - 3));
         var arena = new TestArena(center);
-        var service = new MatchService(this, new TestGame(arena), arena::build, sessions, messages, matches);
+        games.register(new TestGame(arena));
+        features.register(new VoidKillsFactory());
+        var service = new MatchService(this, games.find("test").orElseThrow(), arena::build, sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));
