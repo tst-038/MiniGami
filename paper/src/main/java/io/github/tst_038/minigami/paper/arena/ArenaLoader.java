@@ -1,11 +1,7 @@
 package io.github.tst_038.minigami.paper.arena;
 
-import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
-import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
-import io.github.tst_038.minigami.api.registry.IdRegistry;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -26,31 +22,15 @@ import org.bukkit.World;
  */
 public final class ArenaLoader {
 
-    /** The arenas that are valid, and the problems of those that aren't. */
-    public record Loaded(IdRegistry<Arena> arenas, List<ConfigProblem> problems) {
-    }
-
     private ArenaLoader() {
     }
 
     /** Looks up worlds, so run it on the server thread. */
-    public static Loaded load(YamlFiles files, Function<String, World> worlds) {
-        var arenas = new IdRegistry<>(Arena::id);
-        var problems = new ArrayList<>(files.problems());
-        files.files().forEach((id, config) -> {
-            var file = files.fileName(id);
-            try {
-                arenas.register(parse(id, ConfigReader.of(file, config), worlds));
-            } catch (InvalidConfigException e) {
-                problems.addAll(e.problems());
-            } catch (IllegalArgumentException e) {
-                problems.add(new ConfigProblem(file, "", e.getMessage()));
-            }
-        });
-        return new Loaded(arenas, problems);
+    public static YamlFiles.Loaded<Arena> load(YamlFiles files, Function<String, World> worlds) {
+        return files.parse(Arena::id, (id, config) -> parse(id, config, worlds));
     }
 
-    static Arena parse(String id, ConfigReader config, Function<String, World> worlds) throws InvalidConfigException {
+    private static Arena parse(String id, ConfigReader config, Function<String, World> worlds) {
         var worldName = config.string("world");
         var world = worldName.isEmpty() ? null : worlds.apply(worldName);
         if (!worldName.isEmpty() && world == null) {
@@ -62,7 +42,6 @@ public final class ArenaLoader {
         var waitingSpot = config.has("waiting-spot")
                 ? Optional.of(location(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();
-        config.check();
         return new Arena(id, spawns, waitingSpot);
     }
 

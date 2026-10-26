@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.config;
 
+import io.github.tst_038.minigami.api.registry.IdRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -40,6 +43,33 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
             }
         }
         return new YamlFiles(folder, files, problems);
+    }
+
+    /** The valid entries of a folder, and the problems of the files that aren't valid. */
+    public record Loaded<T>(IdRegistry<T> entries, List<ConfigProblem> problems) {
+    }
+
+    /**
+     * Turns each file into an entry. The parser reports problems to the reader and returns its best
+     * effort; an entry whose file had any problem is left out.
+     */
+    public <T> Loaded<T> parse(Function<T, String> idOf, BiFunction<String, ConfigReader, T> parser) {
+        var entries = new IdRegistry<>(idOf);
+        var allProblems = new ArrayList<>(problems);
+        files.forEach((id, config) -> {
+            var file = fileName(id);
+            var reader = ConfigReader.of(file, config);
+            var entry = parser.apply(id, reader);
+            try {
+                reader.check();
+                entries.register(entry);
+            } catch (InvalidConfigException e) {
+                allProblems.addAll(e.problems());
+            } catch (IllegalArgumentException e) {
+                allProblems.add(new ConfigProblem(file, "", e.getMessage()));
+            }
+        });
+        return new Loaded<>(entries, allProblems);
     }
 
     /** The name problems in this file are reported under, e.g. {@code arenas/winter.yml}. */

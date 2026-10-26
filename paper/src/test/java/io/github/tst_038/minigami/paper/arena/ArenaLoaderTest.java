@@ -25,14 +25,14 @@ class ArenaLoaderTest {
                 default -> throw new UnsupportedOperationException(method.getName());
             });
 
-    private ArenaLoader.Loaded load(String id, String yaml) throws Exception {
+    private YamlFiles.Loaded<Arena> load(String id, String yaml) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
         var files = new YamlFiles("arenas", Map.of(id, config), List.of());
         return ArenaLoader.load(files, name -> name.equals("world") ? world : null);
     }
 
-    private static List<String> problems(ArenaLoader.Loaded loaded) {
+    private static List<String> problems(YamlFiles.Loaded<Arena> loaded) {
         return loaded.problems().stream().map(ConfigProblem::toString).toList();
     }
 
@@ -47,7 +47,7 @@ class ArenaLoaderTest {
                 """);
 
         assertEquals(List.of(), problems(loaded));
-        var arena = loaded.arenas().find("winter").orElseThrow();
+        var arena = loaded.entries().find("winter").orElseThrow();
         assertEquals(List.of(new Location(world, 0.5, 64, 0.5, 90, 10), new Location(world, 5, 64, 5)), arena.spawns());
         assertEquals(Optional.of(new Location(world, 1, 70, 1)), arena.waitingSpot());
         assertTrue(arena.isPlayable());
@@ -57,7 +57,7 @@ class ArenaLoaderTest {
     void arenaWithOnlyAWorldIsValidButNotPlayable() throws Exception {
         var loaded = load("new", "world: world");
 
-        var arena = loaded.arenas().find("new").orElseThrow();
+        var arena = loaded.entries().find("new").orElseThrow();
         assertFalse(arena.isPlayable());
         assertEquals(Optional.empty(), arena.waitingSpot());
     }
@@ -70,7 +70,7 @@ class ArenaLoaderTest {
                   - { x: 1, y: 64 }
                 """);
 
-        assertTrue(loaded.arenas().ids().isEmpty());
+        assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
                 "arenas/winter.yml: world: no loaded world 'wintr'",
                 "arenas/winter.yml: spawns[0].z: is missing"), problems(loaded));
@@ -85,7 +85,7 @@ class ArenaLoaderTest {
 
     @Test
     void handedOutLocationsCanBeChangedSafely() throws Exception {
-        var arena = load("winter", "world: world\nspawns: [{ x: 0, y: 64, z: 0 }]").arenas().find("winter").orElseThrow();
+        var arena = load("winter", "world: world\nspawns: [{ x: 0, y: 64, z: 0 }]").entries().find("winter").orElseThrow();
 
         arena.spawns().getFirst().add(0, 100, 0);
 

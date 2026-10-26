@@ -13,6 +13,8 @@ import io.github.tst_038.minigami.paper.game.TestArena;
 import io.github.tst_038.minigami.paper.game.TestGame;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchService;
+import io.github.tst_038.minigami.paper.mode.Mode;
+import io.github.tst_038.minigami.paper.mode.ModeLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -30,6 +32,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
+    private IdRegistry<Mode> modes = new IdRegistry<>(Mode::id);
     private ActiveMatches matches;
     private SnapshotStore snapshots;
 
@@ -51,22 +54,27 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(service, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(service), "Join, leave and manage minigames"));
-        loadArenas();
+        loadConfig();
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
     }
 
-    private void loadArenas() {
+    /** Reads the files off the server thread, then validates them on it, since that looks up worlds. */
+    private void loadConfig() {
         getServer().getAsyncScheduler().runNow(this, task -> {
-            var files = YamlFiles.read(getDataPath().resolve("arenas"));
+            var arenaFiles = YamlFiles.read(getDataPath().resolve("arenas"));
+            var modeFiles = YamlFiles.read(getDataPath().resolve("modes"));
             if (!isEnabled()) {
                 return;
             }
             getServer().getGlobalRegionScheduler().execute(this, () -> {
-                var loaded = ArenaLoader.load(files, getServer()::getWorld);
-                loaded.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
-                arenas = loaded.arenas();
-                getLogger().info("Loaded arenas: " + arenas.ids());
+                var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
+                var loadedModes = new ModeLoader(games, features).load(modeFiles, loadedArenas.entries());
+                arenas = loadedArenas.entries();
+                modes = loadedModes.entries();
+                loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
+                loadedModes.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
+                getLogger().info("Loaded arenas: " + arenas.ids() + ", modes: " + modes.ids());
             });
         });
     }
