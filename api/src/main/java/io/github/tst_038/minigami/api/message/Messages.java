@@ -16,7 +16,7 @@ import org.bukkit.configuration.ConfigurationSection;
  */
 public final class Messages {
 
-    private final ConfigurationSection texts;
+    private volatile ConfigurationSection texts;
     private final Logger logger;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Set<String> reportedMissing = ConcurrentHashMap.newKeySet();
@@ -27,8 +27,15 @@ public final class Messages {
         this.logger = logger;
     }
 
+    /** Uses these texts from now on, e.g. after a reload. Any thread. */
+    public void replace(ConfigurationSection texts) {
+        this.texts = texts;
+        reportedMissing.clear();
+    }
+
     /** A missing key renders as the key itself, so the gap is visible in game and reported once in the log. */
     public Component render(String key, TagResolver... placeholders) {
+        var texts = this.texts;
         var text = texts.getString(key);
         if (text == null) {
             if (reportedMissing.add(key)) {

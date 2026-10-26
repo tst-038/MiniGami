@@ -75,4 +75,15 @@ class MessagesTest {
         assertEquals("match.unknown", plain(first));
         assertEquals(1, logged.size());
     }
+
+    @Test
+    void replacedTextsAreUsedFromThenOn() throws Exception {
+        var messages = messages("greeting: Hi");
+        var texts = new YamlConfiguration();
+        texts.loadFromString("greeting: Hello");
+
+        messages.replace(texts);
+
+        assertEquals("Hello", PlainTextComponentSerializer.plainText().serialize(messages.render("greeting")));
+    }
 }

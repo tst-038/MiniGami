@@ -30,16 +30,21 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MiniGamiPlugin extends JavaPlugin {
+
+    private static final String MESSAGES = "messages/en.yml";
 
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
@@ -52,10 +57,15 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private Messages messages;
     /** Counts config loads, so one that finishes after a newer one doesn't overwrite it. */
     private final AtomicInteger configLoads = new AtomicInteger();
+    /** Who asked for a load that hasn't finished; the newest load answers them all, also those of loads it overtook. */
+    private final Queue<Audience> requesters = new ConcurrentLinkedQueue<>();
+    private YamlConfiguration bundledMessages;
 
     @Override
     public void onEnable() {
-        messages = new Messages(loadMessages(), getLogger());
+        bundledMessages = loadBundledMessages();
+        // Until the first load has read the admin's copy.
+        messages = new Messages(bundledMessages, getLogger());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
@@ -77,16 +87,21 @@ public final class MiniGamiPlugin extends JavaPlugin {
     }
 
     /**
-     * Reads the files off the server thread, then validates them on it, since that looks up worlds.
+     * Reads the files, messages included, off the server thread, then validates them on it, since that looks up worlds.
      * At startup whatever is valid is loaded, so the server comes up; after that, a load with any
      * problem changes nothing, and running matches keep the config they started with either way.
      *
      * @param requester who asked for the load and hears how it went; {@code null} at startup
      */
     private void loadConfig(Audience requester) {
+        if (requester != null) {
+            requesters.add(requester);
+        }
         var load = configLoads.incrementAndGet();
         getServer().getAsyncScheduler().runNow(this, task -> {
-            var settingsText = readSettings();
+            var fileProblems = new ArrayList<ConfigProblem>();
+            var settingsText = readSettings(fileProblems);
+            var messageTexts = readMessages(fileProblems);
             saveExample("arenas");
             saveExample("modes");
             var arenaFiles = YamlFiles.read(getDataPath().resolve("arenas"));
@@ -104,24 +119,33 @@ public final class MiniGamiPlugin extends JavaPlugin {
                         .load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent());
                 // Also for files with problems, so they can be fixed by command.
                 editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedModes.keys());
-                var problems = new ArrayList<ConfigProblem>(loadedSettings.problems());
+                var waiting = new ArrayList<Audience>();
+                for (Audience next; (next = requesters.poll()) != null; ) {
+                    waiting.add(next);
+                }
+                var problems = new ArrayList<>(fileProblems);
+                problems.addAll(loadedSettings.problems());
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedModes.problems());
-                if (requester != null && !problems.isEmpty()) {
+                if (!waiting.isEmpty() && !problems.isEmpty()) {
                     problems.forEach(problem -> getLogger().warning("Not reloaded: " + problem));
-                    messages.send(requester, "reload.failed", Formatter.number("problems", problems.size()));
-                    problems.forEach(problem -> messages.send(requester, "reload.problem", Placeholder.unparsed("problem", problem.toString())));
+                    for (Audience audience : waiting) {
+                        messages.send(audience, "reload.failed", Formatter.number("problems", problems.size()));
+                        problems.forEach(problem -> messages.send(audience, "reload.problem", Placeholder.unparsed("problem", problem.toString())));
+                    }
                     return;
                 }
+                messages.replace(messageTexts);
                 settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
                 modes = loadedModes.entries();
+                fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedModes.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 getLogger().info("Loaded arenas: " + arenas.ids() + ", modes: " + modes.ids());
-                if (requester != null) {
-                    messages.send(requester, "reload.done", Formatter.number("arenas", arenas.ids().size()),
+                for (Audience audience : waiting) {
+                    messages.send(audience, "reload.done", Formatter.number("arenas", arenas.ids().size()),
                             Formatter.number("modes", modes.ids().size()));
                 }
             });
@@ -135,18 +159,38 @@ public final class MiniGamiPlugin extends JavaPlugin {
         }
     }
 
-    /** Blocking IO. Writes the bundled file first if the admin has none; an unreadable file counts as empty. */
-    private String readSettings() {
-        var path = getDataPath().resolve(SettingsLoader.FILE);
+    /** Blocking IO. Writes the bundled file first if the admin has none; an unreadable file counts as empty and is a problem. */
+    private String readSettings(List<ConfigProblem> problems) {
         try {
-            if (!Files.exists(path)) {
-                saveResource(SettingsLoader.FILE, false);
-            }
-            return Files.readString(path);
+            return readOrSaveBundled(SettingsLoader.FILE);
         } catch (IOException | IllegalArgumentException e) {
-            getLogger().log(Level.WARNING, "Can't read " + SettingsLoader.FILE + "; using defaults", e);
+            problems.add(new ConfigProblem(SettingsLoader.FILE, "", "can't be read: " + e.getMessage()));
             return "";
         }
+    }
+
+    /**
+     * Blocking IO. The admin's copy, falling back to the bundled text for keys it lacks; just the
+     * bundled text, and a problem, if the copy can't be read.
+     */
+    private YamlConfiguration readMessages(List<ConfigProblem> problems) {
+        var texts = new YamlConfiguration();
+        try {
+            texts.loadFromString(readOrSaveBundled(MESSAGES));
+        } catch (IOException | IllegalArgumentException | InvalidConfigurationException e) {
+            problems.add(new ConfigProblem(MESSAGES, "", "can't be read: " + e.getMessage()));
+            texts = new YamlConfiguration();
+        }
+        texts.setDefaults(bundledMessages);
+        return texts;
+    }
+
+    private String readOrSaveBundled(String file) throws IOException {
+        var path = getDataPath().resolve(file);
+        if (!Files.exists(path)) {
+            saveResource(file, false);
+        }
+        return Files.readString(path);
     }
 
     @Override
@@ -160,18 +204,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         }
     }
 
-    /** The admin's copy in the data folder, falling back to the bundled text for keys it lacks. */
-    private YamlConfiguration loadMessages() {
-        var path = "messages/en.yml";
-        if (!Files.exists(getDataPath().resolve(path))) {
-            saveResource(path, false);
-        }
-        var texts = YamlConfiguration.loadConfiguration(getDataPath().resolve(path).toFile());
-        try (var reader = new InputStreamReader(Objects.requireNonNull(getResource(path)), StandardCharsets.UTF_8)) {
-            texts.setDefaults(YamlConfiguration.loadConfiguration(reader));
+    private YamlConfiguration loadBundledMessages() {
+        try (var reader = new InputStreamReader(Objects.requireNonNull(getResource(MESSAGES)), StandardCharsets.UTF_8)) {
+            return YamlConfiguration.loadConfiguration(reader);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return texts;
     }
 }
