@@ -2,9 +2,9 @@ package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.paper.config.ConfigFiles;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.function.Consumer;
@@ -152,23 +152,13 @@ public final class ArenaSetup {
         plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
             synchronized (this) {
                 var path = plugin.getDataPath().resolve("arenas").resolve(id + ".yml");
+                // A file that failed to load has no arena, but must not be overwritten.
+                if (create && Files.exists(path)) {
+                    messages.send(player, "arena.exists", Placeholder.unparsed("arena", id));
+                    return;
+                }
                 try {
-                    var config = new YamlConfiguration();
-                    if (create) {
-                        // A file that failed to load has no arena, but must not be overwritten.
-                        if (Files.exists(path)) {
-                            messages.send(player, "arena.exists", Placeholder.unparsed("arena", id));
-                            return;
-                        }
-                        Files.createDirectories(path.getParent());
-                    } else {
-                        config.loadFromString(Files.readString(path));
-                    }
-                    change.accept(config);
-                    // Through a temp file, so a crash mid-write never leaves a half-written arena.
-                    var temp = path.resolveSibling(id + ".yml.tmp");
-                    Files.writeString(temp, config.saveToString());
-                    Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                    ConfigFiles.update(path, change);
                 } catch (IOException | InvalidConfigurationException e) {
                     plugin.getLogger().log(Level.WARNING, "Could not write " + path, e);
                     messages.send(player, "arena.save-failed", Placeholder.unparsed("arena", id));

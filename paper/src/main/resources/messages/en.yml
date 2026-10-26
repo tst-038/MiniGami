@@ -34,6 +34,10 @@ match:
 void-kills:
   eliminated: "<prefix><red><player></red> fell into the void!"
 
+lobby:
+  set: "<prefix><green>Set the lobby to where you stand."
+  save-failed: "<prefix><red>Could not save the lobby; see the server log."
+
 # Arena setup. <arena>: the arena id, <world>: its world, <number>: a spawn's number as listed by info
 arena:
   unknown: "<prefix><red>There is no arena called <white><arena></white>."

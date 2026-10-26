@@ -43,6 +43,14 @@ public final class ConfigLocations {
         return map;
     }
 
+    /** The other way round from {@link #readWithWorld}. */
+    public static Map<String, Object> writeWithWorld(Location location) {
+        var map = new LinkedHashMap<String, Object>();
+        map.put("world", location.getWorld().getName());
+        map.putAll(write(location));
+        return map;
+    }
+
     private static double round(double value, int scale) {
         return Math.round(value * scale) / (double) scale;
     }

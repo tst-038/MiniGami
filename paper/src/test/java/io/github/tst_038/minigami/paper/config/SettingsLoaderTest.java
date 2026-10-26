@@ -5,16 +5,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 class SettingsLoaderTest {
 
     private final World world = (World) Proxy.newProxyInstance(World.class.getClassLoader(), new Class<?>[] {World.class},
             (proxy, method, args) -> switch (method.getName()) {
+                case "getName" -> "world";
                 case "equals" -> proxy == args[0];
                 case "hashCode" -> 1;
                 default -> throw new UnsupportedOperationException(method.getName());
@@ -30,6 +33,20 @@ class SettingsLoaderTest {
 
         assertEquals(List.of(), loaded.problems());
         assertEquals(Optional.of(new Location(world, 0.5, 64, 0.5, 180, 0)), loaded.settings().lobby());
+    }
+
+    @Test
+    void aLobbyWrittenToTheBundledFileLoadsBackAndKeepsItsComments() throws Exception {
+        var config = new YamlConfiguration();
+        try (var bundled = getClass().getClassLoader().getResourceAsStream(SettingsLoader.FILE)) {
+            config.loadFromString(new String(bundled.readAllBytes(), StandardCharsets.UTF_8));
+        }
+        config.set("lobby", ConfigLocations.writeWithWorld(new Location(world, 1.5, 70, -2.5, 90, 10)));
+
+        var saved = config.saveToString();
+
+        assertTrue(saved.contains("Set it in-game with /mg setlobby"), saved);
+        assertEquals(Optional.of(new Location(world, 1.5, 70, -2.5, 90, 10)), load(saved).settings().lobby());
     }
 
     @Test

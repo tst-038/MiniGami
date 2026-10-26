@@ -8,6 +8,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
+import io.github.tst_038.minigami.paper.config.LobbySetup;
 import io.github.tst_038.minigami.paper.match.MatchService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -18,7 +19,7 @@ import java.util.function.Supplier;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /mg join <mode>|leave|start|debug}, and for admins
+ * {@code /mg join <mode>|leave|start|debug|setlobby}, and for admins
  * {@code /mg arena create <id>} and {@code /mg arena <id> addspawn|removespawn <n>|setwaiting|info}.
  */
 public final class GamesCommand {
@@ -28,7 +29,7 @@ public final class GamesCommand {
     private GamesCommand() {
     }
 
-    public static LiteralCommandNode<CommandSourceStack> create(MatchService service, ArenaSetup arenas) {
+    public static LiteralCommandNode<CommandSourceStack> create(MatchService service, ArenaSetup arenas, LobbySetup lobby) {
         return Commands.literal("mg")
                 .then(Commands.literal("join")
                         .requires(source -> source.getExecutor() instanceof Player)
@@ -51,6 +52,10 @@ public final class GamesCommand {
                             service.debug(context.getSource().getSender());
                             return Command.SINGLE_SUCCESS;
                         }))
+                .then(Commands.literal("setlobby")
+                        .requires(source -> source.getExecutor() instanceof Player
+                                && source.getSender().hasPermission(ADMIN_PERMISSION))
+                        .executes(context -> asPlayer(context.getSource(), lobby::setLobby)))
                 .then(Commands.literal("arena")
                         .requires(source -> source.getExecutor() instanceof Player
                                 && source.getSender().hasPermission(ADMIN_PERMISSION))
