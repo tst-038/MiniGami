@@ -102,6 +102,28 @@ class PhaseMachineTest {
     }
 
     @Test
+    void skipToEndEntersTheLastPhaseDirectly() {
+        var machine = machine(Phase.untimed("playing"), Phase.untimed("deathmatch"), Phase.untimed("ending"));
+        machine.start();
+
+        machine.skipToEnd();
+
+        assertEquals(List.of("playing", "ending"), entered);
+        assertTrue(phaseScopes.get(0).isClosed());
+    }
+
+    @Test
+    void skipToEndFinishesWhenAlreadyInTheLastPhase() {
+        var machine = machine(Phase.untimed("playing"));
+        machine.start();
+
+        machine.skipToEnd();
+
+        assertEquals(1, finished);
+        assertTrue(machine.isFinished());
+    }
+
+    @Test
     void advancingDuringOnEnterSkipsThatPhase() {
         var phases = List.of(Phase.timed("skipped", 5), Phase.untimed("playing"));
         var machine = new PhaseMachine[1];

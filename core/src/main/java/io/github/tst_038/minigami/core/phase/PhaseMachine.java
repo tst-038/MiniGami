@@ -52,23 +52,18 @@ public final class PhaseMachine {
      * phase is entered even if closing the current phase scope fails; that failure is rethrown.
      */
     public void advance() {
-        if (index < 0) {
-            throw new IllegalStateException("Not started");
-        }
-        if (finished) {
-            throw new IllegalStateException("Already finished");
-        }
-        try {
-            phaseScope.close();
-        } finally {
-            if (index + 1 < phases.size()) {
-                enter(index + 1);
-            } else {
-                finished = true;
-                phaseScope = null;
-                listener.onFinish();
-            }
-        }
+        requireRunning();
+        moveTo(index + 1);
+    }
+
+    /**
+     * Skips straight to the last phase, where a match wraps up once it is decided. Finishes if the
+     * last phase is already running.
+     */
+    public void skipToEnd() {
+        requireRunning();
+        int last = phases.size() - 1;
+        moveTo(index == last ? phases.size() : last);
     }
 
     /** The phase that is running, or empty before {@link #start()} and after the last phase. */
@@ -78,6 +73,29 @@ public final class PhaseMachine {
 
     public boolean isFinished() {
         return finished;
+    }
+
+    private void requireRunning() {
+        if (index < 0) {
+            throw new IllegalStateException("Not started");
+        }
+        if (finished) {
+            throw new IllegalStateException("Already finished");
+        }
+    }
+
+    private void moveTo(int next) {
+        try {
+            phaseScope.close();
+        } finally {
+            if (next < phases.size()) {
+                enter(next);
+            } else {
+                finished = true;
+                phaseScope = null;
+                listener.onFinish();
+            }
+        }
     }
 
     private void enter(int next) {

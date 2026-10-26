@@ -6,8 +6,10 @@ import io.github.tst_038.minigami.core.scope.Scope;
 public interface PhaseListener {
 
     /** A phase has started. Whatever is registered in {@code scope} is released when the phase ends. */
-    void onEnter(Phase phase, Scope scope);
+    default void onEnter(Phase phase, Scope scope) {
+    }
 
     /** The last phase has ended. */
-    void onFinish();
+    default void onFinish() {
+    }
 }
