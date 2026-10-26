@@ -62,9 +62,13 @@ class ModeLoaderTest {
     }
 
     private YamlFiles.Loaded<Mode> load(String yaml) throws Exception {
+        return load(yaml, true);
+    }
+
+    private YamlFiles.Loaded<Mode> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new ModeLoader(games, features).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas);
+        return new ModeLoader(games, features).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas, hasLobby);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Mode> loaded) {
@@ -146,5 +150,14 @@ class ModeLoaderTest {
         assertEquals(List.of(
                 "modes/fall.yml: features.ending: unknown phase; test has: waiting, playing",
                 "modes/fall.yml: features.playing.void-kils: unknown feature; known: void-kills"), problems(loaded));
+    }
+
+    @Test
+    void waitingInTheLobbyNeedsALobby() throws Exception {
+        var yaml = "{game: test, min-players: 1, max-players: 1, waiting: lobby, arenas: [demo]}";
+
+        assertEquals(List.of(), problems(load(yaml, true)));
+        assertEquals(List.of("modes/fall.yml: waiting: no lobby is set; set one with /mg setlobby or in config.yml"),
+                problems(load(yaml, false)));
     }
 }

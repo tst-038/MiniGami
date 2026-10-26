@@ -38,12 +38,15 @@ public final class ModeLoader {
         this.features = features;
     }
 
-    /** @param arenas the arenas loaded so far; a mode may only use playable ones */
-    public YamlFiles.Loaded<Mode> load(YamlFiles files, IdRegistry<Arena> arenas) {
-        return files.parse(Mode::id, (id, config) -> parse(id, config, arenas));
+    /**
+     * @param arenas the arenas loaded so far; a mode may only use playable ones
+     * @param hasLobby whether a lobby is set, which modes that wait in the lobby need
+     */
+    public YamlFiles.Loaded<Mode> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby) {
+        return files.parse(Mode::id, (id, config) -> parse(id, config, arenas, hasLobby));
     }
 
-    private Mode parse(String id, ConfigReader config, IdRegistry<Arena> arenas) {
+    private Mode parse(String id, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby) {
         var gameId = config.string("game");
         var game = games.find(gameId).orElse(null);
         if (!gameId.isEmpty() && game == null) {
@@ -56,6 +59,9 @@ public final class ModeLoader {
             config.problem("max-players", "must be at least min-players (" + minPlayers + ")");
         }
         var waiting = config.choice("waiting", Waiting.class);
+        if (waiting == Waiting.LOBBY && !hasLobby) {
+            config.problem("waiting", "no lobby is set; set one with /mg setlobby or in config.yml");
+        }
         return new Mode(id, game, name, minPlayers, maxPlayers, waiting, arenas(config, arenas),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
     }

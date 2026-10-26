@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -31,26 +32,13 @@ public final class ArenaLoader {
     }
 
     private static Arena parse(String id, ConfigReader config, Function<String, World> worlds) {
-        var worldName = config.string("world");
-        var world = worldName.isEmpty() ? null : worlds.apply(worldName);
-        if (!worldName.isEmpty() && world == null) {
-            config.problem("world", "no loaded world '" + worldName + "'");
-        }
+        var world = ConfigLocations.world(config, "world", worlds);
         var spawns = config.has("spawns")
-                ? config.sections("spawns").stream().map(spawn -> location(spawn, world)).toList()
+                ? config.sections("spawns").stream().map(spawn -> ConfigLocations.read(spawn, world)).toList()
                 : List.<Location>of();
         var waitingSpot = config.has("waiting-spot")
-                ? Optional.of(location(config.section("waiting-spot"), world))
+                ? Optional.of(ConfigLocations.read(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();
         return new Arena(id, spawns, waitingSpot);
-    }
-
-    private static Location location(ConfigReader config, World world) {
-        var x = config.decimal("x");
-        var y = config.decimal("y");
-        var z = config.decimal("z");
-        var yaw = config.has("yaw") ? (float) config.decimal("yaw") : 0;
-        var pitch = config.has("pitch") ? (float) config.decimal("pitch") : 0;
-        return new Location(world, x, y, z, yaw, pitch);
     }
 }

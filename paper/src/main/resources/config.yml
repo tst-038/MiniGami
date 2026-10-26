@@ -1,0 +1,2 @@
+# Where players wait for modes with "waiting: lobby". Set it in-game with /mg setlobby, or here:
+# lobby: { world: world, x: 0.5, y: 64, z: 0.5, yaw: 0, pitch: 0 }

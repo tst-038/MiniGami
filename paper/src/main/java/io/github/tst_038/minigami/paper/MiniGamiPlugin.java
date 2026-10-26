@@ -9,6 +9,8 @@ import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
+import io.github.tst_038.minigami.paper.config.Settings;
+import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.game.TestArena;
 import io.github.tst_038.minigami.paper.game.TestGame;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
@@ -24,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Objects;
+import java.util.logging.Level;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -33,6 +36,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private IdRegistry<Mode> modes = new IdRegistry<>(Mode::id);
+    private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
 
@@ -62,21 +66,40 @@ public final class MiniGamiPlugin extends JavaPlugin {
     /** Reads the files off the server thread, then validates them on it, since that looks up worlds. */
     private void loadConfig() {
         getServer().getAsyncScheduler().runNow(this, task -> {
+            var settingsText = readSettings();
             var arenaFiles = YamlFiles.read(getDataPath().resolve("arenas"));
             var modeFiles = YamlFiles.read(getDataPath().resolve("modes"));
             if (!isEnabled()) {
                 return;
             }
             getServer().getGlobalRegionScheduler().execute(this, () -> {
+                var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
-                var loadedModes = new ModeLoader(games, features).load(modeFiles, loadedArenas.entries());
+                var loadedModes = new ModeLoader(games, features)
+                        .load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent());
+                settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
                 modes = loadedModes.entries();
+                loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedModes.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 getLogger().info("Loaded arenas: " + arenas.ids() + ", modes: " + modes.ids());
             });
         });
+    }
+
+    /** Blocking IO. Writes the bundled file first if the admin has none; an unreadable file counts as empty. */
+    private String readSettings() {
+        var path = getDataPath().resolve(SettingsLoader.FILE);
+        try {
+            if (!Files.exists(path)) {
+                saveResource(SettingsLoader.FILE, false);
+            }
+            return Files.readString(path);
+        } catch (IOException | IllegalArgumentException e) {
+            getLogger().log(Level.WARNING, "Can't read " + SettingsLoader.FILE + "; using defaults", e);
+            return "";
+        }
     }
 
     @Override
