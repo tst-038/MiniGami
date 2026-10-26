@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Location;
@@ -74,7 +75,7 @@ public final class ConfigEditor {
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Supplier<Settings> settings;
     private final Predicate<String> arenaInUse;
-    private final Runnable reload;
+    private final Consumer<Audience> reload;
     private volatile Keys keys = new Keys(Collections.emptySortedSet(), Map.of(), Map.of());
 
     private record Keys(SortedSet<String> config, Map<String, SortedSet<String>> arenas, Map<String, SortedSet<String>> modes) {
@@ -84,10 +85,10 @@ public final class ConfigEditor {
      * @param arenas the arenas currently loaded, which modes are checked against
      * @param settings the settings currently loaded, for whether modes may wait in the lobby
      * @param arenaInUse whether a running match uses the arena with this id; such an arena can't be changed
-     * @param reload loads the config again, off the server thread
+     * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
     public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> games, IdRegistry<FeatureFactory> features,
-            Supplier<IdRegistry<Arena>> arenas, Supplier<Settings> settings, Predicate<String> arenaInUse, Runnable reload) {
+            Supplier<IdRegistry<Arena>> arenas, Supplier<Settings> settings, Predicate<String> arenaInUse, Consumer<Audience> reload) {
         this.plugin = plugin;
         this.messages = messages;
         this.games = games;
@@ -190,7 +191,7 @@ public final class ConfigEditor {
             }
             plugin.getLogger().info(sender.getName() + " deleted " + file);
             messages.send(sender, "edit.deleted", fileTag);
-            reload.run();
+            reload.accept(sender);
         });
     }
 
@@ -240,7 +241,7 @@ public final class ConfigEditor {
             }
             plugin.getLogger().info(sender.getName() + " changed " + file);
             messages.send(sender, done, TagResolver.resolver(TagResolver.resolver(placeholders), fileTag));
-            reload.run();
+            reload.accept(sender);
         });
     }
 

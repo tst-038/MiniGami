@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -36,15 +37,15 @@ public final class ArenaSetup {
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Predicate<String> inUse;
     private final Messages messages;
-    private final Runnable reload;
+    private final Consumer<Audience> reload;
 
     /**
      * @param arenas the arenas currently loaded
      * @param inUse whether a running match is using the arena with this id
-     * @param reload loads the config again, off the server thread
+     * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
     public ArenaSetup(Plugin plugin, Supplier<IdRegistry<Arena>> arenas, Predicate<String> inUse, Messages messages,
-            Runnable reload) {
+            Consumer<Audience> reload) {
         this.plugin = plugin;
         this.arenas = arenas;
         this.inUse = inUse;
@@ -166,7 +167,7 @@ public final class ArenaSetup {
                 }
             }
             messages.send(player, done, placeholders);
-            reload.run();
+            reload.accept(player);
         });
     }
 }

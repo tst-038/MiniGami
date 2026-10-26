@@ -23,10 +23,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /mg join <mode>|leave|start|debug|setlobby}, and for admins
+ * {@code /mg join <mode>|leave|start|debug|reload|setlobby}, and for admins
  * {@code /mg arena create <id>}, {@code /mg arena <id> addspawn|removespawn <n>|setwaiting|info},
  * {@code /mg mode create <id> <game> <arena>}, {@code /mg arena|mode <id> set <key> <value>|unset <key>|delete},
  * {@code /mg config set <key> <value>|unset <key>} and {@code /mg snapshot <player> [restore]}.
@@ -39,7 +40,7 @@ public final class GamesCommand {
     }
 
     public static LiteralCommandNode<CommandSourceStack> create(MatchService service, ArenaSetup arenas, LobbySetup lobby,
-            SnapshotAdmin snapshots, ConfigEditor editor) {
+            SnapshotAdmin snapshots, ConfigEditor editor, Consumer<? super CommandSender> reload) {
         return Commands.literal("mg")
                 .then(Commands.literal("join")
                         .requires(source -> source.getExecutor() instanceof Player)
@@ -60,6 +61,12 @@ public final class GamesCommand {
                         .requires(source -> source.getSender().hasPermission(ADMIN_PERMISSION))
                         .executes(context -> {
                             service.debug(context.getSource().getSender());
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                .then(Commands.literal("reload")
+                        .requires(source -> source.getSender().hasPermission(ADMIN_PERMISSION))
+                        .executes(context -> {
+                            reload.accept(context.getSource().getSender());
                             return Command.SINGLE_SUCCESS;
                         }))
                 .then(Commands.literal("setlobby")
