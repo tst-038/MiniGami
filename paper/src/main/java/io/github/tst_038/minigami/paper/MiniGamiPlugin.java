@@ -6,6 +6,8 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
+import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
@@ -72,6 +74,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
         matches = new ActiveMatches(getLogger());
         games.register(new LastStanding());
         features.register(new VoidKillsFactory());
+        features.register(new KitFactory());
+        features.register(new BreakBlocksFactory());
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         var lobbySetup = new LobbySetup(this, messages, this::loadConfig);

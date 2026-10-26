@@ -8,8 +8,10 @@ import java.lang.reflect.Proxy;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityToggleSwimEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
@@ -29,8 +31,9 @@ class EventOwnershipTest {
     }
 
     @Test
-    void supportsPlayerAndEntityEventsOnly() {
+    void supportsPlayerEntityAndPlayerBlockEventsOnly() {
         assertTrue(EventOwnership.isSupported(PlayerToggleSneakEvent.class));
+        assertTrue(EventOwnership.isSupported(BlockBreakEvent.class));
         assertTrue(EventOwnership.isSupported(EntityToggleSwimEvent.class));
         assertFalse(EventOwnership.isSupported(WeatherChangeEvent.class));
     }
@@ -49,6 +52,15 @@ class EventOwnershipTest {
         var id = UUID.randomUUID();
 
         var owner = EventOwnership.playerOf(new EntityToggleSwimEvent(entity(Player.class, id), true));
+
+        assertEquals(Optional.of(id), owner);
+    }
+
+    @Test
+    void brokenBlockBelongsToWhoBrokeIt() {
+        var id = UUID.randomUUID();
+
+        var owner = EventOwnership.playerOf(new BlockBreakEvent(entity(Block.class, id), entity(Player.class, id)));
 
         assertEquals(Optional.of(id), owner);
     }

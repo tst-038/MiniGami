@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 
@@ -138,6 +139,20 @@ public final class ConfigReader {
             return List.of();
         }
         return list.stream().map(String::valueOf).toList();
+    }
+
+    /** Item or block names such as {@code snow_block}; unknown names are problems and left out. */
+    public List<Material> materials(String key) {
+        var materials = new ArrayList<Material>();
+        for (String name : strings(key)) {
+            var material = Material.matchMaterial(name);
+            if (material == null) {
+                problem(key, "unknown item or block '" + name + "'");
+            } else {
+                materials.add(material);
+            }
+        }
+        return materials;
     }
 
     public ConfigReader section(String key) {

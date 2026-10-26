@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
+import org.bukkit.Material;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,15 @@ class ConfigReaderTest {
         assertEquals(List.of("1"), reader.askedKeys().get("min-players"));
         assertEquals(List.of("true", "false"), reader.askedKeys().get("teams"));
         assertEquals(List.of("in-place", "lobby"), reader.askedKeys().get("waiting"));
+    }
+
+    @Test
+    void readsMaterialsAndReportsUnknownOnes() throws Exception {
+        var reader = read("blocks: [snow_block, SAND, nope]");
+
+        assertEquals(List.of(Material.SNOW_BLOCK, Material.SAND), reader.materials("blocks"));
+        var e = assertThrows(InvalidConfigException.class, reader::check);
+        assertEquals("modes/test.yml: blocks: unknown item or block 'nope'", e.getMessage());
     }
 
     @Test
