@@ -2,7 +2,10 @@ package io.github.tst_038.minigami.api.config;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +42,7 @@ public final class ConfigReader {
     }
 
     public boolean has(String key) {
-        shared.asked.add(childPath(key));
+        suggest(key, List.of());
         return section.contains(key);
     }
 
@@ -67,6 +70,7 @@ public final class ConfigReader {
     }
 
     public int integer(String key, int min, int max) {
+        suggest(key, List.of(String.valueOf(min)));
         var value = value(key);
         if (value == null) {
             return min;
@@ -95,6 +99,7 @@ public final class ConfigReader {
     }
 
     public boolean bool(String key) {
+        suggest(key, List.of("true", "false"));
         var value = value(key);
         if (value == null) {
             return false;
@@ -109,6 +114,7 @@ public final class ConfigReader {
     /** One of the enum's constants, written in lower case with dashes: {@code IN_PLACE} is {@code in-place}. */
     public <E extends Enum<E>> E choice(String key, Class<E> type) {
         var constants = type.getEnumConstants();
+        suggest(key, Arrays.stream(constants).map(ConfigReader::configName).toList());
         var text = string(key);
         if (text.isEmpty()) {
             return constants[0];
@@ -161,12 +167,20 @@ public final class ConfigReader {
         return readers;
     }
 
+    /** Values a command may offer for this key, such as the games a {@code game} key can name. */
+    public void suggest(String key, Collection<String> values) {
+        shared.asked.computeIfAbsent(childPath(key), path -> new LinkedHashSet<>()).addAll(values);
+    }
+
     /**
      * Every key asked for while reading, whether the file has it or not, as full paths such as
-     * {@code features.playing.void-kills.y}; lets commands complete keys without a schema of their own.
+     * {@code features.playing.void-kills.y}, with the values suggested for it; lets commands
+     * complete keys and values without a schema of their own.
      */
-    public Set<String> askedKeys() {
-        return Set.copyOf(shared.asked);
+    public Map<String, List<String>> askedKeys() {
+        var asked = new HashMap<String, List<String>>();
+        shared.asked.forEach((key, values) -> asked.put(key, List.copyOf(values)));
+        return asked;
     }
 
     /** Records a problem found by the caller, such as a world that doesn't exist. */
@@ -191,7 +205,7 @@ public final class ConfigReader {
 
     private Object value(String key) {
         read.add(key);
-        shared.asked.add(childPath(key));
+        suggest(key, List.of());
         var value = section.get(key);
         if (value == null) {
             problem(key, "is missing");
@@ -211,7 +225,7 @@ public final class ConfigReader {
         final String file;
         final List<ConfigProblem> problems = new ArrayList<>();
         final List<ConfigReader> readers = new ArrayList<>();
-        final Set<String> asked = new HashSet<>();
+        final Map<String, Set<String>> asked = new HashMap<>();
 
         Shared(String file) {
             this.file = file;

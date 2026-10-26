@@ -138,12 +138,7 @@ public final class GamesCommand {
         return Commands.literal("set")
                 .then(key(editor, kind, id)
                         .then(Commands.argument("value", StringArgumentType.greedyString())
-                                .suggests((context, builder) -> {
-                                    if (ConfigEditor.HERE.startsWith(builder.getRemainingLowerCase())) {
-                                        builder.suggest(ConfigEditor.HERE);
-                                    }
-                                    return builder.buildFuture();
-                                })
+                                .suggests(suggest(context -> editor.values(kind, id.apply(context), key(context))))
                                 .executes(context -> {
                                     editor.set(context.getSource().getSender(), kind, id.apply(context), key(context),
                                             StringArgumentType.getString(context, "value"));
@@ -170,11 +165,7 @@ public final class GamesCommand {
 
     private static ArgumentBuilder<CommandSourceStack, ?> key(ConfigEditor editor, Kind kind, Function<CommandContext<CommandSourceStack>, String> id) {
         return Commands.argument("key", StringArgumentType.word())
-                .suggests((context, builder) -> {
-                    editor.keys(kind, id.apply(context)).stream()
-                            .filter(key -> key.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
-                    return builder.buildFuture();
-                });
+                .suggests(suggest(context -> editor.keys(kind, id.apply(context))));
     }
 
     private static String key(CommandContext<CommandSourceStack> context) {
@@ -194,8 +185,12 @@ public final class GamesCommand {
     }
 
     private static SuggestionProvider<CommandSourceStack> suggest(Supplier<? extends Collection<String>> ids) {
+        return suggest(context -> ids.get());
+    }
+
+    private static SuggestionProvider<CommandSourceStack> suggest(Function<CommandContext<CommandSourceStack>, ? extends Collection<String>> ids) {
         return (context, builder) -> {
-            ids.get().stream().filter(id -> id.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
+            ids.apply(context).stream().filter(id -> id.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
             return builder.buildFuture();
         };
     }

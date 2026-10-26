@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -62,8 +62,6 @@ public final class ConfigEditor {
         }
     }
 
-    /** As a value: the sender's location. */
-    public static final String HERE = "here";
     /** Taken by {@code /mg mode create}, so a mode with this id couldn't be edited. */
     private static final String RESERVED_ID = "create";
     private static final long CHECK_TIMEOUT_SECONDS = 10;
@@ -76,9 +74,10 @@ public final class ConfigEditor {
     private final Supplier<Settings> settings;
     private final Predicate<String> arenaInUse;
     private final Consumer<Audience> reload;
-    private volatile Keys keys = new Keys(Collections.emptySortedSet(), Map.of(), Map.of());
+    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of());
 
-    private record Keys(SortedSet<String> config, Map<String, SortedSet<String>> arenas, Map<String, SortedSet<String>> modes) {
+    private record Keys(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
+            Map<String, SortedMap<String, List<String>>> modes) {
     }
 
     /**
@@ -100,7 +99,8 @@ public final class ConfigEditor {
     }
 
     /** Takes the keys of every file from a config load, valid files or not, for completion. Any thread. */
-    public void keysLoaded(SortedSet<String> config, Map<String, SortedSet<String>> arenas, Map<String, SortedSet<String>> modes) {
+    public void keysLoaded(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
+            Map<String, SortedMap<String, List<String>>> modes) {
         keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(modes));
     }
 
@@ -115,11 +115,20 @@ public final class ConfigEditor {
 
     /** The keys a file has or its loader asked for. Any thread. */
     public Collection<String> keys(Kind kind, String id) {
+        return keysOf(kind, id).keySet();
+    }
+
+    /** Values that make sense for the key, such as {@code true} and {@code false}; none if anything goes. Any thread. */
+    public List<String> values(Kind kind, String id, String key) {
+        return keysOf(kind, id).getOrDefault(key, List.of());
+    }
+
+    private SortedMap<String, List<String>> keysOf(Kind kind, String id) {
         var current = keys;
         return switch (kind) {
             case CONFIG -> current.config();
-            case ARENA -> current.arenas().getOrDefault(id, Collections.emptySortedSet());
-            case MODE -> current.modes().getOrDefault(id, Collections.emptySortedSet());
+            case ARENA -> current.arenas().getOrDefault(id, Collections.emptySortedMap());
+            case MODE -> current.modes().getOrDefault(id, Collections.emptySortedMap());
         };
     }
 
@@ -129,11 +138,11 @@ public final class ConfigEditor {
 
     /**
      * @param id ignored for {@link Kind#CONFIG}
-     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value #HERE}
+     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value #ConfigLocations.HERE}
      */
     public void set(CommandSender sender, Kind kind, String id, String key, String text) {
         Consumer<YamlConfiguration> change;
-        if (text.equals(HERE)) {
+        if (text.equals(ConfigLocations.HERE)) {
             if (!(sender instanceof Player player)) {
                 messages.send(sender, "edit.here-needs-player");
                 return;

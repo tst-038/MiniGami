@@ -7,7 +7,7 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedSet;
+import java.util.SortedMap;
 import java.util.function.Function;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -24,7 +24,7 @@ public final class SettingsLoader {
      *
      * @param keys the keys the file has and the keys reading it asked for
      */
-    public record Loaded(Settings settings, List<ConfigProblem> problems, SortedSet<String> keys) {
+    public record Loaded(Settings settings, List<ConfigProblem> problems, SortedMap<String, List<String>> keys) {
     }
 
     private SettingsLoader() {
@@ -37,9 +37,10 @@ public final class SettingsLoader {
             config.loadFromString(yaml);
         } catch (InvalidConfigurationException e) {
             return new Loaded(Settings.DEFAULTS, List.of(new ConfigProblem(FILE, "", "can't be read: " + e.getMessage())),
-                    Collections.emptySortedSet());
+                    Collections.emptySortedMap());
         }
         var reader = ConfigReader.of(FILE, config);
+        reader.suggest("lobby", List.of(ConfigLocations.HERE));
         var lobby = reader.has("lobby")
                 ? Optional.of(ConfigLocations.readWithWorld(reader.section("lobby"), worlds))
                 : Optional.<Location>empty();

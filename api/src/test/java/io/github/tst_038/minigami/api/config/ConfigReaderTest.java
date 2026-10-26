@@ -25,6 +25,21 @@ class ConfigReaderTest {
     }
 
     @Test
+    void suggestsValuesThatFitEachKey() throws Exception {
+        var reader = read("");
+
+        reader.has("name");
+        reader.integer("min-players", 1, Integer.MAX_VALUE);
+        reader.bool("teams");
+        reader.choice("waiting", Waiting.class);
+
+        assertEquals(List.of(), reader.askedKeys().get("name"));
+        assertEquals(List.of("1"), reader.askedKeys().get("min-players"));
+        assertEquals(List.of("true", "false"), reader.askedKeys().get("teams"));
+        assertEquals(List.of("in-place", "lobby"), reader.askedKeys().get("waiting"));
+    }
+
+    @Test
     void readsValidValues() throws Exception {
         var reader = read("""
                 name: Spleef

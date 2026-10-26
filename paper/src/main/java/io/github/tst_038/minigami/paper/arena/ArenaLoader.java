@@ -36,6 +36,7 @@ public final class ArenaLoader {
         var spawns = config.has("spawns")
                 ? config.sections("spawns").stream().map(spawn -> ConfigLocations.read(spawn, world)).toList()
                 : List.<Location>of();
+        config.suggest("waiting-spot", List.of(ConfigLocations.HERE));
         var waitingSpot = config.has("waiting-spot")
                 ? Optional.of(ConfigLocations.read(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();

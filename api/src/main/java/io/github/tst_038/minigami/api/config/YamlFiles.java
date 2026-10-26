@@ -8,9 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.bukkit.configuration.ConfigurationSection;
@@ -54,7 +53,7 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
      *
      * @param keys per file, valid or not: the keys it has and the keys its parser asked for
      */
-    public record Loaded<T>(IdRegistry<T> entries, List<ConfigProblem> problems, Map<String, SortedSet<String>> keys) {
+    public record Loaded<T>(IdRegistry<T> entries, List<ConfigProblem> problems, Map<String, SortedMap<String, List<String>>> keys) {
     }
 
     /**
@@ -64,7 +63,7 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
     public <T> Loaded<T> parse(Function<T, String> idOf, BiFunction<String, ConfigReader, T> parser) {
         var entries = new IdRegistry<>(idOf);
         var allProblems = new ArrayList<>(problems);
-        var keys = new TreeMap<String, SortedSet<String>>();
+        var keys = new TreeMap<String, SortedMap<String, List<String>>>();
         files.forEach((id, config) -> {
             var file = fileName(id);
             var reader = ConfigReader.of(file, config);
@@ -82,12 +81,16 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
         return new Loaded<>(entries, allProblems, keys);
     }
 
-    /** The keys the file has and the keys its reader asked for; items of lists, such as {@code spawns[0].x}, can't be set by key. */
-    public static SortedSet<String> keys(ConfigurationSection config, ConfigReader reader) {
-        var keys = new TreeSet<>(config.getKeys(true));
-        keys.addAll(reader.askedKeys());
-        keys.removeIf(key -> key.contains("["));
-        return Collections.unmodifiableSortedSet(keys);
+    /**
+     * The keys the file has and the keys its reader asked for, each with the values suggested for it;
+     * items of lists, such as {@code spawns[0].x}, can't be set by key.
+     */
+    public static SortedMap<String, List<String>> keys(ConfigurationSection config, ConfigReader reader) {
+        var keys = new TreeMap<String, List<String>>();
+        config.getKeys(true).forEach(key -> keys.put(key, List.of()));
+        keys.putAll(reader.askedKeys());
+        keys.keySet().removeIf(key -> key.contains("["));
+        return Collections.unmodifiableSortedMap(keys);
     }
 
     /** The name problems in this file are reported under, e.g. {@code arenas/winter.yml}. */

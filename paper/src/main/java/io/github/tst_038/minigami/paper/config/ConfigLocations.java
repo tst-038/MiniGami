@@ -10,6 +10,9 @@ import org.bukkit.World;
 /** Locations in config: {@code { x: 0.5, y: 64, z: 0.5, yaw: 90, pitch: 0 }}, yaw and pitch optional. */
 public final class ConfigLocations {
 
+    /** Typed as a location's value in a command: the sender's location. */
+    public static final String HERE = "here";
+
     private ConfigLocations() {
     }
 

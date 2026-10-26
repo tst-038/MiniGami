@@ -44,7 +44,7 @@ class YamlFilesTest {
         });
 
         assertEquals(List.of("features", "features.playing", "features.playing.void-kills", "features.playing.void-kills.y",
-                "game", "name", "spawns"), List.copyOf(loaded.keys().get("spleef")));
+                "game", "name", "spawns"), List.copyOf(loaded.keys().get("spleef").keySet()));
     }
 
     @Test

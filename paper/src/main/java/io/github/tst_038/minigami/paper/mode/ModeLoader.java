@@ -47,6 +47,7 @@ public final class ModeLoader {
     }
 
     private Mode parse(String id, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby) {
+        config.suggest("game", games.ids());
         var gameId = config.string("game");
         var game = games.find(gameId).orElse(null);
         if (!gameId.isEmpty() && game == null) {
