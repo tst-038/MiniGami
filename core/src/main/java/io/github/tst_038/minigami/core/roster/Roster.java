@@ -51,6 +51,25 @@ public final class Roster {
         return true;
     }
 
+    /**
+     * Takes a participant out entirely, as if they never joined, e.g. when they leave before the match
+     * starts. Once the match is under way, eliminate them instead so they keep their place.
+     *
+     * @return {@code false} if they weren't in the roster
+     */
+    public boolean remove(UUID id) {
+        var participant = participants.remove(id);
+        if (participant == null) {
+            return false;
+        }
+        eliminated.remove(participant);
+        return true;
+    }
+
+    public int size() {
+        return participants.size();
+    }
+
     /** The participants still alive, in join order. */
     public List<Participant> alive() {
         return participants.values().stream().filter(Participant::isAlive).toList();

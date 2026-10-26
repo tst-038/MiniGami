@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.win.LastManStanding;
@@ -17,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import net.kyori.adventure.audience.Audience;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.junit.jupiter.api.Test;
@@ -111,6 +114,21 @@ class PhaseFeaturesTest {
 
         @Override
         public Optional<Player> player(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<MatchResult> result() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Messages messages() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Audience audience() {
             throw new UnsupportedOperationException();
         }
     }

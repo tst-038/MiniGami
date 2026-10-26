@@ -3,3 +3,7 @@ version: '${version}'
 main: io.github.tst_038.minigami.paper.MiniGamiPlugin
 description: Multi-game minigame engine
 api-version: '26.3'
+permissions:
+  minigami.admin:
+    description: Force-start matches and see debug info
+    default: op

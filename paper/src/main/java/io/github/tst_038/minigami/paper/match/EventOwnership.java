@@ -1,8 +1,8 @@
 package io.github.tst_038.minigami.paper.match;
 
-import io.github.tst_038.minigami.core.roster.Roster;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityEvent;
@@ -27,7 +27,7 @@ final class EventOwnership {
         };
     }
 
-    static boolean belongsTo(Event event, Roster roster) {
-        return playerOf(event).flatMap(roster::find).isPresent();
+    static boolean belongsTo(Event event, Predicate<UUID> isMember) {
+        return playerOf(event).filter(isMember).isPresent();
     }
 }

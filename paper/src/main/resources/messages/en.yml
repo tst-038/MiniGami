@@ -1,3 +1,30 @@
 # Player-facing text, in MiniMessage: https://docs.papermc.io/adventure/minimessage/format
 # <prefix> works in every message. Other placeholders are listed per message.
 prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
+
+join:
+  already-in-match: "<prefix><red>You are already in a match. Use <white>/mg leave</white> first."
+  match-in-progress: "<prefix><red>A match is in progress. Try again when it has ended."
+  failed: "<prefix><red>You can't join right now. Your items from an earlier match still need to be restored; please rejoin the server or ask staff."
+
+leave:
+  not-in-match: "<prefix><red>You are not in a match."
+
+start:
+  nothing-to-start: "<prefix><red>There is no match waiting for players."
+  started: "<prefix><green>Match started."
+
+# <player>: the player, <players>: how many joined, <needed>: how many are needed to start
+match:
+  joined: "<prefix><yellow><player></yellow> joined <gray>(<players>/<needed>)"
+  # <seconds>: delay before the start
+  starting: "<prefix><green>Enough players! Starting in <seconds> seconds."
+  start-cancelled: "<prefix><red>Not enough players anymore, start cancelled."
+  # <player>: the player who left
+  left: "<prefix><yellow><player></yellow> left the match."
+  you-left: "<prefix><gray>You left the match."
+
+# <matches>, <listeners>, <snapshots>; per match: <game>, <phase>, <members>, <alive>, <tick>
+debug:
+  summary: "<prefix><gray>Matches: <white><matches></white>, listeners: <white><listeners></white>, players with saved state: <white><snapshots></white>"
+  match: "<prefix><gray><game>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"

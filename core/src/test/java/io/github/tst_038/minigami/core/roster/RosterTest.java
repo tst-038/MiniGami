@@ -101,4 +101,33 @@ class RosterTest {
         assertThrows(UnsupportedOperationException.class, () -> roster.alive().clear());
         assertThrows(UnsupportedOperationException.class, () -> roster.eliminationOrder().clear());
     }
+
+    @Test
+    void removedParticipantIsGoneAndCanJoinAgain() {
+        roster.add(alice);
+        roster.add(bob);
+
+        assertTrue(roster.remove(alice));
+
+        assertTrue(roster.find(alice).isEmpty());
+        assertEquals(List.of(bob), ids(roster.alive()));
+        assertEquals(1, roster.size());
+        roster.add(alice);
+    }
+
+    @Test
+    void removingAnEliminatedParticipantDropsThemFromTheOrder() {
+        roster.add(alice);
+        roster.add(bob);
+        roster.eliminate(alice);
+
+        roster.remove(alice);
+
+        assertTrue(roster.eliminationOrder().isEmpty());
+    }
+
+    @Test
+    void removingAnUnknownPlayerReturnsFalse() {
+        assertFalse(roster.remove(alice));
+    }
 }

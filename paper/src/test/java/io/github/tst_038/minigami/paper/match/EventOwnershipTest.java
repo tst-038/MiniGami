@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.minigami.core.roster.Roster;
 import java.lang.reflect.Proxy;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -61,23 +61,11 @@ class EventOwnershipTest {
     }
 
     @Test
-    void eventBelongsToTheMatchOnlyIfItsPlayerIsInTheRoster() {
+    void eventBelongsToTheMatchOnlyIfItsPlayerIsAMember() {
         var inside = UUID.randomUUID();
-        var roster = new Roster();
-        roster.add(inside);
+        var members = Set.of(inside);
 
-        assertTrue(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, inside), true), roster));
-        assertFalse(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, UUID.randomUUID()), true), roster));
-    }
-
-    @Test
-    void eliminatedParticipantsStillBelongToTheMatch() {
-        var id = UUID.randomUUID();
-        var roster = new Roster();
-        roster.add(id);
-        roster.add(UUID.randomUUID());
-        roster.eliminate(id);
-
-        assertTrue(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, id), true), roster));
+        assertTrue(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, inside), true), members::contains));
+        assertFalse(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, UUID.randomUUID()), true), members::contains));
     }
 }

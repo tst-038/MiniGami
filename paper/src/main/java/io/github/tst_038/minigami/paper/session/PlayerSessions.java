@@ -64,6 +64,11 @@ public final class PlayerSessions implements Listener {
         };
     }
 
+    /** Snapshots of players currently in a match. */
+    public int pending() {
+        return active.size();
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
         if (event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
