@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
-/** Last one standing wins. How players drop out, such as falling into the void, is up to the mode's features. */
+/** Last one standing wins. By default a single death puts a player out; modes can give more lives. */
 public final class LastStanding implements GameType {
 
     @Override
@@ -31,6 +31,11 @@ public final class LastStanding implements GameType {
     @Override
     public WinCondition winCondition() {
         return new LastManStanding();
+    }
+
+    @Override
+    public int lives() {
+        return 1;
     }
 
     private static Feature announceWinner() {

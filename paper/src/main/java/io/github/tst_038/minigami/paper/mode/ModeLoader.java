@@ -63,7 +63,8 @@ public final class ModeLoader {
         if (waiting == Waiting.LOBBY && !hasLobby) {
             config.problem("waiting", "no lobby is set; set one with /mg setlobby or in config.yml");
         }
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, arenas(config, arenas),
+        var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, arenas(config, arenas),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
     }
 

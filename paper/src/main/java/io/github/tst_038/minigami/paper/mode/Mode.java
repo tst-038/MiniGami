@@ -11,9 +11,10 @@ import java.util.Map;
  * players wait, the arenas it can be played in, and the configured features per phase.
  *
  * @param name display name, in MiniMessage
+ * @param lives how many deaths put a player out; 0 means they always respawn
  * @param features feature instances are shared by every match of the mode, so they keep no match state themselves
  */
-public record Mode(String id, GameType game, String name, int minPlayers, int maxPlayers, Waiting waiting,
+public record Mode(String id, GameType game, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
         List<Arena> arenas, Map<String, List<Feature>> features) {
 
     public Mode {

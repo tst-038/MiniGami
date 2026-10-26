@@ -20,6 +20,8 @@ start:
 # <player>: the player, <players>: how many joined, <needed>: how many are needed to start
 match:
   joined: "<prefix><yellow><player></yellow> joined <gray>(<players>/<needed>)"
+  # A player ran out of lives.
+  eliminated: "<prefix><red><player></red> is out!"
   # <seconds>: delay before the start
   starting: "<prefix><green>Enough players! Starting in <seconds> seconds."
   start-cancelled: "<prefix><red>Not enough players anymore, start cancelled."
@@ -31,9 +33,6 @@ match:
   no-winner: "<prefix><gray>The match ended without a winner."
 
 # <player>: the player who fell
-void-kills:
-  eliminated: "<prefix><red><player></red> fell into the void!"
-
 lobby:
   set: "<prefix><green>Set the lobby to where you stand."
   save-failed: "<prefix><red>Could not save the lobby; see the server log."

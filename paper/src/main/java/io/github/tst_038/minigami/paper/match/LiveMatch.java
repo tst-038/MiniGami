@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.api.feature.PhaseFeatures;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
+import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
@@ -18,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -26,6 +28,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -53,6 +57,8 @@ public final class LiveMatch {
     private final Set<UUID> members = new LinkedHashSet<>();
     /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
+    /** Deaths per participant since the start, against the mode's lives. */
+    private final Map<UUID, Integer> deaths = new HashMap<>();
     private MatchClock.Task startDelay;
 
     /**
@@ -84,6 +90,9 @@ public final class LiveMatch {
     }
 
     public void start() {
+        var context = new PaperMatchContext(plugin, this, match.scope());
+        context.on(PlayerDeathEvent.class, this::onDeath);
+        context.on(PlayerRespawnEvent.class, this::onRespawn);
         match.start();
     }
 
@@ -238,6 +247,48 @@ public final class LiveMatch {
         }
         // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
         match.advancePhase();
+    }
+
+    /**
+     * A death stays inside the match: nothing drops, only the match hears of it, and while the match
+     * is on it costs a life. The player respawns at once, so nobody sits on the death screen.
+     */
+    private void onDeath(PlayerDeathEvent event) {
+        var player = event.getEntity();
+        event.getDrops().clear();
+        event.setShouldDropExperience(false);
+        var message = event.deathMessage();
+        event.deathMessage(null);
+        if (message != null) {
+            audience().sendMessage(message);
+        }
+        var id = player.getUniqueId();
+        var playing = !isJoinable() && match.result().isEmpty();
+        if (playing && mode.lives() > 0 && match.roster().find(id).filter(Participant::isAlive).isPresent()
+                && deaths.merge(id, 1, Integer::sum) >= mode.lives()) {
+            messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
+            match.eliminate(id);
+        }
+        player.getScheduler().run(plugin, task -> {
+            if (player.isDead()) {
+                player.spigot().respawn();
+            }
+        }, null);
+    }
+
+    /** Before the start back to where they wait; after it to a random spawn, as a spectator once they are out. */
+    private void onRespawn(PlayerRespawnEvent event) {
+        if (isJoinable()) {
+            waitingSpot.ifPresent(event::setRespawnLocation);
+            return;
+        }
+        var spawns = arena.spawns();
+        event.setRespawnLocation(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
+        var player = event.getPlayer();
+        if (match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty()) {
+            // The game mode is reset during the respawn, so it is set right after.
+            player.getScheduler().run(plugin, task -> player.setGameMode(GameMode.SPECTATOR), null);
+        }
     }
 
     private void saveState(Player player) {

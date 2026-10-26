@@ -21,4 +21,9 @@ public interface GameType {
 
     /** A fresh one per match. */
     WinCondition winCondition();
+
+    /** How many deaths put a player out, unless the mode sets its own; 0 means they always respawn. */
+    default int lives() {
+        return 0;
+    }
 }

@@ -93,6 +93,43 @@ class ModeLoaderTest {
         assertEquals(Waiting.IN_PLACE, mode.waiting());
         assertEquals(List.of("demo"), mode.arenas().stream().map(Arena::id).toList());
         assertEquals(1, mode.features().get("playing").size());
+        assertEquals(0, mode.lives());
+    }
+
+    @Test
+    void livesDefaultToTheGamesAndCanBeSet() throws Exception {
+        games.register(new GameType() {
+            @Override
+            public String id() {
+                return "one-life";
+            }
+
+            @Override
+            public List<Phase> phases() {
+                return GAME.phases();
+            }
+
+            @Override
+            public Map<String, List<Feature>> features() {
+                return Map.of();
+            }
+
+            @Override
+            public WinCondition winCondition() {
+                return new LastManStanding();
+            }
+
+            @Override
+            public int lives() {
+                return 1;
+            }
+        });
+
+        var byGame = load("{game: one-life, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}");
+        var set = load("{game: one-life, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], lives: 3}");
+
+        assertEquals(1, byGame.entries().find("fall").orElseThrow().lives());
+        assertEquals(3, set.entries().find("fall").orElseThrow().lives());
     }
 
     @Test

@@ -4,7 +4,7 @@ import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 
-/** {@code void-kills: { y: 0 }}: players below {@code y} are out. */
+/** {@code void-kills: { y: 0 }}: players below {@code y} die. */
 public final class VoidKillsFactory implements FeatureFactory {
 
     @Override

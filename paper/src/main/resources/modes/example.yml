@@ -6,10 +6,12 @@ max-players: 8
 # in-place: players stay where they are until the start; lobby: they wait in the lobby from config.yml;
 # arena: they wait in the arena. In the lobby and the arena their own state is saved and cleared at once.
 waiting: arena
+# How many deaths put a player out; 0 means they always respawn. Without it, the game decides (last-standing: 1).
+# lives: 3
 # Free arenas are picked in this order; each must have spawns.
 arenas: [example]
 # Features per phase of the game (last-standing has waiting, playing and ending).
 features:
   playing:
-    # Players below this height are out.
+    # Players below this height die.
     void-kills: { y: 0 }

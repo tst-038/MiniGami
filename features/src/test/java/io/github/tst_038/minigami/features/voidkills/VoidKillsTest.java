@@ -17,8 +17,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.text.Component;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -29,23 +27,21 @@ import org.junit.jupiter.api.Test;
 class VoidKillsTest {
 
     private final Roster roster = new Roster();
-    private final List<UUID> eliminated = new ArrayList<>();
-    private final List<GameMode> gameModes = new ArrayList<>();
+    private final List<UUID> killed = new ArrayList<>();
     private Consumer<PlayerMoveEvent> onMove;
 
     private final UUID id = UUID.randomUUID();
     private final Player player = (Player) Proxy.newProxyInstance(Player.class.getClassLoader(), new Class<?>[] {Player.class},
             (proxy, method, args) -> switch (method.getName()) {
                 case "getUniqueId" -> id;
-                case "name" -> Component.text("Steve");
-                case "setGameMode" -> gameModes.add((GameMode) args[0]);
+                case "isDead" -> false;
                 default -> throw new UnsupportedOperationException(method.getName());
             });
 
     VoidKillsTest() {
         roster.add(id);
         roster.add(UUID.randomUUID());
-        new VoidKills(50).enable(new Context());
+        new VoidKills(50, player -> killed.add(player.getUniqueId())).enable(new Context());
     }
 
     private void moveTo(double y) {
@@ -53,27 +49,26 @@ class VoidKillsTest {
     }
 
     @Test
-    void fallingBelowTheLineEliminatesAndMakesSpectator() {
+    void fallingBelowTheLineKills() {
         moveTo(49.9);
 
-        assertEquals(List.of(id), eliminated);
-        assertEquals(List.of(GameMode.SPECTATOR), gameModes);
+        assertEquals(List.of(id), killed);
     }
 
     @Test
     void stayingAboveTheLineDoesNothing() {
         moveTo(50);
 
-        assertTrue(eliminated.isEmpty());
+        assertTrue(killed.isEmpty());
     }
 
     @Test
-    void eliminatedPlayerIsNotEliminatedAgain() {
+    void eliminatedPlayerIsNotKilled() {
         roster.eliminate(id);
 
         moveTo(10);
 
-        assertTrue(eliminated.isEmpty());
+        assertTrue(killed.isEmpty());
     }
 
     private final class Context implements MatchContext {
@@ -102,7 +97,7 @@ class VoidKillsTest {
 
         @Override
         public void eliminate(Player player) {
-            eliminated.add(player.getUniqueId());
+            throw new UnsupportedOperationException();
         }
 
         @Override
