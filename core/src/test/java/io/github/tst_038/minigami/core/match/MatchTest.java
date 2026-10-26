@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.phase.PhaseListener;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
 import io.github.tst_038.minigami.core.win.LastManStanding;
@@ -20,7 +21,7 @@ class MatchTest {
     private final UUID carol = UUID.randomUUID();
 
     private Match match(Phase... phases) {
-        var match = new Match(List.of(phases), new LastManStanding());
+        var match = new Match(List.of(phases), new LastManStanding(), new PhaseListener() {});
         match.roster().add(alice);
         match.roster().add(bob);
         match.roster().add(carol);

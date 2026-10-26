@@ -28,8 +28,9 @@ public final class Match {
     private final WinCondition winCondition;
     private MatchResult result;
 
-    public Match(List<Phase> phases, WinCondition winCondition) {
-        this.phases = new PhaseMachine(phases, clock, scope, new PhaseListener() {});
+    /** @param phaseListener told when each phase starts, e.g. to enable that phase's features */
+    public Match(List<Phase> phases, WinCondition winCondition, PhaseListener phaseListener) {
+        this.phases = new PhaseMachine(phases, clock, scope, phaseListener);
         this.winCondition = winCondition;
     }
 
