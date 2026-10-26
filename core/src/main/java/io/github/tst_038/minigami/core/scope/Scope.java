@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.scope;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

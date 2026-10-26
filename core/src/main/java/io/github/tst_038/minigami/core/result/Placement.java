@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.result;
 
 import java.util.List;
 import java.util.UUID;

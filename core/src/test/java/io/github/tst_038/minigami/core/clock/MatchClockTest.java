@@ -1,10 +1,11 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.clock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.minigami.core.scope.Scope;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;

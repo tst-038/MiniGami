@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.result;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

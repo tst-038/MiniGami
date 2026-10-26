@@ -1,5 +1,6 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.clock;
 
+import io.github.tst_038.minigami.core.scope.Scope;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 

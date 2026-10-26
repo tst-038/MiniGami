@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.roster;
 
 import java.util.ArrayList;
 import java.util.Collections;

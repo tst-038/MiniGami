@@ -1,15 +1,17 @@
-package io.github.tst_038.minigami.core;
+package io.github.tst_038.minigami.core.win;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.minigami.core.result.Placement;
+import io.github.tst_038.minigami.core.roster.Roster;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-class LastStandingTest {
+class LastManStandingTest {
 
-    private final WinCondition winCondition = new LastStanding();
+    private final WinCondition winCondition = new LastManStanding();
     private final Roster roster = new Roster();
     private final UUID alice = UUID.randomUUID();
     private final UUID bob = UUID.randomUUID();
