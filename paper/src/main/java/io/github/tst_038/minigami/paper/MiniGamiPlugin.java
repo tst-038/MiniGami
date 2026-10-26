@@ -14,6 +14,7 @@ import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.LobbySetup;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
+import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchService;
 import io.github.tst_038.minigami.paper.mode.Mode;
@@ -42,6 +43,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
+    private ConfigEditor editor;
     /** Counts config loads, so one that finishes after a newer one doesn't overwrite it. */
     private final AtomicInteger configLoads = new AtomicInteger();
 
@@ -59,8 +61,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var lobbySetup = new LobbySetup(this, messages, this::loadConfig);
         var arenaSetup = new ArenaSetup(this, () -> arenas, service::isArenaInUse, messages, this::loadConfig);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
+        editor = new ConfigEditor(this, messages, games, features, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(service, arenaSetup, lobbySetup, snapshotAdmin), "Join, leave and manage minigames"));
+                event -> event.registrar().register(GamesCommand.create(service, arenaSetup, lobbySetup, snapshotAdmin, editor), "Join, leave and manage minigames"));
         loadConfig();
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
@@ -89,6 +92,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
                 modes = loadedModes.entries();
+                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedModes.keys());
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedModes.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));

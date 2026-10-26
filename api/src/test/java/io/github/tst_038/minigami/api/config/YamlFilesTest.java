@@ -31,6 +31,23 @@ class YamlFilesTest {
     }
 
     @Test
+    void keysAreThoseTheFileHasAndThoseTheParserAskedFor() throws Exception {
+        var modes = Files.createDirectory(directory.resolve("modes"));
+        Files.writeString(modes.resolve("spleef.yml"), "game: spleef\nfeatures: { playing: { void-kills: { y: 0 } } }\nspawns: [{ x: 1 }]");
+
+        var loaded = YamlFiles.read(modes).parse(id -> id, (id, config) -> {
+            config.string("game");
+            config.has("name");
+            config.section("features").section("playing").section("void-kills").decimal("y");
+            config.sections("spawns").forEach(spawn -> spawn.decimal("x"));
+            return id;
+        });
+
+        assertEquals(List.of("features", "features.playing", "features.playing.void-kills", "features.playing.void-kills.y",
+                "game", "name", "spawns"), List.copyOf(loaded.keys().get("spleef")));
+    }
+
+    @Test
     void missingFolderHasNoFiles() {
         var files = YamlFiles.read(directory.resolve("modes"));
 

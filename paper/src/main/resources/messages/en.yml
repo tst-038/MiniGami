@@ -59,6 +59,20 @@ arena:
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
 
 # <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
+edit:
+  invalid-id: "<prefix><red><white><id></white> can't be an id: use lower case letters, digits and dashes."
+  unknown: "<prefix><red>There is no <white><file></white>."
+  exists: "<prefix><red><white><file></white> already exists."
+  here-needs-player: "<prefix><red>Only a player can use <white>here</white> as a value."
+  bad-value: "<prefix><red><white><value></white> isn't a value; put text in quotes, e.g. <white>\"<value>\"</white>."
+  invalid: "<prefix><red>Not saved: <white><file></white> would have these problems:"
+  problem: "<red> - <problem>"
+  save-failed: "<prefix><red>Could not save <white><file></white>; see the server log."
+  set: "<prefix><green>Set <white><key></white> in <white><file></white>."
+  unset: "<prefix><green>Removed <white><key></white> from <white><file></white>."
+  created: "<prefix><green>Created <white><file></white>. Change it with <white>set</white> and <white>unset</white>."
+  deleted: "<prefix><green>Deleted <white><file></white>. A copy is kept as <white><file>.deleted</white> until the next delete of it."
+
 snapshot:
   none: "<prefix><gray><player> has no saved state."
   in-match: "<prefix><red><player> is in a match; their state comes back when they leave it."

@@ -5,11 +5,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -45,8 +49,12 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
         return new YamlFiles(folder, files, problems);
     }
 
-    /** The valid entries of a folder, and the problems of the files that aren't valid. */
-    public record Loaded<T>(IdRegistry<T> entries, List<ConfigProblem> problems) {
+    /**
+     * The valid entries of a folder, and the problems of the files that aren't valid.
+     *
+     * @param keys per file, valid or not: the keys it has and the keys its parser asked for
+     */
+    public record Loaded<T>(IdRegistry<T> entries, List<ConfigProblem> problems, Map<String, SortedSet<String>> keys) {
     }
 
     /**
@@ -56,10 +64,12 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
     public <T> Loaded<T> parse(Function<T, String> idOf, BiFunction<String, ConfigReader, T> parser) {
         var entries = new IdRegistry<>(idOf);
         var allProblems = new ArrayList<>(problems);
+        var keys = new TreeMap<String, SortedSet<String>>();
         files.forEach((id, config) -> {
             var file = fileName(id);
             var reader = ConfigReader.of(file, config);
             var entry = parser.apply(id, reader);
+            keys.put(id, keys(config, reader));
             try {
                 reader.check();
                 entries.register(entry);
@@ -69,7 +79,15 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
                 allProblems.add(new ConfigProblem(file, "", e.getMessage()));
             }
         });
-        return new Loaded<>(entries, allProblems);
+        return new Loaded<>(entries, allProblems, keys);
+    }
+
+    /** The keys the file has and the keys its reader asked for; items of lists, such as {@code spawns[0].x}, can't be set by key. */
+    public static SortedSet<String> keys(ConfigurationSection config, ConfigReader reader) {
+        var keys = new TreeSet<>(config.getKeys(true));
+        keys.addAll(reader.askedKeys());
+        keys.removeIf(key -> key.contains("["));
+        return Collections.unmodifiableSortedSet(keys);
     }
 
     /** The name problems in this file are reported under, e.g. {@code arenas/winter.yml}. */

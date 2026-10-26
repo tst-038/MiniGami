@@ -39,6 +39,7 @@ public final class ConfigReader {
     }
 
     public boolean has(String key) {
+        shared.asked.add(childPath(key));
         return section.contains(key);
     }
 
@@ -160,6 +161,14 @@ public final class ConfigReader {
         return readers;
     }
 
+    /**
+     * Every key asked for while reading, whether the file has it or not, as full paths such as
+     * {@code features.playing.void-kills.y}; lets commands complete keys without a schema of their own.
+     */
+    public Set<String> askedKeys() {
+        return Set.copyOf(shared.asked);
+    }
+
     /** Records a problem found by the caller, such as a world that doesn't exist. */
     public void problem(String key, String message) {
         shared.problems.add(new ConfigProblem(shared.file, key.isEmpty() ? path : childPath(key), message));
@@ -182,6 +191,7 @@ public final class ConfigReader {
 
     private Object value(String key) {
         read.add(key);
+        shared.asked.add(childPath(key));
         var value = section.get(key);
         if (value == null) {
             problem(key, "is missing");
@@ -201,6 +211,7 @@ public final class ConfigReader {
         final String file;
         final List<ConfigProblem> problems = new ArrayList<>();
         final List<ConfigReader> readers = new ArrayList<>();
+        final Set<String> asked = new HashSet<>();
 
         Shared(String file) {
             this.file = file;
