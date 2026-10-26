@@ -9,13 +9,13 @@ dependencies {
 }
 
 base {
-    archivesName = "MiniGami" // the one jar that goes on the server
+    archivesName = "MiniGami"
 }
 
 tasks.jar {
     // One plugin jar: bundle our own modules. Paper is compileOnly, so runtimeClasspath holds only them.
     // shortcut: plain jar merge, no relocation; switch to the Shadow plugin if we ever bundle third-party libraries.
-    inputs.files(configurations.runtimeClasspath) // makes Gradle build the module jars first
+    inputs.files(configurations.runtimeClasspath)
     from(configurations.runtimeClasspath.map { files -> files.map { zipTree(it) } })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

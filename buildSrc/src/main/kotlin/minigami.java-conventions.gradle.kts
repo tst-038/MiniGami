@@ -1,4 +1,3 @@
-// Shared setup for every module: Java 25, JUnit Platform, jar naming.
 plugins {
     `java-library`
 }

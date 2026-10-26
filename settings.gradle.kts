@@ -1,5 +1,4 @@
 plugins {
-    // Downloads the JDK the toolchain asks for (Java 25) if it isn't installed.
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
