@@ -80,6 +80,30 @@ public final class MatchAdmin {
         });
     }
 
+    /** The phases the match can skip to; none if it isn't running. */
+    public List<String> laterPhases(String id) {
+        return service.running().stream().filter(live -> live.arena().id().equals(id)).findFirst()
+                .map(live -> live.match().laterPhases().stream().map(phase -> phase.id()).toList()).orElse(List.of());
+    }
+
+    /** Skips to a later phase; the last one ends the match with the result as things stand. */
+    public void phase(CommandSender sender, String id, String phase) {
+        find(sender, id).ifPresent(live -> {
+            var later = laterPhases(id);
+            if (!later.contains(phase)) {
+                messages.send(sender, "match.admin.no-later-phase", Placeholder.unparsed("match", id), Placeholder.unparsed("phase", phase),
+                        Placeholder.unparsed("phases", later.isEmpty() ? "-" : String.join(", ", later)));
+                return;
+            }
+            if (live.isJoinable() && live.match().roster().size() == 0) {
+                messages.send(sender, "match.admin.cannot-start", Placeholder.unparsed("match", id));
+                return;
+            }
+            live.skipTo(phase);
+            messages.send(sender, "match.admin.phase-skipped", Placeholder.unparsed("match", id), Placeholder.unparsed("phase", phase));
+        });
+    }
+
     /** Ends a match that is being played, as if time ran out. */
     public void end(CommandSender sender, String id) {
         find(sender, id).ifPresent(live -> {

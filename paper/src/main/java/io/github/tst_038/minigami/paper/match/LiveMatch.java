@@ -247,6 +247,25 @@ public final class LiveMatch {
         match.endNow();
     }
 
+    /**
+     * Skips to a later phase. Leaving the first phase starts the match as {@link #forceStart} does,
+     * so players are brought to their spawns first.
+     *
+     * @throws IllegalArgumentException if there is no such phase after the current one
+     * @throws IllegalStateException if it would start a match nobody joined
+     */
+    public void skipTo(String phaseId) {
+        if (match.laterPhases().stream().noneMatch(phase -> phase.id().equals(phaseId))) {
+            throw new IllegalArgumentException("No phase '" + phaseId + "' after the current one");
+        }
+        if (isJoinable()) {
+            forceStart();
+        }
+        if (!match.isFinished() && match.currentPhase().filter(phase -> phase.id().equals(phaseId)).isEmpty()) {
+            match.skipTo(phaseId);
+        }
+    }
+
     /** Ends the match at once without a result; everyone gets their own state back. */
     public void stop() {
         messages.send(audience(), "match.stopped");

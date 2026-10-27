@@ -53,6 +53,9 @@ match:
     started: "<prefix><red><white><match></white> has already started; players can only be added before."
     ended: "<prefix><green>Ended <white><match></white>; the win condition decided the result."
     stopped: "<prefix><green>Stopped <white><match></white> without a result."
+    # <phase>: the phase asked for, <phases>: those it can skip to
+    phase-skipped: "<prefix><green>Skipped <white><match></white> to <white><phase></white>."
+    no-later-phase: "<prefix><red><white><match></white> has no phase <white><phase></white> ahead; it can skip to: <white><phases></white>."
     added: "<prefix><green>Added <white><player></white> to <white><match></white>."
     kicked: "<prefix><green>Kicked <white><player></white> from <white><match></white>."
     not-member: "<prefix><red><white><player></white> isn't in <white><match></white>."

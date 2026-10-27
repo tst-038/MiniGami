@@ -113,6 +113,21 @@ class PhaseMachineTest {
     }
 
     @Test
+    void skipToEntersALaterPhaseDirectlyAndNeverGoesBack() {
+        var machine = machine(Phase.untimed("waiting"), Phase.untimed("playing"), Phase.untimed("deathmatch"), Phase.untimed("ending"));
+        machine.start();
+
+        machine.skipTo("deathmatch");
+
+        assertEquals(List.of("waiting", "deathmatch"), entered);
+        assertTrue(phaseScopes.get(0).isClosed());
+        assertEquals(List.of(Phase.untimed("ending")), machine.later());
+        assertThrows(IllegalArgumentException.class, () -> machine.skipTo("playing"));
+        assertThrows(IllegalArgumentException.class, () -> machine.skipTo("deathmatch"));
+        assertEquals("deathmatch", machine.current().orElseThrow().id());
+    }
+
+    @Test
     void skipToEndFinishesWhenAlreadyInTheLastPhase() {
         var machine = machine(Phase.untimed("playing"));
         machine.start();

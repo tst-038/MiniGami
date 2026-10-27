@@ -82,6 +82,21 @@ public final class Match {
     }
 
     /**
+     * Skips to a later phase, for example by an admin. Reaching the last phase undecided asks the
+     * win condition for the final result, as running out of time would.
+     *
+     * @throws IllegalArgumentException if there is no such phase after the current one
+     */
+    public void skipTo(String phaseId) {
+        phases.skipTo(phaseId);
+    }
+
+    /** The phases after the current one. */
+    public List<Phase> laterPhases() {
+        return phases.later();
+    }
+
+    /**
      * Ends the match with the given result, for example from a time limit or an admin, and skips
      * to the last phase.
      *

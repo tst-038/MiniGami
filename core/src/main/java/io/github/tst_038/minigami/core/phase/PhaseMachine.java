@@ -66,6 +66,30 @@ public final class PhaseMachine {
         moveTo(index == last ? phases.size() : last);
     }
 
+    /**
+     * Ends the current phase and enters a later one directly, skipping those in between.
+     *
+     * @throws IllegalArgumentException if there is no such phase after the current one
+     */
+    public void skipTo(String id) {
+        requireRunning();
+        moveTo(laterIndex(id));
+    }
+
+    /** The phases after the current one; none before {@link #start()} or once finished. */
+    public List<Phase> later() {
+        return index < 0 || finished ? List.of() : phases.subList(index + 1, phases.size());
+    }
+
+    private int laterIndex(String id) {
+        for (int i = index + 1; i < phases.size(); i++) {
+            if (phases.get(i).id().equals(id)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("No phase '" + id + "' after the current one");
+    }
+
     /** The phase that is running, or empty before {@link #start()} and after the last phase. */
     public Optional<Phase> current() {
         return index < 0 || finished ? Optional.empty() : Optional.of(phases.get(index));

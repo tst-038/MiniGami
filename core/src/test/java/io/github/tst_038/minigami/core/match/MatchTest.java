@@ -113,6 +113,19 @@ class MatchTest {
     }
 
     @Test
+    void skippingToTheLastPhaseDecidesTheMatchAsThingsStand() {
+        var match = match(Phase.untimed("playing"), Phase.untimed("deathmatch"), Phase.untimed("ending"));
+        match.start();
+        match.eliminate(carol);
+
+        match.skipTo("deathmatch");
+        assertTrue(match.result().isEmpty());
+        match.skipTo("ending");
+
+        assertEquals(new Placement(1, List.of(alice, bob)), match.result().orElseThrow().placements().getFirst());
+    }
+
+    @Test
     void endingNowAsksForTheFinalResult() {
         var match = match(Phase.untimed("playing"), Phase.untimed("ending"));
         match.start();
