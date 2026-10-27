@@ -23,6 +23,7 @@ import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
+import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchService;
 import io.github.tst_038.minigami.paper.mode.Mode;
@@ -61,6 +62,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private ActiveMatches matches;
     private SnapshotStore snapshots;
     private ConfigEditor editor;
+    private ConfigInfo info;
     private Messages messages;
     /** Counts config loads, so one that finishes after a newer one doesn't overwrite it. */
     private final AtomicInteger configLoads = new AtomicInteger();
@@ -92,8 +94,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, games, features, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, messages);
+        info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, service::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, service, editor, arenaSetup, snapshotAdmin,
+                event -> event.registrar().register(GamesCommand.create(messages, service, editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,
                         () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
@@ -132,15 +135,16 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 var loadedModes = new ModeLoader(games, features)
                         .load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent());
                 // Also for files with problems, so they can be fixed by command.
-                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedModes.keys());
-                var waiting = new ArrayList<Audience>();
-                for (Audience next; (next = requesters.poll()) != null; ) {
-                    waiting.add(next);
-                }
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedModes.problems());
+                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedModes.keys());
+                info.loaded(settingsText, arenaFiles.files(), modeFiles.files(), problems);
+                var waiting = new ArrayList<Audience>();
+                for (Audience next; (next = requesters.poll()) != null; ) {
+                    waiting.add(next);
+                }
                 if (!waiting.isEmpty() && !problems.isEmpty()) {
                     problems.forEach(problem -> getLogger().warning("Not reloaded: " + problem));
                     for (Audience audience : waiting) {

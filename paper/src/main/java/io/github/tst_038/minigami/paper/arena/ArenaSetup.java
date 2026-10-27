@@ -65,14 +65,28 @@ public final class ArenaSetup {
         find(sender, id).ifPresent(arena -> {
             messages.send(sender, "arena.info", Placeholder.unparsed("arena", id),
                     Placeholder.unparsed("world", arena.world().getName()), Formatter.number("spawns", arena.spawns().size()));
-            var spawns = arena.spawns();
-            for (int i = 0; i < spawns.size(); i++) {
-                messages.send(sender, "arena.info-spawn", point(spawns.get(i), Formatter.number("number", i + 1)));
-            }
+            spawns(sender, arena);
             arena.waitingSpot().ifPresentOrElse(
                     spot -> messages.send(sender, "arena.info-waiting-spot", point(spot)),
                     () -> messages.send(sender, "arena.info-no-waiting-spot"));
         });
+    }
+
+    /** Lists the arena's spawns by number, as {@link #removeSpawn} takes them. */
+    public void spawns(CommandSender sender, String id) {
+        find(sender, id).ifPresent(arena -> {
+            if (arena.spawns().isEmpty()) {
+                messages.send(sender, "arena.no-spawns", Placeholder.unparsed("arena", id));
+            }
+            spawns(sender, arena);
+        });
+    }
+
+    private void spawns(CommandSender sender, Arena arena) {
+        var spawns = arena.spawns();
+        for (int i = 0; i < spawns.size(); i++) {
+            messages.send(sender, "arena.info-spawn", point(spawns.get(i), Formatter.number("number", i + 1)));
+        }
     }
 
     /** To the waiting spot, else the first spawn, else the spawn of the arena's world. */

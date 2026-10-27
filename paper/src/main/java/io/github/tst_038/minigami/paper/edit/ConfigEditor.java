@@ -56,7 +56,8 @@ public final class ConfigEditor {
     public enum Kind {
         CONFIG, ARENA, MODE;
 
-        String file(String id) {
+        /** The file, relative to the plugin folder, such as {@code modes/fall.yml}; the id is ignored for {@link #CONFIG}. */
+        public String file(String id) {
             return switch (this) {
                 case CONFIG -> SettingsLoader.FILE;
                 case ARENA -> "arenas/" + id + ".yml";

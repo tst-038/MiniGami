@@ -13,6 +13,7 @@ import java.util.SortedSet;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
@@ -93,6 +94,23 @@ public final class MatchService implements Listener {
             return;
         }
         match.get().leave(player);
+    }
+
+    /** The modes that can be joined, with how many play each; a player can click one to join. */
+    public void list(CommandSender sender) {
+        var joinable = modes.get().ids().stream().map(id -> modes.get().find(id).orElseThrow())
+                .filter(mode -> !mode.arenas().isEmpty()).toList();
+        if (joinable.isEmpty()) {
+            messages.send(sender, "list.none");
+            return;
+        }
+        messages.send(sender, "list.header");
+        for (var mode : joinable) {
+            var players = running().stream().filter(match -> match.mode().id().equals(mode.id()))
+                    .mapToInt(match -> match.members().size()).sum();
+            messages.send(sender, "list.mode", Placeholder.parsed("mode", mode.name()), Placeholder.unparsed("id", mode.id()),
+                    Formatter.number("players", players), Placeholder.styling("join", ClickEvent.runCommand("/mg join " + mode.id())));
+        }
     }
 
     /** Starts the sender's own match, or else the first one waiting for players. */

@@ -10,20 +10,22 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
+import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-/** {@code /mg mode create <id> <game> <arena>} and {@code /mg mode <id> set|unset|delete}. */
+/** {@code /mg mode list|create <id> <game> <arena>} and {@code /mg mode <id> info|set|unset|delete}. */
 final class ModeCommands {
 
     private ModeCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("mode")
                 .requires(ADMIN)
                 .executes(help)
+                .then(Commands.literal("list").executes(bySender((sender, context) -> info.listModes(sender))))
                 .then(Commands.literal("create")
                         .then(Commands.argument("id", StringArgumentType.word())
                                 .then(Commands.argument("game", StringArgumentType.word())
@@ -35,6 +37,7 @@ final class ModeCommands {
                 .then(Commands.argument("mode", StringArgumentType.word())
                         .suggests(suggest(() -> editor.ids(Kind.MODE)))
                         .executes(help)
+                        .then(Commands.literal("info").executes(bySender((sender, context) -> info.mode(sender, mode(context)))))
                         .then(Edits.set(editor, Kind.MODE, ModeCommands::mode))
                         .then(Edits.unset(editor, Kind.MODE, ModeCommands::mode))
                         .then(Edits.delete(editor, Kind.MODE, ModeCommands::mode)));

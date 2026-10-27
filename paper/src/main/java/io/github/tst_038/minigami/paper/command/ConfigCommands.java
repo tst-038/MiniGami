@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.command;
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
+import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -10,22 +11,24 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
+import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.bukkit.Location;
 
-/** {@code /mg config set|unset}, and {@code /mg lobby set|tp} for the one setting admins change most. */
+/** {@code /mg config info|set|unset}, and {@code /mg lobby set|tp} for the one setting admins change most. */
 final class ConfigCommands {
 
     private ConfigCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> config(ConfigEditor editor, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> config(ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("config")
                 .requires(ADMIN)
                 .executes(help)
+                .then(Commands.literal("info").executes(bySender((sender, context) -> info.config(sender))))
                 .then(Edits.set(editor, Kind.CONFIG, context -> ""))
                 .then(Edits.unset(editor, Kind.CONFIG, context -> ""));
     }

@@ -15,23 +15,25 @@ import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
+import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
 /**
- * {@code /mg arena create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn add|remove <n>}, {@code waiting set}. Points are where the admin stands.
+ * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
+ * {@code spawn list|add|remove <n>}, {@code waiting set}. Points are where the admin stands.
  */
 final class ArenaCommands {
 
     private ArenaCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ArenaSetup arenas, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ArenaSetup arenas, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("arena")
                 .requires(ADMIN)
                 .executes(help)
+                .then(Commands.literal("list").executes(bySender((sender, context) -> info.listArenas(sender))))
                 .then(Commands.literal("create")
                         .requires(PLAYER)
                         .then(Commands.argument("id", StringArgumentType.word())
@@ -46,6 +48,7 @@ final class ArenaCommands {
                         .then(Edits.delete(editor, Kind.ARENA, ArenaCommands::arena))
                         .then(Commands.literal("spawn")
                                 .executes(help)
+                                .then(Commands.literal("list").executes(bySender((sender, context) -> arenas.spawns(sender, arena(context)))))
                                 .then(Commands.literal("add")
                                         .requires(PLAYER)
                                         .executes(byPlayer((player, context) -> arenas.addSpawn(player, arena(context)))))

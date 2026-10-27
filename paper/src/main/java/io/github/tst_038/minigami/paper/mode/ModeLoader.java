@@ -58,6 +58,11 @@ public final class ModeLoader {
                 .parse(Mode::id, (id, config) -> parse(id, config, own.keySet(), extendsProblems.get(id), arenas, hasLobby));
     }
 
+    /** The mode's file over the modes it extends; a broken link is left out, as {@link #load} reports it. */
+    public static YamlConfiguration inherited(String id, Map<String, YamlConfiguration> files) {
+        return withParents(id, files, new ArrayList<>(), new HashMap<>());
+    }
+
     /**
      * The mode's file over the modes it extends. A link to a missing mode, or back into the chain, is
      * left out and reported for the mode at the start of the chain.

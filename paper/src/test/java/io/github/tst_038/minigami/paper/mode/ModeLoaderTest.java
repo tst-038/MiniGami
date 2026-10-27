@@ -247,6 +247,20 @@ class ModeLoaderTest {
     }
 
     @Test
+    void inheritedSettingsAreTheModesOwnOverItsParents() throws Exception {
+        var base = new YamlConfiguration();
+        base.loadFromString("{game: test, max-players: 8, features: {playing: {void-kills: {y: 0}}}}");
+        var child = new YamlConfiguration();
+        child.loadFromString("{extends: base, max-players: 4}");
+
+        var inherited = ModeLoader.inherited("child", Map.of("base", base, "child", child));
+
+        assertEquals("test", inherited.getString("game"));
+        assertEquals(4, inherited.getInt("max-players"));
+        assertEquals(0, inherited.getInt("features.playing.void-kills.y"));
+    }
+
+    @Test
     void extendingAMissingModeOrInACircleIsAProblem() throws Exception {
         var mode = "min-players: 1, max-players: 1, waiting: arena, arenas: [demo]";
 

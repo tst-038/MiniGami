@@ -45,7 +45,12 @@ build-battle:
   # <player>, <points>: a builder's total, best first
   score: "<gray> - <white><player></white>: <gold><points></gold> points"
 
-# <player>: the player who fell
+# /mg list. <mode>: a mode's name, <id>: its id, <players>: how many are in its matches; <join>…</join> joins on click
+list:
+  header: "<prefix><gold>Modes you can join:"
+  mode: "<gray> - <join><hover:show_text:'Click to join'><mode></hover></join> <gray>(<white><players></white> playing)"
+  none: "<prefix><gray>There are no modes to join right now."
+
 lobby:
   none: "<prefix><red>No lobby is set; set one with <white>/mg lobby set</white>."
 
@@ -65,12 +70,58 @@ arena:
   # <x>, <y>, <z>; wrap text in <teleport>…</teleport> to make it teleport on click
   info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white>: <x>, <y>, <z></hover></teleport>"
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
+  no-spawns: "<prefix><gray><white><arena></white> has no spawns yet; add one with <white>/mg arena <arena> spawn add</white>."
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
 
 # <command>: a command; click a line to put it in the chat box
 help:
   header: "<prefix><gold><command></gold> <gray>can be followed by:"
   line: "<suggest><hover:show_text:'Click to fill in'><gray> - <white><command></white></hover></suggest>"
+
+# Lists and details for admins. <info>…</info> shows an entry's details on click, <set>…</set> fills in a set command.
+info:
+  # <count>; per entry <id>, <status>, and <game>, <world>, <spawns> or <modes>: how many modes use it
+  modes: "<prefix><gold>Modes</gold> <gray>(<count>):"
+  mode-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray><game>, <status>"
+  arenas: "<prefix><gold>Arenas</gold> <gray>(<count>):"
+  arena-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>in <world>, <spawns> spawns, <status>"
+  games: "<prefix><gold>Games</gold> <gray>(<count>):"
+  game-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <modes> mode(s)"
+  features: "<prefix><gold>Features</gold> <gray>(<count>):"
+  feature-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <modes> mode(s)"
+  status:
+    ok: "<green>ready"
+    # <problems>: how many
+    problems: "<red><problems> problem(s)"
+    not-loaded: "<yellow>not loaded; /mg reload"
+    no-arenas: "<yellow>no playable arena"
+    no-spawns: "<yellow>no spawns"
+    in-use: "<aqua>in use"
+  # <name>: the mode's display name
+  mode: "<prefix><gold><id></gold> <gray>(<name><gray>) plays <white><game></white>, <status>"
+  mode-parent: "<gray> Extends <info><hover:show_text:'Show details'><white><parent></white></hover></info>; grey settings come from it."
+  mode-arenas: "<gray> Playable arenas: <white><arenas>"
+  # <key>, <value>
+  value: "<set><hover:show_text:'Click to change'><gray> - <white><key></white>: <yellow><value></yellow></hover></set>"
+  value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - <key>: <value></hover></set>"
+  # <keys>: clickable
+  unset: "<gray> Not set: <white><keys>"
+  config: "<prefix><gold><file></gold><gray>:"
+  # <win-condition>, <lives>: default lives, 0 means always respawn
+  game: "<prefix><gold><id></gold> <gray>is won by <white><win-condition></white>; lives: <white><lives></white>. Phases:"
+  phase-timed: "<gray> - <white><phase></white> for <seconds> s"
+  phase-untimed: "<gray> - <white><phase></white> until it ends"
+  feature: "<prefix><gold><id></gold><gray>, set per phase under <white>features.<phase>.<id></white>:"
+  # <key>, <values>: what it can be
+  setting: "<gray> - <white><key></white>: <values>"
+  setting-required: "<gray> - <white><key></white> <red>(required)</red>: <values>"
+  any-value: "<dark_gray>any value"
+  no-settings: "<gray> No settings of its own."
+  # <modes>: clickable
+  used-by: "<gray> Used by: <white><modes>"
+  used-by-none: "<gray> Not used by any mode."
+  unknown-game: "<prefix><red>There is no game called <white><id></white>."
+  unknown-feature: "<prefix><red>There is no feature called <white><id></white>."
 
 # <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
 reload:
