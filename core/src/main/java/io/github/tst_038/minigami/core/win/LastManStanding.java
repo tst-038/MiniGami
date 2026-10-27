@@ -2,7 +2,9 @@ package io.github.tst_038.minigami.core.win;
 
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
+import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.roster.Roster;
+import io.github.tst_038.minigami.core.score.Scores;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -14,18 +16,22 @@ import java.util.Optional;
 public final class LastManStanding implements WinCondition {
 
     @Override
-    public Optional<MatchResult> check(Roster roster) {
-        var alive = roster.alive();
-        if (alive.size() > 1) {
-            return Optional.empty();
-        }
-        var ranking = new ArrayList<>(alive);
-        ranking.addAll(roster.eliminationOrder().reversed());
+    public Optional<MatchResult> check(Roster roster, Scores scores) {
+        return roster.alive().size() > 1 ? Optional.empty() : Optional.of(finalResult(roster, scores));
+    }
 
+    /** Everyone still alive shares first place; the others follow in reverse elimination order. */
+    @Override
+    public MatchResult finalResult(Roster roster, Scores scores) {
         var placements = new ArrayList<Placement>();
-        for (int i = 0; i < ranking.size(); i++) {
-            placements.add(new Placement(i + 1, List.of(ranking.get(i).id())));
+        var alive = roster.alive().stream().map(Participant::id).toList();
+        if (!alive.isEmpty()) {
+            placements.add(new Placement(1, alive));
         }
-        return Optional.of(new MatchResult(placements));
+        int place = alive.size() + 1;
+        for (Participant participant : roster.eliminationOrder().reversed()) {
+            placements.add(new Placement(place++, List.of(participant.id())));
+        }
+        return new MatchResult(placements);
     }
 }

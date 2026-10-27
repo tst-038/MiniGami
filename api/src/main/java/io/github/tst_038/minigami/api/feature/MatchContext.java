@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.score.Scores;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -40,13 +41,17 @@ public interface MatchContext {
     /** Empty until the match is decided. */
     Optional<MatchResult> result();
 
+    /** Points per participant, for the win condition to rank them by. */
+    Scores scores();
+
+    /** Gives a participant points, or takes them away when negative, and ends the match if that decides it. */
+    void addPoints(UUID id, int points);
+
     /**
-     * Decides the match and skips to its last phase, for games decided by something other than who
-     * is left, such as votes.
-     *
-     * @throws IllegalStateException if the match already has a result
+     * Ends the phase these features run in and moves on to the next, for a phase that ends when its
+     * work is done rather than on a timer. Does nothing once that phase has ended.
      */
-    void end(MatchResult result);
+    void endPhase();
 
     Messages messages();
 

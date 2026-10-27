@@ -42,8 +42,8 @@ build-battle:
   vote-item: "<yellow>Vote <score>"
   voted: "<prefix><green>You gave this build <white><score></white>."
   own-build: "<prefix><red>You can't vote on your own build."
-  # <place>, <player>, <points>
-  score: "<gray> <place>. <white><player></white> - <gold><points></gold> points"
+  # <player>, <points>: a builder's total, best first
+  score: "<gray> - <white><player></white>: <gold><points></gold> points"
 
 # <player>: the player who fell
 lobby:

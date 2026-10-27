@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.score.Scores;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ public final class FakeMatch implements MatchContext {
     public final Scope scope = new Scope();
     public final MatchClock clock = new MatchClock();
     public final Roster roster = new Roster();
+    public final Scores scores = new Scores();
     /** Blocks passed to {@link #rememberOriginal(Block)}, in order. */
     public final List<Block> remembered = new ArrayList<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
@@ -114,7 +116,17 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
-    public void end(MatchResult result) {
+    public Scores scores() {
+        return scores;
+    }
+
+    @Override
+    public void addPoints(UUID id, int points) {
+        scores.add(id, points);
+    }
+
+    @Override
+    public void endPhase() {
         throw new UnsupportedOperationException();
     }
 

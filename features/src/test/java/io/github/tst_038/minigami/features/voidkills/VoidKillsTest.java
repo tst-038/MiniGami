@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.score.Scores;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +140,17 @@ class VoidKillsTest {
         }
 
         @Override
-        public void end(MatchResult result) {
+        public Scores scores() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void addPoints(UUID id, int points) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void endPhase() {
             throw new UnsupportedOperationException();
         }
 

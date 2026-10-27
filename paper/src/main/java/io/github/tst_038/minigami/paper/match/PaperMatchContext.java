@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.score.Scores;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -82,8 +83,20 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
-    public void end(MatchResult result) {
-        match.match().end(result);
+    public Scores scores() {
+        return match.match().scores();
+    }
+
+    @Override
+    public void addPoints(UUID id, int points) {
+        match.match().addPoints(id, points);
+    }
+
+    @Override
+    public void endPhase() {
+        if (!scope.isClosed()) {
+            match.match().advancePhase();
+        }
     }
 
     @Override

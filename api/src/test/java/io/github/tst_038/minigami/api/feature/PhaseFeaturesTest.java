@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import java.util.ArrayList;
 import java.util.List;
@@ -134,7 +135,17 @@ class PhaseFeaturesTest {
         }
 
         @Override
-        public void end(MatchResult result) {
+        public Scores scores() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void addPoints(UUID id, int points) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void endPhase() {
             throw new UnsupportedOperationException();
         }
 

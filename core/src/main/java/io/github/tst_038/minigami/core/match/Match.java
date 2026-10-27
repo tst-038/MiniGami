@@ -7,15 +7,18 @@ import io.github.tst_038.minigami.core.phase.PhaseMachine;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * One running round. Owns its scope, clock, roster and phases, and asks the win condition after
- * every elimination whether it is decided. Once decided it skips to its last phase; when that ends,
- * the match is finished and its owner reads the result and calls {@link #dispose()}.
+ * One running round. Owns its scope, clock, roster, scores and phases, and asks the win condition
+ * after every elimination and score change whether it is decided. Once decided it skips to its last
+ * phase. Reaching the last phase undecided, for example when time runs out, the win condition gives
+ * the final result. When the last phase ends, the match is finished and its owner reads the result
+ * and calls {@link #dispose()}.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -24,13 +27,29 @@ public final class Match {
     private final Scope scope = new Scope();
     private final MatchClock clock = new MatchClock();
     private final Roster roster = new Roster();
+    private final Scores scores = new Scores();
     private final PhaseMachine phases;
     private final WinCondition winCondition;
     private MatchResult result;
 
     /** @param phaseListener told when each phase starts, e.g. to enable that phase's features */
     public Match(List<Phase> phases, WinCondition winCondition, PhaseListener phaseListener) {
-        this.phases = new PhaseMachine(phases, clock, scope, phaseListener);
+        this.phases = new PhaseMachine(phases, clock, scope, new PhaseListener() {
+            @Override
+            public void onEnter(Phase phase, Scope phaseScope) {
+                // A single phase is also the first one; that match is only decided when it runs out.
+                if (phases.size() > 1 && phase.equals(phases.getLast())) {
+                    decideAsThingsStand();
+                }
+                phaseListener.onEnter(phase, phaseScope);
+            }
+
+            @Override
+            public void onFinish() {
+                decideAsThingsStand();
+                phaseListener.onFinish();
+            }
+        });
         this.winCondition = winCondition;
     }
 
@@ -50,7 +69,15 @@ public final class Match {
     /** Eliminates a participant and ends the match if that decides it. Repeats are ignored. */
     public void eliminate(UUID id) {
         if (roster.eliminate(id) && result == null) {
-            winCondition.check(roster).ifPresent(this::end);
+            winCondition.check(roster, scores).ifPresent(this::end);
+        }
+    }
+
+    /** Gives a participant points, or takes them away when negative, and ends the match if that decides it. */
+    public void addPoints(UUID id, int points) {
+        scores.add(id, points);
+        if (result == null) {
+            winCondition.check(roster, scores).ifPresent(this::end);
         }
     }
 
@@ -68,7 +95,7 @@ public final class Match {
         phases.skipToEnd();
     }
 
-    /** The result once decided. Stays empty if the phases ran out without a winner. */
+    /** The result once decided, at the latest when the last phase starts. */
     public Optional<MatchResult> result() {
         return Optional.ofNullable(result);
     }
@@ -97,5 +124,15 @@ public final class Match {
 
     public Roster roster() {
         return roster;
+    }
+
+    public Scores scores() {
+        return scores;
+    }
+
+    private void decideAsThingsStand() {
+        if (result == null) {
+            result = winCondition.finalResult(roster, scores);
+        }
     }
 }

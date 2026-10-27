@@ -5,7 +5,7 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.core.phase.Phase;
-import io.github.tst_038.minigami.core.win.LastManStanding;
+import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
@@ -56,10 +56,10 @@ public final class BuildBattle implements GameType {
                 "ending", List.of(new AnnounceWinner()));
     }
 
-    /** Normally the votes decide; this only ends the match when everyone else has left. */
+    /** The votes are the points; the match also ends early when everyone else has left. */
     @Override
     public WinCondition winCondition() {
-        return new LastManStanding();
+        return new MostPoints();
     }
 
     @Override

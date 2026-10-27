@@ -9,8 +9,12 @@ import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.phase.PhaseListener;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
+import io.github.tst_038.minigami.core.roster.Roster;
+import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.win.LastManStanding;
+import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +25,11 @@ class MatchTest {
     private final UUID carol = UUID.randomUUID();
 
     private Match match(Phase... phases) {
-        var match = new Match(List.of(phases), new LastManStanding(), new PhaseListener() {});
+        return match(new LastManStanding(), phases);
+    }
+
+    private Match match(WinCondition winCondition, Phase... phases) {
+        var match = new Match(List.of(phases), winCondition, new PhaseListener() {});
         match.roster().add(alice);
         match.roster().add(bob);
         match.roster().add(carol);
@@ -105,14 +113,52 @@ class MatchTest {
     }
 
     @Test
-    void runningOutOfPhasesWithoutAWinnerFinishesWithoutResult() {
+    void reachingTheLastPhaseUndecidedAsksForTheFinalResult() {
+        var match = match(Phase.timed("playing", 2), Phase.untimed("ending"));
+        match.start();
+        match.eliminate(carol);
+
+        tick(match, 2);
+
+        assertEquals("ending", phase(match));
+        assertEquals(new Placement(1, List.of(alice, bob)), match.result().orElseThrow().placements().getFirst());
+    }
+
+    @Test
+    void aSinglePhaseIsOnlyDecidedWhenItRunsOut() {
         var match = match(Phase.timed("playing", 2));
         match.start();
+        assertTrue(match.result().isEmpty());
 
         tick(match, 2);
 
         assertTrue(match.isFinished());
+        assertEquals(new Placement(1, List.of(alice, bob, carol)), match.result().orElseThrow().placements().getFirst());
+    }
+
+    @Test
+    void pointsCanDecideTheMatch() {
+        var firstToThree = new WinCondition() {
+            @Override
+            public Optional<MatchResult> check(Roster roster, Scores scores) {
+                return scores.of(bob) >= 3 ? Optional.of(finalResult(roster, scores)) : Optional.empty();
+            }
+
+            @Override
+            public MatchResult finalResult(Roster roster, Scores scores) {
+                return new MatchResult(List.of(new Placement(1, List.of(bob))));
+            }
+        };
+        var match = match(firstToThree, Phase.untimed("playing"), Phase.untimed("ending"));
+        match.start();
+
+        match.addPoints(bob, 2);
         assertTrue(match.result().isEmpty());
+        match.addPoints(bob, 1);
+
+        assertEquals("ending", phase(match));
+        assertEquals(3, match.scores().of(bob));
+        assertTrue(match.result().isPresent());
     }
 
     @Test

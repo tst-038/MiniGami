@@ -2,8 +2,8 @@ package io.github.tst_038.minigami.buildbattle;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
-import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Participant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
@@ -18,7 +18,8 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Takes everyone past each build in turn; players score it from 1 to 5 with the items in their
- * hotbar. After the last build the totals decide the match.
+ * hotbar. Each vote counts as points for the builder; after the last build the phase ends and the
+ * match's win condition ranks the builders.
  */
 final class Voting implements Feature {
 
@@ -40,7 +41,7 @@ final class Voting implements Feature {
         var builders = plots.builders().stream()
                 .filter(id -> context.roster().find(id).filter(Participant::isAlive).isPresent()).toList();
         if (builders.isEmpty()) {
-            context.end(new MatchResult(List.of()));
+            context.endPhase();
             return;
         }
         var votes = new Votes();
@@ -63,7 +64,8 @@ final class Voting implements Feature {
             if (++shown[0] < builders.size()) {
                 show(context, builders.get(shown[0]));
             } else {
-                finish(context, votes, builders);
+                announceTotals(context, builders);
+                context.endPhase();
             }
         }));
 
@@ -79,7 +81,7 @@ final class Voting implements Feature {
                 context.messages().send(voter, "build-battle.own-build");
                 return;
             }
-            votes.vote(builder, voter.getUniqueId(), score);
+            context.addPoints(builder, votes.vote(builder, voter.getUniqueId(), score));
             context.messages().send(voter, "build-battle.voted", Formatter.number("score", score));
         });
         context.on(PlayerDropItemEvent.class, event -> event.setCancelled(true));
@@ -94,12 +96,10 @@ final class Voting implements Feature {
         context.messages().send(context.audience(), "build-battle.showing", Placeholder.component("player", name(context, builder)));
     }
 
-    private static void finish(MatchContext context, Votes votes, List<UUID> builders) {
-        var result = votes.result(builders);
-        result.placements().forEach(placement -> placement.participants().forEach(builder ->
-                context.messages().send(context.audience(), "build-battle.score", Formatter.number("place", placement.place()),
-                        Placeholder.component("player", name(context, builder)), Formatter.number("points", votes.total(builder)))));
-        context.end(result);
+    private static void announceTotals(MatchContext context, List<UUID> builders) {
+        builders.stream().sorted(Comparator.comparingInt((UUID builder) -> context.scores().of(builder)).reversed())
+                .forEach(builder -> context.messages().send(context.audience(), "build-battle.score",
+                        Placeholder.component("player", name(context, builder)), Formatter.number("points", context.scores().of(builder))));
     }
 
     private static Component name(MatchContext context, UUID id) {
