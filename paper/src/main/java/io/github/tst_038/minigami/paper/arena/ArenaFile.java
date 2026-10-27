@@ -1,7 +1,9 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Location;
@@ -38,5 +40,21 @@ public final class ArenaFile {
         spawns.remove(index);
         config.set("spawns", spawns);
         return true;
+    }
+
+    /** The box the saved map is pasted back into. */
+    public static void setMap(YamlConfiguration config, Region box) {
+        var map = new LinkedHashMap<String, Object>();
+        map.put("from", corner(box.minX(), box.minY(), box.minZ()));
+        map.put("to", corner(box.maxX(), box.maxY(), box.maxZ()));
+        config.set("map", map);
+    }
+
+    private static Map<String, Integer> corner(int x, int y, int z) {
+        var corner = new LinkedHashMap<String, Integer>();
+        corner.put("x", x);
+        corner.put("y", y);
+        corner.put("z", z);
+        return corner;
     }
 }

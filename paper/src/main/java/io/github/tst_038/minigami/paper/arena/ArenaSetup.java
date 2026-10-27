@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
@@ -46,7 +47,14 @@ public final class ArenaSetup {
 
     /** Saves the player's WorldEdit selection as the map pasted back after each match. */
     public void saveMap(Player player, String id) {
-        find(player, id).ifPresent(arena -> maps.save(player, arena));
+        find(player, id).ifPresent(arena -> {
+            if (inUse.test(id)) {
+                messages.send(player, "arena.in-use", Placeholder.unparsed("arena", id));
+                return;
+            }
+            maps.save(player, arena, box -> editor.change(player, Kind.ARENA, id, config -> ArenaFile.setMap(config, box),
+                    "arena.map.saved", Placeholder.unparsed("arena", id)));
+        });
     }
 
     /** Pastes the arena's saved map now, unless a match is running there. */
@@ -104,11 +112,11 @@ public final class ArenaSetup {
             arena.waitingSpot().ifPresentOrElse(
                     spot -> messages.send(sender, "arena.info-waiting-spot", point(spot)),
                     () -> messages.send(sender, "arena.info-no-waiting-spot"));
-            messages.send(sender, maps.hasMap(arena) ? "arena.info-map" : "arena.info-no-map", Placeholder.unparsed("arena", id));
+            arena.map().filter(box -> maps.hasMap(arena)).ifPresentOrElse(
+                    box -> messages.send(sender, "arena.info-map", corners(box)),
+                    () -> messages.send(sender, "arena.info-no-map", Placeholder.unparsed("arena", id)));
             arena.regions().values().forEach(region -> messages.send(sender, "arena.info-region",
-                    Placeholder.unparsed("region", region.id()),
-                    Placeholder.unparsed("from", region.minX() + ", " + region.minY() + ", " + region.minZ()),
-                    Placeholder.unparsed("to", region.maxX() + ", " + region.maxY() + ", " + region.maxZ())));
+                    Placeholder.unparsed("region", region.id()), corners(region)));
         });
     }
 
@@ -146,6 +154,11 @@ public final class ArenaSetup {
             messages.send(audience, "arena.unknown", Placeholder.unparsed("arena", id));
         }
         return arena;
+    }
+
+    private static TagResolver corners(Region box) {
+        return TagResolver.resolver(Placeholder.unparsed("from", box.minX() + ", " + box.minY() + ", " + box.minZ()),
+                Placeholder.unparsed("to", box.maxX() + ", " + box.maxY() + ", " + box.maxZ()));
     }
 
     private static TagResolver point(Location location, TagResolver... extra) {

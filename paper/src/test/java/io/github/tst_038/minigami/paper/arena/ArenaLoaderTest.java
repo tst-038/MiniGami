@@ -94,6 +94,18 @@ class ArenaLoaderTest {
     }
 
     @Test
+    void loadsTheMapBox() throws Exception {
+        var loaded = load("hills", """
+                world: world
+                map: { from: { x: 14, y: 104, z: 1 }, to: { x: 3, y: 100, z: -7 } }
+                """);
+
+        assertEquals(List.of(), problems(loaded));
+        assertEquals(Optional.of(new Region("map", world, 3, 100, -7, 14, 104, 1)), loaded.entries().find("hills").orElseThrow().map());
+        assertEquals(Optional.empty(), load("plain", "world: world").entries().find("plain").orElseThrow().map());
+    }
+
+    @Test
     void reportsBadRegions() throws Exception {
         var loaded = load("hills", """
                 world: world

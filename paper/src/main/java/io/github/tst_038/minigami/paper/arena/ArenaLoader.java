@@ -25,11 +25,13 @@ import org.bukkit.World;
  * waiting-spot: { x: 0.5, y: 70, z: 0.5 }
  * regions:
  *   hill: { from: { x: -3, y: 64, z: -3 }, to: { x: 3, y: 67, z: 3 } }
+ * map: { from: { x: -20, y: 60, z: -20 }, to: { x: 20, y: 80, z: 20 } }
  * </pre>
  *
- * Yaw, pitch, the spawns, the waiting spot and the regions are optional. A spawn with a team is only
+ * Yaw, pitch, the spawns, the waiting spot, the regions and the map are optional. A spawn with a team is only
  * used by that team in modes with teams; spawns without one are for everyone. A region is the box of
- * blocks between its two corners, both included.
+ * blocks between its two corners, both included. {@code map} is the box the arena's saved map is
+ * pasted back into; saving the map sets it.
  */
 public final class ArenaLoader {
 
@@ -55,7 +57,8 @@ public final class ArenaLoader {
         var waitingSpot = config.has("waiting-spot")
                 ? Optional.of(ConfigLocations.read(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();
-        return new Arena(id, world, spawns, waitingSpot, regions(config, world));
+        var map = config.has("map") ? Optional.of(box("map", config.section("map"), world)) : Optional.<Region>empty();
+        return new Arena(id, world, spawns, waitingSpot, regions(config, world), map);
     }
 
     private static Map<String, Region> regions(ConfigReader config, World world) {
@@ -71,12 +74,16 @@ public final class ArenaLoader {
                 region.keys();
                 continue;
             }
-            var from = region.section("from");
-            var to = region.section("to");
-            regions.put(name, Region.between(name, world, coordinate(from, "x"), height(from), coordinate(from, "z"),
-                    coordinate(to, "x"), height(to), coordinate(to, "z")));
+            regions.put(name, box(name, region, world));
         }
         return regions;
+    }
+
+    private static Region box(String name, ConfigReader config, World world) {
+        var from = config.section("from");
+        var to = config.section("to");
+        return Region.between(name, world, coordinate(from, "x"), height(from), coordinate(from, "z"),
+                coordinate(to, "x"), height(to), coordinate(to, "z"));
     }
 
     private static int coordinate(ConfigReader corner, String key) {

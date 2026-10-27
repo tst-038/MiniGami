@@ -129,7 +129,8 @@ arena:
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
   # <region>: its name; <from>, <to>: its lowest and highest corner block
   info-region: "<gray> - <white>region <region></white>: <from> to <to>"
-  info-map: "<gray> - map saved; pasted back after each match"
+  # <from>, <to>: the lowest and highest corner block of the box it is pasted into
+  info-map: "<gray> - <white>map</white>: <from> to <to>; pasted back after each match"
   info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena <arena> map save</white>"
   # The arena's map: a WorldEdit schematic pasted back after each match and at startup
   map:

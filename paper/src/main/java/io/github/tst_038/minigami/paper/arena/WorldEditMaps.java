@@ -10,8 +10,9 @@ import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
-import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import io.github.tst_038.minigami.api.region.Region;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -21,7 +22,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -30,6 +30,9 @@ import org.bukkit.util.BoundingBox;
 /**
  * Everything that touches WorldEdit's classes, so the plugin still loads without it. Blocks are
  * copied and pasted on the server thread; the file is read and written off it.
+ *
+ * <p>Where a map goes is kept by the caller, not taken from the file: FastAsyncWorldEdit reads a
+ * schematic whose origin is its corner as if it lay at 0, 0, 0.
  */
 final class WorldEditMaps {
 
@@ -42,45 +45,59 @@ final class WorldEditMaps {
     }
 
     /**
-     * Copies the player's selection, entities included, and writes it to the file. Pasting puts it
-     * back where it was copied from.
+     * @param box the selection that was copied
+     * @param written completes once the file is written
+     */
+    record Saving(Region box, CompletableFuture<Void> written) {
+    }
+
+    /**
+     * Copies the player's selection, entities included, and writes it to the file.
      *
      * @return empty if the player has no complete selection in their world
      */
-    Optional<CompletableFuture<Void>> save(Player player, Path file) {
+    Optional<Saving> save(Player player, Path file) {
         var world = BukkitAdapter.adapt(player.getWorld());
-        Region selection;
+        com.sk89q.worldedit.regions.Region selection;
         try {
             selection = WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player)).getSelection(world);
         } catch (IncompleteRegionException e) {
             return Optional.empty();
         }
+        var min = selection.getMinimumPoint();
+        var max = selection.getMaximumPoint();
+        var box = Region.between("map", player.getWorld(), min.x(), min.y(), min.z(), max.x(), max.y(), max.z());
         var clipboard = new BlockArrayClipboard(selection);
-        clipboard.setOrigin(selection.getMinimumPoint());
+        clipboard.setOrigin(min);
         try (var edit = WorldEdit.getInstance().newEditSession(world)) {
-            var copy = new ForwardExtentCopy(edit, selection, clipboard, selection.getMinimumPoint());
+            var copy = new ForwardExtentCopy(edit, selection, clipboard, min);
             copy.setCopyingEntities(true);
             Operations.complete(copy);
         } catch (WorldEditException e) {
-            return Optional.of(CompletableFuture.failedFuture(e));
+            return Optional.of(new Saving(box, CompletableFuture.failedFuture(e)));
         }
-        return Optional.of(CompletableFuture.runAsync(() -> write(clipboard, file), offThread));
+        return Optional.of(new Saving(box, CompletableFuture.runAsync(() -> write(clipboard, file), offThread)));
     }
 
-    /** Reads the file and pastes it where it was copied from, after removing the entities there, players aside. */
-    CompletableFuture<Void> paste(World world, Path file) {
+    /**
+     * Reads the file and pastes it with its lowest corner on the box's, after removing the entities
+     * in the box, players aside.
+     */
+    CompletableFuture<Void> paste(Region box, Path file) {
         return CompletableFuture.supplyAsync(() -> read(file), offThread)
-                .thenAcceptAsync(clipboard -> paste(world, clipboard), serverThread);
+                .thenAcceptAsync(clipboard -> paste(box, clipboard), serverThread);
     }
 
-    private static void paste(World world, Clipboard clipboard) {
-        var min = clipboard.getRegion().getMinimumPoint();
-        var max = clipboard.getRegion().getMaximumPoint();
-        world.getNearbyEntities(new BoundingBox(min.x(), min.y(), min.z(), max.x() + 1, max.y() + 1, max.z() + 1),
+    private static void paste(Region box, Clipboard clipboard) {
+        var world = box.world();
+        world.getNearbyEntities(new BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX() + 1, box.maxY() + 1, box.maxZ() + 1),
                 entity -> !(entity instanceof Player)).forEach(Entity::remove);
+        // A block at p in the clipboard lands at to + (p - origin), so this puts its lowest corner on the box's.
+        var to = BlockVector3.at(box.minX(), box.minY(), box.minZ())
+                .add(clipboard.getOrigin().subtract(clipboard.getRegion().getMinimumPoint()));
         try (var edit = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(world))) {
             Operations.complete(new ClipboardHolder(clipboard).createPaste(edit)
-                    .to(clipboard.getOrigin())
+                    .to(to)
                     .copyEntities(true)
                     .build());
         } catch (WorldEditException e) {

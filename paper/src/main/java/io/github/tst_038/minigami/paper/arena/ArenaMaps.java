@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Region;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -16,8 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Arena maps saved as WorldEdit schematics in {@code arenas/<id>.schem}, pasted back to undo what a
- * match changed, also when the server stopped mid-match. An arena takes no new match while its map
+ * Arena maps saved as WorldEdit schematics in {@code arenas/<id>.schem}, pasted back into the
+ * arena's map box to undo what a match changed, also when the server stopped mid-match. An arena takes no new match while its map
  * is being pasted. Without WorldEdit (or FastAsyncWorldEdit) or a saved map, nothing is pasted.
  *
  * <p>Call the public methods from the server thread.
@@ -43,8 +44,12 @@ public final class ArenaMaps {
         return resetting.contains(arenaId);
     }
 
-    /** Saves the player's WorldEdit selection, which must be in the arena's world, as the arena's map. */
-    void save(Player player, Arena arena) {
+    /**
+     * Saves the player's WorldEdit selection, which must be in the arena's world, as the arena's map.
+     *
+     * @param saved gets the box the selection covered, once the file is written, to keep as the arena's map box
+     */
+    void save(Player player, Arena arena, Consumer<Region> saved) {
         if (worldEdit.isEmpty()) {
             messages.send(player, "arena.map.no-worldedit");
             return;
@@ -55,9 +60,9 @@ public final class ArenaMaps {
             return;
         }
         worldEdit.get().save(player, file(arena)).ifPresentOrElse(
-                saving -> onServerThread(saving, problem -> {
+                saving -> onServerThread(saving.written(), problem -> {
                     if (problem == null) {
-                        messages.send(player, "arena.map.saved", Placeholder.unparsed("arena", arena.id()));
+                        saved.accept(saving.box());
                     } else {
                         plugin.getLogger().log(Level.WARNING, "Could not save the map of " + arena.id(), problem);
                         messages.send(player, "arena.map.save-failed", Placeholder.unparsed("arena", arena.id()));
@@ -80,8 +85,7 @@ public final class ArenaMaps {
             feedback.ifPresent(audience -> messages.send(audience, "arena.map.no-worldedit"));
             return;
         }
-        // Checked on the server thread, but a single stat is too short to matter.
-        if (!Files.exists(file(arena))) {
+        if (!hasMap(arena)) {
             feedback.ifPresent(audience -> messages.send(audience, "arena.map.none", Placeholder.unparsed("arena", arena.id())));
             return;
         }
@@ -89,7 +93,7 @@ public final class ArenaMaps {
             feedback.ifPresent(audience -> messages.send(audience, "arena.map.resetting", Placeholder.unparsed("arena", arena.id())));
             return;
         }
-        onServerThread(worldEdit.get().paste(arena.world(), file(arena)), problem -> {
+        onServerThread(worldEdit.get().paste(arena.map().orElseThrow(), file(arena)), problem -> {
             resetting.remove(arena.id());
             if (problem == null) {
                 feedback.ifPresent(audience -> messages.send(audience, "arena.map.reset", Placeholder.unparsed("arena", arena.id())));
@@ -105,9 +109,9 @@ public final class ArenaMaps {
         arenas.forEach(arena -> reset(arena, Optional.empty()));
     }
 
-    /** Whether WorldEdit is there and the arena has a saved map. Checks the disk, briefly. */
+    /** Whether the arena has a map box and a saved map. Checks the disk on the server thread, but a single stat is too short to matter. */
     boolean hasMap(Arena arena) {
-        return worldEdit.isPresent() && Files.exists(file(arena));
+        return arena.map().isPresent() && Files.exists(file(arena));
     }
 
     private Path file(Arena arena) {
