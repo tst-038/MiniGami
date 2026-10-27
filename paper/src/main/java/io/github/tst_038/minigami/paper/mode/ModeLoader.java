@@ -134,11 +134,10 @@ public final class ModeLoader {
             var arena = registry.find(id);
             if (arena.isEmpty()) {
                 config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids()));
-            } else if (!arena.get().isPlayable()) {
-                config.problem("arenas", "arena '" + id + "' has no spawns yet");
-            } else {
+            } else if (arena.get().isPlayable()) {
                 arenas.add(arena.get());
             }
+            // Left out without a problem: an arena without spawns is still being set up, and a problem would fail the reload it needs to get them.
         }
         return arenas;
     }

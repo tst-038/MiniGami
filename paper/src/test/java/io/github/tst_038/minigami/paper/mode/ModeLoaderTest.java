@@ -173,8 +173,15 @@ class ModeLoaderTest {
                 "modes/fall.yml: max-players: must be at least min-players (4)",
                 "modes/fall.yml: waiting: must be one of: in-place, lobby, arena",
                 "modes/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty",
-                "modes/fall.yml: arenas: arena 'empty' has no spawns yet",
                 "modes/fall.yml: features.playing.void-kills.y: must be a number"), problems(loaded));
+    }
+
+    @Test
+    void anArenaWithoutSpawnsIsLeftOutUntilItHasSome() throws Exception {
+        var loaded = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo, empty]}");
+
+        assertEquals(List.of(), problems(loaded));
+        assertEquals(List.of("demo"), loaded.entries().find("fall").orElseThrow().arenas().stream().map(Arena::id).toList());
     }
 
     @Test
