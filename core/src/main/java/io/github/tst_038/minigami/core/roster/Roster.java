@@ -9,7 +9,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The participants of one match, in join order, and the order in which they were eliminated.
+ * The participants of one match, in join order, their teams if any, and the order in which they were
+ * eliminated.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -64,6 +65,33 @@ public final class Roster {
         }
         eliminated.remove(participant);
         return true;
+    }
+
+    /**
+     * Puts a participant in a team, for example when teams are formed at the start. Assigning them
+     * again moves them.
+     *
+     * @throws IllegalArgumentException if this player is not in the roster
+     */
+    public void assignTeam(UUID id, String team) {
+        var participant = participants.get(id);
+        if (participant == null) {
+            throw new IllegalArgumentException("Not in the roster: " + id);
+        }
+        participant.setTeam(team);
+    }
+
+    /**
+     * The teams with their members in join order, eliminated ones included; empty when nobody has a
+     * team. Teams come in the order of their first member.
+     */
+    public Map<String, List<Participant>> teams() {
+        var teams = new LinkedHashMap<String, List<Participant>>();
+        for (var participant : participants.values()) {
+            participant.team().ifPresent(team -> teams.computeIfAbsent(team, id -> new ArrayList<>()).add(participant));
+        }
+        teams.replaceAll((team, members) -> List.copyOf(members));
+        return Collections.unmodifiableMap(teams);
     }
 
     public int size() {

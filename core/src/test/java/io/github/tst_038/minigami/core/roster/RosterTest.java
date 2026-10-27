@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -129,5 +131,58 @@ class RosterTest {
     @Test
     void removingAnUnknownPlayerReturnsFalse() {
         assertFalse(roster.remove(alice));
+    }
+
+    @Test
+    void withoutTeamsEveryoneIsOnTheirOwn() {
+        roster.add(alice);
+
+        assertEquals(Optional.empty(), roster.find(alice).orElseThrow().team());
+        assertTrue(roster.teams().isEmpty());
+    }
+
+    @Test
+    void teamsListTheirMembersInJoinOrderAndComeInTheOrderOfTheirFirstMember() {
+        roster.add(alice);
+        roster.add(bob);
+        roster.add(carol);
+
+        roster.assignTeam(carol, "blue");
+        roster.assignTeam(bob, "red");
+        roster.assignTeam(alice, "blue");
+
+        assertEquals(Optional.of("blue"), roster.find(alice).orElseThrow().team());
+        var teams = roster.teams();
+        assertEquals(List.of("blue", "red"), List.copyOf(teams.keySet()));
+        assertEquals(Map.of("blue", List.of(alice, carol), "red", List.of(bob)),
+                Map.of("blue", ids(teams.get("blue")), "red", ids(teams.get("red"))));
+    }
+
+    @Test
+    void assigningAgainMovesAParticipantAndAnEmptyTeamDisappears() {
+        roster.add(alice);
+        roster.assignTeam(alice, "red");
+
+        roster.assignTeam(alice, "blue");
+
+        assertEquals(List.of("blue"), List.copyOf(roster.teams().keySet()));
+    }
+
+    @Test
+    void eliminatedMembersStayInTheirTeamAndRemovedOnesLeaveIt() {
+        roster.add(alice);
+        roster.add(bob);
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+
+        roster.eliminate(alice);
+        roster.remove(bob);
+
+        assertEquals(List.of(alice), ids(roster.teams().get("red")));
+    }
+
+    @Test
+    void assigningAnUnknownPlayerFails() {
+        assertThrows(IllegalArgumentException.class, () -> roster.assignTeam(alice, "red"));
     }
 }
