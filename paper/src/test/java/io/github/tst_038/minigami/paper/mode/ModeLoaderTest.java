@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
+import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
@@ -14,6 +15,7 @@ import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -151,7 +153,7 @@ class ModeLoaderTest {
                 arenas: [demo, nope, empty]
                 features:
                   playing:
-                    void-kills: {}
+                    void-kills: { y: low }
                 """);
 
         assertTrue(loaded.entries().ids().isEmpty());
@@ -161,7 +163,7 @@ class ModeLoaderTest {
                 "modes/fall.yml: waiting: must be one of: in-place, lobby, arena",
                 "modes/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty",
                 "modes/fall.yml: arenas: arena 'empty' has no spawns yet",
-                "modes/fall.yml: features.playing.void-kills.y: is missing"), problems(loaded));
+                "modes/fall.yml: features.playing.void-kills.y: must be a number"), problems(loaded));
     }
 
     @Test
@@ -182,6 +184,61 @@ class ModeLoaderTest {
         assertEquals(List.of(
                 "modes/fall.yml: features.ending: unknown phase; test has: waiting, playing",
                 "modes/fall.yml: features.playing.void-kils: unknown feature; known: void-kills"), problems(loaded));
+    }
+
+    @Test
+    void modeSettingsReplaceTheGamesDefaultsPerKeyAndCanTurnAFeatureOff() throws Exception {
+        var read = new ArrayList<String>();
+        features.register(new FeatureFactory() {
+            @Override
+            public String id() {
+                return "probe";
+            }
+
+            @Override
+            public Feature create(ConfigReader config) {
+                read.add(config.integer("a", 0, 9) + "," + config.integer("b", 0, 9));
+                return context -> { };
+            }
+        });
+        games.register(new GameType() {
+            @Override
+            public String id() {
+                return "defaults";
+            }
+
+            @Override
+            public List<Phase> phases() {
+                return GAME.phases();
+            }
+
+            @Override
+            public Map<String, List<Feature>> features() {
+                return Map.of();
+            }
+
+            @Override
+            public Map<String, ?> defaultFeatures() {
+                return Map.of("playing", Map.of("probe", Map.of("a", 1, "b", 2)));
+            }
+
+            @Override
+            public WinCondition winCondition() {
+                return new LastManStanding();
+            }
+        });
+        var base = "{game: defaults, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]";
+
+        var byGame = load(base + "}");
+        var changed = load(base + ", features: {playing: {probe: {b: 5}}}}");
+        var off = load(base + ", features: {playing: {probe: false}}}");
+
+        assertEquals(List.of(), problems(byGame));
+        assertEquals(List.of(), problems(changed));
+        assertEquals(List.of(), problems(off));
+        assertEquals(List.of("1,2", "1,5"), read);
+        assertEquals(1, byGame.entries().find("fall").orElseThrow().features().get("playing").size());
+        assertTrue(off.entries().find("fall").orElseThrow().features().get("playing").isEmpty());
     }
 
     @Test

@@ -164,6 +164,44 @@ public final class ConfigReader {
                 value instanceof ConfigurationSection child ? child : new MemoryConfiguration());
     }
 
+    /**
+     * Like {@link #section(String)}, but starting from {@code defaults}, which may nest maps: what the
+     * file sets replaces the default at the same path, and the rest of the defaults stays. The section
+     * may then be missing from the file.
+     */
+    public ConfigReader section(String key, Map<String, ?> defaults) {
+        read.add(key);
+        suggest(key, List.of());
+        var merged = new MemoryConfiguration().createSection(key, defaults);
+        var own = section.get(key);
+        if (own instanceof ConfigurationSection ownSection) {
+            overlay(merged, ownSection);
+        } else if (own != null) {
+            problem(key, "must be a section of keys");
+        }
+        return new ConfigReader(shared, childPath(key), merged);
+    }
+
+    /** Whether the key is set to {@code false}, as a way to turn off something that is on by default. */
+    public boolean isOff(String key) {
+        if (Boolean.FALSE.equals(section.get(key))) {
+            read.add(key);
+            return true;
+        }
+        return false;
+    }
+
+    private static void overlay(ConfigurationSection target, ConfigurationSection source) {
+        for (String key : source.getKeys(false)) {
+            var value = source.get(key);
+            if (value instanceof ConfigurationSection child) {
+                overlay(target.get(key) instanceof ConfigurationSection existing ? existing : target.createSection(key), child);
+            } else {
+                target.set(key, value);
+            }
+        }
+    }
+
     /** A list of sections, such as spawn points; problems in an item are reported as {@code key[index].field}. */
     public List<ConfigReader> sections(String key) {
         var value = value(key);

@@ -13,6 +13,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -35,13 +36,18 @@ class VoidKillsTest {
             (proxy, method, args) -> switch (method.getName()) {
                 case "getUniqueId" -> id;
                 case "isDead" -> false;
+                case "getLocation" -> new Location(null, 0, 64, 0);
                 default -> throw new UnsupportedOperationException(method.getName());
             });
 
     VoidKillsTest() {
         roster.add(id);
         roster.add(UUID.randomUUID());
-        new VoidKills(50, player -> killed.add(player.getUniqueId())).enable(new Context());
+        enable(OptionalDouble.of(50));
+    }
+
+    private void enable(OptionalDouble y) {
+        new VoidKills(y, player -> killed.add(player.getUniqueId())).enable(new Context());
     }
 
     private void moveTo(double y) {
@@ -60,6 +66,17 @@ class VoidKillsTest {
         moveTo(50);
 
         assertTrue(killed.isEmpty());
+    }
+
+    @Test
+    void withoutALevelItIsJustBelowTheLowestSpawn() {
+        enable(OptionalDouble.empty());
+
+        moveTo(64 - VoidKills.BELOW_SPAWN);
+        assertTrue(killed.isEmpty());
+
+        moveTo(64 - VoidKills.BELOW_SPAWN - 0.1);
+        assertEquals(List.of(id), killed);
     }
 
     @Test
@@ -102,7 +119,7 @@ class VoidKillsTest {
 
         @Override
         public Optional<Player> player(UUID id) {
-            throw new UnsupportedOperationException();
+            return id.equals(VoidKillsTest.this.id) ? Optional.of(player) : Optional.empty();
         }
 
         @Override

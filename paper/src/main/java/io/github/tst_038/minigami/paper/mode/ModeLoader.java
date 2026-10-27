@@ -23,9 +23,10 @@ import java.util.Map;
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * arenas: [demo]
- * features:                   # optional; per phase of the game, per feature
+ * features:                   # optional; per phase of the game, per feature, on top of the game's defaults
  *   playing:
  *     void-kills: { y: 0 }
+ *     anti-camping: false       # turns off a feature the game has on by default
  * </pre>
  */
 public final class ModeLoader {
@@ -65,7 +66,7 @@ public final class ModeLoader {
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, arenas(config, arenas),
-                config.has("features") ? features(config.section("features"), game) : Map.of());
+                features(config.section("features", game == null ? Map.of() : game.defaultFeatures()), game));
     }
 
     private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {
@@ -98,6 +99,9 @@ public final class ModeLoader {
             var phaseConfig = config.section(phase);
             var phaseFeatures = new ArrayList<Feature>();
             for (String featureId : phaseConfig.keys()) {
+                if (phaseConfig.isOff(featureId)) {
+                    continue;
+                }
                 var factory = features.find(featureId);
                 if (factory.isEmpty()) {
                     phaseConfig.problem(featureId, "unknown feature; known: " + String.join(", ", features.ids()));

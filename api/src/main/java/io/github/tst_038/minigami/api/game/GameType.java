@@ -16,8 +16,18 @@ public interface GameType {
 
     List<Phase> phases();
 
-    /** Features per phase id; phases without an entry have none. */
+    /** Features per phase id that are part of the game itself; phases without an entry have none. */
     Map<String, List<Feature>> features();
+
+    /**
+     * Configurable features the game turns on unless a mode says otherwise, in the shape of a mode's
+     * {@code features} section: phase id, then feature id, then its settings, e.g.
+     * {@code Map.of("playing", Map.of("kit", Map.of("items", List.of("diamond_shovel"))))}. A mode
+     * replaces single settings, or turns a feature off with {@code <feature>: false}.
+     */
+    default Map<String, ?> defaultFeatures() {
+        return Map.of();
+    }
 
     /** A fresh one per match. */
     WinCondition winCondition();

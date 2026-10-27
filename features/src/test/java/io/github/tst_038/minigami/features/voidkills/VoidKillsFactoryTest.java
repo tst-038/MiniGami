@@ -27,12 +27,21 @@ class VoidKillsFactoryTest {
     }
 
     @Test
-    void missingYIsAProblem() throws Exception {
+    void yIsOptional() throws Exception {
         var config = read("{}");
 
         new VoidKillsFactory().create(config);
 
+        assertDoesNotThrow(config::check);
+    }
+
+    @Test
+    void yMustBeANumber() throws Exception {
+        var config = read("y: low");
+
+        new VoidKillsFactory().create(config);
+
         var e = assertThrows(InvalidConfigException.class, config::check);
-        assertEquals("modes/test.yml: y: is missing", e.getMessage());
+        assertEquals("modes/test.yml: y: must be a number", e.getMessage());
     }
 }

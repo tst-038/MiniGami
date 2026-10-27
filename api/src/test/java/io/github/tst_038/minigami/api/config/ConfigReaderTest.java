@@ -3,8 +3,10 @@ package io.github.tst_038.minigami.api.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -151,5 +153,38 @@ class ConfigReaderTest {
                 "modes/test.yml: features: must be a section of keys",
                 "modes/test.yml: features.y: is missing",
                 "modes/test.yml: spawns: must be a list of sections"), problems(reader));
+    }
+
+    @Test
+    void fileValuesReplaceDefaultsAtTheSamePathAndTheRestStays() throws Exception {
+        var reader = read("""
+                features:
+                  kit: { items: [stick] }
+                  void-kills: { y: 40 }
+                  anti-camping: false
+                """);
+
+        var features = reader.section("features", Map.of(
+                "kit", Map.of("items", List.of("diamond_shovel"), "armour", true),
+                "void-kills", Map.of(),
+                "anti-camping", Map.of("seconds", 3),
+                "no-damage", Map.of("causes", List.of("fall"))));
+
+        var kit = features.section("kit");
+        assertEquals(List.of("stick"), kit.strings("items"));
+        assertTrue(kit.bool("armour"));
+        assertEquals(40, features.section("void-kills").decimal("y"));
+        assertTrue(features.isOff("anti-camping"));
+        assertEquals(List.of("fall"), features.section("no-damage").strings("causes"));
+        assertEquals(List.of("features.void-kills.y"), reader.askedKeys().keySet().stream().filter(key -> key.endsWith(".y")).toList());
+        assertDoesNotThrow(reader::check);
+    }
+
+    @Test
+    void defaultsAloneAreEnough() throws Exception {
+        var reader = read("");
+
+        assertEquals(3, reader.section("features", Map.of("anti-camping", Map.of("seconds", 3))).section("anti-camping").integer("seconds", 0, 10));
+        assertDoesNotThrow(reader::check);
     }
 }

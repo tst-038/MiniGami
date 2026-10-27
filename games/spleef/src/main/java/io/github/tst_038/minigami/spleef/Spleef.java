@@ -9,7 +9,10 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 
-/** Classic spleef on a snow floor: break the snow under the others, and the last one still on it wins. */
+/**
+ * Classic spleef on a snow floor: shovel and snowballs, no camping, no hits or fall damage, and
+ * whoever falls through the floor is out. The last one still on it wins.
+ */
 public final class Spleef implements GameType {
 
     @Override
@@ -24,7 +27,16 @@ public final class Spleef implements GameType {
 
     @Override
     public Map<String, List<Feature>> features() {
-        return Map.of("playing", List.of(new SpleefRules()), "ending", List.of(new AnnounceWinner()));
+        return Map.of("ending", List.of(new AnnounceWinner()));
+    }
+
+    @Override
+    public Map<String, ?> defaultFeatures() {
+        return Map.of("playing", Map.of(
+                "kit", Map.of("items", List.of("diamond_shovel")),
+                "break-blocks", Map.of("blocks", List.of("snow_block"), "instant", true, "snowballs", true, "camp-seconds", 3),
+                "no-damage", Map.of("causes", List.of("fall", "entity-attack", "entity-sweep-attack")),
+                "void-kills", Map.of()));
     }
 
     @Override

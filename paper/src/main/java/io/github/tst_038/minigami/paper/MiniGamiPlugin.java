@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
+import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.spleef.Spleef;
@@ -78,6 +79,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new BreakBlocksFactory());
+        features.register(new NoDamageFactory());
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         var lobbySetup = new LobbySetup(this, messages, this::loadConfig);
