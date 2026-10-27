@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.core.roster;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,16 +83,33 @@ public final class Roster {
     }
 
     /**
-     * The teams with their members in join order, eliminated ones included; empty when nobody has a
-     * team. Teams come in the order of their first member.
+     * The teams in the order of their first member, then everyone without a team as a team of one,
+     * in join order.
      */
-    public Map<String, List<Participant>> teams() {
-        var teams = new LinkedHashMap<String, List<Participant>>();
+    public List<MatchTeam> teams() {
+        var formed = new LinkedHashMap<String, List<Participant>>();
+        var alone = new ArrayList<MatchTeam>();
         for (var participant : participants.values()) {
-            participant.team().ifPresent(team -> teams.computeIfAbsent(team, id -> new ArrayList<>()).add(participant));
+            participant.team().ifPresentOrElse(
+                    team -> formed.computeIfAbsent(team, id -> new ArrayList<>()).add(participant),
+                    () -> alone.add(new MatchTeam(Optional.empty(), List.of(participant))));
         }
-        teams.replaceAll((team, members) -> List.copyOf(members));
-        return Collections.unmodifiableMap(teams);
+        var teams = new ArrayList<MatchTeam>();
+        formed.forEach((team, members) -> teams.add(new MatchTeam(Optional.of(team), members)));
+        teams.addAll(alone);
+        return List.copyOf(teams);
+    }
+
+    /** The teams with someone still alive, in the order of {@link #teams()}. */
+    public List<MatchTeam> teamsLeft() {
+        return teams().stream().filter(team -> !team.isOut()).toList();
+    }
+
+    /** The teams that are out, first out first: a team goes out with its last member. */
+    public List<MatchTeam> teamsOut() {
+        return teams().stream().filter(MatchTeam::isOut)
+                .sorted(Comparator.comparingInt(team -> team.members().stream().mapToInt(eliminated::indexOf).max().orElseThrow()))
+                .toList();
     }
 
     public int size() {

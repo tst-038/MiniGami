@@ -64,4 +64,41 @@ class MostPointsTest {
                 new Placement(2, List.of(alice)),
                 new Placement(3, List.of(bob, carol))), result.placements());
     }
+
+    @Test
+    void teamsRankByTheSumOfTheirMembersPoints() {
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+        roster.assignTeam(carol, "blue");
+        roster.assignTeam(dave, "blue");
+        scores.add(alice, 1);
+        scores.add(bob, 4);
+        scores.add(carol, 6);
+
+        var result = winCondition.finalResult(roster, scores);
+
+        assertEquals(List.of(
+                new Placement(1, List.of(carol, dave)),
+                new Placement(2, List.of(alice, bob))), result.placements());
+    }
+
+    @Test
+    void aTeamWithSomeoneLeftIsDecidedOnlyWhenTheOtherTeamsAreOut() {
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+        roster.assignTeam(carol, "blue");
+        roster.assignTeam(dave, "blue");
+        scores.add(carol, 9);
+
+        roster.eliminate(alice);
+        roster.eliminate(carol);
+        assertTrue(winCondition.check(roster, scores).isEmpty());
+
+        roster.eliminate(dave);
+        var result = winCondition.check(roster, scores).orElseThrow();
+
+        assertEquals(List.of(
+                new Placement(1, List.of(alice, bob)),
+                new Placement(2, List.of(carol, dave))), result.placements());
+    }
 }

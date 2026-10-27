@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -18,6 +17,7 @@ class RosterTest {
     private final UUID alice = UUID.randomUUID();
     private final UUID bob = UUID.randomUUID();
     private final UUID carol = UUID.randomUUID();
+    private final UUID dave = UUID.randomUUID();
 
     private List<UUID> ids(List<Participant> participants) {
         return participants.stream().map(Participant::id).toList();
@@ -134,18 +134,21 @@ class RosterTest {
     }
 
     @Test
-    void withoutTeamsEveryoneIsOnTheirOwn() {
+    void withoutTeamsEveryoneIsATeamOfOne() {
         roster.add(alice);
+        roster.add(bob);
 
         assertEquals(Optional.empty(), roster.find(alice).orElseThrow().team());
-        assertTrue(roster.teams().isEmpty());
+        assertEquals(List.of(new MatchTeam(Optional.empty(), List.of(roster.find(alice).orElseThrow())),
+                new MatchTeam(Optional.empty(), List.of(roster.find(bob).orElseThrow()))), roster.teams());
     }
 
     @Test
-    void teamsListTheirMembersInJoinOrderAndComeInTheOrderOfTheirFirstMember() {
+    void teamsComeInTheOrderOfTheirFirstMemberThenEveryoneWithoutATeam() {
         roster.add(alice);
         roster.add(bob);
         roster.add(carol);
+        roster.add(dave);
 
         roster.assignTeam(carol, "blue");
         roster.assignTeam(bob, "red");
@@ -153,9 +156,8 @@ class RosterTest {
 
         assertEquals(Optional.of("blue"), roster.find(alice).orElseThrow().team());
         var teams = roster.teams();
-        assertEquals(List.of("blue", "red"), List.copyOf(teams.keySet()));
-        assertEquals(Map.of("blue", List.of(alice, carol), "red", List.of(bob)),
-                Map.of("blue", ids(teams.get("blue")), "red", ids(teams.get("red"))));
+        assertEquals(List.of(Optional.of("blue"), Optional.of("red"), Optional.empty()), teams.stream().map(MatchTeam::id).toList());
+        assertEquals(List.of(List.of(alice, carol), List.of(bob), List.of(dave)), teams.stream().map(MatchTeam::ids).toList());
     }
 
     @Test
@@ -165,7 +167,7 @@ class RosterTest {
 
         roster.assignTeam(alice, "blue");
 
-        assertEquals(List.of("blue"), List.copyOf(roster.teams().keySet()));
+        assertEquals(List.of(Optional.of("blue")), roster.teams().stream().map(MatchTeam::id).toList());
     }
 
     @Test
@@ -178,11 +180,29 @@ class RosterTest {
         roster.eliminate(alice);
         roster.remove(bob);
 
-        assertEquals(List.of(alice), ids(roster.teams().get("red")));
+        assertEquals(List.of(List.of(alice)), roster.teams().stream().map(MatchTeam::ids).toList());
     }
 
     @Test
     void assigningAnUnknownPlayerFails() {
         assertThrows(IllegalArgumentException.class, () -> roster.assignTeam(alice, "red"));
+    }
+
+    @Test
+    void aTeamIsOutOnceAllItsMembersAreAndWentOutWithItsLastMember() {
+        roster.add(alice);
+        roster.add(bob);
+        roster.add(carol);
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+
+        roster.eliminate(bob);
+        assertFalse(roster.teams().getFirst().isOut());
+
+        roster.eliminate(carol);
+        roster.eliminate(alice);
+
+        assertEquals(List.of(List.of(carol), List.of(alice, bob)), roster.teamsOut().stream().map(MatchTeam::ids).toList());
+        assertTrue(roster.teamsLeft().isEmpty());
     }
 }

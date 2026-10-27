@@ -69,4 +69,46 @@ class LastManStandingTest {
                 new Placement(1, List.of(bob, carol)),
                 new Placement(3, List.of(alice))), result.placements());
     }
+
+    @Test
+    void aTeamIsOutOnlyOnceAllItsMembersAre() {
+        var dave = UUID.randomUUID();
+        roster.add(dave);
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+        roster.assignTeam(carol, "blue");
+        roster.assignTeam(dave, "blue");
+
+        roster.eliminate(alice);
+        roster.eliminate(carol);
+        assertTrue(winCondition.check(roster, scores).isEmpty());
+
+        roster.eliminate(dave);
+        var result = winCondition.check(roster, scores).orElseThrow();
+
+        assertEquals(List.of(
+                new Placement(1, List.of(alice, bob)),
+                new Placement(2, List.of(carol, dave))), result.placements());
+    }
+
+    @Test
+    void teamsArePlacedByWhenTheirLastMemberWentOut() {
+        var dave = UUID.randomUUID();
+        roster.add(dave);
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "blue");
+        roster.assignTeam(carol, "green");
+        roster.assignTeam(dave, "green");
+
+        roster.eliminate(carol);
+        roster.eliminate(alice);
+        roster.eliminate(dave);
+
+        var result = winCondition.check(roster, scores).orElseThrow();
+
+        assertEquals(List.of(
+                new Placement(1, List.of(bob)),
+                new Placement(2, List.of(carol, dave)),
+                new Placement(3, List.of(alice))), result.placements());
+    }
 }
