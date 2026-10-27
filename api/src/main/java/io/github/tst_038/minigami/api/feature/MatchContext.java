@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -39,6 +40,14 @@ public interface MatchContext {
     /** Empty until the match is decided. */
     Optional<MatchResult> result();
 
+    /**
+     * Decides the match and skips to its last phase, for games decided by something other than who
+     * is left, such as votes.
+     *
+     * @throws IllegalStateException if the match already has a result
+     */
+    void end(MatchResult result);
+
     Messages messages();
 
     /** Everyone currently in the match, eliminated players included, for messages to the whole match. */
@@ -48,5 +57,10 @@ public interface MatchContext {
      * Remembers the block as it is now and puts it back when the match ends, so the arena is the same
      * for the next match. Call it before changing the block; later calls for the same block are ignored.
      */
-    void rememberOriginal(Block block);
+    default void rememberOriginal(Block block) {
+        rememberOriginal(block.getState());
+    }
+
+    /** As {@link #rememberOriginal(Block)}, for a state taken earlier, such as the block a placed one replaced. */
+    void rememberOriginal(BlockState original);
 }

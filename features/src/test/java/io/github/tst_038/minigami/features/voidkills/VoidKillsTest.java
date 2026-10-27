@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -139,7 +139,12 @@ class VoidKillsTest {
         }
 
         @Override
-        public void rememberOriginal(Block block) {
+        public void end(MatchResult result) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void rememberOriginal(BlockState original) {
             throw new UnsupportedOperationException();
         }
     }

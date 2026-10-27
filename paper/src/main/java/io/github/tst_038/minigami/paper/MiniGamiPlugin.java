@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
 import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
@@ -78,6 +79,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
         games.register(new LastStanding());
+        games.register(new BuildBattle());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new BreakBlocksFactory());

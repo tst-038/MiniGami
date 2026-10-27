@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -113,6 +114,11 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
+    public void end(MatchResult result) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Messages messages() {
         throw new UnsupportedOperationException();
     }
@@ -125,5 +131,10 @@ public final class FakeMatch implements MatchContext {
     @Override
     public void rememberOriginal(Block block) {
         remembered.add(block);
+    }
+
+    @Override
+    public void rememberOriginal(BlockState original) {
+        remembered.add(original.getBlock());
     }
 }

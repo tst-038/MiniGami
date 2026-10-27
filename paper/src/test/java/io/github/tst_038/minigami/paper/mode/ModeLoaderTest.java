@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
@@ -143,6 +144,18 @@ class ModeLoaderTest {
 
         assertEquals(1, byGame.entries().find("fall").orElseThrow().lives());
         assertEquals(3, set.entries().find("fall").orElseThrow().lives());
+    }
+
+    @Test
+    void aGameReadsItsOwnSettingsAndOtherGamesDontKnowThem() throws Exception {
+        games.register(new BuildBattle());
+
+        var buildBattle = load("{game: build-battle, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], build-seconds: 60}");
+        var other = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], build-seconds: 60}");
+
+        assertEquals(List.of(), problems(buildBattle));
+        assertEquals(60 * 20, buildBattle.entries().find("fall").orElseThrow().game().phases().get(1).durationTicks());
+        assertEquals(List.of("modes/fall.yml: build-seconds: unknown key"), problems(other));
     }
 
     @Test

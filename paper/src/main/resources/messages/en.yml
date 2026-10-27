@@ -32,6 +32,19 @@ match:
   winner: "<prefix><gold><player></gold> wins the match!"
   no-winner: "<prefix><gray>The match ended without a winner."
 
+build-battle:
+  # <theme>: the theme, <seconds>: build time
+  theme: "<prefix><gold>Build: <white><theme></white>!</gold> <gray>You have <seconds> seconds; stay on your plot."
+  free-build: "<prefix><gold>Build anything you like!</gold> <gray>You have <seconds> seconds; stay on your plot."
+  # <player>: whose build everyone is looking at
+  showing: "<prefix><yellow>Now scoring the build of <white><player></white>. Click an item in your hotbar to vote."
+  # <score>: 1 to 5
+  vote-item: "<yellow>Vote <score>"
+  voted: "<prefix><green>You gave this build <white><score></white>."
+  own-build: "<prefix><red>You can't vote on your own build."
+  # <place>, <player>, <points>
+  score: "<gray> <place>. <white><player></white> - <gold><points></gold> points"
+
 # <player>: the player who fell
 lobby:
   set: "<prefix><green>Set the lobby to where you stand."

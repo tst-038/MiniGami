@@ -109,6 +109,9 @@ public final class ModeLoader {
         if (!gameId.isEmpty() && game == null) {
             config.problem("game", "unknown game '" + gameId + "'; known: " + String.join(", ", games.ids()));
         }
+        if (game != null) {
+            game = game.configure(config);
+        }
         var name = config.has("name") ? config.string("name") : id;
         var minPlayers = config.integer("min-players", 1, Integer.MAX_VALUE);
         var maxPlayers = config.integer("max-players", 1, Integer.MAX_VALUE);

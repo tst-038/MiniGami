@@ -133,8 +133,8 @@ public final class LiveMatch {
     }
 
     /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#rememberOriginal(Block)}. */
-    public void rememberOriginal(Block block) {
-        originals.putIfAbsent(block, block.getState());
+    public void rememberOriginal(BlockState original) {
+        originals.putIfAbsent(original.getBlock(), original);
     }
 
     public Audience audience() {

@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
-import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.junit.jupiter.api.Test;
@@ -134,7 +134,12 @@ class PhaseFeaturesTest {
         }
 
         @Override
-        public void rememberOriginal(Block block) {
+        public void end(MatchResult result) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void rememberOriginal(BlockState original) {
             throw new UnsupportedOperationException();
         }
     }
