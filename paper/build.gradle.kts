@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":api"))
     implementation(project(":features"))
     implementation(project(":games:last-standing"))
+    implementation(project(":games:spleef"))
 
     testImplementation(libs.paper.api)
     testImplementation(platform(libs.junit.bom))

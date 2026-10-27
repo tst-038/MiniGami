@@ -9,9 +9,13 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerEvent;
 
-/** Decides which match an event belongs to, by the player it is about or who caused it, such as who broke a block. */
+/**
+ * Decides which match an event belongs to, by the player it is about or who caused it, such as who
+ * broke a block or threw what hit something.
+ */
 final class EventOwnership {
 
     private EventOwnership() {
@@ -27,6 +31,7 @@ final class EventOwnership {
     static Optional<UUID> playerOf(Event event) {
         return switch (event) {
             case PlayerEvent e -> Optional.of(e.getPlayer().getUniqueId());
+            case ProjectileHitEvent e when e.getEntity().getShooter() instanceof Player shooter -> Optional.of(shooter.getUniqueId());
             case EntityEvent e when e.getEntity() instanceof Player player -> Optional.of(player.getUniqueId());
             case BlockBreakEvent e -> Optional.of(e.getPlayer().getUniqueId());
             case BlockDamageEvent e -> Optional.of(e.getPlayer().getUniqueId());

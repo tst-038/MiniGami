@@ -9,10 +9,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityToggleSwimEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.junit.jupiter.api.Test;
@@ -61,6 +64,18 @@ class EventOwnershipTest {
         var id = UUID.randomUUID();
 
         var owner = EventOwnership.playerOf(new BlockBreakEvent(entity(Block.class, id), entity(Player.class, id)));
+
+        assertEquals(Optional.of(id), owner);
+    }
+
+    @Test
+    void projectileHitBelongsToWhoThrewIt() {
+        var id = UUID.randomUUID();
+        var shooter = entity(Player.class, id);
+        var snowball = Snowball.class.cast(Proxy.newProxyInstance(Snowball.class.getClassLoader(), new Class<?>[] {Snowball.class},
+                (proxy, method, args) -> method.getName().equals("getShooter") ? shooter : null));
+
+        var owner = EventOwnership.playerOf(new ProjectileHitEvent(snowball, null, entity(Block.class, id), BlockFace.UP));
 
         assertEquals(Optional.of(id), owner);
     }

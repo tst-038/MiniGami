@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.laststanding.LastStanding;
+import io.github.tst_038.minigami.spleef.Spleef;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
@@ -73,6 +74,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
         games.register(new LastStanding());
+        games.register(new Spleef());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new BreakBlocksFactory());
