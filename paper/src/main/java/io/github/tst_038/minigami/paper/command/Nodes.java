@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -46,6 +47,11 @@ final class Nodes {
 
     static String string(CommandContext<CommandSourceStack> context, String name) {
         return StringArgumentType.getString(context, name);
+    }
+
+    /** The online player named by the {@code player} argument. */
+    static Player player(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return context.getArgument("player", PlayerSelectorArgumentResolver.class).resolve(context.getSource()).getFirst();
     }
 
     static SuggestionProvider<CommandSourceStack> suggest(Supplier<? extends Collection<String>> ids) {

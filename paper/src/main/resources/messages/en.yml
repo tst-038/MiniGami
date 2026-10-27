@@ -3,12 +3,14 @@
 prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
 
 join:
-  already-in-match: "<prefix><red>You are already in a match. Use <white>/mg leave</white> first."
+  # <player>: who tried to join
+  already-in-match: "<prefix><red><player> is already in a match; leave it first with <white>/mg leave</white>."
+  name-a-player: "<prefix><red>Name who should join: <white>/mg join <mode> <player></white>."
   # <mode>: the mode as typed
   unknown-mode: "<prefix><red>There is no mode called <white><mode></white>."
   # <mode>: the mode's name
   no-free-arena: "<prefix><red>All arenas of <mode><red> are busy or full. Try again later."
-  failed: "<prefix><red>You can't join right now. Your items from an earlier match still need to be restored; please rejoin the server or ask staff."
+  failed: "<prefix><red><player> can't join right now: their things from an earlier match still need to be given back. Rejoining the server does that, or staff can with <white>/mg player <player> snapshot restore</white>."
 
 leave:
   not-in-match: "<prefix><red>You are not in a match."
@@ -31,6 +33,29 @@ match:
   # <player>: the winner
   winner: "<prefix><gold><player></gold> wins the match!"
   no-winner: "<prefix><gray>The match ended without a winner."
+  stopped: "<prefix><red>An admin stopped the match; you get your own things back."
+  # For admins. <match>: a match's id, its arena; <mode>, <phase>, <players>: how many are in it
+  admin:
+    none: "<prefix><gray>No matches are running."
+    # <count>
+    list: "<prefix><gold>Matches</gold> <gray>(<count>):"
+    entry: "<gray> - <info><hover:show_text:'Show details'><white><match></white></hover></info> <gray><mode>, <phase>, <white><players></white> players"
+    # <mode>: its name, <game>, <seconds>: since it opened
+    info: "<prefix><gold><match></gold> <gray>(<mode><gray>, <game>) in phase <white><phase></white> after <seconds> s:"
+    # <player>, <state>, <points>; <kick>…</kick> fills in the kick command
+    player: "<kick><hover:show_text:'Click to kick'><gray> - <white><player></white> <state> <gray><points> points</hover></kick>"
+    state-alive: "<green>playing"
+    state-out: "<red>out"
+    state-left: "<dark_gray>left"
+    unknown: "<prefix><red>No match is running in <white><match></white>."
+    cannot-start: "<prefix><red><white><match></white> has already started or has no players."
+    cannot-end: "<prefix><red><white><match></white> hasn't started or is already ending; stop it instead with <white>/mg match <match> stop</white>."
+    started: "<prefix><red><white><match></white> has already started; players can only be added before."
+    ended: "<prefix><green>Ended <white><match></white>; the win condition decided the result."
+    stopped: "<prefix><green>Stopped <white><match></white> without a result."
+    added: "<prefix><green>Added <white><player></white> to <white><match></white>."
+    kicked: "<prefix><green>Kicked <white><player></white> from <white><match></white>."
+    not-member: "<prefix><red><white><player></white> isn't in <white><match></white>."
 
 build-battle:
   # <theme>: the theme, <seconds>: build time

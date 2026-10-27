@@ -161,7 +161,12 @@ public final class LiveMatch {
      *     from an earlier match that wasn't restored
      */
     public void join(Player player) {
-        if (!isJoinable() || !hasRoom()) {
+        join(player, false);
+    }
+
+    /** @param evenIfFull lets an admin add a player beyond the mode's maximum */
+    public void join(Player player, boolean evenIfFull) {
+        if (!isJoinable() || !(evenIfFull || hasRoom())) {
             throw new IllegalStateException("The match is not accepting players");
         }
         var id = player.getUniqueId();
@@ -229,6 +234,25 @@ public final class LiveMatch {
         startPlaying();
     }
 
+    /**
+     * Ends the match now with the result the win condition gives as things stand; it then plays
+     * its last phase as usual.
+     *
+     * @throws IllegalStateException if it hasn't started or already has a result
+     */
+    public void end() {
+        if (isJoinable()) {
+            throw new IllegalStateException("A match that hasn't started can only be stopped");
+        }
+        match.endNow();
+    }
+
+    /** Ends the match at once without a result; everyone gets their own state back. */
+    public void stop() {
+        messages.send(audience(), "match.stopped");
+        match.dispose();
+    }
+
     /** Brings everyone to the spawns, round robin, prepared for play. */
     private void startPlaying() {
         startDelay = null;
@@ -244,7 +268,7 @@ public final class LiveMatch {
                     saveState(player);
                 } catch (IllegalStateException e) {
                     plugin.getLogger().log(Level.WARNING, player.getName() + " could not be brought into the match", e);
-                    messages.send(player, "join.failed");
+                    messages.send(player, "join.failed", Placeholder.component("player", player.name()));
                     members.remove(id);
                     match.roster().remove(id);
                     continue;

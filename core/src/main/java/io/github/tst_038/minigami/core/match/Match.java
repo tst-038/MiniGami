@@ -95,6 +95,16 @@ public final class Match {
         phases.skipToEnd();
     }
 
+    /**
+     * Ends the match now with the result the win condition gives as things stand, as if time ran
+     * out, for example when an admin ends it.
+     *
+     * @throws IllegalStateException if the match already has a result
+     */
+    public void endNow() {
+        end(winCondition.finalResult(roster, scores));
+    }
+
     /** The result once decided, at the latest when the last phase starts. */
     public Optional<MatchResult> result() {
         return Optional.ofNullable(result);

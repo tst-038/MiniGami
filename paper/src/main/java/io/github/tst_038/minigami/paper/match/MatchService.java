@@ -13,6 +13,7 @@ import java.util.SortedSet;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -65,25 +66,38 @@ public final class MatchService implements Listener {
     }
 
     public void join(Player player, String modeId) {
+        join(player, modeId, player);
+    }
+
+    /** An admin puts a player in a match of the mode; the admin hears why if that can't be done. */
+    public void join(CommandSender sender, Player player, String modeId) {
+        join(player, modeId, sender).ifPresent(match -> messages.send(sender, "match.admin.added",
+                Placeholder.component("player", player.name()), Placeholder.unparsed("match", match.arena().id())));
+    }
+
+    /** @param feedback hears why the player can't join */
+    private Optional<LiveMatch> join(Player player, String modeId, Audience feedback) {
         if (find(player.getUniqueId()).isPresent()) {
-            messages.send(player, "join.already-in-match");
-            return;
+            messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
+            return Optional.empty();
         }
         var mode = modes.get().find(modeId);
         if (mode.isEmpty()) {
-            messages.send(player, "join.unknown-mode", Placeholder.unparsed("mode", modeId));
-            return;
+            messages.send(feedback, "join.unknown-mode", Placeholder.unparsed("mode", modeId));
+            return Optional.empty();
         }
         var match = matchToJoin(mode.get());
         if (match.isEmpty()) {
-            messages.send(player, "join.no-free-arena", Placeholder.parsed("mode", mode.get().name()));
-            return;
+            messages.send(feedback, "join.no-free-arena", Placeholder.parsed("mode", mode.get().name()));
+            return Optional.empty();
         }
         try {
             match.get().join(player);
+            return match;
         } catch (IllegalStateException e) {
             plugin.getLogger().log(Level.WARNING, player.getName() + " could not join", e);
-            messages.send(player, "join.failed");
+            messages.send(feedback, "join.failed", Placeholder.component("player", player.name()));
+            return Optional.empty();
         }
     }
 
@@ -154,12 +168,14 @@ public final class MatchService implements Listener {
         find(event.getPlayer().getUniqueId()).ifPresent(match -> match.leave(event.getPlayer()));
     }
 
-    private Collection<LiveMatch> running() {
+    /** The matches that haven't finished, oldest first. */
+    Collection<LiveMatch> running() {
         byArena.values().removeIf(match -> match.match().isFinished());
         return byArena.values();
     }
 
-    private Optional<LiveMatch> find(UUID id) {
+    /** The match the player is in. */
+    Optional<LiveMatch> find(UUID id) {
         return running().stream().filter(match -> match.isMember(id)).findFirst();
     }
 

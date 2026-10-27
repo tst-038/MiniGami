@@ -4,6 +4,7 @@ import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
+import static io.github.tst_038.minigami.paper.command.Nodes.player;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
@@ -13,16 +14,19 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
+import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.github.tst_038.minigami.paper.match.MatchService;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 /**
  * The {@code /mg} command. Every part follows one pattern: {@code /mg <thing> create …} and
@@ -40,19 +44,29 @@ public final class GamesCommand {
      * @param lobby the lobby currently loaded
      * @param reload loads the config again and tells the sender how that went
      */
-    public static LiteralCommandNode<CommandSourceStack> create(Messages messages, MatchService service, ConfigEditor editor,
+    public static LiteralCommandNode<CommandSourceStack> create(Messages messages, MatchService service, MatchAdmin matches, ConfigEditor editor,
             ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
                 .then(Commands.literal("list").executes(bySender((sender, context) -> service.list(sender))))
                 .then(Commands.literal("join")
-                        .requires(PLAYER)
+                        .requires(PLAYER.or(ADMIN))
                         .then(Commands.argument("mode", StringArgumentType.word())
                                 .suggests(suggest(service::modeIds))
-                                .executes(byPlayer((player, context) -> service.join(player, string(context, "mode"))))))
+                                .executes(bySender((sender, context) -> {
+                                    if (context.getSource().getExecutor() instanceof Player player) {
+                                        service.join(player, string(context, "mode"));
+                                    } else {
+                                        messages.send(sender, "join.name-a-player");
+                                    }
+                                }))
+                                .then(Commands.argument("player", ArgumentTypes.player())
+                                        .requires(ADMIN)
+                                        .executes(bySender((sender, context) -> service.join(sender, player(context), string(context, "mode")))))))
                 .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> service.leave(player))))
                 .then(Commands.literal("start").requires(ADMIN).executes(bySender((sender, context) -> service.forceStart(sender))))
+                .then(MatchCommands.node(matches, help))
                 .then(ModeCommands.node(editor, info, help))
                 .then(ArenaCommands.node(editor, arenas, info, help))
                 .then(GameCommands.game(info, () -> games, help))

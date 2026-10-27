@@ -113,6 +113,19 @@ class MatchTest {
     }
 
     @Test
+    void endingNowAsksForTheFinalResult() {
+        var match = match(Phase.untimed("playing"), Phase.untimed("ending"));
+        match.start();
+        match.eliminate(carol);
+
+        match.endNow();
+
+        assertEquals("ending", phase(match));
+        assertEquals(new Placement(1, List.of(alice, bob)), match.result().orElseThrow().placements().getFirst());
+        assertThrows(IllegalStateException.class, match::endNow);
+    }
+
+    @Test
     void reachingTheLastPhaseUndecidedAsksForTheFinalResult() {
         var match = match(Phase.timed("playing", 2), Phase.untimed("ending"));
         match.start();
