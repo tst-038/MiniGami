@@ -48,7 +48,7 @@ class ArenaLoaderTest {
 
         assertEquals(List.of(), problems(loaded));
         var arena = loaded.entries().find("winter").orElseThrow();
-        assertEquals(List.of(new Location(world, 0.5, 64, 0.5, 90, 10), new Location(world, 5, 64, 5)), arena.spawns());
+        assertEquals(List.of(new Location(world, 0.5, 64, 0.5, 90, 10), new Location(world, 5, 64, 5)), arena.spawnsFor(Optional.empty()));
         assertEquals(Optional.of(new Location(world, 1, 70, 1)), arena.waitingSpot());
         assertTrue(arena.isPlayable());
     }
@@ -87,8 +87,37 @@ class ArenaLoaderTest {
     void handedOutLocationsCanBeChangedSafely() throws Exception {
         var arena = load("winter", "world: world\nspawns: [{ x: 0, y: 64, z: 0 }]").entries().find("winter").orElseThrow();
 
-        arena.spawns().getFirst().add(0, 100, 0);
+        arena.spawns().getFirst().location().add(0, 100, 0);
+        arena.spawnsFor(Optional.empty()).getFirst().add(0, 100, 0);
 
-        assertEquals(64, arena.spawns().getFirst().getY());
+        assertEquals(64, arena.spawns().getFirst().location().getY());
+    }
+
+    @Test
+    void aTeamStartsAtItsOwnSpawnsElseTheSharedOnesElseAnywhere() throws Exception {
+        var loaded = load("winter", """
+                world: world
+                spawns:
+                  - { x: 1, y: 64, z: 1, team: red }
+                  - { x: 2, y: 64, z: 2 }
+                  - { x: 3, y: 64, z: 3, team: red }
+                """);
+        var onlyTeams = load("summer", "world: world\nspawns: [{ x: 1, y: 64, z: 1, team: red }]");
+
+        assertEquals(List.of(), problems(loaded));
+        var arena = loaded.entries().find("winter").orElseThrow();
+        assertEquals(List.of(new Location(world, 1, 64, 1), new Location(world, 3, 64, 3)), arena.spawnsFor(Optional.of("red")));
+        assertEquals(List.of(new Location(world, 2, 64, 2)), arena.spawnsFor(Optional.of("blue")));
+        assertEquals(List.of(new Location(world, 2, 64, 2)), arena.spawnsFor(Optional.empty()));
+        assertEquals(List.of(new Location(world, 1, 64, 1)),
+                onlyTeams.entries().find("summer").orElseThrow().spawnsFor(Optional.of("blue")));
+    }
+
+    @Test
+    void aSpawnsTeamMustBeKnown() throws Exception {
+        var loaded = load("winter", "world: world\nspawns: [{ x: 1, y: 64, z: 1, team: purple }]");
+
+        assertEquals(List.of("arenas/winter.yml: spawns[0].team: unknown team 'purple'; teams: red, blue, green, yellow, aqua, light_purple, gold, white"),
+                problems(loaded));
     }
 }

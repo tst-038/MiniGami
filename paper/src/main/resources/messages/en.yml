@@ -32,7 +32,11 @@ match:
   you-left: "<prefix><gray>You left the match."
   # <player>: the winner
   winner: "<prefix><gold><player></gold> wins the match!"
+  # <team>: the winning team's name, in its colour
+  winner-team: "<prefix><team> <gold>wins the match!"
   no-winner: "<prefix><gray>The match ended without a winner."
+  # <team>: the player's team, in its colour
+  your-team: "<prefix><gray>You are in team <team><gray>."
   stopped: "<prefix><red>An admin stopped the match; you get your own things back."
   # For admins. <match>: a match's id, its arena; <mode>, <phase>, <players>: how many are in it
   admin:
@@ -109,7 +113,11 @@ arena:
   # <spawns>: how many spawns
   info: "<prefix><gold><arena></gold> <gray>in <white><world></white>, <white><spawns></white> spawns. Click a point to go there."
   # <x>, <y>, <z>; wrap text in <teleport>…</teleport> to make it teleport on click
-  info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white>: <x>, <y>, <z></hover></teleport>"
+  info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white><team>: <x>, <y>, <z></hover></teleport>"
+  # <team>: the team's name; shown after a spawn that only that team uses
+  spawn-team: " <gray>(<team><gray>)"
+  # <team>: what was typed, <teams>: the known ones
+  unknown-team: "<prefix><red>There is no team <white><team></white>; teams: <white><teams></white>."
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
   no-spawns: "<prefix><gray><white><arena></white> has no spawns yet; add one with <white>/mg arena <arena> spawn add</white>."
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"

@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.arena;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -19,9 +20,12 @@ public final class ArenaFile {
         config.set("spawns", new ArrayList<>());
     }
 
-    public static void addSpawn(YamlConfiguration config, Location location) {
+    /** @param team the only team that starts there, or empty for everyone */
+    public static void addSpawn(YamlConfiguration config, Location location, Optional<String> team) {
         var spawns = new ArrayList<Map<?, ?>>(config.getMapList("spawns"));
-        spawns.add(ConfigLocations.write(location));
+        var spawn = ConfigLocations.write(location);
+        team.ifPresent(id -> spawn.put("team", id));
+        spawns.add(spawn);
         config.set("spawns", spawns);
     }
 

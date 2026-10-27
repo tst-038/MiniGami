@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -35,14 +36,15 @@ class ArenaFileTest {
     void editsLoadBackAsTheArena() throws Exception {
         var config = new YamlConfiguration();
         ArenaFile.create(config, world);
-        ArenaFile.addSpawn(config, new Location(world, 0.5, 64, 0.5, 90, 10));
-        ArenaFile.addSpawn(config, new Location(world, 1.23456, 65, 2, -45.06f, 0));
-        ArenaFile.addSpawn(config, new Location(world, 9, 9, 9));
+        ArenaFile.addSpawn(config, new Location(world, 0.5, 64, 0.5, 90, 10), Optional.empty());
+        ArenaFile.addSpawn(config, new Location(world, 1.23456, 65, 2, -45.06f, 0), Optional.empty());
+        ArenaFile.addSpawn(config, new Location(world, 9, 9, 9), Optional.of("red"));
         ArenaFile.removeSpawn(config, 0);
 
         var arena = reload(config);
 
-        assertEquals(List.of(new Location(world, 1.23, 65, 2, -45.1f, 0), new Location(world, 9, 9, 9)), arena.spawns());
+        assertEquals(List.of(new Arena.Spawn(new Location(world, 1.23, 65, 2, -45.1f, 0), Optional.empty()),
+                new Arena.Spawn(new Location(world, 9, 9, 9), Optional.of("red"))), arena.spawns());
     }
 
     @Test
@@ -57,7 +59,7 @@ class ArenaFileTest {
     void removingAMissingSpawnChangesNothing() {
         var config = new YamlConfiguration();
         ArenaFile.create(config, world);
-        ArenaFile.addSpawn(config, new Location(world, 0, 64, 0));
+        ArenaFile.addSpawn(config, new Location(world, 0, 64, 0), Optional.empty());
 
         assertFalse(ArenaFile.removeSpawn(config, 1));
         assertEquals(1, config.getMapList("spawns").size());

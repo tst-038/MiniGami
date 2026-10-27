@@ -4,9 +4,11 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
+import io.github.tst_038.minigami.paper.mode.TeamSetup;
 import java.util.Optional;
 import java.util.function.Supplier;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -34,8 +36,17 @@ public final class ArenaSetup {
         this.messages = messages;
     }
 
-    /** Adds where the player stands, which must be in the arena's world. */
-    public void addSpawn(Player player, String id) {
+    /**
+     * Adds where the player stands, which must be in the arena's world.
+     *
+     * @param team the only team that starts there, or empty for everyone
+     */
+    public void addSpawn(Player player, String id, Optional<String> team) {
+        if (team.isPresent() && !TeamSetup.IDS.contains(team.get())) {
+            messages.send(player, "arena.unknown-team", Placeholder.unparsed("team", team.get()),
+                    Placeholder.unparsed("teams", String.join(", ", TeamSetup.IDS)));
+            return;
+        }
         var here = player.getLocation();
         find(player, id).ifPresent(arena -> {
             if (!arena.world().equals(here.getWorld())) {
@@ -43,7 +54,7 @@ public final class ArenaSetup {
                         Placeholder.unparsed("world", arena.world().getName()));
                 return;
             }
-            editor.change(player, Kind.ARENA, id, config -> ArenaFile.addSpawn(config, here), "arena.spawn-added",
+            editor.change(player, Kind.ARENA, id, config -> ArenaFile.addSpawn(config, here, team), "arena.spawn-added",
                     Placeholder.unparsed("arena", id), Formatter.number("number", arena.spawns().size() + 1));
         });
     }
@@ -85,14 +96,18 @@ public final class ArenaSetup {
     private void spawns(CommandSender sender, Arena arena) {
         var spawns = arena.spawns();
         for (int i = 0; i < spawns.size(); i++) {
-            messages.send(sender, "arena.info-spawn", point(spawns.get(i), Formatter.number("number", i + 1)));
+            var team = spawns.get(i).team()
+                    .map(id -> messages.render("arena.spawn-team", Placeholder.component("team", messages.render("team." + id))))
+                    .orElse(Component.empty());
+            messages.send(sender, "arena.info-spawn", point(spawns.get(i).location(), Formatter.number("number", i + 1),
+                    Placeholder.component("team", team)));
         }
     }
 
     /** To the waiting spot, else the first spawn, else the spawn of the arena's world. */
     public void teleport(Player player, String id) {
         find(player, id).ifPresent(arena -> player.teleportAsync(arena.waitingSpot()
-                .or(() -> arena.spawns().stream().findFirst())
+                .or(() -> arena.spawns().stream().findFirst().map(Arena.Spawn::location))
                 .orElseGet(() -> arena.world().getSpawnLocation())));
     }
 

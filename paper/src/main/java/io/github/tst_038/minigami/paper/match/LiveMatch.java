@@ -25,6 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.GameMode;
@@ -36,6 +38,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scoreboard.Team;
 
 /**
  * A match of a mode in one arena, together with the players in it. Players join during the first
@@ -64,6 +67,8 @@ public final class LiveMatch {
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
     /** Deaths per participant since the start, against the mode's lives. */
     private final Map<UUID, Integer> deaths = new HashMap<>();
+    /** Takes a member out of their scoreboard team again; closing twice is harmless. */
+    private final Map<UUID, AutoCloseable> scoreboardLeaves = new HashMap<>();
     // shortcut: only kept in memory, so a crash leaves the arena changed; fine until matches get their own world.
     private final Map<Block, BlockState> originals = new LinkedHashMap<>();
     private MatchClock.Task startDelay;
@@ -80,7 +85,7 @@ public final class LiveMatch {
         this.waitingSpot = switch (mode.waiting()) {
             case IN_PLACE -> Optional.empty();
             case LOBBY -> Optional.of(lobby.orElseThrow(() -> new IllegalArgumentException(mode.id() + " waits in a lobby, but none is set")));
-            case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst()));
+            case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst().location()));
         };
         this.sessions = sessions;
         this.messages = messages;
@@ -274,11 +279,9 @@ public final class LiveMatch {
         match.dispose();
     }
 
-    /** Brings everyone to the spawns, round robin, prepared for play. */
+    /** Prepares everyone for play, forms the teams if the mode has them, and brings each to their spawns, round robin. */
     private void startPlaying() {
         startDelay = null;
-        var spawns = arena.spawns();
-        var next = 0;
         for (var id : List.copyOf(members)) {
             var player = plugin.getServer().getPlayer(id);
             if (player == null) {
@@ -296,26 +299,88 @@ public final class LiveMatch {
                 }
             }
             prepare(player);
-            player.teleport(spawns.get(next++ % spawns.size()));
         }
         if (members.isEmpty()) {
             match.dispose();
             return;
         }
         mode.teams().ifPresent(this::formTeams);
+        var next = new HashMap<Optional<String>, Integer>();
+        for (var id : members) {
+            var player = plugin.getServer().getPlayer(id);
+            if (player != null) {
+                var team = teamOf(id);
+                var spawns = arena.spawnsFor(team);
+                player.teleport(spawns.get(next.merge(team, 1, Integer::sum) % spawns.size()));
+            }
+        }
         // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
         match.advancePhase();
     }
 
-    /** Splits everyone still in the match at random, handing out team ids in order. */
+    /** Splits everyone still in the match at random, handing out team ids in order, and tells each their team. */
     private void formTeams(TeamSetup setup) {
         var players = List.copyOf(members);
         var teams = new RandomTeams(ThreadLocalRandom.current()).form(players, setup.teamsFor(players.size()));
         for (int i = 0; i < teams.size(); i++) {
+            if (teams.get(i).isEmpty()) {
+                continue;
+            }
+            var teamId = TeamSetup.IDS.get(i);
+            var name = messages.render("team." + teamId);
+            var scoreboardTeam = scoreboardTeam(teamId, name);
             for (var id : teams.get(i)) {
-                match.roster().assignTeam(id, TeamSetup.IDS.get(i));
+                match.roster().assignTeam(id, teamId);
+                var player = plugin.getServer().getPlayer(id);
+                if (player != null) {
+                    joinScoreboardTeam(player, scoreboardTeam);
+                    messages.send(player, "match.your-team", Placeholder.component("team", name));
+                }
             }
         }
+    }
+
+    private Optional<String> teamOf(UUID id) {
+        return match.roster().find(id).flatMap(Participant::team);
+    }
+
+    /**
+     * A team on the main scoreboard, which colours its members' names and stops them hurting each
+     * other; it goes away with the match. One left behind by a crash is replaced.
+     */
+    private Team scoreboardTeam(String teamId, Component name) {
+        var scoreboard = plugin.getServer().getScoreboardManager().getMainScoreboard();
+        var teamName = "minigami." + arena.id() + "." + teamId;
+        var leftover = scoreboard.getTeam(teamName);
+        if (leftover != null) {
+            leftover.unregister();
+        }
+        var team = scoreboard.registerNewTeam(teamName);
+        team.displayName(name);
+        team.color(NamedTextColor.NAMES.valueOrThrow(teamId));
+        team.setAllowFriendlyFire(false);
+        team.setCanSeeFriendlyInvisibles(true);
+        match.scope().register(() -> {
+            if (scoreboard.getTeam(teamName) == team) {
+                team.unregister();
+            }
+        });
+        return team;
+    }
+
+    /** Puts the player in the team; the scoreboard team they were in before, if any, gets them back when they leave. */
+    private void joinScoreboardTeam(Player player, Team team) {
+        var name = player.getName();
+        var previous = Optional.ofNullable(team.getScoreboard().getEntryTeam(name));
+        team.addEntry(name);
+        AutoCloseable leave = () -> {
+            if (team.hasEntry(name)) {
+                team.removeEntry(name);
+            }
+            previous.filter(old -> old.getScoreboard().getTeam(old.getName()) == old).ifPresent(old -> old.addEntry(name));
+        };
+        match.scope().register(leave);
+        scoreboardLeaves.put(player.getUniqueId(), leave);
     }
 
     /**
@@ -345,15 +410,15 @@ public final class LiveMatch {
         }, null);
     }
 
-    /** Before the start back to where they wait; after it to a random spawn, as a spectator once they are out. */
+    /** Before the start back to where they wait; after it to a random spawn of their team, as a spectator once they are out. */
     private void onRespawn(PlayerRespawnEvent event) {
         if (isJoinable()) {
             waitingSpot.ifPresent(event::setRespawnLocation);
             return;
         }
-        var spawns = arena.spawns();
-        event.setRespawnLocation(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
         var player = event.getPlayer();
+        var spawns = arena.spawnsFor(teamOf(player.getUniqueId()));
+        event.setRespawnLocation(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
         if (match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty()) {
             // The game mode is reset during the respawn, so it is set right after.
             player.getScheduler().run(plugin, task -> player.setGameMode(GameMode.SPECTATOR), null);
@@ -368,6 +433,14 @@ public final class LiveMatch {
 
     /** Players who waited in place had nothing changed, so there is nothing to give back. */
     private void restore(UUID id) {
+        var leave = scoreboardLeaves.remove(id);
+        if (leave != null) {
+            try {
+                leave.close();
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "Could not take " + id + " out of their scoreboard team", e);
+            }
+        }
         var restore = restores.remove(id);
         if (restore == null) {
             return;

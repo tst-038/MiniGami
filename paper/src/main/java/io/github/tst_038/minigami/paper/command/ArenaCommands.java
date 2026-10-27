@@ -17,12 +17,14 @@ import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
+import io.github.tst_038.minigami.paper.mode.TeamSetup;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import java.util.Optional;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn list|add|remove <n>}, {@code waiting set}. Points are where the admin stands.
+ * {@code spawn list|add [team]|remove <n>}, {@code waiting set}. Points are where the admin stands.
  */
 final class ArenaCommands {
 
@@ -51,7 +53,11 @@ final class ArenaCommands {
                                 .then(Commands.literal("list").executes(bySender((sender, context) -> arenas.spawns(sender, arena(context)))))
                                 .then(Commands.literal("add")
                                         .requires(PLAYER)
-                                        .executes(byPlayer((player, context) -> arenas.addSpawn(player, arena(context)))))
+                                        .executes(byPlayer((player, context) -> arenas.addSpawn(player, arena(context), Optional.empty())))
+                                        .then(Commands.argument("team", StringArgumentType.word())
+                                                .suggests(suggest(() -> TeamSetup.IDS))
+                                                .executes(byPlayer((player, context) ->
+                                                        arenas.addSpawn(player, arena(context), Optional.of(string(context, "team")))))))
                                 .then(Commands.literal("remove")
                                         .then(Commands.argument("number", IntegerArgumentType.integer(1))
                                                 .executes(bySender((sender, context) -> arenas.removeSpawn(sender, arena(context),
