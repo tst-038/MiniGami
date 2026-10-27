@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.mode.TeamSetup;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -18,8 +19,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * An arena's spawns, which are a list and so can't be changed with a plain {@code set}, and going
- * there. Changes are saved through the {@link ConfigEditor}, so they are checked like any other edit.
+ * An arena's spawns, which are a list and so can't be changed with a plain {@code set}, its map, and
+ * going there. Changes are saved through the {@link ConfigEditor}, so they are checked like any other edit.
  *
  * <p>Call the public methods from the server thread.
  */
@@ -27,13 +28,36 @@ public final class ArenaSetup {
 
     private final Supplier<IdRegistry<Arena>> arenas;
     private final ConfigEditor editor;
+    private final ArenaMaps maps;
+    private final Predicate<String> inUse;
     private final Messages messages;
 
-    /** @param arenas the arenas currently loaded */
-    public ArenaSetup(Supplier<IdRegistry<Arena>> arenas, ConfigEditor editor, Messages messages) {
+    /**
+     * @param arenas the arenas currently loaded
+     * @param inUse whether a match is running in the arena with this id
+     */
+    public ArenaSetup(Supplier<IdRegistry<Arena>> arenas, ConfigEditor editor, ArenaMaps maps, Predicate<String> inUse, Messages messages) {
         this.arenas = arenas;
         this.editor = editor;
+        this.maps = maps;
+        this.inUse = inUse;
         this.messages = messages;
+    }
+
+    /** Saves the player's WorldEdit selection as the map pasted back after each match. */
+    public void saveMap(Player player, String id) {
+        find(player, id).ifPresent(arena -> maps.save(player, arena));
+    }
+
+    /** Pastes the arena's saved map now, unless a match is running there. */
+    public void resetMap(CommandSender sender, String id) {
+        find(sender, id).ifPresent(arena -> {
+            if (inUse.test(id)) {
+                messages.send(sender, "arena.in-use", Placeholder.unparsed("arena", id));
+                return;
+            }
+            maps.reset(arena, Optional.of(sender));
+        });
     }
 
     /**
@@ -80,6 +104,7 @@ public final class ArenaSetup {
             arena.waitingSpot().ifPresentOrElse(
                     spot -> messages.send(sender, "arena.info-waiting-spot", point(spot)),
                     () -> messages.send(sender, "arena.info-no-waiting-spot"));
+            messages.send(sender, maps.hasMap(arena) ? "arena.info-map" : "arena.info-no-map", Placeholder.unparsed("arena", id));
             arena.regions().values().forEach(region -> messages.send(sender, "arena.info-region",
                     Placeholder.unparsed("region", region.id()),
                     Placeholder.unparsed("from", region.minX() + ", " + region.minY() + ", " + region.minZ()),

@@ -62,6 +62,12 @@ final class ArenaCommands {
                                         .then(Commands.argument("number", IntegerArgumentType.integer(1))
                                                 .executes(bySender((sender, context) -> arenas.removeSpawn(sender, arena(context),
                                                         IntegerArgumentType.getInteger(context, "number")))))))
+                        .then(Commands.literal("map")
+                                .executes(help)
+                                .then(Commands.literal("save").requires(PLAYER)
+                                        .executes(byPlayer((player, context) -> arenas.saveMap(player, arena(context)))))
+                                .then(Commands.literal("reset")
+                                        .executes(bySender((sender, context) -> arenas.resetMap(sender, arena(context))))))
                         .then(Commands.literal("waiting")
                                 .executes(help)
                                 .then(Commands.literal("set")

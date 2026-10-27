@@ -3,6 +3,13 @@ version: '${version}'
 main: io.github.tst_038.minigami.paper.MiniGamiPlugin
 description: Multi-game minigame engine
 api-version: '26.3'
+dependencies:
+  server:
+    # Optional; FastAsyncWorldEdit also answers to this name. Used to reset arenas from schematics.
+    WorldEdit:
+      load: BEFORE
+      required: false
+      join-classpath: true
 permissions:
   minigami.admin:
     description: Set up arenas, modes and the config, and manage matches and players

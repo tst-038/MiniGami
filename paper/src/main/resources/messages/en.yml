@@ -129,6 +129,18 @@ arena:
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
   # <region>: its name; <from>, <to>: its lowest and highest corner block
   info-region: "<gray> - <white>region <region></white>: <from> to <to>"
+  info-map: "<gray> - map saved; pasted back after each match"
+  info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena <arena> map save</white>"
+  # The arena's map: a WorldEdit schematic pasted back after each match and at startup
+  map:
+    no-worldedit: "<prefix><red>Saving and resetting maps needs WorldEdit or FastAsyncWorldEdit."
+    no-selection: "<prefix><red>Select the arena with WorldEdit first, for example with <white>//wand</white>."
+    saved: "<prefix><green>Saved the map of <white><arena></white>; it is pasted back after each match."
+    save-failed: "<prefix><red>Could not save the map of <white><arena></white>; the server log says why."
+    none: "<prefix><red><white><arena></white> has no saved map; save one with <white>/mg arena <arena> map save</white>."
+    resetting: "<prefix><red>The map of <white><arena></white> is already being reset."
+    reset: "<prefix><green>Reset the map of <white><arena></white>."
+    reset-failed: "<prefix><red>Could not reset the map of <white><arena></white>; the server log says why."
 
 # <command>: a command; click a line to put it in the chat box
 help:

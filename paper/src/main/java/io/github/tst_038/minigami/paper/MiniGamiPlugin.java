@@ -21,6 +21,7 @@ import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
+import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
@@ -61,6 +62,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
+    private ArenaMaps maps;
     private IdRegistry<Mode> modes = new IdRegistry<>(Mode::id);
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
@@ -96,11 +98,12 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new DecayFloorFactory());
         features.register(new NoHungerFactory());
         features.register(new CountdownFactory());
-        var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
+        maps = new ArenaMaps(this, messages);
+        var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches, maps);
         getServer().getPluginManager().registerEvents(service, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, games, features, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
-        var arenaSetup = new ArenaSetup(() -> arenas, editor, messages);
+        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, service::isArenaInUse, messages);
         info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, service::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(messages, service, new MatchAdmin(service, messages, getServer()), editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,
@@ -169,6 +172,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedModes.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 getLogger().info("Loaded arenas: " + arenas.ids() + ", modes: " + modes.ids());
+                if (requester == null) {
+                    // A match the server stopped in the middle of left its arena changed.
+                    maps.resetAll(arenas.ids().stream().map(id -> arenas.find(id).orElseThrow()).toList());
+                }
                 for (Audience audience : waiting) {
                     messages.send(audience, "reload.done", Formatter.number("arenas", arenas.ids().size()),
                             Formatter.number("modes", modes.ids().size()));

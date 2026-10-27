@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.match;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Collection;
@@ -27,8 +28,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Puts players into matches and takes them out again. An arena hosts one match at a time; joining a
- * mode fills its waiting match first and otherwise opens one in the first free arena of the mode.
+ * Puts players into matches and takes them out again. An arena hosts one match at a time and gets its
+ * saved map pasted back after it; joining a mode fills its waiting match first and otherwise opens
+ * one in the first free arena of the mode.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -40,6 +42,7 @@ public final class MatchService implements Listener {
     private final PlayerSessions sessions;
     private final Messages messages;
     private final ActiveMatches matches;
+    private final ArenaMaps maps;
     /** Per arena id, its latest match; finished ones are dropped lazily. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
@@ -48,13 +51,14 @@ public final class MatchService implements Listener {
      * @param lobby the lobby currently set
      */
     public MatchService(Plugin plugin, Supplier<IdRegistry<Mode>> modes, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
-            ActiveMatches matches) {
+            ActiveMatches matches, ArenaMaps maps) {
         this.plugin = plugin;
         this.modes = modes;
         this.lobby = lobby;
         this.sessions = sessions;
         this.messages = messages;
         this.matches = matches;
+        this.maps = maps;
     }
 
     public SortedSet<String> modeIds() {
@@ -188,13 +192,15 @@ public final class MatchService implements Listener {
             return waiting;
         }
         return mode.arenas().stream()
-                .filter(arena -> !byArena.containsKey(arena.id()))
+                .filter(arena -> !byArena.containsKey(arena.id()) && !maps.isResetting(arena.id()))
                 .findFirst()
                 .map(arena -> open(mode, arena));
     }
 
     private LiveMatch open(Mode mode, Arena arena) {
         var match = new LiveMatch(plugin, mode, arena, lobby.get(), sessions, messages);
+        // Registered first so it runs last, once the match has let go of the arena.
+        match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {
             match.start();
         } catch (RuntimeException e) {
