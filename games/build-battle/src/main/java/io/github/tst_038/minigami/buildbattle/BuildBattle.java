@@ -5,10 +5,10 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Everyone builds on a theme in their own plot, then everyone scores the others' builds; the
@@ -56,10 +56,10 @@ public final class BuildBattle implements GameType {
                 "ending", List.of(new AnnounceWinner()));
     }
 
-    /** Decided by the votes, never by who is left. */
+    /** Normally the votes decide; this only ends the match when everyone else has left. */
     @Override
     public WinCondition winCondition() {
-        return roster -> Optional.empty();
+        return new LastManStanding();
     }
 
     @Override
