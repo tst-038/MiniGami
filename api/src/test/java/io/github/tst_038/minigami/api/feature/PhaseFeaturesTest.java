@@ -105,6 +105,11 @@ class PhaseFeaturesTest {
         }
 
         @Override
+        public Phase phase() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Roster roster() {
             throw new UnsupportedOperationException();
         }

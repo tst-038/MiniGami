@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.features;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
+import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
@@ -17,9 +18,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -30,6 +34,12 @@ public final class FakeMatch implements MatchContext {
     public final MatchClock clock = new MatchClock();
     public final Roster roster = new Roster();
     public final Scores scores = new Scores();
+    /** The phase features see; change it before enabling one that cares. */
+    public Phase phase = Phase.untimed("playing");
+    /** The texts {@link #messages()} renders from. */
+    public final YamlConfiguration texts = new YamlConfiguration();
+    /** Action bars shown to {@link #audience()}, in order. */
+    public final List<Component> actionBars = new ArrayList<>();
     /** Blocks passed to {@link #rememberOriginal(Block)}, in order. */
     public final List<Block> remembered = new ArrayList<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
@@ -96,6 +106,11 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
+    public Phase phase() {
+        return phase;
+    }
+
+    @Override
     public Scope scope() {
         return scope;
     }
@@ -132,12 +147,17 @@ public final class FakeMatch implements MatchContext {
 
     @Override
     public Messages messages() {
-        throw new UnsupportedOperationException();
+        return new Messages(texts, Logger.getAnonymousLogger());
     }
 
     @Override
     public Audience audience() {
-        return Audience.empty();
+        return new Audience() {
+            @Override
+            public void sendActionBar(Component message) {
+                actionBars.add(message);
+            }
+        };
     }
 
     @Override

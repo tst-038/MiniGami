@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.api.feature;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
+import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
@@ -28,6 +29,9 @@ public interface MatchContext {
     MatchClock clock();
 
     Roster roster();
+
+    /** The phase the match is in, which for a feature is the phase it runs in. */
+    Phase phase();
 
     /** The phase scope, for custom cleanup that should run when the phase ends. */
     Scope scope();

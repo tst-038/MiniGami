@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
+import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
@@ -107,6 +108,11 @@ class VoidKillsTest {
         @Override
         public Roster roster() {
             return roster;
+        }
+
+        @Override
+        public Phase phase() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

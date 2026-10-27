@@ -9,7 +9,9 @@ import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
+import io.github.tst_038.minigami.features.countdown.CountdownFactory;
 import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
+import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
 import io.github.tst_038.minigami.features.givedrops.GiveDropsFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
@@ -92,6 +94,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new ProjectileBreaksFactory());
         features.register(new AntiCampingFactory());
         features.register(new DecayFloorFactory());
+        features.register(new NoHungerFactory());
+        features.register(new CountdownFactory());
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);

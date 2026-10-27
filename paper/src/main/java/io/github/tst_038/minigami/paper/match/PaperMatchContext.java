@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.match;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
+import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
@@ -75,6 +76,11 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public Optional<Player> player(UUID id) {
         return match.match().roster().find(id).map(participant -> plugin.getServer().getPlayer(id));
+    }
+
+    @Override
+    public Phase phase() {
+        return match.match().currentPhase().orElseThrow(() -> new IllegalStateException("The match is not in a phase"));
     }
 
     @Override

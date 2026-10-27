@@ -32,6 +32,8 @@ match:
   you-left: "<prefix><gray>You left the match."
   # <player>: the winner
   winner: "<prefix><gold><player></gold> wins the match!"
+  # Above the hotbar in the last seconds of a phase with the countdown feature. <seconds>: seconds left
+  countdown: "<yellow>Ending in <gold><seconds></gold>"
   # <team>: the winning team's name, in its colour
   winner-team: "<prefix><team> <gold>wins the match!"
   no-winner: "<prefix><gray>The match ended without a winner."
