@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.core.win;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.core.result.Placement;
@@ -100,5 +101,28 @@ class MostPointsTest {
         assertEquals(List.of(
                 new Placement(1, List.of(alice, bob)),
                 new Placement(2, List.of(carol, dave))), result.placements());
+    }
+
+    @Test
+    void aTeamReachingThePointsToWinEndsTheMatch() {
+        var firstToFive = new MostPoints(5);
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+        roster.assignTeam(carol, "blue");
+        roster.assignTeam(dave, "blue");
+        scores.add(alice, 2);
+        scores.add(carol, 4);
+        assertTrue(firstToFive.check(roster, scores).isEmpty());
+
+        scores.add(bob, 3);
+        var result = firstToFive.check(roster, scores).orElseThrow();
+
+        assertEquals(List.of(new Placement(1, List.of(alice, bob)), new Placement(2, List.of(carol, dave))),
+                result.placements());
+    }
+
+    @Test
+    void pointsToWinCantBeNegative() {
+        assertThrows(IllegalArgumentException.class, () -> new MostPoints(-1));
     }
 }

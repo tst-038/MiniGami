@@ -16,6 +16,7 @@ import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
 import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.laststanding.LastStanding;
+import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
@@ -82,6 +83,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         matches = new ActiveMatches(getLogger());
         games.register(new LastStanding());
         games.register(new BuildBattle());
+        games.register(new TeamDeathmatch());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new BreakBlocksFactory());
