@@ -3,13 +3,12 @@ package io.github.tst_038.minigami.features.anticamping;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.core.roster.Participant;
+import io.github.tst_038.minigami.features.footprint.Footprint;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 
 /**
  * Breaks the listed blocks under a player who stays within a block of the same spot for the given
@@ -19,8 +18,6 @@ import org.bukkit.block.Block;
 public final class AntiCamping implements Feature {
 
     static final long CHECK_TICKS = 10;
-    /** Half the width of a player's hitbox. */
-    private static final double HALF_WIDTH = 0.3;
 
     private final long ticks;
     private final Set<Material> blocks;
@@ -48,7 +45,7 @@ public final class AntiCamping implements Feature {
                 if (now - spot.since() < ticks) {
                     return;
                 }
-                var under = underFeet(location).stream().filter(block -> blocks.contains(block.getType())).toList();
+                var under = Footprint.under(location).stream().filter(block -> blocks.contains(block.getType())).toList();
                 under.forEach(block -> {
                     context.rememberOriginal(block);
                     block.setType(Material.AIR);
@@ -65,19 +62,5 @@ public final class AntiCamping implements Feature {
         var dx = to.getX() - from.getX();
         var dz = to.getZ() - from.getZ();
         return from.getWorld() != to.getWorld() || dx * dx + dz * dz >= 1;
-    }
-
-    /** The blocks the player's hitbox stands on, up to four when they stand on a corner. */
-    private static Set<Block> underFeet(Location location) {
-        var world = location.getWorld();
-        // Just below the feet, so a player standing on a block finds that block, not the air above it.
-        var y = Location.locToBlock(location.getY() - 0.01);
-        var under = new LinkedHashSet<Block>();
-        for (double dx : new double[] {-HALF_WIDTH, HALF_WIDTH}) {
-            for (double dz : new double[] {-HALF_WIDTH, HALF_WIDTH}) {
-                under.add(world.getBlockAt(Location.locToBlock(location.getX() + dx), y, Location.locToBlock(location.getZ() + dz)));
-            }
-        }
-        return under;
     }
 }

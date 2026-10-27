@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
+import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
 import io.github.tst_038.minigami.features.givedrops.GiveDropsFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
@@ -84,6 +85,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new GiveDropsFactory());
         features.register(new ProjectileBreaksFactory());
         features.register(new AntiCampingFactory());
+        features.register(new DecayFloorFactory());
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches);
         getServer().getPluginManager().registerEvents(service, this);
         var lobbySetup = new LobbySetup(this, messages, this::loadConfig);
