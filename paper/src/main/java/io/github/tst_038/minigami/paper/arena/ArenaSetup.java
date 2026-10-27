@@ -80,6 +80,10 @@ public final class ArenaSetup {
             arena.waitingSpot().ifPresentOrElse(
                     spot -> messages.send(sender, "arena.info-waiting-spot", point(spot)),
                     () -> messages.send(sender, "arena.info-no-waiting-spot"));
+            arena.regions().values().forEach(region -> messages.send(sender, "arena.info-region",
+                    Placeholder.unparsed("region", region.id()),
+                    Placeholder.unparsed("from", region.minX() + ", " + region.minY() + ", " + region.minZ()),
+                    Placeholder.unparsed("to", region.maxX() + ", " + region.maxY() + ", " + region.maxZ())));
         });
     }
 

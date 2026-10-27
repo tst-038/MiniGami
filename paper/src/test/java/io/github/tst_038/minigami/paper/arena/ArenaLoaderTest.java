@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.region.Region;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,39 @@ class ArenaLoaderTest {
         assertEquals(List.of(
                 "arenas/winter.yml: world: no loaded world 'wintr'",
                 "arenas/winter.yml: spawns[0].z: is missing"), problems(loaded));
+    }
+
+    @Test
+    void loadsRegionsInFileOrderWithCornersInAnyOrder() throws Exception {
+        var loaded = load("hills", """
+                world: world
+                regions:
+                  top: { from: { x: 3, y: 70, z: 3 }, to: { x: -3, y: 64, z: -3 } }
+                  base: { from: { x: 10, y: 60, z: 10 }, to: { x: 10, y: 60, z: 10 } }
+                """);
+
+        assertEquals(List.of(), problems(loaded));
+        var arena = loaded.entries().find("hills").orElseThrow();
+        assertEquals(List.of("top", "base"), List.copyOf(arena.regions().keySet()));
+        assertEquals(new Region("top", world, -3, 64, -3, 3, 70, 3), arena.regions().get("top"));
+        assertEquals(new Region("base", world, 10, 60, 10, 10, 60, 10), arena.regions().get("base"));
+    }
+
+    @Test
+    void reportsBadRegions() throws Exception {
+        var loaded = load("hills", """
+                world: world
+                regions:
+                  Top: { from: { x: 0, y: 64, z: 0 }, to: { x: 1, y: 64, z: 1 } }
+                  base: { from: { x: 0, y: 64 }, to: { x: 1, y: 9999, z: 1, w: 2 } }
+                """);
+
+        assertTrue(loaded.entries().ids().isEmpty());
+        assertEquals(List.of(
+                "arenas/hills.yml: regions.Top: can't be a region name: use lower case letters, digits and dashes",
+                "arenas/hills.yml: regions.base.from.z: is missing",
+                "arenas/hills.yml: regions.base.to.y: must be between -2048 and 2047",
+                "arenas/hills.yml: regions.base.to.w: unknown key"), problems(loaded));
     }
 
     @Test

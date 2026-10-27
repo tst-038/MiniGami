@@ -1,16 +1,21 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.region.Region;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 /**
- * A place in a world that matches are played in: where players start and, optionally, where they wait before the
- * start. Locations are handed out as copies, since Bukkit's are mutable.
+ * A place in a world that matches are played in: where players start, optionally where they wait before the
+ * start, and named regions that games use, in the order of the file. Locations are handed out as copies, since
+ * Bukkit's are mutable.
  */
-public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot) {
+public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Map<String, Region> regions) {
 
     /** @param team the team that starts here, or empty for a spawn anyone may use */
     public record Spawn(Location location, Optional<String> team) {
@@ -28,6 +33,7 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
     public Arena {
         spawns = List.copyOf(spawns);
         waitingSpot = waitingSpot.map(Location::clone);
+        regions = Collections.unmodifiableMap(new LinkedHashMap<>(regions));
     }
 
     @Override

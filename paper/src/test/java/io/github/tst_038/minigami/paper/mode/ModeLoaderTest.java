@@ -56,8 +56,8 @@ class ModeLoaderTest {
     ModeLoaderTest() {
         games.register(GAME);
         features.register(new VoidKillsFactory());
-        arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty()));
-        arenas.register(new Arena("empty", null, List.of(), Optional.empty()));
+        arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Map.of()));
+        arenas.register(new Arena("empty", null, List.of(), Optional.empty(), Map.of()));
     }
 
     private YamlFiles.Loaded<Mode> load(String yaml) throws Exception {

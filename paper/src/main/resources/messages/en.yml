@@ -127,6 +127,8 @@ arena:
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
   no-spawns: "<prefix><gray><white><arena></white> has no spawns yet; add one with <white>/mg arena <arena> spawn add</white>."
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
+  # <region>: its name; <from>, <to>: its lowest and highest corner block
+  info-region: "<gray> - <white>region <region></white>: <from> to <to>"
 
 # <command>: a command; click a line to put it in the chat box
 help:
