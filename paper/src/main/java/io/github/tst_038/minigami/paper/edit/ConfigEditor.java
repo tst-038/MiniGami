@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -235,7 +236,11 @@ public final class ConfigEditor {
             }
             List<ConfigProblem> problems;
             try {
-                problems = ConfigFiles.update(path, change, config -> onServerThread(() -> check(kind, id, config)));
+                problems = ConfigFiles.update(path, change, config -> {
+                    // Other modes too, for the ones it extends; read here, off the server thread.
+                    var modes = kind == Kind.MODE ? YamlFiles.read(path.getParent()).files() : Map.<String, YamlConfiguration>of();
+                    return onServerThread(() -> check(kind, id, config, modes));
+                });
             } catch (IllegalArgumentException e) {
                 problems = List.of(new ConfigProblem(file, "", e.getMessage()));
             } catch (IOException | InvalidConfigurationException | IllegalStateException e) {
@@ -254,14 +259,22 @@ public final class ConfigEditor {
         });
     }
 
-    /** The problems the file's own loader finds in it. Looks up worlds, so runs on the server thread. */
-    private List<ConfigProblem> check(Kind kind, String id, YamlConfiguration config) {
+    /**
+     * The problems the file's own loader finds in it. Looks up worlds, so runs on the server thread.
+     *
+     * @param modes the saved modes, which a mode may extend
+     */
+    private List<ConfigProblem> check(Kind kind, String id, YamlConfiguration config, Map<String, YamlConfiguration> modes) {
         var worlds = plugin.getServer();
         return switch (kind) {
             case CONFIG -> SettingsLoader.load(config.saveToString(), worlds::getWorld).problems();
             case ARENA -> ArenaLoader.load(new YamlFiles("arenas", Map.of(id, config), List.of()), worlds::getWorld).problems();
-            case MODE -> modeLoader.load(new YamlFiles("modes", Map.of(id, config), List.of()), arenas.get(),
-                    settings.get().lobby().isPresent()).problems();
+            case MODE -> {
+                var files = new HashMap<>(modes);
+                files.put(id, config);
+                yield modeLoader.load(new YamlFiles("modes", files, List.of()), arenas.get(), settings.get().lobby().isPresent())
+                        .problems().stream().filter(problem -> problem.file().equals(kind.file(id))).toList();
+            }
         };
     }
 

@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -135,6 +136,11 @@ class VoidKillsTest {
         @Override
         public Audience audience() {
             return Audience.empty();
+        }
+
+        @Override
+        public void rememberOriginal(Block block) {
+            throw new UnsupportedOperationException();
         }
     }
 }

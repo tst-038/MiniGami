@@ -11,4 +11,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("core", "api", "features", "games:last-standing", "games:spleef", "paper")
+include("core", "api", "features", "games:last-standing", "paper")

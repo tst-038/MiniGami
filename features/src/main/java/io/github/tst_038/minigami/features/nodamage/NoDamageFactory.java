@@ -6,10 +6,14 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 /** {@code no-damage: { causes: [fall, entity-attack] }}, with Bukkit's damage causes in lower case with dashes. */
 public final class NoDamageFactory implements FeatureFactory {
+
+    /** The void and /kill always kill; void-kills relies on it too. */
+    private static final Set<DamageCause> ALWAYS = Set.of(DamageCause.VOID, DamageCause.KILL);
 
     @Override
     public String id() {
@@ -18,11 +22,17 @@ public final class NoDamageFactory implements FeatureFactory {
 
     @Override
     public Feature create(ConfigReader config) {
-        config.suggest("causes", Arrays.stream(DamageCause.values()).map(NoDamageFactory::configName).toList());
+        config.suggest("causes", Arrays.stream(DamageCause.values()).filter(cause -> !ALWAYS.contains(cause)).map(NoDamageFactory::configName).toList());
         var causes = new HashSet<DamageCause>();
         for (String name : config.strings("causes")) {
             Arrays.stream(DamageCause.values()).filter(cause -> configName(cause).equals(name)).findFirst()
-                    .ifPresentOrElse(causes::add, () -> config.problem("causes", "unknown damage cause '" + name + "'"));
+                    .ifPresentOrElse(cause -> {
+                        if (ALWAYS.contains(cause)) {
+                            config.problem("causes", "'" + name + "' can't be turned off, or a player could fall forever");
+                        } else {
+                            causes.add(cause);
+                        }
+                    }, () -> config.problem("causes", "unknown damage cause '" + name + "'"));
         }
         return new NoDamage(causes);
     }

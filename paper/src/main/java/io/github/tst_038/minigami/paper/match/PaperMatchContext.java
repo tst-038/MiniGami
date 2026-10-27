@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -88,5 +89,10 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public Audience audience() {
         return match.audience();
+    }
+
+    @Override
+    public void rememberOriginal(Block block) {
+        match.rememberOriginal(block);
     }
 }

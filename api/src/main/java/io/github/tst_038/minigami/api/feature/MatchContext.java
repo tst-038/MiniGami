@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -42,4 +43,10 @@ public interface MatchContext {
 
     /** Everyone currently in the match, eliminated players included, for messages to the whole match. */
     Audience audience();
+
+    /**
+     * Remembers the block as it is now and puts it back when the match ends, so the arena is the same
+     * for the next match. Call it before changing the block; later calls for the same block are ignored.
+     */
+    void rememberOriginal(Block block);
 }

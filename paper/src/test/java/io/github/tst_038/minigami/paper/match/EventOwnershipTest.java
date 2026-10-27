@@ -5,15 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.EntityToggleSwimEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -64,6 +67,15 @@ class EventOwnershipTest {
         var id = UUID.randomUUID();
 
         var owner = EventOwnership.playerOf(new BlockBreakEvent(entity(Block.class, id), entity(Player.class, id)));
+
+        assertEquals(Optional.of(id), owner);
+    }
+
+    @Test
+    void dropsOfABrokenBlockBelongToWhoBrokeIt() {
+        var id = UUID.randomUUID();
+
+        var owner = EventOwnership.playerOf(new BlockDropItemEvent(entity(Block.class, id), entity(BlockState.class, id), entity(Player.class, id), List.of()));
 
         assertEquals(Optional.of(id), owner);
     }

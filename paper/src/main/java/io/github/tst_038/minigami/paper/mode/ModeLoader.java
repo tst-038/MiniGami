@@ -12,22 +12,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
  * Turns {@code modes/<id>.yml} files into modes:
  *
  * <pre>
- * game: test
+ * game: last-standing
  * name: "&lt;gold&gt;Void Fall"   # optional, defaults to the id
  * min-players: 2
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * arenas: [demo]
- * features:                   # optional; per phase of the game, per feature, on top of the game's defaults
+ * features:                   # optional; per phase of the game, per feature
  *   playing:
  *     void-kills: { y: 0 }
- *     anti-camping: false       # turns off a feature the game has on by default
  * </pre>
+ *
+ * <p>A mode can {@code extends: <mode>} and set only what differs: its keys replace the other mode's
+ * one by one, lists as a whole, and {@code <feature>: false} turns off a feature it would inherit.
  */
 public final class ModeLoader {
 
@@ -44,10 +50,59 @@ public final class ModeLoader {
      * @param hasLobby whether a lobby is set, which modes that wait in the lobby need
      */
     public YamlFiles.Loaded<Mode> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby) {
-        return files.parse(Mode::id, (id, config) -> parse(id, config, arenas, hasLobby));
+        var own = files.files();
+        var merged = new TreeMap<String, YamlConfiguration>();
+        var extendsProblems = new HashMap<String, String>();
+        own.keySet().forEach(id -> merged.put(id, withParents(id, own, new ArrayList<>(), extendsProblems)));
+        return new YamlFiles(files.folder(), merged, files.problems())
+                .parse(Mode::id, (id, config) -> parse(id, config, own.keySet(), extendsProblems.get(id), arenas, hasLobby));
     }
 
-    private Mode parse(String id, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby) {
+    /**
+     * The mode's file over the modes it extends. A link to a missing mode, or back into the chain, is
+     * left out and reported for the mode at the start of the chain.
+     */
+    private static YamlConfiguration withParents(String id, Map<String, YamlConfiguration> files, List<String> chain,
+            Map<String, String> problems) {
+        var own = files.get(id);
+        var parent = own.getString("extends");
+        chain.add(id);
+        if (parent == null) {
+            return own;
+        }
+        if (!files.containsKey(parent)) {
+            problems.put(chain.getFirst(), "no mode '" + parent + "'" + (chain.size() > 1 ? " in " + String.join(" > ", chain) : ""));
+            return own;
+        }
+        if (chain.contains(parent)) {
+            problems.put(chain.getFirst(), "goes round in a circle: " + String.join(" > ", chain) + " > " + parent);
+            return own;
+        }
+        var merged = new YamlConfiguration();
+        overlay(merged, withParents(parent, files, chain, problems));
+        overlay(merged, own);
+        return merged;
+    }
+
+    private static void overlay(ConfigurationSection target, ConfigurationSection source) {
+        for (String key : source.getKeys(false)) {
+            if (source.get(key) instanceof ConfigurationSection child) {
+                overlay(target.get(key) instanceof ConfigurationSection existing ? existing : target.createSection(key), child);
+            } else {
+                target.set(key, source.get(key));
+            }
+        }
+    }
+
+    /** @param extendsProblem what is wrong with the mode it extends, if anything */
+    private Mode parse(String id, ConfigReader config, Set<String> modes, String extendsProblem, IdRegistry<Arena> arenas, boolean hasLobby) {
+        config.suggest("extends", modes);
+        if (config.has("extends")) {
+            config.string("extends");
+            if (extendsProblem != null) {
+                config.problem("extends", extendsProblem);
+            }
+        }
         config.suggest("game", games.ids());
         var gameId = config.string("game");
         var game = games.find(gameId).orElse(null);
@@ -66,7 +121,7 @@ public final class ModeLoader {
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, arenas(config, arenas),
-                features(config.section("features", game == null ? Map.of() : game.defaultFeatures()), game));
+                config.has("features") ? features(config.section("features"), game) : Map.of());
     }
 
     private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {

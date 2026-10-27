@@ -16,6 +16,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,6 +67,16 @@ class ModeLoaderTest {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
         return new ModeLoader(games, features).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas, hasLobby);
+    }
+
+    private YamlFiles.Loaded<Mode> loadAll(Map<String, String> yamlById) throws Exception {
+        var files = new HashMap<String, YamlConfiguration>();
+        for (var entry : yamlById.entrySet()) {
+            var config = new YamlConfiguration();
+            config.loadFromString(entry.getValue());
+            files.put(entry.getKey(), config);
+        }
+        return new ModeLoader(games, features).load(new YamlFiles("modes", files, List.of()), arenas, true);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Mode> loaded) {
@@ -187,7 +198,7 @@ class ModeLoaderTest {
     }
 
     @Test
-    void modeSettingsReplaceTheGamesDefaultsPerKeyAndCanTurnAFeatureOff() throws Exception {
+    void aModeExtendsAnotherKeyByKeyAndCanTurnItsFeaturesOff() throws Exception {
         var read = new ArrayList<String>();
         features.register(new FeatureFactory() {
             @Override
@@ -201,44 +212,34 @@ class ModeLoaderTest {
                 return context -> { };
             }
         });
-        games.register(new GameType() {
-            @Override
-            public String id() {
-                return "defaults";
-            }
 
-            @Override
-            public List<Phase> phases() {
-                return GAME.phases();
-            }
+        var loaded = loadAll(Map.of(
+                "base", "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], features: {playing: {probe: {a: 1, b: 2}}}}",
+                "changed", "{extends: base, min-players: 1, features: {playing: {probe: {b: 5}}}}",
+                "off", "{extends: changed, features: {playing: {probe: false}}}"));
 
-            @Override
-            public Map<String, List<Feature>> features() {
-                return Map.of();
-            }
-
-            @Override
-            public Map<String, ?> defaultFeatures() {
-                return Map.of("playing", Map.of("probe", Map.of("a", 1, "b", 2)));
-            }
-
-            @Override
-            public WinCondition winCondition() {
-                return new LastManStanding();
-            }
-        });
-        var base = "{game: defaults, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]";
-
-        var byGame = load(base + "}");
-        var changed = load(base + ", features: {playing: {probe: {b: 5}}}}");
-        var off = load(base + ", features: {playing: {probe: false}}}");
-
-        assertEquals(List.of(), problems(byGame));
-        assertEquals(List.of(), problems(changed));
-        assertEquals(List.of(), problems(off));
+        assertEquals(List.of(), problems(loaded));
         assertEquals(List.of("1,2", "1,5"), read);
-        assertEquals(1, byGame.entries().find("fall").orElseThrow().features().get("playing").size());
-        assertTrue(off.entries().find("fall").orElseThrow().features().get("playing").isEmpty());
+        var changed = loaded.entries().find("changed").orElseThrow();
+        assertEquals(1, changed.minPlayers());
+        assertEquals(8, changed.maxPlayers());
+        assertTrue(loaded.entries().find("off").orElseThrow().features().get("playing").isEmpty());
+    }
+
+    @Test
+    void extendingAMissingModeOrInACircleIsAProblem() throws Exception {
+        var mode = "min-players: 1, max-players: 1, waiting: arena, arenas: [demo]";
+
+        var loaded = loadAll(Map.of(
+                "lost", "{game: test, extends: nope, " + mode + "}",
+                "a", "{game: test, extends: b, " + mode + "}",
+                "b", "{game: test, extends: a, " + mode + "}"));
+
+        assertTrue(loaded.entries().ids().isEmpty());
+        assertEquals(List.of(
+                "modes/a.yml: extends: goes round in a circle: a > b > a",
+                "modes/b.yml: extends: goes round in a circle: b > a > b",
+                "modes/lost.yml: extends: no mode 'nope'"), problems(loaded).stream().sorted().toList());
     }
 
     @Test
