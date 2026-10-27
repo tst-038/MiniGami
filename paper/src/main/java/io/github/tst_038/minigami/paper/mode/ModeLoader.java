@@ -160,6 +160,10 @@ public final class ModeLoader {
             return Optional.empty();
         }
         var setup = TeamSetup.ofSize(size);
+        // With a single team the match would be decided the moment it starts.
+        if (minPlayers <= size) {
+            config.problem("min-players", "must be more than the team size (" + size + "), so there are at least two teams");
+        }
         if (setup.teamsFor(maxPlayers) > most) {
             teams.problem("size", "max-players makes " + setup.teamsFor(maxPlayers) + " teams; at most " + most + " are possible");
         }

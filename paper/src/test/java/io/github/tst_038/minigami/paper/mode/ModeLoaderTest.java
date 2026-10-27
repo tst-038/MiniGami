@@ -289,7 +289,7 @@ class ModeLoaderTest {
     @Test
     void teamsAreAFixedNumberOrAFixedSize() throws Exception {
         var byCount = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], teams: {count: 2}}");
-        var bySize = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], teams: {size: 2}}");
+        var bySize = load("{game: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], teams: {size: 2}}");
 
         assertEquals(List.of(), problems(byCount));
         assertEquals(List.of(), problems(bySize));
@@ -313,6 +313,8 @@ class ModeLoaderTest {
         assertEquals(List.of("modes/fall.yml: teams.size: teams of one are free for all; leave out teams instead"),
                 problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {size: 1}}")));
         assertEquals(List.of("modes/fall.yml: teams.size: max-players makes 10 teams; at most 8 are possible"),
-                problems(load("{" + mode + "min-players: 2, max-players: 20, teams: {size: 2}}")));
+                problems(load("{" + mode + "min-players: 3, max-players: 20, teams: {size: 2}}")));
+        assertEquals(List.of("modes/fall.yml: min-players: must be more than the team size (2), so there are at least two teams"),
+                problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {size: 2}}")));
     }
 }
