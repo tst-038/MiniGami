@@ -35,8 +35,4 @@ public final class ArenaFile {
         config.set("spawns", spawns);
         return true;
     }
-
-    public static void setWaitingSpot(YamlConfiguration config, Location location) {
-        config.set("waiting-spot", ConfigLocations.write(location));
-    }
 }

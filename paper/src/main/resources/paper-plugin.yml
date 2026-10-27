@@ -5,5 +5,5 @@ description: Multi-game minigame engine
 api-version: '26.3'
 permissions:
   minigami.admin:
-    description: Force-start matches and see debug info
+    description: Set up arenas, modes and the config, and manage matches and players
     default: op

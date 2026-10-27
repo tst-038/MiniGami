@@ -47,8 +47,7 @@ build-battle:
 
 # <player>: the player who fell
 lobby:
-  set: "<prefix><green>Set the lobby to where you stand."
-  save-failed: "<prefix><red>Could not save the lobby; see the server log."
+  none: "<prefix><red>No lobby is set; set one with <white>/mg lobby set</white>."
 
 # Arena setup. <arena>: the arena id, <world>: its world, <number>: a spawn's number as listed by info
 arena:
@@ -58,17 +57,20 @@ arena:
   in-use: "<prefix><red>A match is running in <white><arena></white>; change it once the match has ended."
   other-world: "<prefix><red><white><arena></white> is in world <white><world></white>; go there to set its points."
   no-spawn: "<prefix><red><white><arena></white> has no spawn <white><number></white>."
-  save-failed: "<prefix><red>Could not save <white><arena></white>; see the server log."
-  created: "<prefix><green>Created arena <white><arena></white> in <white><world></white>. Add spawns with <white>/mg arena <arena> addspawn</white>."
+  created: "<prefix><green>Created arena <white><arena></white> in <white><world></white>. Add spawns with <white>/mg arena <arena> spawn add</white>."
   spawn-added: "<prefix><green>Added spawn <white><number></white> to <white><arena></white>."
   spawn-removed: "<prefix><green>Removed spawn <white><number></white> from <white><arena></white>."
-  waiting-spot-set: "<prefix><green>Set the waiting spot of <white><arena></white>."
   # <spawns>: how many spawns
   info: "<prefix><gold><arena></gold> <gray>in <white><world></white>, <white><spawns></white> spawns. Click a point to go there."
   # <x>, <y>, <z>; wrap text in <teleport>…</teleport> to make it teleport on click
   info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white>: <x>, <y>, <z></hover></teleport>"
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
+
+# <command>: a command; click a line to put it in the chat box
+help:
+  header: "<prefix><gold><command></gold> <gray>can be followed by:"
+  line: "<suggest><hover:show_text:'Click to fill in'><gray> - <white><command></white></hover></suggest>"
 
 # <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
 reload:
@@ -99,8 +101,8 @@ snapshot:
   details: "<gray> <game-mode> at <x>, <y>, <z> in <world>, health <health>, food <food>, level <level>"
   items: "<gray> Items: <white><items>"
   effects: "<gray> Effects: <white><effects>"
-  restore-hint: "<gray> Give it back with <white>/mg snapshot <player> restore</white>."
-  restore-last-hint: "<gray> Put it back with <white>/mg snapshot <player> restore</white>; their current state is kept, so doing it again undoes it."
+  restore-hint: "<gray> Give it back with <white>/mg player <player> snapshot restore</white>."
+  restore-last-hint: "<gray> Put it back with <white>/mg player <player> snapshot restore</white>; their current state is kept, so doing it again undoes it."
   restored: "<prefix><green>Gave <player> their saved state back."
   restored-last: "<prefix><green>Put the last state of <player> back. Run it again to undo."
   restore-failed: "<prefix><red>Could not give <player> their state back; see the server log."

@@ -267,7 +267,7 @@ class ModeLoaderTest {
         var yaml = "{game: test, min-players: 1, max-players: 1, waiting: lobby, arenas: [demo]}";
 
         assertEquals(List.of(), problems(load(yaml, true)));
-        assertEquals(List.of("modes/fall.yml: waiting: no lobby is set; set one with /mg setlobby or in config.yml"),
+        assertEquals(List.of("modes/fall.yml: waiting: no lobby is set; set one with /mg lobby set or in config.yml"),
                 problems(load(yaml, false)));
     }
 }

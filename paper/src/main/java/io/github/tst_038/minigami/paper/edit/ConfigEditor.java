@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.arena.ArenaFile;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.config.ConfigFiles;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -63,8 +65,8 @@ public final class ConfigEditor {
         }
     }
 
-    /** Taken by {@code /mg mode create}, so a mode with this id couldn't be edited. */
-    private static final String RESERVED_ID = "create";
+    /** Taken by commands such as {@code /mg mode list}, so an arena or mode with one of these ids couldn't be reached. */
+    private static final Set<String> RESERVED_IDS = Set.of("create", "list");
     private static final long CHECK_TIMEOUT_SECONDS = 10;
 
     private final Plugin plugin;
@@ -170,6 +172,24 @@ public final class ConfigEditor {
         }, "edit.unset", Placeholder.unparsed("key", key));
     }
 
+    /** An arena without spawns in the admin's world. */
+    public void createArena(Player player, String id) {
+        var world = player.getWorld();
+        edit(player, Kind.ARENA, id, true, config -> ArenaFile.create(config, world), "arena.created",
+                Placeholder.unparsed("arena", id), Placeholder.unparsed("world", world.getName()));
+    }
+
+    /**
+     * Any other change to an existing file, checked and written like {@link #set}.
+     *
+     * @param change runs off the server thread; throw {@link IllegalArgumentException} to refuse it with that reason
+     * @param done the message once it is saved; gets {@code <file>} on top of the given placeholders
+     */
+    public void change(CommandSender sender, Kind kind, String id, Consumer<YamlConfiguration> change, String done,
+            TagResolver... placeholders) {
+        edit(sender, kind, id, false, change, done, placeholders);
+    }
+
     /** A mode that waits in the arena, for 2 to 8 players; change the rest with {@link #set}. */
     public void createMode(CommandSender sender, String id, String game, String arena) {
         edit(sender, Kind.MODE, id, true, config -> {
@@ -209,7 +229,7 @@ public final class ConfigEditor {
         if (kind == Kind.CONFIG) {
             return true;
         }
-        if (!IdRegistry.isValid(id) || id.equals(RESERVED_ID)) {
+        if (!IdRegistry.isValid(id) || RESERVED_IDS.contains(id)) {
             messages.send(sender, "edit.invalid-id", Placeholder.unparsed("id", id));
             return false;
         }

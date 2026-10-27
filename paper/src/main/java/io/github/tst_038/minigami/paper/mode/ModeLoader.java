@@ -120,7 +120,7 @@ public final class ModeLoader {
         }
         var waiting = config.choice("waiting", Waiting.class);
         if (waiting == Waiting.LOBBY && !hasLobby) {
-            config.problem("waiting", "no lobby is set; set one with /mg setlobby or in config.yml");
+            config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, arenas(config, arenas),

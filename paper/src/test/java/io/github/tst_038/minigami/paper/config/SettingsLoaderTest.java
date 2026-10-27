@@ -45,7 +45,7 @@ class SettingsLoaderTest {
 
         var saved = config.saveToString();
 
-        assertTrue(saved.contains("Set it in-game with /mg setlobby"), saved);
+        assertTrue(saved.contains("Set it in-game with /mg lobby set"), saved);
         assertEquals(Optional.of(new Location(world, 1.5, 70, -2.5, 90, 10)), load(saved).settings().lobby());
     }
 

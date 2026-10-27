@@ -7,7 +7,6 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -40,12 +39,10 @@ class ArenaFileTest {
         ArenaFile.addSpawn(config, new Location(world, 1.23456, 65, 2, -45.06f, 0));
         ArenaFile.addSpawn(config, new Location(world, 9, 9, 9));
         ArenaFile.removeSpawn(config, 0);
-        ArenaFile.setWaitingSpot(config, new Location(world, 1, 70, 1));
 
         var arena = reload(config);
 
         assertEquals(List.of(new Location(world, 1.23, 65, 2, -45.1f, 0), new Location(world, 9, 9, 9)), arena.spawns());
-        assertEquals(Optional.of(new Location(world, 1, 70, 1)), arena.waitingSpot());
     }
 
     @Test
