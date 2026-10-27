@@ -108,6 +108,7 @@ class ModeLoaderTest {
         assertEquals(List.of("demo"), mode.arenas().stream().map(Arena::id).toList());
         assertEquals(1, mode.features().get("playing").size());
         assertEquals(0, mode.lives());
+        assertEquals(Optional.empty(), mode.teams());
     }
 
     @Test
@@ -283,5 +284,35 @@ class ModeLoaderTest {
         assertEquals(List.of(), problems(load(yaml, true)));
         assertEquals(List.of("modes/fall.yml: waiting: no lobby is set; set one with /mg lobby set or in config.yml"),
                 problems(load(yaml, false)));
+    }
+
+    @Test
+    void teamsAreAFixedNumberOrAFixedSize() throws Exception {
+        var byCount = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], teams: {count: 2}}");
+        var bySize = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], teams: {size: 2}}");
+
+        assertEquals(List.of(), problems(byCount));
+        assertEquals(List.of(), problems(bySize));
+        var count = byCount.entries().find("fall").orElseThrow().teams().orElseThrow();
+        var size = bySize.entries().find("fall").orElseThrow().teams().orElseThrow();
+        assertEquals(2, count.teamsFor(7));
+        assertEquals(4, size.teamsFor(7));
+        assertEquals(1, size.teamsFor(1));
+    }
+
+    @Test
+    void reportsTeamsThatCanNotWork() throws Exception {
+        var mode = "game: test, waiting: arena, arenas: [demo], ";
+
+        assertEquals(List.of("modes/fall.yml: teams: set either count or size"),
+                problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {count: 2, size: 2}}")));
+        assertEquals(List.of("modes/fall.yml: min-players: must be at least the number of teams (3)"),
+                problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {count: 3}}")));
+        assertEquals(List.of("modes/fall.yml: teams.count: must be between 2 and 8"),
+                problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {count: 9}}")));
+        assertEquals(List.of("modes/fall.yml: teams.size: teams of one are free for all; leave out teams instead"),
+                problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {size: 1}}")));
+        assertEquals(List.of("modes/fall.yml: teams.size: max-players makes 10 teams; at most 8 are possible"),
+                problems(load("{" + mode + "min-players: 2, max-players: 20, teams: {size: 2}}")));
     }
 }

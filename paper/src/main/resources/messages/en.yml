@@ -42,8 +42,10 @@ match:
     entry: "<gray> - <info><hover:show_text:'Show details'><white><match></white></hover></info> <gray><mode>, <phase>, <white><players></white> players"
     # <mode>: its name, <game>, <seconds>: since it opened
     info: "<prefix><gold><match></gold> <gray>(<mode><gray>, <game>) in phase <white><phase></white> after <seconds> s:"
-    # <player>, <state>, <points>; <kick>…</kick> fills in the kick command
-    player: "<kick><hover:show_text:'Click to kick'><gray> - <white><player></white> <state> <gray><points> points</hover></kick>"
+    # <player>, <team>: the team line below or nothing, <state>, <points>; <kick>…</kick> fills in the kick command
+    player: "<kick><hover:show_text:'Click to kick'><gray> - <team><white><player></white> <state> <gray><points> points</hover></kick>"
+    # <team>: the team's name
+    team: "<team> "
     state-alive: "<green>playing"
     state-out: "<red>out"
     state-left: "<dark_gray>left"
@@ -59,6 +61,17 @@ match:
     added: "<prefix><green>Added <white><player></white> to <white><match></white>."
     kicked: "<prefix><green>Kicked <white><player></white> from <white><match></white>."
     not-member: "<prefix><red><white><player></white> isn't in <white><match></white>."
+
+# Team names by id; teams are handed out in this order, and the id is also the team's colour.
+team:
+  red: "<red>Red"
+  blue: "<blue>Blue"
+  green: "<green>Green"
+  yellow: "<yellow>Yellow"
+  aqua: "<aqua>Aqua"
+  light_purple: "<light_purple>Pink"
+  gold: "<gold>Orange"
+  white: "<white>White"
 
 build-battle:
   # <theme>: the theme, <seconds>: build time
@@ -129,6 +142,10 @@ info:
   mode: "<prefix><gold><id></gold> <gray>(<name><gray>) plays <white><game></white>, <status>"
   mode-parent: "<gray> Extends <info><hover:show_text:'Show details'><white><parent></white></hover></info>; grey settings come from it."
   mode-arenas: "<gray> Playable arenas: <white><arenas>"
+  # <count>
+  mode-teams-count: "<gray> Teams: <white><count></white>, formed at random when the match starts"
+  # <size>: players per team
+  mode-teams-size: "<gray> Teams: of <white><size></white> players each, formed at random when the match starts"
   # <key>, <value>
   value: "<set><hover:show_text:'Click to change'><gray> - <white><key></white>: <yellow><value></yellow></hover></set>"
   value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - <key>: <value></hover></set>"

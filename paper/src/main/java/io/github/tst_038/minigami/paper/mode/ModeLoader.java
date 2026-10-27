@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import org.bukkit.configuration.ConfigurationSection;
@@ -26,6 +27,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * min-players: 2
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
+ * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
  * arenas: [demo]
  * features:                   # optional; per phase of the game, per feature
  *   playing:
@@ -128,8 +130,40 @@ public final class ModeLoader {
             config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, arenas(config, arenas),
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams(config, minPlayers, maxPlayers), arenas(config, arenas),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
+    }
+
+    private static Optional<TeamSetup> teams(ConfigReader config, int minPlayers, int maxPlayers) {
+        config.suggest("teams.count", List.of("2"));
+        config.suggest("teams.size", List.of("2"));
+        if (!config.has("teams")) {
+            return Optional.empty();
+        }
+        var teams = config.section("teams");
+        if (teams.has("count") == teams.has("size")) {
+            config.problem("teams", "set either count or size");
+            teams.keys();
+            return Optional.empty();
+        }
+        var most = TeamSetup.IDS.size();
+        if (teams.has("count")) {
+            var count = teams.integer("count", 2, most);
+            if (minPlayers < count) {
+                config.problem("min-players", "must be at least the number of teams (" + count + ")");
+            }
+            return Optional.of(TeamSetup.ofCount(count));
+        }
+        var size = teams.integer("size", 1, Integer.MAX_VALUE);
+        if (size == 1) {
+            teams.problem("size", "teams of one are free for all; leave out teams instead");
+            return Optional.empty();
+        }
+        var setup = TeamSetup.ofSize(size);
+        if (setup.teamsFor(maxPlayers) > most) {
+            teams.problem("size", "max-players makes " + setup.teamsFor(maxPlayers) + " teams; at most " + most + " are possible");
+        }
+        return Optional.of(setup);
     }
 
     private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {

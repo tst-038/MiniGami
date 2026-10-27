@@ -6,8 +6,10 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.roster.Participant;
+import io.github.tst_038.minigami.core.team.RandomTeams;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.mode.Mode;
+import io.github.tst_038.minigami.paper.mode.TeamSetup;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -300,8 +302,20 @@ public final class LiveMatch {
             match.dispose();
             return;
         }
+        mode.teams().ifPresent(this::formTeams);
         // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
         match.advancePhase();
+    }
+
+    /** Splits everyone still in the match at random, handing out team ids in order. */
+    private void formTeams(TeamSetup setup) {
+        var players = List.copyOf(members);
+        var teams = new RandomTeams(ThreadLocalRandom.current()).form(players, setup.teamsFor(players.size()));
+        for (int i = 0; i < teams.size(); i++) {
+            for (var id : teams.get(i)) {
+                match.roster().assignTeam(id, TeamSetup.IDS.get(i));
+            }
+        }
     }
 
     /**

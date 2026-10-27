@@ -149,6 +149,13 @@ public final class ConfigInfo {
         }
         loaded.ifPresent(mode -> messages.send(sender, "info.mode-arenas",
                 Placeholder.unparsed("arenas", mode.arenas().isEmpty() ? "-" : mode.arenas().stream().map(Arena::id).collect(Collectors.joining(", ")))));
+        loaded.flatMap(Mode::teams).ifPresent(teams -> {
+            if (teams.count() > 0) {
+                messages.send(sender, "info.mode-teams-count", Formatter.number("count", teams.count()));
+            } else {
+                messages.send(sender, "info.mode-teams-size", Formatter.number("size", teams.size()));
+            }
+        });
         values(sender, config, own, "/mg mode " + id + " set ");
         unset(sender, editor.keys(Kind.MODE, id), config, "/mg mode " + id + " set ");
         problems(sender, Kind.MODE, id);

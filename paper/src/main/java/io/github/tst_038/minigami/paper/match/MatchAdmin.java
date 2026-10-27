@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -61,7 +62,10 @@ public final class MatchAdmin {
                 var name = Optional.ofNullable(server.getOfflinePlayer(player).getName()).orElse(player.toString());
                 var state = !live.isMember(player) ? "match.admin.state-left"
                         : roster.find(player).filter(Participant::isAlive).isPresent() ? "match.admin.state-alive" : "match.admin.state-out";
-                messages.send(sender, "match.admin.player", Placeholder.unparsed("player", name),
+                var team = roster.find(player).flatMap(Participant::team)
+                        .map(teamId -> messages.render("match.admin.team", Placeholder.component("team", messages.render("team." + teamId))))
+                        .orElse(Component.empty());
+                messages.send(sender, "match.admin.player", Placeholder.unparsed("player", name), Placeholder.component("team", team),
                         Placeholder.component("state", messages.render(state)), Formatter.number("points", match.scores().of(player)),
                         Placeholder.styling("kick", ClickEvent.suggestCommand("/mg match " + id + " kick " + name)));
             });
