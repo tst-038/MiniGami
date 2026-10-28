@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -108,6 +109,11 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public Messages messages() {
         return match.messages();
+    }
+
+    @Override
+    public Component teamName(String team) {
+        return match.teamName(team);
     }
 
     @Override

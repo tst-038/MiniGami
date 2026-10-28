@@ -71,10 +71,10 @@ public final class ArenaSetup {
     /**
      * Adds where the player stands, which must be in the arena's world.
      *
-     * @param team the only team that starts there, or empty for everyone
+     * @param team the only team or role that starts there, or empty for everyone
      */
     public void addSpawn(Player player, String id, Optional<String> team) {
-        if (team.isPresent() && !TeamSetup.IDS.contains(team.get())) {
+        if (team.isPresent() && !TeamSetup.IDS.contains(team.get()) && !IdRegistry.isValid(team.get())) {
             messages.send(player, "arena.unknown-team", Placeholder.unparsed("team", team.get()),
                     Placeholder.unparsed("teams", String.join(", ", TeamSetup.IDS)));
             return;
@@ -134,7 +134,8 @@ public final class ArenaSetup {
         var spawns = arena.spawns();
         for (int i = 0; i < spawns.size(); i++) {
             var team = spawns.get(i).team()
-                    .map(id -> messages.render("arena.spawn-team", Placeholder.component("team", messages.render("team." + id))))
+                    .map(id -> messages.render("arena.spawn-team", Placeholder.component("team",
+                            TeamSetup.IDS.contains(id) ? messages.render("team." + id) : Component.text(id))))
                     .orElse(Component.empty());
             messages.send(sender, "arena.info-spawn", point(spawns.get(i).location(), Formatter.number("number", i + 1),
                     Placeholder.component("team", team)));

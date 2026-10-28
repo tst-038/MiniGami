@@ -22,7 +22,7 @@ public final class AnnounceWinner implements Feature {
         var winner = first.flatMap(context::player);
         if (team.isPresent()) {
             context.messages().send(context.audience(), "match.winner-team",
-                    Placeholder.component("team", context.messages().render("team." + team.get())));
+                    Placeholder.component("team", context.teamName(team.get())));
         } else if (winner.isPresent()) {
             context.messages().send(context.audience(), "match.winner", Placeholder.component("player", winner.get().name()));
         } else {

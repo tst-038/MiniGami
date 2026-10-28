@@ -7,14 +7,17 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -28,6 +31,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
+ * roles:                      # optional, instead of teams; handed out in this order
+ *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
+ *   hider: { name: "Hiders", color: green }                        # neither: everyone left over
  * arenas: [demo]
  * features:                   # optional; per phase of the game, per feature
  *   playing:
@@ -130,7 +136,8 @@ public final class ModeLoader {
             config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams(config, minPlayers, maxPlayers), arenas(config, arenas),
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams(config, minPlayers, maxPlayers),
+                roles(config, minPlayers), arenas(config, arenas),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
     }
 
@@ -168,6 +175,59 @@ public final class ModeLoader {
             teams.problem("size", "max-players makes " + setup.teamsFor(maxPlayers) + " teams; at most " + most + " are possible");
         }
         return Optional.of(setup);
+    }
+
+    private static List<Role> roles(ConfigReader config, int minPlayers) {
+        if (!config.has("roles")) {
+            return List.of();
+        }
+        if (config.has("teams")) {
+            config.problem("roles", "set either teams or roles");
+        }
+        var section = config.section("roles");
+        var roles = new ArrayList<Role>();
+        for (String id : section.keys()) {
+            if (!IdRegistry.isValid(id)) {
+                section.problem(id, "use lower case letters, digits and dashes");
+            }
+            var role = section.section(id);
+            var name = role.has("name") ? role.string("name") : id;
+            role.suggest("color", NamedTextColor.NAMES.keys());
+            var color = NamedTextColor.NAMES.valueOrThrow(TeamSetup.IDS.get(roles.size() % TeamSetup.IDS.size()));
+            if (role.has("color")) {
+                var text = role.string("color");
+                var named = NamedTextColor.NAMES.value(text);
+                if (named == null) {
+                    role.problem("color", "unknown colour '" + text + "'; colours: " + String.join(", ", NamedTextColor.NAMES.keys()));
+                } else {
+                    color = named;
+                }
+            }
+            if (role.has("players") && role.has("per")) {
+                role.problem("per", "set either players or per");
+                role.keys();
+            }
+            var share = role.has("players") ? RoleShare.of(role.integer("players", 1, Integer.MAX_VALUE))
+                    : role.has("per") ? RoleShare.onePer(role.integer("per", 2, Integer.MAX_VALUE))
+                    : RoleShare.rest();
+            var lives = role.has("lives") ? OptionalInt.of(role.integer("lives", 0, Integer.MAX_VALUE)) : OptionalInt.empty();
+            roles.add(new Role(id, name, color, share, lives));
+        }
+        if (roles.size() < 2) {
+            config.problem("roles", "needs at least two roles");
+        }
+        var rest = roles.stream().filter(role -> role.share().isRest()).map(Role::id).toList();
+        if (rest.size() != 1) {
+            config.problem("roles", "exactly one role must leave out players and per, to get everyone left over; "
+                    + (rest.isEmpty() ? "none does" : String.join(", ", rest) + " do"));
+        } else {
+            var asked = roles.stream().mapToInt(role -> role.share().wanted(minPlayers)).sum();
+            if (asked >= minPlayers) {
+                config.problem("min-players", "must be more than the " + asked + " players the other roles ask for, so " + rest.getFirst()
+                        + " gets at least one");
+            }
+        }
+        return roles;
     }
 
     private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {

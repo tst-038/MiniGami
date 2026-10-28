@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.mode.ModeLoader;
+import io.github.tst_038.minigami.paper.mode.Role;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -156,6 +157,8 @@ public final class ConfigInfo {
                 messages.send(sender, "info.mode-teams-size", Formatter.number("size", teams.size()));
             }
         });
+        loaded.map(Mode::roles).filter(roles -> !roles.isEmpty()).ifPresent(roles -> messages.send(sender, "info.mode-roles",
+                Placeholder.component("roles", Component.join(JoinConfiguration.commas(true), roles.stream().map(Role::displayName).toList()))));
         values(sender, config, own, "/mg mode " + id + " set ");
         unset(sender, editor.keys(Kind.MODE, id), config, "/mg mode " + id + " set ");
         problems(sender, Kind.MODE, id);

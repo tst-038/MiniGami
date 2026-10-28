@@ -160,10 +160,13 @@ class ArenaLoaderTest {
     }
 
     @Test
-    void aSpawnsTeamMustBeKnown() throws Exception {
-        var loaded = load("winter", "world: world\nspawns: [{ x: 1, y: 64, z: 1, team: purple }]");
+    void aSpawnsTeamIsATeamColourOrARoleId() throws Exception {
+        var role = load("winter", "world: world\nspawns: [{ x: 1, y: 64, z: 1, team: seeker }]");
+        var invalid = load("winter", "world: world\nspawns: [{ x: 1, y: 64, z: 1, team: Seeker }]");
 
-        assertEquals(List.of("arenas/winter.yml: spawns[0].team: unknown team 'purple'; teams: red, blue, green, yellow, aqua, light_purple, gold, white"),
-                problems(loaded));
+        assertEquals(List.of(), problems(role));
+        assertEquals(List.of(new Location(world, 1, 64, 1)), role.entries().find("winter").orElseThrow().spawnsFor(Optional.of("seeker")));
+        assertEquals(List.of("arenas/winter.yml: spawns[0].team: 'Seeker' is neither a team (red, blue, green, yellow, aqua, light_purple, gold, white)"
+                + " nor a role id in lower case letters, digits and dashes"), problems(invalid));
     }
 }

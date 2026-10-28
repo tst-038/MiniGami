@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
@@ -21,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -316,5 +319,41 @@ class ModeLoaderTest {
                 problems(load("{" + mode + "min-players: 3, max-players: 20, teams: {size: 2}}")));
         assertEquals(List.of("modes/fall.yml: min-players: must be more than the team size (2), so there are at least two teams"),
                 problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {size: 2}}")));
+    }
+
+    @Test
+    void rolesAreHandedOutInFileOrderWithTheirShareColourAndLives() throws Exception {
+        var loaded = load("{game: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], roles: {"
+                + "seeker: {name: Seekers, color: dark_red, players: 1, lives: 0}, hider: {}, guard: {per: 4}}}");
+
+        assertEquals(List.of(), problems(loaded));
+        var mode = loaded.entries().find("fall").orElseThrow();
+        assertEquals(List.of(
+                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0)),
+                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty()),
+                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty())), mode.roles());
+        assertEquals(Optional.of("Seekers"), mode.role("seeker").map(Role::name));
+    }
+
+    @Test
+    void reportsRolesThatCanNotWork() throws Exception {
+        var mode = "game: test, waiting: arena, arenas: [demo], max-players: 8, ";
+
+        assertEquals(List.of("modes/fall.yml: roles: set either teams or roles"),
+                problems(load("{" + mode + "min-players: 2, teams: {count: 2}, roles: {a: {players: 1}, b: {}}}")));
+        assertEquals(List.of("modes/fall.yml: roles: needs at least two roles"),
+                problems(load("{" + mode + "min-players: 2, roles: {a: {}}}")));
+        assertEquals(List.of("modes/fall.yml: roles: exactly one role must leave out players and per, to get everyone left over; a, b do"),
+                problems(load("{" + mode + "min-players: 2, roles: {a: {}, b: {}}}")));
+        assertEquals(List.of("modes/fall.yml: roles: exactly one role must leave out players and per, to get everyone left over; none does"),
+                problems(load("{" + mode + "min-players: 2, roles: {a: {players: 1}, b: {per: 2}}}")));
+        assertEquals(List.of("modes/fall.yml: min-players: must be more than the 2 players the other roles ask for, so c gets at least one"),
+                problems(load("{" + mode + "min-players: 2, roles: {a: {players: 1}, b: {per: 5}, c: {}}}")));
+        assertEquals(List.of("modes/fall.yml: roles.a.per: set either players or per"),
+                problems(load("{" + mode + "min-players: 3, roles: {a: {players: 1, per: 2}, b: {}}}")));
+        assertEquals(List.of("modes/fall.yml: roles.a.color: unknown colour 'pink'; colours: " + String.join(", ", NamedTextColor.NAMES.keys())),
+                problems(load("{" + mode + "min-players: 2, roles: {a: {players: 1, color: pink}, b: {}}}")));
+        assertEquals(List.of("modes/fall.yml: roles.Big_One: use lower case letters, digits and dashes"),
+                problems(load("{" + mode + "min-players: 2, roles: {Big_One: {players: 1}, b: {}}}")));
     }
 }

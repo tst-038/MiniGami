@@ -26,7 +26,7 @@ final class Kills implements Feature {
                 return;
             }
             context.addPoints(killer.getUniqueId(), 1);
-            var name = team.id().map(id -> context.messages().render("team." + id)).orElse(killer.name());
+            var name = team.id().map(context::teamName).orElse(killer.name());
             var kills = team.ids().stream().mapToInt(context.scores()::of).sum();
             context.messages().send(context.audience(), "team-deathmatch.kills",
                     Placeholder.component("team", name), Formatter.number("kills", kills));

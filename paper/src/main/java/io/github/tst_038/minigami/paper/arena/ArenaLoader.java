@@ -96,13 +96,15 @@ public final class ArenaLoader {
 
     private static Arena.Spawn spawn(ConfigReader config, World world) {
         var location = ConfigLocations.read(config, world);
+        // A role's id works too; roles belong to modes, which are loaded after arenas.
         config.suggest("team", TeamSetup.IDS);
         if (!config.has("team")) {
             return new Arena.Spawn(location, Optional.empty());
         }
         var team = config.string("team");
-        if (!TeamSetup.IDS.contains(team)) {
-            config.problem("team", "unknown team '" + team + "'; teams: " + String.join(", ", TeamSetup.IDS));
+        if (!TeamSetup.IDS.contains(team) && !IdRegistry.isValid(team)) {
+            config.problem("team", "'" + team + "' is neither a team (" + String.join(", ", TeamSetup.IDS)
+                    + ") nor a role id in lower case letters, digits and dashes");
         }
         return new Arena.Spawn(location, Optional.of(team));
     }

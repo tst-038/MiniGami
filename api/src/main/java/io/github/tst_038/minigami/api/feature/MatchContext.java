@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
@@ -58,6 +59,11 @@ public interface MatchContext {
     void endPhase();
 
     Messages messages();
+
+    /** The name of a team or role of this match, in its colour, as players see it. */
+    default Component teamName(String team) {
+        return messages().render("team." + team);
+    }
 
     /** Everyone currently in the match, eliminated players included, for messages to the whole match. */
     Audience audience();

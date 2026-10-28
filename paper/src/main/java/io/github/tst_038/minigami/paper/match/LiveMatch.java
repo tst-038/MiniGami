@@ -6,9 +6,11 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.roster.Participant;
+import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.core.team.RandomTeams;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.mode.Mode;
+import io.github.tst_038.minigami.paper.mode.Role;
 import io.github.tst_038.minigami.paper.mode.TeamSetup;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.ArrayList;
@@ -65,7 +67,7 @@ public final class LiveMatch {
     private final Set<UUID> members = new LinkedHashSet<>();
     /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
-    /** Deaths per participant since the start, against the mode's lives. */
+    /** Deaths per participant since the start, against their lives. */
     private final Map<UUID, Integer> deaths = new HashMap<>();
     /** Takes a member out of their scoreboard team again; closing twice is harmless. */
     private final Map<UUID, AutoCloseable> scoreboardLeaves = new HashMap<>();
@@ -142,6 +144,11 @@ public final class LiveMatch {
     /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#rememberOriginal(Block)}. */
     public void rememberOriginal(BlockState original) {
         originals.putIfAbsent(original.getBlock(), original);
+    }
+
+    /** The name of a team or role of this match, in its colour. */
+    public Component teamName(String teamId) {
+        return mode.role(teamId).map(Role::displayName).orElseGet(() -> messages.render("team." + teamId));
     }
 
     public Audience audience() {
@@ -279,7 +286,7 @@ public final class LiveMatch {
         match.dispose();
     }
 
-    /** Prepares everyone for play, forms the teams if the mode has them, and brings each to their spawns, round robin. */
+    /** Prepares everyone for play, forms the teams or hands out the roles if the mode has them, and brings each to their spawns, round robin. */
     private void startPlaying() {
         startDelay = null;
         for (var id : List.copyOf(members)) {
@@ -305,6 +312,9 @@ public final class LiveMatch {
             return;
         }
         mode.teams().ifPresent(this::formTeams);
+        if (!mode.roles().isEmpty()) {
+            handOutRoles();
+        }
         var next = new HashMap<Optional<String>, Integer>();
         for (var id : members) {
             var player = plugin.getServer().getPlayer(id);
@@ -327,15 +337,31 @@ public final class LiveMatch {
                 continue;
             }
             var teamId = TeamSetup.IDS.get(i);
-            var name = messages.render("team." + teamId);
-            var scoreboardTeam = scoreboardTeam(teamId, name);
-            for (var id : teams.get(i)) {
-                match.roster().assignTeam(id, teamId);
-                var player = plugin.getServer().getPlayer(id);
-                if (player != null) {
-                    joinScoreboardTeam(player, scoreboardTeam);
-                    messages.send(player, "match.your-team", Placeholder.component("team", name));
-                }
+            putInTeam(teams.get(i), teamId, NamedTextColor.NAMES.valueOrThrow(teamId), "match.your-team");
+        }
+    }
+
+    /** Hands out the roles at random, each a team of its own, and tells each player their role. */
+    private void handOutRoles() {
+        var roles = mode.roles();
+        var players = new RandomRoles(ThreadLocalRandom.current()).deal(List.copyOf(members), roles.stream().map(Role::share).toList());
+        for (int i = 0; i < roles.size(); i++) {
+            if (!players.get(i).isEmpty()) {
+                putInTeam(players.get(i), roles.get(i).id(), roles.get(i).color(), "match.your-role");
+            }
+        }
+    }
+
+    /** @param told the message each player gets, with the team's name as {@code <team>} */
+    private void putInTeam(List<UUID> players, String teamId, NamedTextColor color, String told) {
+        var name = teamName(teamId);
+        var scoreboardTeam = scoreboardTeam(teamId, name, color);
+        for (var id : players) {
+            match.roster().assignTeam(id, teamId);
+            var player = plugin.getServer().getPlayer(id);
+            if (player != null) {
+                joinScoreboardTeam(player, scoreboardTeam);
+                messages.send(player, told, Placeholder.component("team", name));
             }
         }
     }
@@ -348,7 +374,7 @@ public final class LiveMatch {
      * A team on the main scoreboard, which colours its members' names and stops them hurting each
      * other; it goes away with the match. One left behind by a crash is replaced.
      */
-    private Team scoreboardTeam(String teamId, Component name) {
+    private Team scoreboardTeam(String teamId, Component name, NamedTextColor color) {
         var scoreboard = plugin.getServer().getScoreboardManager().getMainScoreboard();
         var teamName = "minigami." + arena.id() + "." + teamId;
         var leftover = scoreboard.getTeam(teamName);
@@ -357,7 +383,7 @@ public final class LiveMatch {
         }
         var team = scoreboard.registerNewTeam(teamName);
         team.displayName(name);
-        team.color(NamedTextColor.NAMES.valueOrThrow(teamId));
+        team.color(color);
         team.setAllowFriendlyFire(false);
         team.setCanSeeFriendlyInvisibles(true);
         match.scope().register(() -> {
@@ -398,8 +424,9 @@ public final class LiveMatch {
         }
         var id = player.getUniqueId();
         var playing = !isJoinable() && match.result().isEmpty();
-        if (playing && mode.lives() > 0 && match.roster().find(id).filter(Participant::isAlive).isPresent()
-                && deaths.merge(id, 1, Integer::sum) >= mode.lives()) {
+        var lives = livesOf(id);
+        if (playing && lives > 0 && match.roster().find(id).filter(Participant::isAlive).isPresent()
+                && deaths.merge(id, 1, Integer::sum) >= lives) {
             messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
             match.eliminate(id);
         }
@@ -408,6 +435,11 @@ public final class LiveMatch {
                 player.spigot().respawn();
             }
         }, null);
+    }
+
+    /** The lives of the player's role if it sets its own, else the mode's. */
+    private int livesOf(UUID id) {
+        return teamOf(id).flatMap(mode::role).map(role -> role.lives().orElse(mode.lives())).orElse(mode.lives());
     }
 
     /** Before the start back to where they wait; after it to a random spawn of their team, as a spectator once they are out. */

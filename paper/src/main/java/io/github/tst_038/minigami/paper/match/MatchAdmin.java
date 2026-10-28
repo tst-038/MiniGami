@@ -63,7 +63,7 @@ public final class MatchAdmin {
                 var state = !live.isMember(player) ? "match.admin.state-left"
                         : roster.find(player).filter(Participant::isAlive).isPresent() ? "match.admin.state-alive" : "match.admin.state-out";
                 var team = roster.find(player).flatMap(Participant::team)
-                        .map(teamId -> messages.render("match.admin.team", Placeholder.component("team", messages.render("team." + teamId))))
+                        .map(teamId -> messages.render("match.admin.team", Placeholder.component("team", live.teamName(teamId))))
                         .orElse(Component.empty());
                 messages.send(sender, "match.admin.player", Placeholder.unparsed("player", name), Placeholder.component("team", team),
                         Placeholder.component("state", messages.render(state)), Formatter.number("points", match.scores().of(player)),

@@ -39,6 +39,8 @@ match:
   no-winner: "<prefix><gray>The match ended without a winner."
   # <team>: the player's team, in its colour
   your-team: "<prefix><gray>You are in team <team><gray>."
+  # <team>: the player's role, in its colour
+  your-role: "<prefix><gray>You are one of the <team><gray>."
   stopped: "<prefix><red>An admin stopped the match; you get your own things back."
   # For admins. <match>: a match's id, its arena; <mode>, <phase>, <players>: how many are in it
   admin:
@@ -122,8 +124,8 @@ arena:
   info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white><team>: <x>, <y>, <z></hover></teleport>"
   # <team>: the team's name; shown after a spawn that only that team uses
   spawn-team: " <gray>(<team><gray>)"
-  # <team>: what was typed, <teams>: the known ones
-  unknown-team: "<prefix><red>There is no team <white><team></white>; teams: <white><teams></white>."
+  # <team>: what was typed, <teams>: the team colours; a role's id works too
+  unknown-team: "<prefix><red><white><team></white> is neither a team (<white><teams></white>) nor a role id in lower case letters, digits and dashes."
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
   no-spawns: "<prefix><gray><white><arena></white> has no spawns yet; add one with <white>/mg arena <arena> spawn add</white>."
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
@@ -175,6 +177,8 @@ info:
   mode-teams-count: "<gray> Teams: <white><count></white>, formed at random when the match starts"
   # <size>: players per team
   mode-teams-size: "<gray> Teams: of <white><size></white> players each, formed at random when the match starts"
+  # <roles>: the roles' names, in the order they are handed out
+  mode-roles: "<gray> Roles: <roles><gray>, handed out at random when the match starts"
   # <key>, <value>
   value: "<set><hover:show_text:'Click to change'><gray> - <white><key></white>: <yellow><value></yellow></hover></set>"
   value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - <key>: <value></hover></set>"
