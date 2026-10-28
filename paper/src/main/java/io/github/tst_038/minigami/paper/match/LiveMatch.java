@@ -122,7 +122,7 @@ public final class LiveMatch {
         this.messages = messages;
         var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
-        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), variant.nameTags(), match.scope(), plugin.getLogger());
+        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), variant.nameTags().status(), match.scope(), plugin.getLogger());
         this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror);
         match.onResult(result -> {
             recordEnd();

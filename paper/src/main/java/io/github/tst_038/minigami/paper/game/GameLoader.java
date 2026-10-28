@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.scoreboard.Team.OptionStatus;
 
 /**
  * Turns {@code games/<id>.yml} files into games:
@@ -39,7 +38,7 @@ import org.bukkit.scoreboard.Team.OptionStatus;
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
- * name-tags: for-own-team    # optional; who sees a team's name tags: always (the default), never, for-own-team or for-other-teams
+ * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * roles:                      # optional, instead of teams; handed out in this order
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
  *   hider:                                                         # neither: everyone left over
@@ -176,7 +175,7 @@ public final class GameLoader {
             config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
-        var nameTags = config.has("name-tags") ? config.choice("name-tags", OptionStatus.class) : OptionStatus.ALWAYS;
+        var nameTags = config.has("name-tags") ? config.choice("name-tags", NameTags.class) : NameTags.EVERYONE;
         var teams = teams(config, minPlayers, maxPlayers);
         var roles = roles(config, minPlayers, game);
         var quit = quit(config);
