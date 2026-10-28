@@ -36,7 +36,8 @@ import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
-import io.github.tst_038.minigami.paper.match.MatchService;
+import io.github.tst_038.minigami.paper.match.PublicMatches;
+import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.mode.ModeLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
@@ -114,14 +115,15 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new EffectsFactory());
         statGroups.register(new CombatStats());
         maps = new ArenaMaps(this, messages);
-        var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches, maps);
-        getServer().getPluginManager().registerEvents(service, this);
+        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps);
+        getServer().getPluginManager().registerEvents(running, this);
+        var publicMatches = new PublicMatches(this, () -> modes, messages, running);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, games, modeLoader, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
-        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, service::isArenaInUse, messages, this);
-        info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, service::isArenaInUse);
+        editor = new ConfigEditor(this, messages, games, modeLoader, () -> arenas, () -> settings, running::isArenaInUse, this::loadConfig);
+        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
+        info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, service, new MatchAdmin(service, messages, getServer()), editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,
                         () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.

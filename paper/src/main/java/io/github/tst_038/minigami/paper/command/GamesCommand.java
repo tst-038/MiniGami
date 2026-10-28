@@ -15,7 +15,8 @@ import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
-import io.github.tst_038.minigami.paper.match.MatchService;
+import io.github.tst_038.minigami.paper.match.PublicMatches;
+import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -44,28 +45,28 @@ public final class GamesCommand {
      * @param lobby the lobby currently loaded
      * @param reload loads the config again and tells the sender how that went
      */
-    public static LiteralCommandNode<CommandSourceStack> create(Messages messages, MatchService service, MatchAdmin matches, ConfigEditor editor,
+    public static LiteralCommandNode<CommandSourceStack> create(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
             ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
-                .then(Commands.literal("list").executes(bySender((sender, context) -> service.list(sender))))
+                .then(Commands.literal("list").executes(bySender((sender, context) -> publicMatches.list(sender))))
                 .then(Commands.literal("join")
                         .requires(PLAYER.or(ADMIN))
                         .then(Commands.argument("mode", StringArgumentType.word())
-                                .suggests(suggest(service::modeIds))
+                                .suggests(suggest(publicMatches::modeIds))
                                 .executes(bySender((sender, context) -> {
                                     if (context.getSource().getExecutor() instanceof Player player) {
-                                        service.join(player, string(context, "mode"));
+                                        publicMatches.join(player, string(context, "mode"));
                                     } else {
                                         messages.send(sender, "join.name-a-player");
                                     }
                                 }))
                                 .then(Commands.argument("player", ArgumentTypes.player())
                                         .requires(ADMIN)
-                                        .executes(bySender((sender, context) -> service.join(sender, player(context), string(context, "mode")))))))
-                .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> service.leave(player))))
-                .then(Commands.literal("start").requires(ADMIN).executes(bySender((sender, context) -> service.forceStart(sender))))
+                                        .executes(bySender((sender, context) -> publicMatches.join(sender, player(context), string(context, "mode")))))))
+                .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> running.leave(player))))
+                .then(Commands.literal("start").requires(ADMIN).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
                 .then(ModeCommands.node(editor, info, help))
                 .then(ArenaCommands.node(editor, arenas, info, help))
@@ -75,7 +76,7 @@ public final class GamesCommand {
                 .then(ConfigCommands.config(editor, info, help))
                 .then(PlayerCommands.node(snapshots))
                 .then(Commands.literal("reload").requires(ADMIN).executes(bySender((sender, context) -> reload.accept(sender))))
-                .then(Commands.literal("debug").requires(ADMIN).executes(bySender((sender, context) -> service.debug(sender))))
+                .then(Commands.literal("debug").requires(ADMIN).executes(bySender((sender, context) -> running.debug(sender))))
                 .build();
     }
 }

@@ -10,7 +10,6 @@ import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.team.RandomRoles;
-import io.github.tst_038.minigami.core.team.RandomTeams;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.mode.Role;
@@ -64,6 +63,7 @@ public final class LiveMatch {
     private final Plugin plugin;
     private final Mode mode;
     private final Arena arena;
+    private final Opening opening;
     /** Where joining players are sent; empty when they wait in place. */
     private final Optional<Location> waitingSpot;
     private final PlayerSessions sessions;
@@ -89,13 +89,15 @@ public final class LiveMatch {
 
     /**
      * @param arena must be playable
+     * @param opening whether it is public and how its teams are formed
      * @param lobby where players wait in a mode that waits in the lobby
      * @throws IllegalArgumentException if the mode waits in the lobby and there is none
      */
-    public LiveMatch(Plugin plugin, Mode mode, Arena arena, Optional<Location> lobby, PlayerSessions sessions, Messages messages) {
+    public LiveMatch(Plugin plugin, Mode mode, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages) {
         this.plugin = plugin;
         this.mode = mode;
         this.arena = arena;
+        this.opening = opening;
         this.waitingSpot = switch (mode.waiting()) {
             case IN_PLACE -> Optional.empty();
             case LOBBY -> Optional.of(lobby.orElseThrow(() -> new IllegalArgumentException(mode.id() + " waits in a lobby, but none is set")));
@@ -150,6 +152,11 @@ public final class LiveMatch {
 
     public Arena arena() {
         return arena;
+    }
+
+    /** Whether anyone may join it through public play; a private match only gets the players its opener puts in. */
+    public boolean isPublic() {
+        return opening.isPublic();
     }
 
     public boolean isMember(UUID id) {
@@ -449,10 +456,10 @@ public final class LiveMatch {
         match.advancePhase();
     }
 
-    /** Splits everyone still in the match at random, handing out team ids in order, and tells each their team. */
+    /** Splits everyone still in the match as its opening says, handing out team ids in order, and tells each their team. */
     private void formTeams(TeamSetup setup) {
         var players = List.copyOf(members);
-        var teams = new RandomTeams(ThreadLocalRandom.current()).form(players, setup.teamsFor(players.size()));
+        var teams = opening.teams().form(players, setup.teamsFor(players.size()));
         for (int i = 0; i < teams.size(); i++) {
             if (teams.get(i).isEmpty()) {
                 continue;

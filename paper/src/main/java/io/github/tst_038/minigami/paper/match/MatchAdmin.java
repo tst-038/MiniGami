@@ -22,22 +22,22 @@ import org.bukkit.entity.Player;
  */
 public final class MatchAdmin {
 
-    private final MatchService service;
+    private final RunningMatches matches;
     private final Messages messages;
     private final Server server;
 
-    public MatchAdmin(MatchService service, Messages messages, Server server) {
-        this.service = service;
+    public MatchAdmin(RunningMatches matches, Messages messages, Server server) {
+        this.matches = matches;
         this.messages = messages;
         this.server = server;
     }
 
     public List<String> ids() {
-        return service.running().stream().map(match -> match.arena().id()).toList();
+        return matches.running().stream().map(match -> match.arena().id()).toList();
     }
 
     public void list(CommandSender sender) {
-        var running = List.copyOf(service.running());
+        var running = List.copyOf(matches.running());
         if (running.isEmpty()) {
             messages.send(sender, "match.admin.none");
             return;
@@ -86,7 +86,7 @@ public final class MatchAdmin {
 
     /** The phases the match can skip to; none if it isn't running. */
     public List<String> laterPhases(String id) {
-        return service.running().stream().filter(live -> live.arena().id().equals(id)).findFirst()
+        return matches.running().stream().filter(live -> live.arena().id().equals(id)).findFirst()
                 .map(live -> live.match().laterPhases().stream().map(phase -> phase.id()).toList()).orElse(List.of());
     }
 
@@ -131,7 +131,7 @@ public final class MatchAdmin {
     public void add(CommandSender sender, String id, Player player) {
         find(sender, id).ifPresent(live -> {
             var playerTag = Placeholder.component("player", player.name());
-            if (service.find(player.getUniqueId()).isPresent()) {
+            if (matches.find(player.getUniqueId()).isPresent()) {
                 messages.send(sender, "join.already-in-match", playerTag);
             } else if (!live.isJoinable()) {
                 messages.send(sender, "match.admin.started", Placeholder.unparsed("match", id));
@@ -157,7 +157,7 @@ public final class MatchAdmin {
     }
 
     private Optional<LiveMatch> find(CommandSender sender, String id) {
-        var match = service.running().stream().filter(live -> live.arena().id().equals(id)).findFirst();
+        var match = matches.running().stream().filter(live -> live.arena().id().equals(id)).findFirst();
         if (match.isEmpty()) {
             messages.send(sender, "match.admin.unknown", Placeholder.unparsed("match", id));
         }

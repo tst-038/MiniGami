@@ -1,7 +1,6 @@
 package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.message.Messages;
-import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.mode.Mode;
@@ -10,12 +9,9 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SortedSet;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
@@ -29,16 +25,15 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Puts players into matches and takes them out again. An arena hosts one match at a time and gets its
- * saved map pasted back after it; joining a mode fills its waiting match first and otherwise opens
- * one in the first free arena of the mode.
+ * The matches on the server, whoever opened them. An arena hosts one match at a time and gets its
+ * saved map pasted back after it. Match sources, such as {@link PublicMatches} for {@code /mg join},
+ * open matches here and put players in them.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
-public final class MatchService implements Listener {
+public final class RunningMatches implements Listener {
 
     private final Plugin plugin;
-    private final Supplier<IdRegistry<Mode>> modes;
     private final Supplier<Optional<Location>> lobby;
     private final PlayerSessions sessions;
     private final Messages messages;
@@ -47,14 +42,10 @@ public final class MatchService implements Listener {
     /** Per arena id, its latest match; finished ones are dropped lazily. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
-    /**
-     * @param modes the modes currently loaded; config loading replaces the registry
-     * @param lobby the lobby currently set
-     */
-    public MatchService(Plugin plugin, Supplier<IdRegistry<Mode>> modes, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
+    /** @param lobby the lobby currently set */
+    public RunningMatches(Plugin plugin, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
             ActiveMatches matches, ArenaMaps maps) {
         this.plugin = plugin;
-        this.modes = modes;
         this.lobby = lobby;
         this.sessions = sessions;
         this.messages = messages;
@@ -62,48 +53,35 @@ public final class MatchService implements Listener {
         this.maps = maps;
     }
 
-    public SortedSet<String> modeIds() {
-        return modes.get().ids();
+    /**
+     * Opens a match of the mode in its first free arena, waiting for players.
+     *
+     * @return empty if every arena of the mode is in use or being reset
+     */
+    public Optional<LiveMatch> open(Mode mode, Opening opening) {
+        return mode.arenas().stream()
+                .filter(arena -> !byArena.containsKey(arena.id()) && !maps.isResetting(arena.id()))
+                .findFirst()
+                .map(arena -> open(mode, arena, opening));
+    }
+
+    private LiveMatch open(Mode mode, Arena arena, Opening opening) {
+        var match = new LiveMatch(plugin, mode, arena, opening, lobby.get(), sessions, messages);
+        // Registered first so it runs last, once the match has let go of the arena.
+        match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
+        try {
+            match.start();
+        } catch (RuntimeException e) {
+            match.match().dispose();
+            throw e;
+        }
+        matches.add(match.match());
+        byArena.put(arena.id(), match);
+        return match;
     }
 
     public boolean isArenaInUse(String arenaId) {
         return running().stream().anyMatch(match -> match.arena().id().equals(arenaId));
-    }
-
-    public void join(Player player, String modeId) {
-        join(player, modeId, player);
-    }
-
-    /** An admin puts a player in a match of the mode; the admin hears why if that can't be done. */
-    public void join(CommandSender sender, Player player, String modeId) {
-        join(player, modeId, sender).ifPresent(match -> messages.send(sender, "match.admin.added",
-                Placeholder.component("player", player.name()), Placeholder.unparsed("match", match.arena().id())));
-    }
-
-    /** @param feedback hears why the player can't join */
-    private Optional<LiveMatch> join(Player player, String modeId, Audience feedback) {
-        if (find(player.getUniqueId()).isPresent()) {
-            messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
-            return Optional.empty();
-        }
-        var mode = modes.get().find(modeId);
-        if (mode.isEmpty()) {
-            messages.send(feedback, "join.unknown-mode", Placeholder.unparsed("mode", modeId));
-            return Optional.empty();
-        }
-        var match = matchToJoin(mode.get());
-        if (match.isEmpty()) {
-            messages.send(feedback, "join.no-free-arena", Placeholder.parsed("mode", mode.get().name()));
-            return Optional.empty();
-        }
-        try {
-            match.get().join(player);
-            return match;
-        } catch (IllegalStateException e) {
-            plugin.getLogger().log(Level.WARNING, player.getName() + " could not join", e);
-            messages.send(feedback, "join.failed", Placeholder.component("player", player.name()));
-            return Optional.empty();
-        }
     }
 
     public void leave(Player player) {
@@ -113,23 +91,6 @@ public final class MatchService implements Listener {
             return;
         }
         match.get().leave(player);
-    }
-
-    /** The modes that can be joined, with how many play each; a player can click one to join. */
-    public void list(CommandSender sender) {
-        var joinable = modes.get().ids().stream().map(id -> modes.get().find(id).orElseThrow())
-                .filter(mode -> !mode.arenas().isEmpty()).toList();
-        if (joinable.isEmpty()) {
-            messages.send(sender, "list.none");
-            return;
-        }
-        messages.send(sender, "list.header");
-        for (var mode : joinable) {
-            var players = running().stream().filter(match -> match.mode().id().equals(mode.id()))
-                    .mapToInt(match -> match.members().size()).sum();
-            messages.send(sender, "list.mode", Placeholder.parsed("mode", mode.name()), Placeholder.unparsed("id", mode.id()),
-                    Formatter.number("players", players), Placeholder.styling("join", ClickEvent.runCommand("/mg join " + mode.id())));
-        }
     }
 
     /** Starts the sender's own match, or else the first one waiting for players. */
@@ -195,34 +156,5 @@ public final class MatchService implements Listener {
     /** The match the player is in. */
     Optional<LiveMatch> find(UUID id) {
         return running().stream().filter(match -> match.isMember(id)).findFirst();
-    }
-
-    /** The mode's match that is still gathering players and has room, or a new one in a free arena. */
-    private Optional<LiveMatch> matchToJoin(Mode mode) {
-        var waiting = running().stream()
-                .filter(match -> match.mode().id().equals(mode.id()) && match.isJoinable() && match.hasRoom())
-                .findFirst();
-        if (waiting.isPresent()) {
-            return waiting;
-        }
-        return mode.arenas().stream()
-                .filter(arena -> !byArena.containsKey(arena.id()) && !maps.isResetting(arena.id()))
-                .findFirst()
-                .map(arena -> open(mode, arena));
-    }
-
-    private LiveMatch open(Mode mode, Arena arena) {
-        var match = new LiveMatch(plugin, mode, arena, lobby.get(), sessions, messages);
-        // Registered first so it runs last, once the match has let go of the arena.
-        match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
-        try {
-            match.start();
-        } catch (RuntimeException e) {
-            match.match().dispose();
-            throw e;
-        }
-        matches.add(match.match());
-        byArena.put(arena.id(), match);
-        return match;
     }
 }
