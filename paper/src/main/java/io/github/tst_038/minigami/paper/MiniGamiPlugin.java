@@ -20,6 +20,7 @@ import io.github.tst_038.minigami.features.givedrops.GiveDropsFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
 import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
+import io.github.tst_038.minigami.features.onehit.OneHitFactory;
 import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.hideandseek.HideAndSeek;
@@ -140,6 +141,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new AntiCampingFactory());
         features.register(new DecayFloorFactory());
         features.register(new NoHungerFactory());
+        features.register(new OneHitFactory());
         features.register(new CountdownFactory());
         features.register(new FreezeFactory());
         features.register(new EffectsFactory());
