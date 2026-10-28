@@ -4,8 +4,8 @@ import java.util.regex.Pattern;
 
 /**
  * Something counted per participant during a match, such as kills or seconds on the hill. Stats belong
- * to the game: a feature declares the ones it counts ({@code Feature.stats()}), so a game only keeps
- * what makes sense for it. Storage and leaderboards take any stat without knowing it in advance.
+ * to the game: a mode keeps those its game declares and those of the stat groups it lists, so a game
+ * only keeps what makes sense for it. Storage and leaderboards take any stat without knowing it in advance.
  *
  * @param id lower case letters, digits and dashes; also the key of its display name in the messages
  */
