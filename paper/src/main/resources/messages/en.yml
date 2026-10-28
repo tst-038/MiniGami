@@ -189,12 +189,15 @@ stats:
   failed: "<prefix><red>Could not load the stats; see the server log."
   unknown-player: "<prefix><red>Nobody called <white><player></white> has played here."
   unknown-game: "<prefix><red>There is no game called <white><game></white>."
+  unknown-variant: "<prefix><red><game> <red>has no variant called <white><variant></white>; it has: <white><variants></white>."
   unknown-stat: "<prefix><red><game> <red>has no leaderboard called <white><stat></white>."
   header: "<prefix><gold><player></gold><gray>'s stats:"
   none: "<gray> No matches played yet."
-  gametype: "<gray> - <white><gametype></white>: <played> played, <wins> won, average place <place>, <minutes> min"
+  game: "<gray> - <game><gray>: <played> played, <wins> won, average place <place>, <minutes> min"
   game-header: "<prefix><gold><player></gold><gray> in <game><gray>:"
   game-totals: "<gray> <played> played, <wins> won, average place <place>, left <left>, <minutes> min"
+  # A line per variant played, under the game's totals and stats
+  variant: "<gray> - <variant><gray>: <played> played, <wins> won, average place <place>, <minutes> min"
   # <amount>
   stat: "<gray> - <stat>: <white><amount>"
   top-header: "<prefix><gold>Top <stat></gold> <gray>in <game><gray>:"

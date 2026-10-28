@@ -51,9 +51,9 @@ class StatsRecorderTest {
         storage.close();
     }
 
-    /** Alice wins with 3 kills, Bob comes second with 1 kill and left; 90 seconds of play. */
-    private MatchRecord match(String mode) {
-        return new MatchRecord("team-deathmatch", mode, "arena-1", START, START.plusSeconds(90),
+    /** Alice wins tdm with 3 kills, Bob comes second with 1 kill and left; 90 seconds of play. */
+    private MatchRecord match(Optional<String> variant) {
+        return new MatchRecord("team-deathmatch", "tdm", variant, "arena-1", START, START.plusSeconds(90),
                 new MatchResult(List.of(new Placement(1, List.of(alice)), new Placement(2, List.of(bob)))),
                 List.of(new Entry(alice, Optional.of("red"), false, Map.of(KILLS, 3L)),
                         new Entry(bob, Optional.of("blue"), true, Map.of(KILLS, 1L))));
@@ -84,10 +84,10 @@ class StatsRecorderTest {
 
     @Test
     void keepsTheMatchWithItsPlayersAndStats() {
-        recorder.record(match("tdm")).join();
+        recorder.record(match(Optional.of("big"))).join();
 
-        assertEquals(List.of("1 team-deathmatch tdm arena-1 " + START.toEpochMilli() + " " + START.plusSeconds(90).toEpochMilli()),
-                rows("SELECT id, game, mode, arena, started_at, ended_at FROM matches"));
+        assertEquals(List.of("1 team-deathmatch tdm big arena-1 " + START.toEpochMilli() + " " + START.plusSeconds(90).toEpochMilli()),
+                rows("SELECT id, gametype, game, variant, arena, started_at, ended_at FROM matches"));
         assertEquals(List.of("1 alice red 1 0", "1 bob blue 2 1"),
                 withNames(rows("SELECT match_id, player, team, place, left_match FROM match_players ORDER BY place")));
         assertEquals(List.of("alice kills 3", "bob kills 1"),
@@ -95,24 +95,24 @@ class StatsRecorderTest {
     }
 
     @Test
-    void totalsAddUpPerGameAndMode() {
-        recorder.record(match("tdm")).join();
-        recorder.record(match("tdm")).join();
-        recorder.record(match("tdm-big")).join();
+    void totalsAddUpPerGameAndVariant() {
+        recorder.record(match(Optional.empty())).join();
+        recorder.record(match(Optional.empty())).join();
+        recorder.record(match(Optional.of("big"))).join();
 
         assertEquals(List.of(
-                        "alice tdm 2 2 2 2 0 180", "alice tdm-big 1 1 1 1 0 90",
-                        "bob tdm 2 0 2 4 2 180", "bob tdm-big 1 0 1 2 1 90"),
-                withNames(rows("SELECT player, mode, played, wins, placed, place_sum, left_matches, seconds_played"
-                        + " FROM player_totals ORDER BY played DESC, mode")).stream().sorted().toList());
+                        "alice tdm  2 2 2 2 0 180", "alice tdm big 1 1 1 1 0 90",
+                        "bob tdm  2 0 2 4 2 180", "bob tdm big 1 0 1 2 1 90"),
+                withNames(rows("SELECT player, game, variant, played, wins, placed, place_sum, left_matches, seconds_played"
+                        + " FROM player_totals")).stream().sorted().toList());
         assertEquals(List.of("alice 9", "bob 3"), withNames(rows(
-                "SELECT player, SUM(amount) FROM player_stat_totals WHERE game = 'team-deathmatch' AND stat = 'kills'"
+                "SELECT player, SUM(amount) FROM player_stat_totals WHERE game = 'tdm' AND stat = 'kills'"
                         + " GROUP BY player ORDER BY 2 DESC")));
     }
 
     @Test
     void aParticipantWithoutAPlaceIsPlayedButNotPlaced() {
-        var record = new MatchRecord("build-battle", "build-battle", "build", START, START.plusSeconds(30),
+        var record = new MatchRecord("build-battle", "build-battle", Optional.empty(), "build", START, START.plusSeconds(30),
                 new MatchResult(List.of(new Placement(1, List.of(alice)))),
                 List.of(new Entry(alice, Optional.empty(), false, Map.of()), new Entry(bob, Optional.empty(), true, Map.of())));
 
@@ -122,5 +122,43 @@ class StatsRecorderTest {
                 withNames(rows("SELECT player, played, wins, placed, place_sum FROM player_totals")).stream().sorted().toList());
         assertEquals(List.of("alice null 1", "bob null null"),
                 withNames(rows("SELECT player, team, place FROM match_players")).stream().sorted().toList());
+    }
+
+    @Test
+    void totalsKeptPerModeMoveToTheGameItself() {
+        storage.close();
+        oldDatabase(folder.resolve("old.db"), 2, """
+                INSERT INTO matches (game, mode, arena, started_at, ended_at) VALUES ('last-standing', 'spleef', 'snow', 1, 2);
+                INSERT INTO player_totals VALUES ('alice', 'last-standing', 'spleef', 2, 1, 2, 3, 0, 60);
+                INSERT INTO player_totals VALUES ('alice', 'other-type', 'spleef', 1, 1, 1, 1, 0, 30);
+                INSERT INTO player_stat_totals VALUES ('alice', 'last-standing', 'spleef', 'kills', 4);
+                INSERT INTO player_stat_totals VALUES ('alice', 'other-type', 'spleef', 'kills', 1)""");
+        storage = new SqliteStorage(folder.resolve("old.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"),
+                Logger.getLogger(getClass().getName()));
+
+        assertEquals(List.of("last-standing spleef  snow"), rows("SELECT gametype, game, variant, arena FROM matches"));
+        assertEquals(List.of("alice spleef  3 2 3 4 0 90"), rows("SELECT * FROM player_totals"), "the same game under two types adds up");
+        assertEquals(List.of("alice spleef  kills 5"), rows("SELECT * FROM player_stat_totals"));
+    }
+
+    /** Opens a database at an old schema version and runs the statements in it. */
+    private static void oldDatabase(Path file, int version, String sql) {
+        var older = new ClassLoader(StatsRecorderTest.class.getClassLoader()) {
+            @Override
+            public java.io.InputStream getResourceAsStream(String name) {
+                return name.matches(".*/\\d+\\.sql") && Integer.parseInt(name.replaceAll(".*/(\\d+)\\.sql", "$1")) > version
+                        ? null : super.getResourceAsStream(name);
+            }
+        };
+        var old = new SqliteStorage(file, new Migrations(older, "storage/sqlite"), Logger.getLogger(StatsRecorderTest.class.getName()));
+        old.submit(connection -> {
+            try (var statement = connection.createStatement()) {
+                for (var line : sql.split(";\n")) {
+                    statement.execute(line);
+                }
+            }
+            return null;
+        }).join();
+        old.close();
     }
 }

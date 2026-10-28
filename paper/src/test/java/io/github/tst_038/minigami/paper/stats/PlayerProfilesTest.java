@@ -64,36 +64,37 @@ class PlayerProfilesTest {
         serverThread.clear();
     }
 
-    private void play(String mode, int alicePlace, long aliceKills) {
+    private void play(Optional<String> variant, int alicePlace, long aliceKills) {
         var bobPlace = 3 - alicePlace;
-        recorder.record(new MatchRecord("team-deathmatch", mode, "arena-1", START, START.plusSeconds(60),
+        recorder.record(new MatchRecord("team-deathmatch", "tdm", variant, "arena-1", START, START.plusSeconds(60),
                 new MatchResult(List.of(new Placement(alicePlace, List.of(alice)), new Placement(bobPlace, List.of(bob)))),
                 List.of(new Entry(alice, Optional.of("red"), false, Map.of(KILLS, aliceKills)),
                         new Entry(bob, Optional.of("blue"), false, Map.of())))).join();
     }
 
     @Test
-    void aProfileHasTheTotalsPerModeAndPerGame() {
-        play("tdm", 1, 3);
-        play("tdm", 2, 1);
-        play("tdm-big", 1, 5);
+    void aProfileHasTheTotalsPerVariantAndPerGame() {
+        play(Optional.empty(), 1, 3);
+        play(Optional.empty(), 2, 1);
+        play(Optional.of("big"), 1, 5);
 
         profiles.load(alice);
         assertTrue(profiles.of(alice).isEmpty(), "still loading");
         settle();
 
         var profile = profiles.of(alice).orElseThrow();
-        var tdm = profile.mode("team-deathmatch", "tdm");
+        var tdm = profile.variant("tdm", Optional.empty());
         assertEquals(2, tdm.played());
         assertEquals(1, tdm.wins());
         assertEquals(OptionalDouble.of(1.5), tdm.averagePlace());
         assertEquals(4, tdm.stat(KILLS));
-        var game = profile.game("team-deathmatch");
+        var game = profile.game("tdm");
         assertEquals(3, game.played());
         assertEquals(2, game.wins());
         assertEquals(9, game.stat(KILLS));
         assertEquals(Duration.ofMinutes(3), game.timePlayed());
-        assertEquals(Set.of("team-deathmatch"), profile.games());
+        assertEquals(Set.of("tdm"), profile.games());
+        assertEquals(5, profile.variant("tdm", Optional.of("big")).stat(KILLS));
         assertEquals(Totals.NONE, profile.game("build-battle"));
     }
 
@@ -101,14 +102,14 @@ class PlayerProfilesTest {
     void aRecordedMatchReloadsTheProfilesOfThoseOnline() {
         profiles.load(alice);
         settle();
-        assertEquals(0, profiles.of(alice).orElseThrow().game("team-deathmatch").played());
+        assertEquals(0, profiles.of(alice).orElseThrow().game("tdm").played());
 
-        recorder.onMatchEnd(new MatchEndEvent(new MatchRecord("team-deathmatch", "tdm", "arena-1",
+        recorder.onMatchEnd(new MatchEndEvent(new MatchRecord("team-deathmatch", "tdm", Optional.empty(), "arena-1",
                 START, START.plusSeconds(60), new MatchResult(List.of(new Placement(1, List.of(alice, bob)))),
                 List.of(new Entry(alice, Optional.empty(), false, Map.of()), new Entry(bob, Optional.empty(), false, Map.of())))));
         settle();
 
-        assertEquals(1, profiles.of(alice).orElseThrow().game("team-deathmatch").played());
+        assertEquals(1, profiles.of(alice).orElseThrow().game("tdm").played());
         assertTrue(profiles.of(bob).isEmpty(), "bob isn't online");
     }
 
@@ -126,7 +127,7 @@ class PlayerProfilesTest {
 
     @Test
     void anyoneWhoJoinedCanBeFoundByNameInAnyCase() {
-        play("tdm", 1, 3);
+        play(Optional.empty(), 1, 3);
         profiles.join(alice, "Alice");
         profiles.forget(alice);
         settle();
@@ -138,7 +139,7 @@ class PlayerProfilesTest {
         var found = lookup.join();
         assertEquals(alice, found.orElseThrow().id());
         assertEquals("Alice", found.get().name());
-        assertEquals(3, found.get().profile().mode("team-deathmatch", "tdm").stat(KILLS));
+        assertEquals(3, found.get().profile().game("tdm").stat(KILLS));
         assertTrue(nobody.join().isEmpty(), "bob never joined");
     }
 }

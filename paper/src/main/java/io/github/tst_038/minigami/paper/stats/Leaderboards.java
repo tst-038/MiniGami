@@ -1,6 +1,5 @@
 package io.github.tst_038.minigami.paper.stats;
 
-import io.github.tst_038.minigami.paper.stats.Profile.ModeId;
 import io.github.tst_038.minigami.paper.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -18,7 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The best players per mode and stat, wins included. Read from storage in the background whenever
+ * The best players per game and stat, wins included, over the whole game and per variant. Read from storage in the background whenever
  * {@link #refresh()} is called, every few minutes, and kept in memory in between, so showing a
  * board never waits on the database. Only used on the server thread.
  */
@@ -31,7 +30,8 @@ public final class Leaderboards {
     public record Entry(UUID id, Optional<String> name, long amount) {
     }
 
-    private record Board(ModeId mode, String stat) {
+    /** @param variant empty for the whole game */
+    private record Board(String game, Optional<String> variant, String stat) {
     }
 
     private final Storage storage;
@@ -53,16 +53,19 @@ public final class Leaderboards {
         this.size = size;
     }
 
-    /** Best first; empty until the first refresh is done, or when nobody has any of it. */
-    public List<Entry> top(String game, String mode, String stat) {
-        return boards.getOrDefault(new Board(new ModeId(game, mode), stat), List.of());
+    /**
+     * Best first; empty until the first refresh is done, or when nobody has any of it.
+     *
+     * @param variant empty for the whole game, its variants added up
+     */
+    public List<Entry> top(String game, Optional<String> variant, String stat) {
+        return boards.getOrDefault(new Board(game, variant, stat), List.of());
     }
 
-    /** The stats the mode has a board for, wins included once anyone won. */
-    public Set<String> stats(String game, String mode) {
-        var id = new ModeId(game, mode);
+    /** The stats the game has a board for, wins included once anyone won. */
+    public Set<String> stats(String game) {
         var stats = new TreeSet<String>();
-        boards.keySet().stream().filter(board -> board.mode().equals(id)).forEach(board -> stats.add(board.stat()));
+        boards.keySet().stream().filter(board -> board.game().equals(game)).forEach(board -> stats.add(board.stat()));
         return stats;
     }
 
@@ -79,28 +82,37 @@ public final class Leaderboards {
         }, serverThread);
     }
 
-    // Ties keep a stable order by player, so a board doesn't shuffle between refreshes.
+    // Ties keep a stable order by player, so a board doesn't shuffle between refreshes. A whole game's rows have no variant;
+    // the game itself ('') gets no board of its own.
+    // shortcut: every board is read on each refresh; read only boards someone looked at once there are many games and players.
     private Map<Board, List<Entry>> read(Connection connection) throws SQLException {
         var read = new HashMap<Board, List<Entry>>();
         try (var select = connection.prepareStatement("""
-                SELECT ranked.game, ranked.mode, ranked.stat, ranked.player, player_names.name, ranked.amount
+                SELECT ranked.game, ranked.variant, ranked.stat, ranked.player, player_names.name, ranked.amount
                 FROM (
-                    SELECT game, mode, stat, player, amount,
-                        ROW_NUMBER() OVER (PARTITION BY game, mode, stat ORDER BY amount DESC, player) AS position
+                    SELECT game, variant, stat, player, amount,
+                        ROW_NUMBER() OVER (PARTITION BY game, variant, stat ORDER BY amount DESC, player) AS position
                     FROM (
-                        SELECT player, game, mode, ? AS stat, wins AS amount FROM player_totals WHERE wins > 0
+                        SELECT player, game, NULL AS variant, ? AS stat, SUM(wins) AS amount FROM player_totals
+                            GROUP BY player, game HAVING SUM(wins) > 0
                         UNION ALL
-                        SELECT player, game, mode, stat, amount FROM player_stat_totals WHERE amount > 0
+                        SELECT player, game, variant, ?, wins FROM player_totals WHERE wins > 0 AND variant <> ''
+                        UNION ALL
+                        SELECT player, game, NULL, stat, SUM(amount) FROM player_stat_totals
+                            GROUP BY player, game, stat HAVING SUM(amount) > 0
+                        UNION ALL
+                        SELECT player, game, variant, stat, amount FROM player_stat_totals WHERE amount > 0 AND variant <> ''
                     ) AS amounts
                 ) AS ranked
                 LEFT JOIN player_names ON player_names.player = ranked.player
                 WHERE ranked.position <= ?
-                ORDER BY ranked.game, ranked.mode, ranked.stat, ranked.position""")) {
+                ORDER BY ranked.game, ranked.variant, ranked.stat, ranked.position""")) {
             select.setString(1, WINS);
-            select.setInt(2, size);
+            select.setString(2, WINS);
+            select.setInt(3, size);
             try (var rows = select.executeQuery()) {
                 while (rows.next()) {
-                    read.computeIfAbsent(new Board(new ModeId(rows.getString(1), rows.getString(2)), rows.getString(3)), board -> new ArrayList<>())
+                    read.computeIfAbsent(new Board(rows.getString(1), Optional.ofNullable(rows.getString(2)), rows.getString(3)), board -> new ArrayList<>())
                             .add(new Entry(UUID.fromString(rows.getString(4)), Optional.ofNullable(rows.getString(5)), rows.getLong(6)));
                 }
             }

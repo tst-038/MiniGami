@@ -14,7 +14,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;
 import org.bukkit.entity.Player;
 
-/** {@code /mg stats [player] [game]} and {@code /mg top <game> [stat]}, for everyone. */
+/** {@code /mg stats [player] [game]} and {@code /mg top <game> [stat] [variant]}, for everyone. */
 final class StatsCommands {
 
     private StatsCommands() {
@@ -42,9 +42,14 @@ final class StatsCommands {
         return Commands.literal("top")
                 .then(Commands.argument("game", StringArgumentType.word())
                         .suggests(suggest(view::gameIds))
-                        .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), Leaderboards.WINS)))
+                        .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), Leaderboards.WINS, Optional.empty())))
                         .then(Commands.argument("stat", StringArgumentType.word())
                                 .suggests(suggest(context -> view.boardStats(string(context, "game"))))
-                                .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), string(context, "stat"))))));
+                                .executes(bySender((sender, context) ->
+                                        view.top(sender, string(context, "game"), string(context, "stat"), Optional.empty())))
+                                .then(Commands.argument("variant", StringArgumentType.word())
+                                        .suggests(suggest(context -> view.variantIds(string(context, "game"))))
+                                        .executes(bySender((sender, context) -> view.top(sender, string(context, "game"),
+                                                string(context, "stat"), Optional.of(string(context, "variant"))))))));
     }
 }

@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.OptionalDouble;
 
 /**
- * What a player did over many matches of a mode, or of a whole game.
+ * What a player did over many matches of a variant, or of a whole game.
  *
  * @param placed the matches they got a place in, out of {@code played}
  * @param placeSum their places added up, over the matches they got one in

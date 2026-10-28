@@ -132,7 +132,7 @@ public final class LiveMatch {
     private void recordEnd() {
         var gone = new HashSet<>(left);
         gone.addAll(away.keySet());
-        var record = MatchRecord.of(match, variant.gametype().id(), variant.game(), arena.id(), start, Instant.now(), gone);
+        var record = MatchRecord.of(match, variant.gametype().id(), variant.game(), variant.id(), arena.id(), start, Instant.now(), gone);
         plugin.getServer().getPluginManager().callEvent(new MatchEndEvent(record));
     }
 

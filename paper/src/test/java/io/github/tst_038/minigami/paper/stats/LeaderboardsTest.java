@@ -63,38 +63,41 @@ class LeaderboardsTest {
     }
 
     /** The winner first; each player's kills. */
-    private void play(String mode, UUID winner, Map<UUID, Long> kills) {
+    private void play(Optional<String> variant, UUID winner, Map<UUID, Long> kills) {
         var players = List.of(alice, bob, carol);
         var rest = players.stream().filter(id -> !id.equals(winner)).toList();
-        recorder.record(new MatchRecord("team-deathmatch", mode, "arena-1", START, START.plusSeconds(60),
+        recorder.record(new MatchRecord("team-deathmatch", "tdm", variant, "arena-1", START, START.plusSeconds(60),
                 new MatchResult(List.of(new Placement(1, List.of(winner)), new Placement(2, rest))),
                 players.stream().map(id -> new MatchRecord.Entry(id, Optional.empty(), false,
                         kills.containsKey(id) ? Map.of(KILLS, kills.get(id)) : Map.<Stat, Long>of())).toList())).join();
     }
 
     @Test
-    void boardsShowTheBestPerModeAndStatOnlyAfterARefresh() {
+    void boardsShowTheBestPerGameAndPerVariantOnlyAfterARefresh() {
         profiles.join(alice, "Alice");
         profiles.join(bob, "Bob");
-        play("tdm", alice, Map.of(alice, 2L, bob, 5L, carol, 1L));
-        play("tdm", alice, Map.of(bob, 1L));
-        play("tdm-big", bob, Map.of(carol, 9L));
+        play(Optional.empty(), alice, Map.of(alice, 2L, bob, 5L, carol, 1L));
+        play(Optional.empty(), alice, Map.of(bob, 1L));
+        play(Optional.of("big"), bob, Map.of(carol, 9L));
         settle();
-        assertTrue(leaderboards.top("team-deathmatch", "tdm", KILLS.id()).isEmpty(), "not refreshed yet");
+        assertTrue(leaderboards.top("tdm", Optional.empty(), KILLS.id()).isEmpty(), "not refreshed yet");
 
         leaderboards.refresh();
         settle();
 
-        assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 6), new Entry(alice, Optional.of("Alice"), 2)), leaderboards.top("team-deathmatch", "tdm", KILLS.id()), "cut to the size");
-        assertEquals(List.of(new Entry(alice, Optional.of("Alice"), 2)), leaderboards.top("team-deathmatch", "tdm", Leaderboards.WINS));
-        assertEquals(List.of(new Entry(carol, Optional.empty(), 9)), leaderboards.top("team-deathmatch", "tdm-big", KILLS.id()), "never joined, so no name");
-        assertEquals(Set.of(Leaderboards.WINS, KILLS.id()), leaderboards.stats("team-deathmatch", "tdm"));
+        assertEquals(List.of(new Entry(carol, Optional.empty(), 10), new Entry(bob, Optional.of("Bob"), 6)),
+                leaderboards.top("tdm", Optional.empty(), KILLS.id()), "the variants added up, cut to the size; carol never joined, so no name");
+        assertEquals(List.of(new Entry(alice, Optional.of("Alice"), 2), new Entry(bob, Optional.of("Bob"), 1)),
+                leaderboards.top("tdm", Optional.empty(), Leaderboards.WINS));
+        assertEquals(List.of(new Entry(carol, Optional.empty(), 9)), leaderboards.top("tdm", Optional.of("big"), KILLS.id()));
+        assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 1)), leaderboards.top("tdm", Optional.of("big"), Leaderboards.WINS));
+        assertEquals(Set.of(Leaderboards.WINS, KILLS.id()), leaderboards.stats("tdm"));
 
-        play("tdm", bob, Map.of(alice, 10L));
+        play(Optional.empty(), bob, Map.of(alice, 10L));
         settle();
-        assertEquals(new Entry(bob, Optional.of("Bob"), 6), leaderboards.top("team-deathmatch", "tdm", KILLS.id()).getFirst(), "cached until the next refresh");
+        assertEquals(new Entry(carol, Optional.empty(), 10), leaderboards.top("tdm", Optional.empty(), KILLS.id()).getFirst(), "cached until the next refresh");
         leaderboards.refresh();
         settle();
-        assertEquals(new Entry(alice, Optional.of("Alice"), 12), leaderboards.top("team-deathmatch", "tdm", KILLS.id()).getFirst());
+        assertEquals(new Entry(alice, Optional.of("Alice"), 12), leaderboards.top("tdm", Optional.empty(), KILLS.id()).getFirst());
     }
 }

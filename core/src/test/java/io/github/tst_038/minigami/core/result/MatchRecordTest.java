@@ -48,9 +48,9 @@ class MatchRecordTest {
         match.addPoints(alice, 3);
         match.endNow();
 
-        var record = MatchRecord.of(match, "tdm", "tdm-2v2", "hills", start, end, Set.of(bob));
+        var record = MatchRecord.of(match, "team-deathmatch", "tdm", Optional.of("duos"), "hills", start, end, Set.of(bob));
 
-        assertEquals(List.of("tdm", "tdm-2v2", "hills"), List.of(record.game(), record.mode(), record.arena()));
+        assertEquals(List.of("team-deathmatch", "tdm", Optional.of("duos"), "hills"), List.of(record.gametype(), record.game(), record.variant(), record.arena()));
         assertEquals(match.result().orElseThrow(), record.result());
         var byId = record.participants().stream().collect(Collectors.toMap(MatchRecord.Entry::id, entry -> entry));
         assertEquals(new MatchRecord.Entry(alice, Optional.of("red"), false, Map.of(kills, 2L, Stat.POINTS, 3L)), byId.get(alice));
@@ -60,6 +60,6 @@ class MatchRecordTest {
 
     @Test
     void aMatchWithoutAResultCantBeRecorded() {
-        assertThrows(IllegalStateException.class, () -> MatchRecord.of(match(), "tdm", "tdm", "hills", start, end, Set.of()));
+        assertThrows(IllegalStateException.class, () -> MatchRecord.of(match(), "team-deathmatch", "tdm", Optional.empty(), "hills", start, end, Set.of()));
     }
 }

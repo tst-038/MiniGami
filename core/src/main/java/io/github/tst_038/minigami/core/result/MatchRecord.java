@@ -16,10 +16,13 @@ import java.util.UUID;
  * and each participant's team and stats. Stats, rewards and game nights read it; it is the only way
  * they learn about a match.
  *
+ * @param gametype the code that ran it
+ * @param game what players joined, which its stats count under
+ * @param variant empty for the game itself
  * @param start when play started, after players gathered
  * @param participants everyone who played, in no particular order
  */
-public record MatchRecord(String game, String mode, String arena, Instant start, Instant end, MatchResult result,
+public record MatchRecord(String gametype, String game, Optional<String> variant, String arena, Instant start, Instant end, MatchResult result,
         List<Entry> participants) {
 
     /**
@@ -44,10 +47,10 @@ public record MatchRecord(String game, String mode, String arena, Instant start,
      * @param left the participants who left before the end
      * @throws IllegalStateException if the match has no result yet
      */
-    public static MatchRecord of(Match match, String game, String mode, String arena, Instant start, Instant end, Set<UUID> left) {
+    public static MatchRecord of(Match match, String gametype, String game, Optional<String> variant, String arena, Instant start, Instant end, Set<UUID> left) {
         var result = match.result().orElseThrow(() -> new IllegalStateException("The match has no result yet"));
         var participants = match.roster().teams().stream().flatMap(team -> entries(match, team, left).stream()).toList();
-        return new MatchRecord(game, mode, arena, start, end, result, participants);
+        return new MatchRecord(gametype, game, variant, arena, start, end, result, participants);
     }
 
     private static List<Entry> entries(Match match, MatchTeam team, Set<UUID> left) {
