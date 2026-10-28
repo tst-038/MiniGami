@@ -3,28 +3,36 @@ package io.github.tst_038.minigami.paper.match;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockPistonEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 
 /**
  * Decides which match an event belongs to, by the player it is about or who caused it, such as who
- * broke a block or threw what hit something.
+ * broke a block or threw what hit something. Blocks that change by themselves, such as flowing water,
+ * a growing tree, a piston or an explosion, belong to the match whose arena they start in.
  */
 final class EventOwnership {
 
     private EventOwnership() {
     }
 
-    /** Whether events of this type can be traced to a player, and so to a match. */
+    /** Whether events of this type can be traced to a player or a place, and so to a match. */
     static boolean isSupported(Class<? extends Event> type) {
-        return PlayerEvent.class.isAssignableFrom(type) || EntityEvent.class.isAssignableFrom(type)
+        return isPlaced(type) || PlayerEvent.class.isAssignableFrom(type) || EntityEvent.class.isAssignableFrom(type)
                 || BlockBreakEvent.class.isAssignableFrom(type) || BlockDamageEvent.class.isAssignableFrom(type)
                 || BlockPlaceEvent.class.isAssignableFrom(type) || BlockDropItemEvent.class.isAssignableFrom(type);
     }
@@ -42,7 +50,30 @@ final class EventOwnership {
         };
     }
 
-    static boolean belongsTo(Event event, Predicate<UUID> isMember) {
-        return playerOf(event).filter(isMember).isPresent();
+    private static boolean isPlaced(Class<? extends Event> type) {
+        return BlockFromToEvent.class.isAssignableFrom(type) || StructureGrowEvent.class.isAssignableFrom(type)
+                || BlockSpreadEvent.class.isAssignableFrom(type) || BlockPistonEvent.class.isAssignableFrom(type)
+                || BlockExplodeEvent.class.isAssignableFrom(type) || EntityExplodeEvent.class.isAssignableFrom(type);
+    }
+
+    /** Where a block change that no player made starts; empty for any other event. */
+    static Optional<Location> placeOf(Event event) {
+        return switch (event) {
+            case BlockFromToEvent e -> Optional.of(e.getBlock().getLocation());
+            case StructureGrowEvent e -> Optional.of(e.getLocation());
+            case BlockSpreadEvent e -> Optional.of(e.getSource().getLocation());
+            case BlockPistonEvent e -> Optional.of(e.getBlock().getLocation());
+            case BlockExplodeEvent e -> Optional.of(e.getBlock().getLocation());
+            case EntityExplodeEvent e -> Optional.of(e.getLocation());
+            default -> Optional.empty();
+        };
+    }
+
+    /**
+     * @param isMember whether a player is in the match
+     * @param isInside whether a place is in the match's arena
+     */
+    static boolean belongsTo(Event event, Predicate<UUID> isMember, Predicate<Location> isInside) {
+        return placeOf(event).map(isInside::test).orElseGet(() -> playerOf(event).filter(isMember).isPresent());
     }
 }

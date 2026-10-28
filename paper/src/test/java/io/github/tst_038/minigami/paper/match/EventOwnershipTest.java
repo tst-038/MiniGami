@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -17,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.entity.EntityToggleSwimEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -104,7 +106,18 @@ class EventOwnershipTest {
         var inside = UUID.randomUUID();
         var members = Set.of(inside);
 
-        assertTrue(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, inside), true), members::contains));
-        assertFalse(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, UUID.randomUUID()), true), members::contains));
+        assertTrue(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, inside), true), members::contains, place -> true));
+        assertFalse(EventOwnership.belongsTo(new PlayerToggleSneakEvent(entity(Player.class, UUID.randomUUID()), true), members::contains, place -> true));
+    }
+
+    @Test
+    void flowingWaterBelongsToTheMatchWhoseArenaItStartsIn() {
+        var source = new Location(null, 10, 64, 10);
+        var block = Block.class.cast(Proxy.newProxyInstance(Block.class.getClassLoader(), new Class<?>[] {Block.class},
+                (proxy, method, args) -> method.getName().equals("getLocation") ? source.clone() : null));
+        var flow = new BlockFromToEvent(block, BlockFace.NORTH);
+
+        assertTrue(EventOwnership.belongsTo(flow, id -> false, place -> place.getBlockX() == 10));
+        assertFalse(EventOwnership.belongsTo(flow, id -> true, place -> false));
     }
 }

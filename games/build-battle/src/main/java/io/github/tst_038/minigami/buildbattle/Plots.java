@@ -54,6 +54,11 @@ final class Plots {
         return Optional.ofNullable(byBuilder.get(builder));
     }
 
+    /** The plot this location is in, if any. */
+    Optional<Plot> at(Location location) {
+        return plots.stream().filter(plot -> plot.region().contains(location)).findFirst();
+    }
+
     boolean contains(UUID builder, Location location) {
         return of(builder).filter(plot -> plot.region().contains(location)).isPresent();
     }

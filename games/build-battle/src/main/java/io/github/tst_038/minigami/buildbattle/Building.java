@@ -6,17 +6,28 @@ import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockMultiPlaceEvent;
+import org.bukkit.event.block.BlockPistonEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 
 /**
  * Every team gets a plot, the arena regions {@code plot-1}, {@code plot-2} and so on in team order, and
@@ -100,8 +111,6 @@ final class Building implements Feature {
                 }));
         // Any item may be used, since the arena's map is pasted back afterwards, but not aimed past the own plot:
         // a bucket, spawn egg or flint and steel acts on the side of the block that was clicked.
-        // shortcut: fluids and fire that spread can still cross into a neighbour's plot; cancel their spread once
-        // the engine routes block events to matches.
         context.on(PlayerInteractEvent.class, event -> {
             var clicked = event.getClickedBlock();
             if (event.getItem() != null && clicked != null
@@ -109,5 +118,28 @@ final class Building implements Feature {
                 event.setUseItemInHand(Event.Result.DENY);
             }
         });
+        // What changes by itself, such as flowing water, spreading fire, a growing tree, a piston or an explosion,
+        // stays in the plot it starts in.
+        context.on(BlockFromToEvent.class, event -> event.setCancelled(!samePlace(event.getBlock().getLocation(), event.getToBlock().getLocation())));
+        context.on(BlockSpreadEvent.class, event -> event.setCancelled(!samePlace(event.getSource().getLocation(), event.getBlock().getLocation())));
+        context.on(StructureGrowEvent.class, event -> event.getBlocks().removeIf(state -> !samePlace(event.getLocation(), state.getLocation())));
+        context.on(BlockPistonExtendEvent.class, event -> keepPistonHome(event, event.getBlocks()));
+        context.on(BlockPistonRetractEvent.class, event -> keepPistonHome(event, event.getBlocks()));
+        context.on(EntityExplodeEvent.class, event -> event.blockList().removeIf(block -> !samePlace(event.getLocation(), block.getLocation())));
+        context.on(BlockExplodeEvent.class, event -> event.blockList().removeIf(block -> !samePlace(event.getBlock().getLocation(), block.getLocation())));
+    }
+
+    /** Whether both are in the same plot, or both outside every plot. */
+    private boolean samePlace(Location from, Location to) {
+        return plots.at(from).equals(plots.at(to));
+    }
+
+    /** Stops a piston that would move a block, or reach, past its own plot. */
+    private void keepPistonHome(BlockPistonEvent event, List<Block> moved) {
+        var piston = event.getBlock().getLocation();
+        var reached = Stream.concat(Stream.of(event.getBlock()), moved.stream()).map(block -> block.getRelative(event.getDirection()));
+        if (!Stream.concat(moved.stream(), reached).allMatch(block -> samePlace(piston, block.getLocation()))) {
+            event.setCancelled(true);
+        }
     }
 }

@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -53,20 +54,25 @@ public final class PaperMatchContext implements MatchContext {
         return match.isActive(id) && (role.isEmpty() || roster().find(id).flatMap(Participant::team).equals(role));
     }
 
+    private boolean inArena(Location location) {
+        return match.arena().regions().values().stream().anyMatch(region -> region.contains(location));
+    }
+
     /**
      * Only players currently in the match count, and not while they still wait in place; one who left is no longer this match's concern.
+     * Blocks changing by themselves count when they start inside one of the arena's regions.
      *
-     * @throws IllegalArgumentException if events of this type can't be traced to a player
+     * @throws IllegalArgumentException if events of this type can't be traced to a player or a place
      */
     @Override
     public <E extends Event> void on(Class<E> type, Consumer<? super E> handler) {
         if (!EventOwnership.isSupported(type)) {
-            throw new IllegalArgumentException(type.getName() + " can't be traced to a match; use a player or entity event");
+            throw new IllegalArgumentException(type.getName() + " can't be traced to a match; use a player, entity or block event");
         }
         var listener = new Listener() {};
         plugin.getServer().getPluginManager().registerEvent(type, listener, EventPriority.NORMAL, (ignored, event) -> {
             // Bukkit also calls the executor for subclasses of type; isInstance keeps the cast safe.
-            if (type.isInstance(event) && EventOwnership.belongsTo(event, this::covers)) {
+            if (type.isInstance(event) && EventOwnership.belongsTo(event, this::covers, this::inArena)) {
                 handler.accept(type.cast(event));
             }
         }, plugin);
