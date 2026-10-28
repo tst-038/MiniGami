@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.message;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -17,39 +18,72 @@ import org.bukkit.configuration.ConfigurationSection;
 public final class Messages {
 
     private volatile ConfigurationSection texts;
+    private final Map<String, String> own;
+    private final Messages base;
     private final Logger logger;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
-    private final Set<String> reportedMissing = ConcurrentHashMap.newKeySet();
+    private final Set<String> reportedMissing;
 
     /** @param texts MiniMessage text per key, e.g. the contents of {@code messages/en.yml} */
     public Messages(ConfigurationSection texts, Logger logger) {
         this.texts = texts;
+        this.own = Map.of();
+        this.base = null;
         this.logger = logger;
+        this.reportedMissing = ConcurrentHashMap.newKeySet();
+    }
+
+    private Messages(Map<String, String> own, Messages base) {
+        this.own = Map.copyOf(own);
+        this.base = base;
+        this.logger = base.logger;
+        this.reportedMissing = base.reportedMissing;
+    }
+
+    /**
+     * These texts over this one's, such as a game's own wording; any other key, and a reload of
+     * this one, still come through.
+     *
+     * @param texts MiniMessage text by full key, such as {@code hide-and-seek.hiding}
+     */
+    public Messages over(Map<String, String> texts) {
+        return texts.isEmpty() ? this : new Messages(texts, this);
     }
 
     /** Uses these texts from now on, e.g. after a reload. Any thread. */
     public void replace(ConfigurationSection texts) {
+        if (base != null) {
+            throw new IllegalStateException("Replace the texts this one lies over instead");
+        }
         this.texts = texts;
         reportedMissing.clear();
     }
 
     /** Whether there is a text for the key, for something that falls back to a general text when it has none of its own. */
     public boolean has(String key) {
-        return texts.isString(key);
+        return text(key) != null;
     }
 
     /** A missing key renders as the key itself, so the gap is visible in game and reported once in the log. */
     public Component render(String key, TagResolver... placeholders) {
-        var texts = this.texts;
-        var text = texts.getString(key);
+        var text = text(key);
         if (text == null) {
             if (reportedMissing.add(key)) {
                 logger.warning("Missing message: " + key);
             }
             return Component.text(key);
         }
-        var prefix = Placeholder.parsed("prefix", texts.getString("prefix", ""));
+        var prefixText = text("prefix");
+        var prefix = Placeholder.parsed("prefix", prefixText == null ? "" : prefixText);
         return miniMessage.deserialize(text, TagResolver.resolver(TagResolver.resolver(placeholders), prefix));
+    }
+
+    private String text(String key) {
+        var text = own.get(key);
+        if (text != null) {
+            return text;
+        }
+        return base != null ? base.text(key) : texts.isString(key) ? texts.getString(key) : null;
     }
 
     public void send(Audience audience, String key, TagResolver... placeholders) {

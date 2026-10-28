@@ -86,4 +86,25 @@ class MessagesTest {
 
         assertEquals("Hello", PlainTextComponentSerializer.plainText().serialize(messages.render("greeting")));
     }
+
+    @Test
+    void ownTextsLieOverTheBaseAndFollowItsReload() throws Exception {
+        var base = messages("""
+                prefix: "[SG] "
+                match:
+                  joined: "<prefix>joined"
+                  left: "left"
+                """);
+        var game = base.over(java.util.Map.of("match.joined", "<prefix>tagged in"));
+
+        assertEquals("[SG] tagged in", plain(game.render("match.joined")));
+        assertEquals("left", plain(game.render("match.left")));
+
+        var reloaded = new org.bukkit.configuration.file.YamlConfiguration();
+        reloaded.loadFromString("match:\n  left: \"gone\"");
+        base.replace(reloaded);
+
+        assertEquals("gone", plain(game.render("match.left")));
+        assertEquals("tagged in", plain(game.render("match.joined")));
+    }
 }

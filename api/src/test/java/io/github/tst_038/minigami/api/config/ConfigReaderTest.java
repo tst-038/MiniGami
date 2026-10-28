@@ -152,4 +152,17 @@ class ConfigReaderTest {
                 "modes/test.yml: features.y: is missing",
                 "modes/test.yml: spawns: must be a list of sections"), problems(reader));
     }
+
+    @Test
+    void nestedTextsComeByFullKey() throws Exception {
+        var reader = read("""
+                messages:
+                  hide-and-seek:
+                    hiding: "Run!"
+                  prefix: "> "
+                """);
+
+        assertEquals(java.util.Map.of("hide-and-seek.hiding", "Run!", "prefix", "> "), reader.texts("messages"));
+        reader.check();
+    }
 }

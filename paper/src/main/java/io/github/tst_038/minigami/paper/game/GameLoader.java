@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -39,6 +40,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
+ * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
+ *   hide-and-seek:
+ *     hiding: "<prefix><green>Run!"
  * roles:                      # optional, instead of teams; handed out in this order
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
  *   hider:                                                         # neither: everyone left over
@@ -83,12 +87,14 @@ public final class GameLoader {
      * @param arenas the arenas loaded so far; a game may only use playable ones
      * @param hasLobby whether a lobby is set, which games that wait in the lobby need
      * @param hud the HUD every game has unless it sets its own under {@code hud}
+     * @param knownMessage whether a message key exists, so a game's own wording for a mistyped key is caught
      */
-    public YamlFiles.Loaded<Game> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud) {
+    public YamlFiles.Loaded<Game> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud,
+            Predicate<String> knownMessage) {
         var withHud = new TreeMap<String, YamlConfiguration>();
         files.files().forEach((id, own) -> withHud.put(id, withHud(hud, own, null)));
         return new YamlFiles(files.folder(), withHud, files.problems())
-                .parse(Game::id, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud));
+                .parse(Game::id, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud, knownMessage));
     }
 
     /** The HUD defaults, the game's own settings over them, and the variant's over those if one is given. */
@@ -106,12 +112,12 @@ public final class GameLoader {
     }
 
     private Game parseGame(String id, ConfigReader config, String file, YamlConfiguration own, IdRegistry<Arena> arenas, boolean hasLobby,
-            ConfigurationSection hud) {
+            ConfigurationSection hud, Predicate<String> knownMessage) {
         if (config.has("extends")) {
             config.string("extends");
             config.problem("extends", "games don't extend each other; put what differs under variants, or copy the other game's file");
         }
-        var base = parse(id, Optional.empty(), config, arenas, hasLobby);
+        var base = parse(id, Optional.empty(), config, arenas, hasLobby, knownMessage);
         // Each variant is checked on its own below; here they only count as read.
         var section = config.has(VARIANTS) ? Optional.of(config.section(VARIANTS)) : Optional.<ConfigReader>empty();
         var ids = section.map(ConfigReader::keys).orElse(Set.of());
@@ -144,7 +150,7 @@ public final class GameLoader {
                 continue;
             }
             var reader = ConfigReader.of(file, withHud(hud, own, settings));
-            variants.put(variant, parse(id, Optional.of(variant), reader, arenas, hasLobby));
+            variants.put(variant, parse(id, Optional.of(variant), reader, arenas, hasLobby, knownMessage));
             try {
                 reader.check();
             } catch (InvalidConfigException e) {
@@ -155,7 +161,8 @@ public final class GameLoader {
     }
 
     /** @param variant empty for the game itself */
-    private Variant parse(String id, Optional<String> variant, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby) {
+    private Variant parse(String id, Optional<String> variant, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby,
+            Predicate<String> knownMessage) {
         config.suggest("gametype", gametypes.ids());
         var gametypeId = config.string("gametype");
         var game = gametypes.find(gametypeId).orElse(null);
@@ -177,6 +184,8 @@ public final class GameLoader {
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         var nameTags = config.has("name-tags") ? config.choice("name-tags", NameTags.class) : NameTags.EVERYONE;
+        var messages = config.has("messages") ? config.texts("messages") : Map.<String, String>of();
+        messages.keySet().stream().filter(knownMessage.negate()).forEach(key -> config.problem("messages." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
         var roles = roles(config, minPlayers, game);
         var quit = quit(config);
@@ -190,7 +199,7 @@ public final class GameLoader {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, teams, roles, quit, playable, features, stats, hud);
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, roles, quit, playable, features, stats, hud);
     }
 
     /** Every stat a game or stat group keeps. */

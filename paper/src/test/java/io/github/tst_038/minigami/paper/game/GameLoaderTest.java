@@ -143,7 +143,7 @@ class GameLoaderTest {
     private YamlFiles.Loaded<Game> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new GameLoader(games, features, statGroups).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud);
+        return new GameLoader(games, features, statGroups).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private YamlFiles.Loaded<Game> loadAll(Map<String, String> yamlById) throws Exception {
@@ -153,7 +153,7 @@ class GameLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new GameLoader(games, features, statGroups).load(new YamlFiles("games", files, List.of()), arenas, true, hud);
+        return new GameLoader(games, features, statGroups).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Game> loaded) {
@@ -224,6 +224,29 @@ class GameLoaderTest {
         assertEquals(List.of("games/broken.yml: variants.odd.hud.sidebar.fighting: unknown phase; the game has: waiting, playing, or default",
                 "games/broken.yml: variants.odd.hud.sidebar.playing: unknown line 'hearts'; lines: alive, arena, blank, footer, game, lives, players, points, scores, team, time",
                 "games/broken.yml: variants.odd.hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, podium, lose"), problems(loaded));
+    }
+
+    @Test
+    void aGameHasItsOwnWordingThatVariantsOverlayAndTyposAreCaught() throws Exception {
+        var loaded = loadAll(Map.of("plain", """
+                        gametype: test
+                        min-players: 1
+                        max-players: 2
+                        waiting: arena
+                        arenas: [demo]
+                        messages:
+                          match: { joined: "in", left: "out" }
+                        variants:
+                          loud:
+                            name: Loud
+                            messages: { match: { left: "OUT" } }
+                        """,
+                "broken", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo], messages: {match: {joind: x}}}"));
+
+        var plain = loaded.entries().find("plain").orElseThrow();
+        assertEquals(Map.of("match.joined", "in", "match.left", "out"), plain.base().messages());
+        assertEquals(Map.of("match.joined", "in", "match.left", "OUT"), plain.variants().get("loud").messages());
+        assertEquals(List.of("games/broken.yml: messages.match.joind: unknown message"), problems(loaded));
     }
 
     @Test

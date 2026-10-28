@@ -22,6 +22,7 @@ import java.util.stream.Stream;
  * @param id the variant's id; empty for the game itself
  * @param name display name, in MiniMessage
  * @param lives how many deaths put a player out; 0 means they always respawn
+ * @param messages its own wording by full message key, over the shared messages
  * @param teams empty when everyone plays on their own or it has roles
  * @param roles in the order they are handed out; empty when it has none
  * @param quit what quitting a running match does to a player still in it
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
  * @param hud what players see of a match next to chat
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
 
     public Variant {
         id.ifPresent(variant -> {
@@ -38,6 +39,7 @@ public record Variant(String game, Optional<String> id, GameType gametype, Strin
                 throw new IllegalArgumentException("A variant's id can't be empty");
             }
         });
+        messages = Map.copyOf(messages);
         roles = List.copyOf(roles);
         arenas = List.copyOf(arenas);
         features = Map.copyOf(features);

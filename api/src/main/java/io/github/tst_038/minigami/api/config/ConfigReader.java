@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -162,6 +163,26 @@ public final class ConfigReader {
         }
         return new ConfigReader(shared, childPath(key),
                 value instanceof ConfigurationSection child ? child : new MemoryConfiguration());
+    }
+
+    /** A section of texts nested to any depth, by full key such as {@code hide-and-seek.hiding}. */
+    public Map<String, String> texts(String key) {
+        var texts = new TreeMap<String, String>();
+        section(key).collectTexts("", texts);
+        return texts;
+    }
+
+    private void collectTexts(String prefix, Map<String, String> texts) {
+        for (String key : keys()) {
+            if (section.isConfigurationSection(key)) {
+                section(key).collectTexts(prefix + key + ".", texts);
+            } else {
+                var text = string(key);
+                if (!text.isEmpty()) {
+                    texts.put(prefix + key, text);
+                }
+            }
+        }
     }
 
     /** Whether the key is set to {@code false}, as a way to turn off something inherited, such as a feature of the game a variant is laid over. */

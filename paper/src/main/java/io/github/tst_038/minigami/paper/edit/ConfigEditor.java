@@ -361,7 +361,7 @@ public final class ConfigEditor {
         return switch (kind) {
             case CONFIG -> SettingsLoader.load(config.saveToString(), worlds::getWorld).problems();
             case ARENA -> ArenaLoader.load(new YamlFiles("arenas", ArenaLoader.LAYOUT, Map.of(id, config), List.of()), worlds::getWorld).problems();
-            case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud())
+            case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud(), messages::has)
                     .problems();
         };
     }

@@ -119,7 +119,7 @@ public final class LiveMatch {
             case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst().location()));
         };
         this.sessions = sessions;
-        this.messages = messages;
+        this.messages = messages.over(variant.messages());
         var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
