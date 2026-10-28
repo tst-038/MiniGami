@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.feature.PhaseFeatures;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
+import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
@@ -45,7 +46,6 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scoreboard.Team;
 
 /**
  * A match of a mode in one arena, together with the players in it. Players join during the first
@@ -73,12 +73,8 @@ public final class LiveMatch {
     private final Set<UUID> members = new LinkedHashSet<>();
     /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
-    /** Deaths per participant since the start, against their lives. */
-    private final Map<UUID, Integer> deaths = new HashMap<>();
-    /** Takes a member out of their scoreboard team again; closing twice is harmless. */
-    private final Map<UUID, AutoCloseable> scoreboardLeaves = new HashMap<>();
-    /** Per team id, so a player who switches role joins the same team as the role's first members. */
-    private final Map<String, Team> scoreboardTeams = new HashMap<>();
+    private final Lives lives = new Lives(this::livesOf);
+    private final ScoreboardTeams scoreboardTeams;
     /** Participants who quit with a way back, each with the timer that puts them out. */
     private final Map<UUID, MatchClock.Task> away = new HashMap<>();
     /** Participants who left after the start; the roster still has them. */
@@ -107,6 +103,7 @@ public final class LiveMatch {
         this.messages = messages;
         var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(mode.game().phases(), mode.game().winCondition(), features);
+        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
         match.onResult(result -> recordEnd());
     }
 
@@ -324,7 +321,7 @@ public final class LiveMatch {
         members.add(id);
         prepare(player);
         var team = teamOf(id);
-        team.map(scoreboardTeams::get).ifPresent(scoreboardTeam -> joinScoreboardTeam(player, scoreboardTeam));
+        team.ifPresent(teamId -> scoreboardTeams.putBack(player, teamId));
         var spawns = arena.spawnsFor(team);
         player.teleport(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
         if (match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
@@ -483,13 +480,11 @@ public final class LiveMatch {
     /** @param told the message each player gets, with the team's name as {@code <team>} */
     private void putInTeam(List<UUID> players, String teamId, NamedTextColor color, String told) {
         var name = teamName(teamId);
-        var scoreboardTeam = scoreboardTeams.computeIfAbsent(teamId, id -> scoreboardTeam(id, name, color));
         for (var id : players) {
             match.roster().assignTeam(id, teamId);
             var player = plugin.getServer().getPlayer(id);
             if (player != null) {
-                leaveScoreboardTeam(id);
-                joinScoreboardTeam(player, scoreboardTeam);
+                scoreboardTeams.put(player, teamId, name, color);
                 messages.send(player, told, Placeholder.component("team", name));
             }
         }
@@ -497,45 +492,6 @@ public final class LiveMatch {
 
     private Optional<String> teamOf(UUID id) {
         return match.roster().find(id).flatMap(Participant::team);
-    }
-
-    /**
-     * A team on the main scoreboard, which colours its members' names and stops them hurting each
-     * other; it goes away with the match. One left behind by a crash is replaced.
-     */
-    private Team scoreboardTeam(String teamId, Component name, NamedTextColor color) {
-        var scoreboard = plugin.getServer().getScoreboardManager().getMainScoreboard();
-        var teamName = "minigami." + arena.id() + "." + teamId;
-        var leftover = scoreboard.getTeam(teamName);
-        if (leftover != null) {
-            leftover.unregister();
-        }
-        var team = scoreboard.registerNewTeam(teamName);
-        team.displayName(name);
-        team.color(color);
-        team.setAllowFriendlyFire(false);
-        team.setCanSeeFriendlyInvisibles(true);
-        match.scope().register(() -> {
-            if (scoreboard.getTeam(teamName) == team) {
-                team.unregister();
-            }
-        });
-        return team;
-    }
-
-    /** Puts the player in the team; the scoreboard team they were in before, if any, gets them back when they leave. */
-    private void joinScoreboardTeam(Player player, Team team) {
-        var name = player.getName();
-        var previous = Optional.ofNullable(team.getScoreboard().getEntryTeam(name));
-        team.addEntry(name);
-        AutoCloseable leave = () -> {
-            if (team.hasEntry(name)) {
-                team.removeEntry(name);
-            }
-            previous.filter(old -> old.getScoreboard().getTeam(old.getName()) == old).ifPresent(old -> old.addEntry(name));
-        };
-        match.scope().register(leave);
-        scoreboardLeaves.put(player.getUniqueId(), leave);
     }
 
     /**
@@ -552,13 +508,11 @@ public final class LiveMatch {
         }
         var id = player.getUniqueId();
         var playing = !isJoinable() && match.result().isEmpty();
-        var lives = livesOf(id);
-        if (playing && lives > 0 && match.roster().find(id).filter(Participant::isAlive).isPresent()
-                && deaths.merge(id, 1, Integer::sum) >= lives) {
+        if (playing && match.roster().find(id).filter(Participant::isAlive).isPresent() && lives.die(id)) {
             var onOut = teamOf(id).flatMap(mode::role).flatMap(Role::onOut).flatMap(mode::role);
             if (onOut.isPresent()) {
                 // Dying clears their items and effects; respawning puts them at the new role's spawns with its kit.
-                deaths.remove(id);
+                lives.reset(id);
                 messages.send(audience(), "match.switched-role", Placeholder.component("player", player.name()),
                         Placeholder.component("team", teamName(onOut.get().id())));
                 putInTeam(List.of(id), onOut.get().id(), onOut.get().color(), "match.your-role");
@@ -601,20 +555,9 @@ public final class LiveMatch {
         restores.put(player.getUniqueId(), restore);
     }
 
-    private void leaveScoreboardTeam(UUID id) {
-        var leave = scoreboardLeaves.remove(id);
-        if (leave != null) {
-            try {
-                leave.close();
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.WARNING, "Could not take " + id + " out of their scoreboard team", e);
-            }
-        }
-    }
-
     /** Players who waited in place had nothing changed, so there is nothing to give back. */
     private void restore(UUID id) {
-        leaveScoreboardTeam(id);
+        scoreboardTeams.remove(id);
         var restore = restores.remove(id);
         if (restore == null) {
             return;
