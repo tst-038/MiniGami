@@ -98,10 +98,14 @@ final class Building implements Feature {
                     event.getPlayer().teleport(plot.start());
                     event.getPlayer().setGameMode(GameMode.CREATIVE);
                 }));
-        // shortcut: items that aren't blocks (buckets, spawn eggs, flint and steel, armour stands) make fluids,
-        // fire and entities the match can't put back; allow them once matches get their own world.
+        // Any item may be used, since the arena's map is pasted back afterwards, but not aimed past the own plot:
+        // a bucket, spawn egg or flint and steel acts on the side of the block that was clicked.
+        // shortcut: fluids and fire that spread can still cross into a neighbour's plot; cancel their spread once
+        // the engine routes block events to matches.
         context.on(PlayerInteractEvent.class, event -> {
-            if (event.getItem() != null && !event.getItem().getType().isBlock()) {
+            var clicked = event.getClickedBlock();
+            if (event.getItem() != null && clicked != null
+                    && !plots.contains(event.getPlayer().getUniqueId(), clicked.getRelative(event.getBlockFace()).getLocation())) {
                 event.setUseItemInHand(Event.Result.DENY);
             }
         });
