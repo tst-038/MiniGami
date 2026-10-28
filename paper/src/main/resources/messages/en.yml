@@ -81,6 +81,11 @@ team:
   gold: "<gold>Orange"
   white: "<white>White"
 
+hide-and-seek:
+  # When the hiders get their head start. <seconds>: how long it lasts
+  hiding: "<prefix><green>Hide! <gray>The seekers come for you in <white><seconds></white> seconds."
+  # When the seekers are let go. <seconds>: how long the hiders must last
+  seeking: "<prefix><red>The seekers are coming! <gray>Last <white><seconds></white> seconds to win."
 team-deathmatch:
   # After a kill. <team>: the killer's team, or the killer without teams; <kills>: its kills so far
   kills: "<prefix><team> <gray>has <gold><kills></gold> kills."
