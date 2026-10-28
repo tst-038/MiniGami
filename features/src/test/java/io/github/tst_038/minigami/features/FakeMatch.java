@@ -9,6 +9,8 @@ import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import io.github.tst_038.minigami.core.stat.Stat;
+import io.github.tst_038.minigami.core.stat.Tally;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +37,7 @@ public final class FakeMatch implements MatchContext {
     public final MatchClock clock = new MatchClock();
     public final Roster roster = new Roster();
     public final Scores scores = new Scores();
+    public final Tally stats = new Tally();
     /** The phase features see; change it before enabling one that cares. */
     public Phase phase = Phase.untimed("playing");
     /** The texts {@link #messages()} renders from. */
@@ -144,6 +147,16 @@ public final class FakeMatch implements MatchContext {
     @Override
     public void addPoints(UUID id, int points) {
         scores.add(id, points);
+    }
+
+    @Override
+    public Tally stats() {
+        return stats;
+    }
+
+    @Override
+    public void count(UUID id, Stat stat, long amount) {
+        stats.add(id, stat, amount);
     }
 
     @Override

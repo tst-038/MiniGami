@@ -10,6 +10,8 @@ import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import io.github.tst_038.minigami.core.stat.Stat;
+import io.github.tst_038.minigami.core.stat.Tally;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,6 +129,16 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public void addPoints(UUID id, int points) {
         match.match().addPoints(id, points);
+    }
+
+    @Override
+    public Tally stats() {
+        return match.match().stats();
+    }
+
+    @Override
+    public void count(UUID id, Stat stat, long amount) {
+        match.match().stats().add(id, stat, amount);
     }
 
     @Override

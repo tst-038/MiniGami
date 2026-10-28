@@ -8,13 +8,14 @@ import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import io.github.tst_038.minigami.core.stat.Tally;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * One running round. Owns its scope, clock, roster, scores and phases, and asks the win condition
+ * One running round. Owns its scope, clock, roster, scores, stats and phases, and asks the win condition
  * after every elimination and score change whether it is decided. Once decided it skips to its last
  * phase. Reaching the last phase undecided, for example when time runs out, the win condition gives
  * the final result. When the last phase ends, the match is finished and its owner reads the result
@@ -28,6 +29,7 @@ public final class Match {
     private final MatchClock clock = new MatchClock();
     private final Roster roster = new Roster();
     private final Scores scores = new Scores();
+    private final Tally stats = new Tally();
     private final PhaseMachine phases;
     private final WinCondition winCondition;
     private MatchResult result;
@@ -164,6 +166,11 @@ public final class Match {
 
     public Scores scores() {
         return scores;
+    }
+
+    /** What is counted per participant for the record, apart from the points that decide the match. */
+    public Tally stats() {
+        return stats;
     }
 
     private void decideAsThingsStand() {

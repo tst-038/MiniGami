@@ -9,6 +9,8 @@ import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import io.github.tst_038.minigami.core.stat.Stat;
+import io.github.tst_038.minigami.core.stat.Tally;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,6 +74,23 @@ public interface MatchContext {
 
     /** Gives a participant points, or takes them away when negative, and ends the match if that decides it. */
     void addPoints(UUID id, int points);
+
+    /**
+     * What is counted per participant for the match's record: kills and deaths by the engine, and
+     * whatever the game's features count with {@link #count}.
+     */
+    Tally stats();
+
+    /**
+     * Adds to a participant's stat for the record, or takes away when negative. Any stat can be made
+     * up here; it is stored and shown without further setup. Unlike points it never decides the match.
+     */
+    void count(UUID id, Stat stat, long amount);
+
+    /** Counts one more of the stat for the participant. */
+    default void count(UUID id, Stat stat) {
+        count(id, stat, 1);
+    }
 
     /**
      * Ends the phase these features run in and moves on to the next, for a phase that ends when its

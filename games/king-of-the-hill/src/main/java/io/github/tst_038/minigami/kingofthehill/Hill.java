@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.kingofthehill;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.core.roster.MatchTeam;
+import io.github.tst_038.minigami.core.stat.Stat;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,6 +19,8 @@ import org.bukkit.entity.Player;
 final class Hill implements Feature {
 
     static final String REGION = "hill";
+    /** Seconds each player stood on the hill while their team held it. */
+    static final Stat HILL_SECONDS = new Stat("hill-seconds");
 
     @Override
     public void enable(MatchContext context) {
@@ -36,6 +39,7 @@ final class Hill implements Feature {
                 // One point per second for the team, however many of it stand there.
                 var scorer = onHill.stream().filter(player -> now.get().ids().contains(player.getUniqueId())).findFirst().orElseThrow();
                 context.addPoints(scorer.getUniqueId(), 1);
+                onHill.forEach(player -> context.count(player.getUniqueId(), HILL_SECONDS));
                 var points = now.get().ids().stream().mapToInt(context.scores()::of).sum();
                 context.audience().sendActionBar(context.messages().render("king-of-the-hill.holding",
                         Placeholder.component("team", name(context, now.get(), onHill)), Formatter.number("points", points)));

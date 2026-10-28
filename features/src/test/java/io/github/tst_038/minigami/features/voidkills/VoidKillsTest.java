@@ -12,6 +12,8 @@ import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import io.github.tst_038.minigami.core.stat.Stat;
+import io.github.tst_038.minigami.core.stat.Tally;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
@@ -157,6 +159,16 @@ class VoidKillsTest {
 
         @Override
         public void addPoints(UUID id, int points) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Tally stats() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void count(UUID id, Stat stat, long amount) {
             throw new UnsupportedOperationException();
         }
 
