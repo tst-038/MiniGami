@@ -34,6 +34,14 @@ public interface GameType {
     /** A fresh one per match. */
     WinCondition winCondition();
 
+    /**
+     * The role ids the game's own code relies on, such as {@code seeker} and {@code hider}; its modes
+     * must define exactly these. Empty when the game works with any roles, teams or none.
+     */
+    default List<String> roles() {
+        return List.of();
+    }
+
     /** How many deaths put a player out, unless the mode sets its own; 0 means they always respawn. */
     default int lives() {
         return 0;

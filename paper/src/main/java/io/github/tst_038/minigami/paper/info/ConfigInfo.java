@@ -181,6 +181,9 @@ public final class ConfigInfo {
                 messages.send(sender, "info.phase-untimed", Placeholder.unparsed("phase", phase.id()));
             }
         }
+        if (!game.roles().isEmpty()) {
+            messages.send(sender, "info.game-roles", Placeholder.unparsed("roles", String.join(", ", game.roles())));
+        }
         settings(sender, settingsRead(game::configure));
         usedBy(sender, modesWithGame(id));
     }

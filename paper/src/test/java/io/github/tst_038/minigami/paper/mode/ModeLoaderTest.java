@@ -56,8 +56,37 @@ class ModeLoaderTest {
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private final IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
 
+    /** A game whose code relies on a seeker and a hider. */
+    private static final GameType HIDE = new GameType() {
+        @Override
+        public String id() {
+            return "hide";
+        }
+
+        @Override
+        public List<Phase> phases() {
+            return GAME.phases();
+        }
+
+        @Override
+        public Map<String, List<Feature>> features() {
+            return Map.of();
+        }
+
+        @Override
+        public WinCondition winCondition() {
+            return new LastManStanding();
+        }
+
+        @Override
+        public List<String> roles() {
+            return List.of("seeker", "hider");
+        }
+    };
+
     ModeLoaderTest() {
         games.register(GAME);
+        games.register(HIDE);
         features.register(new VoidKillsFactory());
         arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Map.of(), Optional.empty()));
         arenas.register(new Arena("empty", null, List.of(), Optional.empty(), Map.of(), Optional.empty()));
@@ -186,7 +215,7 @@ class ModeLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "modes/fall.yml: game: unknown game 'spleef'; known: test",
+                "modes/fall.yml: game: unknown game 'spleef'; known: hide, test",
                 "modes/fall.yml: max-players: must be at least min-players (4)",
                 "modes/fall.yml: waiting: must be one of: in-place, lobby, arena",
                 "modes/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty",
@@ -368,5 +397,15 @@ class ModeLoaderTest {
                 problems(load("{" + mode + "min-players: 2, roles: {a: {players: 1, color: pink}, b: {}}}")));
         assertEquals(List.of("modes/fall.yml: roles.Big_One: use lower case letters, digits and dashes"),
                 problems(load("{" + mode + "min-players: 2, roles: {Big_One: {players: 1}, b: {}}}")));
+    }
+
+    @Test
+    void aModeDefinesExactlyTheRolesItsGameNeeds() throws Exception {
+        var mode = "game: hide, waiting: arena, arenas: [demo], min-players: 2, max-players: 8, ";
+
+        assertEquals(List.of(), problems(load("{" + mode + "roles: {hider: {}, seeker: {players: 1}}}")));
+        assertEquals(List.of("modes/fall.yml: roles: hide needs the roles seeker, hider"), problems(load("{" + mode + "}")));
+        assertEquals(List.of("modes/fall.yml: roles: hide needs exactly the roles seeker, hider; missing: hider; unknown: runner"),
+                problems(load("{" + mode + "roles: {seeker: {players: 1}, runner: {}}}")));
     }
 }

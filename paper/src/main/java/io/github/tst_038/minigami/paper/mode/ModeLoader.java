@@ -180,7 +180,12 @@ public final class ModeLoader {
     }
 
     private List<Role> roles(ConfigReader config, int minPlayers, GameType game) {
+        var needed = game == null ? List.<String>of() : game.roles();
+        needed.forEach(id -> config.suggest("roles." + id, List.of()));
         if (!config.has("roles")) {
+            if (!needed.isEmpty()) {
+                config.problem("roles", game.id() + " needs the roles " + String.join(", ", needed));
+            }
             return List.of();
         }
         if (config.has("teams")) {
@@ -214,6 +219,14 @@ public final class ModeLoader {
                     : RoleShare.rest();
             var lives = role.has("lives") ? OptionalInt.of(role.integer("lives", 0, Integer.MAX_VALUE)) : OptionalInt.empty();
             roles.add(new Role(id, name, color, share, lives, role.has("features") ? features(role.section("features"), game) : Map.of()));
+        }
+        var ids = roles.stream().map(Role::id).toList();
+        if (!needed.isEmpty() && !Set.copyOf(ids).equals(Set.copyOf(needed))) {
+            var missing = needed.stream().filter(id -> !ids.contains(id)).toList();
+            var unknown = ids.stream().filter(id -> !needed.contains(id)).toList();
+            config.problem("roles", game.id() + " needs exactly the roles " + String.join(", ", needed)
+                    + (missing.isEmpty() ? "" : "; missing: " + String.join(", ", missing))
+                    + (unknown.isEmpty() ? "" : "; unknown: " + String.join(", ", unknown)));
         }
         if (roles.size() < 2) {
             config.problem("roles", "needs at least two roles");
