@@ -25,7 +25,6 @@ final class ScoreboardTeams {
     private final Scoreboard scoreboard;
     /** Keeps the names apart from other matches' teams on the same scoreboard. */
     private final String namePrefix;
-    private final OptionStatus nameTags;
     private final Scope scope;
     private final Logger logger;
     /** Per team id, so a player who switches role joins the same team as the role's first members. */
@@ -35,19 +34,21 @@ final class ScoreboardTeams {
 
     /**
      * @param arenaId the arena the match plays in, which only one match uses at a time
-     * @param nameTags who sees the name tags of a team's members
      */
-    ScoreboardTeams(Scoreboard scoreboard, String arenaId, OptionStatus nameTags, Scope scope, Logger logger) {
+    ScoreboardTeams(Scoreboard scoreboard, String arenaId, Scope scope, Logger logger) {
         this.scoreboard = scoreboard;
         this.namePrefix = "minigami." + arenaId + ".";
-        this.nameTags = nameTags;
         this.scope = scope;
         this.logger = logger;
     }
 
-    /** Puts the player in the team, out of the one of this match they were in; the team is made the first time. */
-    void put(Player player, String teamId, Component name, NamedTextColor color) {
-        var team = teams.computeIfAbsent(teamId, id -> register(id, name, color));
+    /**
+     * Puts the player in the team, out of the one of this match they were in; the team is made the first time.
+     *
+     * @param nameTags who sees the name tags of the team's members
+     */
+    void put(Player player, String teamId, Component name, NamedTextColor color, OptionStatus nameTags) {
+        var team = teams.computeIfAbsent(teamId, id -> register(id, name, color, nameTags));
         remove(player.getUniqueId());
         join(player, team);
     }
@@ -80,7 +81,7 @@ final class ScoreboardTeams {
                 copy.color(NamedTextColor.nearestTo(team.color()));
                 copy.setAllowFriendlyFire(false);
                 copy.setCanSeeFriendlyInvisibles(true);
-                copy.setOption(Option.NAME_TAG_VISIBILITY, nameTags);
+                copy.setOption(Option.NAME_TAG_VISIBILITY, team.getOption(Option.NAME_TAG_VISIBILITY));
             }
             var entries = team.getEntries();
             for (var entry : copy.getEntries()) {
@@ -97,7 +98,7 @@ final class ScoreboardTeams {
     }
 
     /** One left behind by a crash is replaced. */
-    private Team register(String teamId, Component name, NamedTextColor color) {
+    private Team register(String teamId, Component name, NamedTextColor color, OptionStatus nameTags) {
         var teamName = namePrefix + teamId;
         var leftover = scoreboard.getTeam(teamName);
         if (leftover != null) {

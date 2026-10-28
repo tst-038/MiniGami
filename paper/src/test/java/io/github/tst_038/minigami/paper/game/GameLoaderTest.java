@@ -499,9 +499,9 @@ class GameLoaderTest {
         assertEquals(List.of(), problems(loaded));
         var variant = loaded.entries().find("fall").orElseThrow().base();
         assertEquals(List.of(
-                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0), Optional.empty(), Map.of()),
-                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty(), Optional.empty(), Map.of()),
-                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty(), Optional.empty(), Map.of())), variant.roles());
+                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0), Optional.empty(), Optional.empty(), Map.of()),
+                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty(), Optional.empty(), Optional.empty(), Map.of()),
+                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty(), Optional.empty(), Optional.empty(), Map.of())), variant.roles());
         assertEquals(Optional.of("Seekers"), variant.role("seeker").map(Role::name));
     }
 

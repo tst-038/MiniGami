@@ -18,9 +18,11 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
  * @param color colours the members' names and the parts of the name without a colour of their own
  * @param lives the role's own lives, instead of the game's
  * @param onOut the role a member joins instead of going out, such as an infected hider becoming a seeker
+ * @param nameTags who sees the members' name tags, instead of the game's setting
  * @param features per phase, on top of the game's; they only see the role's members
  */
-public record Role(String id, String name, NamedTextColor color, RoleShare share, OptionalInt lives, Optional<String> onOut, Map<String, List<Feature>> features) {
+public record Role(String id, String name, NamedTextColor color, RoleShare share, OptionalInt lives, Optional<String> onOut, Optional<NameTags> nameTags,
+        Map<String, List<Feature>> features) {
 
     public Role {
         features = Map.copyOf(features);

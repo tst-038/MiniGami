@@ -44,6 +44,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *   hider:                                                         # neither: everyone left over
  *     name: "Hiders"
  *     on-out: seeker                                              # optional; joins it instead of going out
+ *     name-tags: teammates                                        # optional; the role's own, over the game's
  *     features: { playing: { kit: { items: [stick] } } }          # optional; only for this role
  * quit:                       # optional; what quitting a running match does
  *   then: die                 # stay, die or out (the default)
@@ -307,7 +308,8 @@ public final class GameLoader {
             if (onOut.isPresent() && !others.contains(onOut.get())) {
                 role.problem("on-out", "must be one of the other roles: " + String.join(", ", others));
             }
-            roles.add(new Role(id, name, color, share, lives, onOut, role.has("features") ? features(role.section("features"), game) : Map.of()));
+            var nameTags = role.has("name-tags") ? Optional.of(role.choice("name-tags", NameTags.class)) : Optional.<NameTags>empty();
+            roles.add(new Role(id, name, color, share, lives, onOut, nameTags, role.has("features") ? features(role.section("features"), game) : Map.of()));
         }
         var ids = roles.stream().map(Role::id).toList();
         if (!needed.isEmpty() && !Set.copyOf(ids).equals(Set.copyOf(needed))) {

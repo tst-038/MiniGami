@@ -122,7 +122,7 @@ public final class LiveMatch {
         this.messages = messages;
         var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
-        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), variant.nameTags().status(), match.scope(), plugin.getLogger());
+        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
         this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror);
         match.onResult(result -> {
             recordEnd();
@@ -618,7 +618,7 @@ public final class LiveMatch {
             match.roster().assignTeam(id, teamId);
             var player = plugin.getServer().getPlayer(id);
             if (player != null) {
-                scoreboardTeams.put(player, teamId, name, color);
+                scoreboardTeams.put(player, teamId, name, color, variant.role(teamId).flatMap(Role::nameTags).orElse(variant.nameTags()).status());
                 messages.send(player, told, Placeholder.component("team", name));
             }
         }
