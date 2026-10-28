@@ -33,6 +33,12 @@ class FreezeTest {
     }
 
     @Test
+    void mayFallButNotJump() {
+        assertEquals(new Location(world, 0, 63.5, 0), moveTo(new Location(world, 1, 63.5, 1)));
+        assertEquals(new Location(world, 0, 64, 0), moveTo(new Location(world, 0, 64.4, 0)));
+    }
+
+    @Test
     void anEliminatedPlayerMovesFreely() {
         match.roster.eliminate(id);
 
