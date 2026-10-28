@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
@@ -17,35 +18,66 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
- * The parsed {@code .yml} files of one folder, such as {@code arenas/}, by id (the file name without
- * {@code .yml}). Files that can't be read or aren't valid YAML are left out and reported as problems.
+ * The parsed YAML files of one folder, such as {@code games/}, by id: either a {@code <id>.yml} file
+ * each, or a {@code <id>/} folder each holding a file of one name, such as {@code arenas/winter/arena.yml}.
+ * Files that can't be read or aren't valid YAML are left out and reported as problems.
+ *
+ * @param layout where an entry's file is inside the folder, {@code %s} being its id
  */
-public record YamlFiles(String folder, Map<String, YamlConfiguration> files, List<ConfigProblem> problems) {
+public record YamlFiles(String folder, String layout, Map<String, YamlConfiguration> files, List<ConfigProblem> problems) {
 
     private static final String EXTENSION = ".yml";
+    /** A {@code <id>.yml} file per entry. */
+    public static final String FLAT = "%s" + EXTENSION;
 
-    /** Blocking file IO: call it off the server thread. A missing folder simply has no files. */
+    /** With a file per entry, {@link #FLAT}. */
+    public YamlFiles(String folder, Map<String, YamlConfiguration> files, List<ConfigProblem> problems) {
+        this(folder, FLAT, files, problems);
+    }
+
+    /** The {@code <id>.yml} files. Blocking file IO: call it off the server thread. A missing folder simply has no files. */
     public static YamlFiles read(Path directory) {
+        return read(directory, FLAT, path -> {
+            var name = path.getFileName().toString();
+            return Files.isRegularFile(path) && name.endsWith(EXTENSION) ? Optional.of(name.substring(0, name.length() - EXTENSION.length())) : Optional.empty();
+        });
+    }
+
+    /**
+     * The file of this name in each sub-folder, the sub-folder's name being the id; a sub-folder without
+     * it is skipped. Blocking file IO: call it off the server thread.
+     */
+    public static YamlFiles readFolders(Path directory, String file) {
+        return read(directory, "%s/" + file, path ->
+                Files.isRegularFile(path.resolve(file)) ? Optional.of(path.getFileName().toString()) : Optional.empty());
+    }
+
+    /** @param idOf the entry's id for a path in the folder, empty for paths that hold none */
+    private static YamlFiles read(Path directory, String layout, Function<Path, Optional<String>> idOf) {
         var folder = directory.getFileName().toString();
         var files = new TreeMap<String, YamlConfiguration>();
         var problems = new ArrayList<ConfigProblem>();
         if (Files.isDirectory(directory)) {
             try (var paths = Files.list(directory)) {
-                for (Path path : paths.filter(p -> p.getFileName().toString().endsWith(EXTENSION)).sorted().toList()) {
-                    var name = path.getFileName().toString();
+                for (Path path : paths.sorted().toList()) {
+                    var id = idOf.apply(path);
+                    if (id.isEmpty()) {
+                        continue;
+                    }
+                    var file = layout.formatted(id.get());
                     try {
                         var config = new YamlConfiguration();
-                        config.loadFromString(Files.readString(path));
-                        files.put(name.substring(0, name.length() - EXTENSION.length()), config);
+                        config.loadFromString(Files.readString(directory.resolve(file)));
+                        files.put(id.get(), config);
                     } catch (IOException | InvalidConfigurationException e) {
-                        problems.add(new ConfigProblem(folder + "/" + name, "", "can't be read: " + e.getMessage()));
+                        problems.add(new ConfigProblem(folder + "/" + file, "", "can't be read: " + e.getMessage()));
                     }
                 }
             } catch (IOException e) {
                 problems.add(new ConfigProblem(folder, "", "can't be listed: " + e.getMessage()));
             }
         }
-        return new YamlFiles(folder, files, problems);
+        return new YamlFiles(folder, layout, files, problems);
     }
 
     /**
@@ -104,8 +136,8 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
         }
     }
 
-    /** The name problems in this file are reported under, e.g. {@code arenas/winter.yml}. */
+    /** The name problems in this file are reported under, e.g. {@code arenas/winter/arena.yml}. */
     public String fileName(String id) {
-        return folder + "/" + id + EXTENSION;
+        return folder + "/" + layout.formatted(id);
     }
 }

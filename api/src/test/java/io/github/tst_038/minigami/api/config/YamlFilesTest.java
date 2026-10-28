@@ -16,18 +16,36 @@ class YamlFilesTest {
 
     @Test
     void readsYmlFilesByIdAndReportsBrokenOnes() throws Exception {
-        var arenas = Files.createDirectory(directory.resolve("arenas"));
-        Files.writeString(arenas.resolve("winter.yml"), "world: world");
-        Files.writeString(arenas.resolve("broken.yml"), "world: [unclosed");
-        Files.writeString(arenas.resolve("notes.txt"), "not config");
+        var games = Files.createDirectory(directory.resolve("games"));
+        Files.writeString(games.resolve("spleef.yml"), "world: world");
+        Files.writeString(games.resolve("broken.yml"), "world: [unclosed");
+        Files.writeString(games.resolve("notes.txt"), "not config");
+        Files.createDirectory(games.resolve("folder.yml"));
 
-        var files = YamlFiles.read(arenas);
+        var files = YamlFiles.read(games);
+
+        assertEquals(List.of("spleef"), List.copyOf(files.files().keySet()));
+        assertEquals("world", files.files().get("spleef").getString("world"));
+        assertEquals(1, files.problems().size());
+        assertTrue(files.problems().getFirst().toString().startsWith("games/broken.yml: can't be read"));
+        assertEquals("games/spleef.yml", files.fileName("spleef"));
+    }
+
+    @Test
+    void readsTheFileOfEachSubFolderByTheFoldersName() throws Exception {
+        var arenas = Files.createDirectory(directory.resolve("arenas"));
+        Files.writeString(Files.createDirectory(arenas.resolve("winter")).resolve("arena.yml"), "world: world");
+        Files.writeString(Files.createDirectory(arenas.resolve("broken")).resolve("arena.yml"), "world: [unclosed");
+        Files.writeString(Files.createDirectory(arenas.resolve("unfinished")).resolve("map.schem"), "");
+        Files.writeString(arenas.resolve("flat.yml"), "world: world");
+
+        var files = YamlFiles.readFolders(arenas, "arena.yml");
 
         assertEquals(List.of("winter"), List.copyOf(files.files().keySet()));
         assertEquals("world", files.files().get("winter").getString("world"));
         assertEquals(1, files.problems().size());
-        assertTrue(files.problems().getFirst().toString().startsWith("arenas/broken.yml: can't be read"));
-        assertEquals("arenas/winter.yml", files.fileName("winter"));
+        assertTrue(files.problems().getFirst().toString().startsWith("arenas/broken/arena.yml: can't be read"));
+        assertEquals("arenas/winter/arena.yml", files.fileName("winter"));
     }
 
     @Test

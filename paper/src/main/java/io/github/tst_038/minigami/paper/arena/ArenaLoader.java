@@ -15,7 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 /**
- * Turns {@code arenas/<id>.yml} files into arenas:
+ * Turns {@code arenas/<id>/arena.yml} files into arenas; the folder also holds the arena's saved map:
  *
  * <pre>
  * world: world
@@ -34,6 +34,11 @@ import org.bukkit.World;
  * pasted back into; saving the map sets it.
  */
 public final class ArenaLoader {
+
+    /** An arena's own folder, {@code arenas/<id>/}, holds this file. */
+    public static final String FILE = "arena.yml";
+    /** Where an arena's file is inside {@code arenas/}. */
+    public static final String LAYOUT = "%s/" + FILE;
 
     /** As far as a world reaches in Minecraft, in blocks. */
     private static final int WORLD_BORDER = 30_000_000;

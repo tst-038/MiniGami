@@ -17,7 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Arena maps saved as WorldEdit schematics in {@code arenas/<id>.schem}, pasted back into the
+ * Arena maps saved as WorldEdit schematics in {@code arenas/<id>/map.schem}, pasted back into the
  * arena's map box to undo what a match changed, also when the server stopped mid-match. An arena takes no new match while its map
  * is being pasted. Without WorldEdit (or FastAsyncWorldEdit) or a saved map, nothing is pasted.
  *
@@ -137,7 +137,7 @@ public final class ArenaMaps {
     }
 
     private Path file(Arena arena) {
-        return plugin.getDataPath().resolve("arenas").resolve(arena.id() + ".schem");
+        return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("map.schem");
     }
 
     /** @param done gets the failure, or {@code null} on success */

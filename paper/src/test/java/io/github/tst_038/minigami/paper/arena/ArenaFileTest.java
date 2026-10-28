@@ -29,7 +29,7 @@ class ArenaFileTest {
     private Arena reload(YamlConfiguration config) throws Exception {
         var saved = new YamlConfiguration();
         saved.loadFromString(config.saveToString());
-        var loaded = ArenaLoader.load(new YamlFiles("arenas", Map.of("winter", saved), List.of()), name -> world);
+        var loaded = ArenaLoader.load(new YamlFiles("arenas", ArenaLoader.LAYOUT, Map.of("winter", saved), List.of()), name -> world);
         assertEquals(List.of(), loaded.problems());
         return loaded.entries().find("winter").orElseThrow();
     }

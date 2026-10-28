@@ -37,7 +37,7 @@ public final class ConfigReader {
         shared.readers.add(this);
     }
 
-    /** @param file the file's name in problem messages, e.g. {@code arenas/winter.yml} */
+    /** @param file the file's name in problem messages, e.g. {@code games/spleef.yml} */
     public static ConfigReader of(String file, ConfigurationSection section) {
         return new ConfigReader(new Shared(file), "", section);
     }

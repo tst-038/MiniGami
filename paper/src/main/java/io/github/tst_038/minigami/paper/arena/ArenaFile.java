@@ -10,7 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-/** The changes the arena commands make to an {@code arenas/<id>.yml}, keeping the rest of the file as it is. */
+/** The changes the arena commands make to an {@code arenas/<id>/arena.yml}, keeping the rest of the file as it is. */
 public final class ArenaFile {
 
     private ArenaFile() {

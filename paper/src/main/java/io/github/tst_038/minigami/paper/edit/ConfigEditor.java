@@ -59,7 +59,7 @@ public final class ConfigEditor {
         public String file(String id) {
             return switch (this) {
                 case CONFIG -> SettingsLoader.FILE;
-                case ARENA -> "arenas/" + id + ".yml";
+                case ARENA -> "arenas/" + ArenaLoader.LAYOUT.formatted(id);
                 case GAME -> "games/" + id + ".yml";
             };
         }
@@ -284,7 +284,7 @@ public final class ConfigEditor {
         var worlds = plugin.getServer();
         return switch (kind) {
             case CONFIG -> SettingsLoader.load(config.saveToString(), worlds::getWorld).problems();
-            case ARENA -> ArenaLoader.load(new YamlFiles("arenas", Map.of(id, config), List.of()), worlds::getWorld).problems();
+            case ARENA -> ArenaLoader.load(new YamlFiles("arenas", ArenaLoader.LAYOUT, Map.of(id, config), List.of()), worlds::getWorld).problems();
             case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud())
                     .problems();
         };

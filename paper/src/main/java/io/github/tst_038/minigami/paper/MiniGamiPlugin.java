@@ -176,10 +176,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var fileProblems = new ArrayList<ConfigProblem>();
             var settingsText = readSettings(fileProblems);
             var messageTexts = readMessages(fileProblems);
-            saveExample("arenas");
-            saveExample("games");
+            saveExample("arenas", "example/" + ArenaLoader.FILE);
+            saveExample("games", "example.yml");
             warnOldModes();
-            var arenaFiles = YamlFiles.read(getDataPath().resolve("arenas"));
+            var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
             if (!isEnabled()) {
                 return;
@@ -248,9 +248,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
     }
 
     /** Blocking IO. On a fresh install, writes the bundled example into the folder so admins have one to copy. */
-    private void saveExample(String folder) {
+    private void saveExample(String folder, String file) {
         if (!Files.exists(getDataPath().resolve(folder))) {
-            saveResource(folder + "/example.yml", false);
+            saveResource(folder + "/" + file, false);
         }
     }
 

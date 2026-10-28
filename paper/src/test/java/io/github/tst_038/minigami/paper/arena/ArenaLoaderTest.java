@@ -29,7 +29,7 @@ class ArenaLoaderTest {
     private YamlFiles.Loaded<Arena> load(String id, String yaml) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        var files = new YamlFiles("arenas", Map.of(id, config), List.of());
+        var files = new YamlFiles("arenas", ArenaLoader.LAYOUT, Map.of(id, config), List.of());
         return ArenaLoader.load(files, name -> name.equals("world") ? world : null);
     }
 
@@ -73,8 +73,8 @@ class ArenaLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "arenas/winter.yml: world: no loaded world 'wintr'",
-                "arenas/winter.yml: spawns[0].z: is missing"), problems(loaded));
+                "arenas/winter/arena.yml: world: no loaded world 'wintr'",
+                "arenas/winter/arena.yml: spawns[0].z: is missing"), problems(loaded));
     }
 
     @Test
@@ -116,17 +116,17 @@ class ArenaLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "arenas/hills.yml: regions.Top: can't be a region name: use lower case letters, digits and dashes",
-                "arenas/hills.yml: regions.base.from.z: is missing",
-                "arenas/hills.yml: regions.base.to.y: must be between -2048 and 2047",
-                "arenas/hills.yml: regions.base.to.w: unknown key"), problems(loaded));
+                "arenas/hills/arena.yml: regions.Top: can't be a region name: use lower case letters, digits and dashes",
+                "arenas/hills/arena.yml: regions.base.from.z: is missing",
+                "arenas/hills/arena.yml: regions.base.to.y: must be between -2048 and 2047",
+                "arenas/hills/arena.yml: regions.base.to.w: unknown key"), problems(loaded));
     }
 
     @Test
     void fileNameMustBeAValidId() throws Exception {
         var loaded = load("Winter", "world: world");
 
-        assertEquals(List.of("arenas/Winter.yml: Invalid id 'Winter': use lower case letters, digits and dashes"), problems(loaded));
+        assertEquals(List.of("arenas/Winter/arena.yml: Invalid id 'Winter': use lower case letters, digits and dashes"), problems(loaded));
     }
 
     @Test
@@ -166,7 +166,7 @@ class ArenaLoaderTest {
 
         assertEquals(List.of(), problems(role));
         assertEquals(List.of(new Location(world, 1, 64, 1)), role.entries().find("winter").orElseThrow().spawnsFor(Optional.of("seeker")));
-        assertEquals(List.of("arenas/winter.yml: spawns[0].team: 'Seeker' is neither a team (red, blue, green, yellow, aqua, light_purple, gold, white)"
+        assertEquals(List.of("arenas/winter/arena.yml: spawns[0].team: 'Seeker' is neither a team (red, blue, green, yellow, aqua, light_purple, gold, white)"
                 + " nor a role id in lower case letters, digits and dashes"), problems(invalid));
     }
 }
