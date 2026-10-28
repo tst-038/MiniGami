@@ -45,6 +45,8 @@ import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
 import io.github.tst_038.minigami.paper.stats.Leaderboards;
 import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
+import io.github.tst_038.minigami.paper.stats.StatPlaceholders;
+import io.github.tst_038.minigami.paper.stats.StatsExpansion;
 import io.github.tst_038.minigami.paper.stats.StatsRecorder;
 import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.github.tst_038.minigami.paper.storage.Migrations;
@@ -116,6 +118,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var leaderboards = new Leaderboards(storage, serverThread, getLogger(), this::cachedName, LEADERBOARD_SIZE);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
+        getServer().getPluginManager().registerEvents(leaderboards, this);
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles));
+        }
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());

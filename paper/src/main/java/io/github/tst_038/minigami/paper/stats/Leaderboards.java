@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.stats;
 
+import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.paper.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,13 +16,16 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 
 /**
  * The best players per game and stat, wins included, over the whole game and per variant. Read from storage in the background whenever
  * {@link #refresh()} is called, every few minutes, and kept in memory in between, so showing a
- * board never waits on the database. Only used on the server thread.
+ * board never waits on the database. Refreshed again after each match. Refresh from the server thread; read from any.
  */
-public final class Leaderboards {
+public final class Leaderboards implements Listener {
 
     /** The board of matches won; every other board is a stat. */
     public static final String WINS = "wins";
@@ -39,7 +43,7 @@ public final class Leaderboards {
     private final Logger logger;
     private final Function<UUID, Optional<String>> cachedName;
     private final int size;
-    private Map<Board, List<Entry>> boards = Map.of();
+    private volatile Map<Board, List<Entry>> boards = Map.of();
 
     /**
      * @param cachedName the name the server knows for a player whose name isn't stored; must not block
@@ -67,6 +71,12 @@ public final class Leaderboards {
         var stats = new TreeSet<String>();
         boards.keySet().stream().filter(board -> board.game().equals(game)).forEach(board -> stats.add(board.stat()));
         return stats;
+    }
+
+    /** Runs after the match is stored; storage works in order, so the refresh sees it. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMatchEnd(MatchEndEvent event) {
+        refresh();
     }
 
     public void refresh() {

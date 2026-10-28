@@ -15,6 +15,8 @@ dependencies {
     // Optional at runtime: arenas are reset from schematics only when WorldEdit or FAWE is installed.
     compileOnly(libs.worldedit.bukkit) { isTransitive = false }
     compileOnly(libs.worldedit.core) { isTransitive = false }
+    // Optional at runtime: stats are offered as placeholders only when PlaceholderAPI is installed.
+    compileOnly(libs.placeholderapi) { isTransitive = false }
 
     testImplementation(libs.paper.api)
     testImplementation(platform(libs.junit.bom))
@@ -50,5 +52,7 @@ tasks.runServer {
     minecraftVersion("26.3")
     downloadPlugins {
         modrinth("fastasyncworldedit", libs.versions.fawe.get())
+        modrinth("placeholderapi", libs.versions.placeholderapi.get())
+        modrinth("decentholograms", libs.versions.decentholograms.get())
     }
 }

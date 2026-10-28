@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,7 +27,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 /**
  * The profiles of the players online, loaded from storage in the background when they join and
  * dropped when they quit, so showing stats never waits on the database. Also remembers the name
- * each player joined with, so offline players can be found by name. Only used on the server thread.
+ * each player joined with, so offline players can be found by name. Used on the server thread; {@link #of} on any.
  */
 public final class PlayerProfiles implements Listener {
 
@@ -40,7 +41,7 @@ public final class PlayerProfiles implements Listener {
     private final Logger logger;
     /** Who a load is for; a load that finishes after they quit is thrown away. */
     private final Set<UUID> online = new HashSet<>();
-    private final Map<UUID, Profile> profiles = new HashMap<>();
+    private final Map<UUID, Profile> profiles = new ConcurrentHashMap<>();
 
     public PlayerProfiles(Storage storage, Executor serverThread, Clock clock, Logger logger) {
         this.storage = storage;

@@ -5,6 +5,10 @@ run-paper = "3.1.0"
 worldedit = "7.4.6"
 # Only on the test server, as the WorldEdit implementation.
 fawe = "2.16.1"
+# Optional at runtime: stats as placeholders for holograms and scoreboards.
+placeholderapi = "2.12.3"
+# Only on the test server, to show placeholders in a hologram.
+decentholograms = "2.10.2"
 # The driver Paper 26.3 ships in its server libraries; only for tests, the server provides it at runtime.
 sqlite-jdbc = "3.49.1.0"
 
@@ -12,6 +16,7 @@ sqlite-jdbc = "3.49.1.0"
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
 worldedit-core = { module = "com.sk89q.worldedit:worldedit-core", version.ref = "worldedit" }
 worldedit-bukkit = { module = "com.sk89q.worldedit:worldedit-bukkit", version.ref = "worldedit" }
+placeholderapi = { module = "me.clip:placeholderapi", version.ref = "placeholderapi" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }

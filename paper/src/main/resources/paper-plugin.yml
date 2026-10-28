@@ -10,6 +10,11 @@ dependencies:
       load: BEFORE
       required: false
       join-classpath: true
+    # Optional; offers stats as placeholders, e.g. for holograms.
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
 permissions:
   minigami.admin:
     description: Set up arenas, games and the config, and manage matches and players
