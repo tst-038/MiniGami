@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
 import io.github.tst_038.minigami.features.countdown.CountdownFactory;
+import io.github.tst_038.minigami.features.deathitems.DeathItemsFactory;
 import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
 import io.github.tst_038.minigami.features.effects.EffectsFactory;
 import io.github.tst_038.minigami.features.freeze.FreezeFactory;
@@ -96,6 +97,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         games.register(new KingOfTheHill());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
+        features.register(new DeathItemsFactory());
         features.register(new BreakBlocksFactory());
         features.register(new NoDamageFactory());
         features.register(new GiveDropsFactory());

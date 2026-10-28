@@ -9,7 +9,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 
-/** Gives every player still in the match the same items when the phase starts, and again when they respawn. */
+/**
+ * Gives every player still in the match the same items when the phase starts, and again when they
+ * respawn: only the ones they lack, so items kept through a death don't pile up.
+ */
 public final class Kit implements Feature {
 
     private final List<Material> items;
@@ -22,8 +25,10 @@ public final class Kit implements Feature {
     public void enable(MatchContext context) {
         context.players().forEach(this::give);
         context.on(PlayerRespawnEvent.class, event -> {
-            if (context.roster().find(event.getPlayer().getUniqueId()).filter(Participant::isAlive).isPresent()) {
-                give(event.getPlayer());
+            var player = event.getPlayer();
+            if (context.roster().find(player.getUniqueId()).filter(Participant::isAlive).isPresent()) {
+                player.getInventory().addItem(items.stream().filter(item -> !player.getInventory().contains(item))
+                        .map(ItemStack::of).toArray(ItemStack[]::new));
             }
         });
     }

@@ -411,13 +411,12 @@ public final class LiveMatch {
     }
 
     /**
-     * A death stays inside the match: nothing drops, only the match hears of it, and while the match
-     * is on it costs a life. The player respawns at once, so nobody sits on the death screen.
+     * A death stays inside the match: only the match hears of it, and while the match is on it costs a
+     * life. Items and XP drop as in vanilla unless a feature says otherwise. The player respawns at
+     * once, so nobody sits on the death screen.
      */
     private void onDeath(PlayerDeathEvent event) {
         var player = event.getEntity();
-        event.getDrops().clear();
-        event.setShouldDropExperience(false);
         var message = event.deathMessage();
         event.deathMessage(null);
         if (message != null) {
