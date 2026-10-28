@@ -264,22 +264,18 @@ public final class ModeLoader {
         if (ids.isEmpty() && config.has("arenas")) {
             config.problem("arenas", "needs at least one arena");
         }
+        var needed = game == null ? List.<String>of() : Stream.concat(game.regions().stream(), game.regionPerTeam().stream()
+                .flatMap(prefix -> IntStream.rangeClosed(1, mostTeams).mapToObj(number -> prefix + "-" + number))).toList();
         var arenas = new ArrayList<Arena>();
         for (String id : ids) {
             var arena = registry.find(id);
             if (arena.isEmpty()) {
                 config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids()));
-            } else if (arena.get().isPlayable()) {
+            } else if (arena.get().isPlayable() && arena.get().regions().keySet().containsAll(needed)) {
                 arenas.add(arena.get());
-                var needed = game == null ? List.<String>of() : Stream.concat(game.regions().stream(), game.regionPerTeam().stream()
-                        .flatMap(prefix -> IntStream.rangeClosed(1, mostTeams).mapToObj(number -> prefix + "-" + number))).toList();
-                var missing = needed.stream().filter(region -> !arena.get().regions().containsKey(region)).toList();
-                if (!missing.isEmpty()) {
-                    config.problem("arenas", "arena '" + id + "' lacks the regions " + game.id() + " needs: " + String.join(", ", missing)
-                            + "; save them with /mg arena " + id + " region <name> set");
-                }
             }
-            // Left out without a problem: an arena without spawns is still being set up, and a problem would fail the reload it needs to get them.
+            // Left out without a problem: an arena without spawns or the game's regions is still being set up,
+            // and a problem would fail the reload it needs to get them.
         }
         return arenas;
     }

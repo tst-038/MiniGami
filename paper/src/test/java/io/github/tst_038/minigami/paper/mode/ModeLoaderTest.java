@@ -399,23 +399,28 @@ class ModeLoaderTest {
     }
 
     @Test
-    void anArenaNeedsARegionForEveryTeamAMatchCanHave() throws Exception {
+    void anArenaNeedsARegionForEveryTeamAMatchCanHaveToBeUsed() throws Exception {
         games.register(new BuildBattle());
         var mode = "{game: build-battle, min-players: 1, waiting: arena, arenas: [hills], ";
 
-        assertEquals(List.of(), problems(load(mode + "max-players: 3}")));
-        assertEquals(List.of(), problems(load(mode.replace("min-players: 1", "min-players: 3") + "max-players: 6, teams: {size: 2}}")));
-        assertEquals(List.of("modes/fall.yml: arenas: arena 'hills' lacks the regions build-battle needs: plot-4; save them with /mg arena hills region <name> set"),
-                problems(load(mode + "max-players: 4}")));
+        assertEquals(List.of("hills"), arenaIds(load(mode + "max-players: 3}")));
+        assertEquals(List.of("hills"), arenaIds(load(mode.replace("min-players: 1", "min-players: 3") + "max-players: 6, teams: {size: 2}}")));
+        assertEquals(List.of(), arenaIds(load(mode + "max-players: 4}")));
     }
 
     @Test
-    void everyArenaMustHaveTheRegionsTheGameNeeds() throws Exception {
+    void anArenaWithoutTheRegionsTheGameNeedsIsLeftOut() throws Exception {
         var mode = "{game: hill, min-players: 2, max-players: 8, waiting: arena, arenas: ";
 
-        assertEquals(List.of(), problems(load(mode + "[hills]}")));
-        assertEquals(List.of("modes/fall.yml: arenas: arena 'demo' lacks the regions hill needs: hill; save them with /mg arena demo region <name> set"),
-                problems(load(mode + "[hills, demo, empty]}")));
+        var loaded = load(mode + "[hills, demo, empty]}");
+
+        // An arena lacking them is still being set up: left out, but no problem, so saving its regions can reload.
+        assertEquals(List.of(), problems(loaded));
+        assertEquals(List.of("hills"), arenaIds(loaded));
+    }
+
+    private static List<String> arenaIds(YamlFiles.Loaded<Mode> loaded) {
+        return loaded.entries().find("fall").orElseThrow().arenas().stream().map(Arena::id).toList();
     }
 
     @Test
