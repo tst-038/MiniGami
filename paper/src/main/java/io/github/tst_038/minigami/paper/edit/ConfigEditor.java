@@ -292,7 +292,7 @@ public final class ConfigEditor {
             case MODE -> {
                 var files = new HashMap<>(modes);
                 files.put(id, config);
-                yield modeLoader.load(new YamlFiles("modes", files, List.of()), arenas.get(), settings.get().lobby().isPresent())
+                yield modeLoader.load(new YamlFiles("modes", files, List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud())
                         .problems().stream().filter(problem -> problem.file().equals(kind.file(id))).toList();
             }
         };

@@ -2,11 +2,16 @@ package io.github.tst_038.minigami.paper.config;
 
 import java.util.Optional;
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 
-/** The server-wide settings from {@code config.yml}. */
-public record Settings(Optional<Location> lobby) {
+/**
+ * The server-wide settings from {@code config.yml}.
+ *
+ * @param hud the HUD every mode has unless it sets its own; read by the mode loader, so only its shape is known here
+ */
+public record Settings(Optional<Location> lobby, ConfigurationSection hud) {
 
-    public static final Settings DEFAULTS = new Settings(Optional.empty());
+    public static final Settings DEFAULTS = new Settings(Optional.empty(), SettingsLoader.bundledHud());
 
     public Settings {
         lobby = lobby.map(Location::clone);

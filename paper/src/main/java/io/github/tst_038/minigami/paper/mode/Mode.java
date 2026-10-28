@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.hud.Hud;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,9 +24,10 @@ import java.util.stream.Stream;
  * @param quit what quitting a running match does to a player still in it
  * @param features feature instances are shared by every match of the mode, so they keep no match state themselves
  * @param statGroups the stat groups it keeps, next to the stats of the game itself
+ * @param hud what players see of a match next to chat
  */
 public record Mode(String id, GameType game, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups) {
+        Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
 
     public Mode {
         roles = List.copyOf(roles);

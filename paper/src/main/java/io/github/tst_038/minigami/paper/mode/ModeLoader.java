@@ -8,8 +8,10 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.hud.Hud;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -48,6 +51,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * features:                   # optional; per phase of the game, per feature
  *   playing:
  *     void-kills: { y: 0 }
+ * hud:                        # optional; replaces parts of the HUD from config.yml, or false for none
+ *   sidebar: { playing: [mode, time, blank, kills] }
  * </pre>
  *
  * <p>A mode can {@code extends: <mode>} and set only what differs: its keys replace the other mode's
@@ -68,12 +73,20 @@ public final class ModeLoader {
     /**
      * @param arenas the arenas loaded so far; a mode may only use playable ones
      * @param hasLobby whether a lobby is set, which modes that wait in the lobby need
+     * @param hud the HUD every mode has unless it sets its own under {@code hud}
      */
-    public YamlFiles.Loaded<Mode> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby) {
+    public YamlFiles.Loaded<Mode> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud) {
         var own = files.files();
         var merged = new TreeMap<String, YamlConfiguration>();
         var extendsProblems = new HashMap<String, String>();
-        own.keySet().forEach(id -> merged.put(id, withParents(id, own, new ArrayList<>(), extendsProblems)));
+        own.keySet().forEach(id -> {
+            var withDefaults = new YamlConfiguration();
+            if (!hud.getKeys(false).isEmpty()) {
+                YamlFiles.overlay(withDefaults.createSection("hud"), hud);
+            }
+            YamlFiles.overlay(withDefaults, withParents(id, own, new ArrayList<>(), extendsProblems));
+            merged.put(id, withDefaults);
+        });
         return new YamlFiles(files.folder(), merged, files.problems())
                 .parse(Mode::id, (id, config) -> parse(id, config, own.keySet(), extendsProblems.get(id), arenas, hasLobby));
     }
@@ -104,19 +117,9 @@ public final class ModeLoader {
             return own;
         }
         var merged = new YamlConfiguration();
-        overlay(merged, withParents(parent, files, chain, problems));
-        overlay(merged, own);
+        YamlFiles.overlay(merged, withParents(parent, files, chain, problems));
+        YamlFiles.overlay(merged, own);
         return merged;
-    }
-
-    private static void overlay(ConfigurationSection target, ConfigurationSection source) {
-        for (String key : source.getKeys(false)) {
-            if (source.get(key) instanceof ConfigurationSection child) {
-                overlay(target.get(key) instanceof ConfigurationSection existing ? existing : target.createSection(key), child);
-            } else {
-                target.set(key, source.get(key));
-            }
-        }
     }
 
     /** @param extendsProblem what is wrong with the mode it extends, if anything */
@@ -160,7 +163,15 @@ public final class ModeLoader {
         if (changesBlocks) {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features, stats);
+        var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features, stats, hud);
+    }
+
+    /** Every stat a game or stat group keeps. */
+    private Set<String> knownStats() {
+        return Stream.concat(games.ids().stream().flatMap(id -> games.find(id).orElseThrow().stats().stream()),
+                statGroups.ids().stream().flatMap(id -> statGroups.find(id).orElseThrow().stats().stream()))
+                .map(Stat::id).collect(Collectors.toSet());
     }
 
     private List<StatGroup> statGroups(ConfigReader config) {

@@ -120,6 +120,29 @@ public final class MatchAdmin {
         });
     }
 
+    /** Freezes the match: its clock stops and players stay where they are, unhurt. */
+    public void pause(CommandSender sender, String id) {
+        find(sender, id).ifPresent(live -> {
+            if (live.isPaused()) {
+                messages.send(sender, "match.admin.already-paused", Placeholder.unparsed("match", id));
+                return;
+            }
+            live.pause();
+            messages.send(sender, "match.admin.paused", Placeholder.unparsed("match", id));
+        });
+    }
+
+    public void resume(CommandSender sender, String id) {
+        find(sender, id).ifPresent(live -> {
+            if (!live.isPaused()) {
+                messages.send(sender, "match.admin.not-paused", Placeholder.unparsed("match", id));
+                return;
+            }
+            live.resume();
+            messages.send(sender, "match.admin.resumed", Placeholder.unparsed("match", id));
+        });
+    }
+
     public void stop(CommandSender sender, String id) {
         find(sender, id).ifPresent(live -> {
             live.stop();

@@ -63,6 +63,31 @@ final class ScoreboardTeams {
         }
     }
 
+    /** Puts the teams as they are now on a player's own scoreboard, so names show in their colours there too. */
+    void mirror(Scoreboard board) {
+        for (var team : teams.values()) {
+            var copy = board.getTeam(team.getName());
+            if (copy == null) {
+                copy = board.registerNewTeam(team.getName());
+                copy.displayName(team.displayName());
+                copy.color(NamedTextColor.nearestTo(team.color()));
+                copy.setAllowFriendlyFire(false);
+                copy.setCanSeeFriendlyInvisibles(true);
+            }
+            var entries = team.getEntries();
+            for (var entry : copy.getEntries()) {
+                if (!entries.contains(entry)) {
+                    copy.removeEntry(entry);
+                }
+            }
+            for (var entry : entries) {
+                if (!copy.hasEntry(entry)) {
+                    copy.addEntry(entry);
+                }
+            }
+        }
+    }
+
     /** One left behind by a crash is replaced. */
     private Team register(String teamId, Component name, NamedTextColor color) {
         var teamName = namePrefix + teamId;

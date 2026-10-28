@@ -4,14 +4,17 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
+import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
+import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.hud.MatchHud;
 import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.mode.Role;
 import io.github.tst_038.minigami.paper.mode.TeamSetup;
@@ -26,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -42,6 +47,8 @@ import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
@@ -58,7 +65,10 @@ import org.bukkit.plugin.Plugin;
  */
 public final class LiveMatch {
 
-    private static final long START_DELAY_TICKS = 5 * 20;
+    /** How long a match waits for more players once enough joined. */
+    public static final long START_DELAY_TICKS = 5 * 20;
+    /** How long players stand frozen at their spawns before play begins. */
+    public static final long COUNTDOWN_TICKS = 3 * 20;
 
     private final Plugin plugin;
     private final Mode mode;
@@ -75,6 +85,7 @@ public final class LiveMatch {
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
     private final Lives lives = new Lives(this::livesOf);
     private final ScoreboardTeams scoreboardTeams;
+    private final MatchHud hud;
     /** Participants who quit with a way back, each with the timer that puts them out. */
     private final Map<UUID, MatchClock.Task> away = new HashMap<>();
     /** Participants who left after the start; the roster still has them. */
@@ -82,6 +93,12 @@ public final class LiveMatch {
     /** When play started, for the record; null until then. */
     private Instant start;
     private MatchClock.Task startDelay;
+    /** Holds players still and unhurt while an admin paused the match; null otherwise. */
+    private Scope paused;
+    /** Holds players at their spawns until play begins; null outside the countdown. */
+    private Scope countdown;
+    /** The match clock's tick play begins at, while the start delay or the countdown runs. */
+    private long goAt;
 
     /**
      * @param arena must be playable
@@ -104,7 +121,11 @@ public final class LiveMatch {
         var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(mode.game().phases(), mode.game().winCondition(), features);
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
-        match.onResult(result -> recordEnd());
+        this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror);
+        match.onResult(result -> {
+            recordEnd();
+            hud.decided(result);
+        });
     }
 
     /** Tells whoever keeps track of matches how this one went. Those still away when it is decided count as having left. */
@@ -136,6 +157,12 @@ public final class LiveMatch {
         var context = new PaperMatchContext(plugin, this, match.scope());
         context.on(PlayerDeathEvent.class, this::onDeath);
         context.on(PlayerRespawnEvent.class, this::onRespawn);
+        context.on(EntityDamageByEntityEvent.class, event -> {
+            if (event.getDamager().getScoreboardTags().contains(MatchHud.CELEBRATION)) {
+                event.setCancelled(true);
+            }
+        });
+        hud.start();
         match.start();
     }
 
@@ -183,10 +210,21 @@ public final class LiveMatch {
         return Audience.audience(members.stream().map(server::getPlayer).filter(Objects::nonNull).toList());
     }
 
-    /** Whether the match is still gathering players, i.e. in its first phase. */
+    /** Whether the match is still gathering players: in its first phase, and nobody was brought to their spawn yet. */
     public boolean isJoinable() {
         var first = mode.game().phases().getFirst();
-        return !match.isFinished() && match.currentPhase().filter(first::equals).isPresent();
+        return countdown == null && !match.isFinished() && match.currentPhase().filter(first::equals).isPresent();
+    }
+
+    /** How long until play begins, while the start delay or the countdown at the spawns runs. */
+    public OptionalLong startsIn() {
+        return (startDelay == null || startDelay.isCancelled()) && countdown == null ? OptionalLong.empty()
+                : OptionalLong.of(Math.max(0, goAt - match.clock().elapsedTicks()));
+    }
+
+    /** The lives a participant has left; empty when they are unlimited. */
+    public OptionalInt livesLeft(UUID id) {
+        return lives.left(id);
     }
 
     /** Whether another player fits in before the mode's maximum is reached. */
@@ -221,12 +259,14 @@ public final class LiveMatch {
         }
         match.roster().add(id);
         members.add(id);
+        hud.show(player);
         messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
                 Formatter.number("players", match.roster().size()), Formatter.number("needed", mode.minPlayers()));
         if (startDelay == null && match.roster().size() >= mode.minPlayers()) {
-            startDelay = match.clock().schedule(START_DELAY_TICKS, this::startPlaying);
+            startDelay = match.clock().schedule(START_DELAY_TICKS, () -> startPlaying(true));
+            goAt = match.clock().elapsedTicks() + START_DELAY_TICKS + COUNTDOWN_TICKS;
             match.scope().register(startDelay);
-            messages.send(audience(), "match.starting", Formatter.number("seconds", START_DELAY_TICKS / 20));
+            messages.send(audience(), "match.starting", Formatter.number("seconds", (START_DELAY_TICKS + COUNTDOWN_TICKS) / 20));
         }
     }
 
@@ -320,6 +360,7 @@ public final class LiveMatch {
         away.remove(id).close();
         members.add(id);
         prepare(player);
+        hud.show(player);
         var team = teamOf(id);
         team.ifPresent(teamId -> scoreboardTeams.putBack(player, teamId));
         var spawns = arena.spawnsFor(team);
@@ -367,7 +408,7 @@ public final class LiveMatch {
         if (startDelay != null) {
             startDelay.close();
         }
-        startPlaying();
+        startPlaying(true);
     }
 
     /**
@@ -385,7 +426,7 @@ public final class LiveMatch {
 
     /**
      * Skips to a later phase. Leaving the first phase starts the match as {@link #forceStart} does,
-     * so players are brought to their spawns first.
+     * so players are brought to their spawns first, but without the countdown.
      *
      * @throws IllegalArgumentException if there is no such phase after the current one
      * @throws IllegalStateException if it would start a match nobody joined
@@ -395,11 +436,58 @@ public final class LiveMatch {
             throw new IllegalArgumentException("No phase '" + phaseId + "' after the current one");
         }
         if (isJoinable()) {
-            forceStart();
+            if (match.roster().size() == 0) {
+                throw new IllegalStateException("Only a match with players can be started");
+            }
+            if (startDelay != null) {
+                startDelay.close();
+            }
+            startPlaying(false);
+        } else if (countdown != null) {
+            countdown.close();
+            countdown = null;
+            hud.started();
         }
         if (!match.isFinished() && match.currentPhase().filter(phase -> phase.id().equals(phaseId)).isEmpty()) {
             match.skipTo(phaseId);
         }
+    }
+
+    public boolean isPaused() {
+        return paused != null;
+    }
+
+    /**
+     * Stops the match clock, so every timer and countdown stands still, and holds the players where
+     * they are, unhurt, until {@link #resume}.
+     */
+    public void pause() {
+        if (paused != null) {
+            throw new IllegalStateException("Already paused");
+        }
+        paused = match.scope().child();
+        var context = new PaperMatchContext(plugin, this, paused);
+        new Freeze().enable(context);
+        // shortcut: only damage is cancelled; hunger, block changes and items still work, block them too if pauses get abused.
+        context.on(EntityDamageEvent.class, event -> {
+            if (event.getEntity() instanceof Player player && isMember(player.getUniqueId())) {
+                event.setCancelled(true);
+            }
+        });
+        match.clock().pause();
+        hud.paused();
+        messages.send(audience(), "match.paused");
+    }
+
+    public void resume() {
+        if (paused == null) {
+            throw new IllegalStateException("Not paused");
+        }
+        paused.close();
+        paused = null;
+        match.clock().resume();
+        hud.resumed();
+        messages.send(audience(), "match.resumed");
     }
 
     /** Ends the match at once without a result; everyone gets their own state back. */
@@ -408,8 +496,12 @@ public final class LiveMatch {
         match.dispose();
     }
 
-    /** Prepares everyone for play, forms the teams or hands out the roles if the mode has them, and brings each to their spawns, round robin. */
-    private void startPlaying() {
+    /**
+     * Prepares everyone for play, forms the teams or hands out the roles if the mode has them, and brings each to their spawns, round robin.
+     *
+     * @param countDown whether they first stand frozen at their spawns for the countdown, or play begins at once
+     */
+    private void startPlaying(boolean countDown) {
         startDelay = null;
         start = Instant.now();
         var tracking = new PaperMatchContext(plugin, this, match.scope());
@@ -427,6 +519,7 @@ public final class LiveMatch {
                     messages.send(player, "join.failed", Placeholder.component("player", player.name()));
                     members.remove(id);
                     match.roster().remove(id);
+                    hud.hide(id);
                     continue;
                 }
             }
@@ -449,8 +542,24 @@ public final class LiveMatch {
                 player.teleport(spawns.get(next.merge(team, 1, Integer::sum) % spawns.size()));
             }
         }
-        // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
-        match.advancePhase();
+        if (!countDown) {
+            // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
+            match.advancePhase();
+            hud.started();
+            return;
+        }
+        countdown = match.scope().child();
+        goAt = match.clock().elapsedTicks() + COUNTDOWN_TICKS;
+        new Freeze().enable(new PaperMatchContext(plugin, this, countdown));
+        countdown.register(match.clock().schedule(COUNTDOWN_TICKS, () -> {
+            countdown.close();
+            countdown = null;
+            // An admin may have ended it in the meantime.
+            if (match.currentPhase().filter(mode.game().phases().getFirst()::equals).isPresent()) {
+                match.advancePhase();
+                hud.started();
+            }
+        }));
     }
 
     /** Splits everyone still in the match as its opening says, handing out team ids in order, and tells each their team. */
@@ -520,7 +629,12 @@ public final class LiveMatch {
             } else {
                 messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
                 match.eliminate(id);
+                hud.out(player);
             }
+        }
+        var killer = player.getKiller();
+        if (playing && killer != null && !killer.equals(player) && isActive(killer.getUniqueId())) {
+            hud.killed(killer);
         }
         player.getScheduler().run(plugin, task -> {
             if (player.isDead()) {
@@ -558,6 +672,7 @@ public final class LiveMatch {
     /** Players who waited in place had nothing changed, so there is nothing to give back. */
     private void restore(UUID id) {
         scoreboardTeams.remove(id);
+        hud.hide(id);
         var restore = restores.remove(id);
         if (restore == null) {
             return;

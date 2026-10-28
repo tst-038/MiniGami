@@ -54,7 +54,15 @@ class SettingsLoaderTest {
         var loaded = load("# lobby: { world: world, x: 0.5, y: 64, z: 0.5 }");
 
         assertEquals(List.of(), loaded.problems());
-        assertEquals(Settings.DEFAULTS, loaded.settings());
+        assertEquals(Optional.empty(), loaded.settings().lobby());
+    }
+
+    @Test
+    void theHudOverlaysTheBundledOne() {
+        var hud = load("hud: { titles: false }").settings().hud();
+
+        assertEquals(false, hud.get("titles"));
+        assertEquals(List.of("blank", "mode", "arena", "blank", "players", "time", "blank", "footer"), hud.getStringList("sidebar.waiting"));
     }
 
     @Test

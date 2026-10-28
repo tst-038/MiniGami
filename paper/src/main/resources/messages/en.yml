@@ -52,6 +52,8 @@ match:
   # <team>: the player's role, in its colour
   your-role: "<prefix><gray>You are one of the <team><gray>."
   stopped: "<prefix><red>An admin stopped the match; you get your own things back."
+  paused: "<prefix><yellow>An admin paused the match; nobody can move or get hurt."
+  resumed: "<prefix><green>The match goes on!"
   # For admins. <match>: a match's id, its arena; <mode>, <phase>, <players>: how many are in it
   admin:
     none: "<prefix><gray>No matches are running."
@@ -73,6 +75,10 @@ match:
     started: "<prefix><red><white><match></white> has already started; players can only be added before."
     ended: "<prefix><green>Ended <white><match></white>; the win condition decided the result."
     stopped: "<prefix><green>Stopped <white><match></white> without a result."
+    paused: "<prefix><green>Paused <white><match></white>; resume it with <white>/mg match <match> resume</white>."
+    resumed: "<prefix><green>Resumed <white><match></white>."
+    already-paused: "<prefix><red><white><match></white> is already paused."
+    not-paused: "<prefix><red><white><match></white> isn't paused."
     # <phase>: the phase asked for, <phases>: those it can skip to
     phase-skipped: "<prefix><green>Skipped <white><match></white> to <white><phase></white>."
     no-later-phase: "<prefix><red><white><match></white> has no phase <white><phase></white> ahead; it can skip to: <white><phases></white>."
@@ -121,6 +127,52 @@ build-battle:
   score: "<gray> - <white><player></white>: <gold><points></gold> points"
 
 # /mg list. <mode>: a mode's name, <id>: its id, <players>: how many are in its matches; <join>…</join> joins on click
+# What players see of a match next to chat; config.yml and the modes choose which of it is shown.
+hud:
+  sidebar-title: "<gradient:gold:yellow><bold>MINIGAMI</bold></gradient>"
+  # A sidebar line per id. A stat line (kills, deaths, ...) uses stat with the stat's name from stats.name.
+  line:
+    mode: "<gray>Mode: <white><mode>"
+    arena: "<gray>Map: <white><arena>"
+    players: "<gray>Players: <white><players><gray>/<white><max>"
+    alive: "<gray>Alive: <white><alive><gray>/<white><players>"
+    # The time line, depending on where the match is. <time>: as m:ss
+    waiting: "<gray>Waiting for players..."
+    starting: "<gray>Starting in <green><time>"
+    time: "<gray>Time left: <yellow><time>"
+    elapsed: "<gray>Time: <yellow><time>"
+    team: "<gray>Team: <team>"
+    lives: "<gray>Lives: <red><lives> ❤"
+    points: "<gray>Points: <yellow><points>"
+    stat: "<white><amount> <gray><stat>"
+    # The scores line: a line per team, or without teams the top three players.
+    team-score: "<team><gray>: <white><points>"
+    player-score: "<gray><place>. <white><player> <dark_gray>- <yellow><points>"
+    footer: "<yellow>play.example.com"
+  # Over the time left; per phase id, else default. <time>: as m:ss
+  boss-bar:
+    starting: "<green>Starting in <white><time>"
+    building: "<aqua>Build! <white><time> <gray>left"
+    voting: "<light_purple>Vote! <white><time> <gray>left"
+    hiding: "<green>Hide! <white><time> <gray>until the seekers come"
+    seeking: "<red>Seekers are out! <white><time> <gray>left"
+    ending: "<gray>Back in <white><time>"
+    default: "<yellow>Time left: <white><time>"
+  title:
+    countdown: "<gold><bold><seconds>"
+    countdown-subtitle: "<gray>Get ready!"
+    start: "<green><bold>GO!"
+    start-subtitle: "<gray>Good luck"
+    out: "<red><bold>ELIMINATED"
+    out-subtitle: "<gray>You are spectating now"
+    win: "<gold><bold>VICTORY!"
+    win-subtitle: "<yellow>You won the match"
+    lose: "<red><bold>GAME OVER"
+    lose-subtitle: "<gray>You placed <white>#<place>"
+    lose-subtitle-unplaced: "<gray>Better luck next time"
+    paused: "<yellow><bold>PAUSED"
+    paused-subtitle: "<gray>An admin paused the match"
+
 list:
   header: "<prefix><gold>Modes you can join:"
   mode: "<gray> - <join><hover:show_text:'Click to join'><mode></hover></join> <gray>(<white><players></white> playing)"

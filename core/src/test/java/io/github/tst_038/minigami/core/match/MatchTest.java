@@ -59,6 +59,18 @@ class MatchTest {
     }
 
     @Test
+    void phaseElapsedTicksStartOverWithEachPhase() {
+        var match = match(Phase.timed("waiting", 10), Phase.untimed("playing"));
+        match.start();
+        tick(match, 4);
+        assertEquals(4, match.phaseElapsedTicks());
+
+        tick(match, 8);
+        assertEquals("playing", phase(match));
+        assertEquals(2, match.phaseElapsedTicks());
+    }
+
+    @Test
     void lastSurvivorDecidesTheMatchAndSkipsToTheEndingPhase() {
         var match = match(Phase.untimed("playing"), Phase.untimed("deathmatch"), Phase.timed("ending", 3));
         match.start();

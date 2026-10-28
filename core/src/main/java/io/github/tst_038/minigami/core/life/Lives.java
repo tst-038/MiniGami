@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.core.life;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.ToIntFunction;
 
@@ -27,6 +28,12 @@ public final class Lives {
     public boolean die(UUID id) {
         var lives = livesOf.applyAsInt(id);
         return lives > 0 && deaths.merge(id, 1, Integer::sum) >= lives;
+    }
+
+    /** The lives the participant has left; empty when they have unlimited lives. */
+    public OptionalInt left(UUID id) {
+        var lives = livesOf.applyAsInt(id);
+        return lives == 0 ? OptionalInt.empty() : OptionalInt.of(Math.max(0, lives - deaths.getOrDefault(id, 0)));
     }
 
     /** Forgets the participant's deaths, so they start over with full lives. */

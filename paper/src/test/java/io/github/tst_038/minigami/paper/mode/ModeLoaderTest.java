@@ -30,6 +30,9 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import net.kyori.adventure.text.format.NamedTextColor;
+import io.github.tst_038.minigami.paper.hud.Hud;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.key.Key;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,7 @@ class ModeLoaderTest {
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private final IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
+    private final YamlConfiguration hud = new YamlConfiguration();
 
     /** A game whose code relies on a seeker and a hider. */
     private static final GameType HIDE = new GameType() {
@@ -139,7 +143,7 @@ class ModeLoaderTest {
     private YamlFiles.Loaded<Mode> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new ModeLoader(games, features, statGroups).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas, hasLobby);
+        return new ModeLoader(games, features, statGroups).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas, hasLobby, hud);
     }
 
     private YamlFiles.Loaded<Mode> loadAll(Map<String, String> yamlById) throws Exception {
@@ -149,7 +153,7 @@ class ModeLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new ModeLoader(games, features, statGroups).load(new YamlFiles("modes", files, List.of()), arenas, true);
+        return new ModeLoader(games, features, statGroups).load(new YamlFiles("modes", files, List.of()), arenas, true, hud);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Mode> loaded) {
@@ -181,6 +185,39 @@ class ModeLoaderTest {
         assertEquals(1, mode.features().get("playing").size());
         assertEquals(0, mode.lives());
         assertEquals(Optional.empty(), mode.teams());
+    }
+
+    @Test
+    void theHudOfConfigIsTheDefaultThatAModeOverridesPartOf() throws Exception {
+        hud.loadFromString("""
+                sidebar: { waiting: [mode, players], default: [mode, time] }
+                boss-bar: { color: yellow }
+                titles: true
+                sounds: { start: entity.player.levelup, win: false }
+                """);
+        var loaded = loadAll(Map.of("plain", "{game: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo]}",
+                "own", """
+                        extends: plain
+                        hud:
+                          sidebar: { playing: [team, blank, lives] }
+                          boss-bar: false
+                        """,
+                "none", "{extends: plain, hud: false}",
+                "broken", "{extends: plain, hud: {sidebar: {fighting: [mode], playing: [hearts]}, sounds: {jump: x}}}"));
+
+        var plain = loaded.entries().find("plain").orElseThrow().hud();
+        assertEquals(List.of("mode", "time"), plain.sidebar("playing"));
+        assertEquals(Optional.of(BossBar.Color.YELLOW), plain.bossBar());
+        assertTrue(plain.titles());
+        assertEquals(Map.of(Hud.Moment.START, Key.key("entity.player.levelup")), plain.sounds());
+        var own = loaded.entries().find("own").orElseThrow().hud();
+        assertEquals(List.of("mode", "players"), own.sidebar("waiting"));
+        assertEquals(List.of("team", "blank", "lives"), own.sidebar("playing"));
+        assertEquals(Optional.empty(), own.bossBar());
+        assertEquals(Hud.NONE, loaded.entries().find("none").orElseThrow().hud());
+        assertEquals(List.of("modes/broken.yml: hud.sidebar.fighting: unknown phase; the game has: waiting, playing, or default",
+                "modes/broken.yml: hud.sidebar.playing: unknown line 'hearts'; lines: alive, arena, blank, footer, lives, mode, players, points, scores, team, time",
+                "modes/broken.yml: hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, lose"), problems(loaded));
     }
 
     @Test

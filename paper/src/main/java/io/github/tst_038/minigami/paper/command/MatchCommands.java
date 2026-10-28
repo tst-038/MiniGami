@@ -15,7 +15,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 
-/** {@code /mg match list} and {@code /mg match <id> info|start|end|stop|phase <phase>|add <player>|kick <player>}. */
+/** {@code /mg match list} and {@code /mg match <id> info|start|end|pause|resume|stop|phase <phase>|add <player>|kick <player>}. */
 final class MatchCommands {
 
     private MatchCommands() {
@@ -36,6 +36,8 @@ final class MatchCommands {
                                 .then(Commands.argument("phase", StringArgumentType.word())
                                         .suggests(suggest(context -> matches.laterPhases(match(context))))
                                         .executes(bySender((sender, context) -> matches.phase(sender, match(context), string(context, "phase"))))))
+                        .then(Commands.literal("pause").executes(bySender((sender, context) -> matches.pause(sender, match(context)))))
+                        .then(Commands.literal("resume").executes(bySender((sender, context) -> matches.resume(sender, match(context)))))
                         .then(Commands.literal("stop").executes(bySender((sender, context) -> matches.stop(sender, match(context)))))
                         .then(Commands.literal("add")
                                 .then(Commands.argument("player", ArgumentTypes.player())

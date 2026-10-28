@@ -189,7 +189,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
-                var loadedModes = modeLoader.load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent());
+                var loadedModes = modeLoader.load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud());
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());

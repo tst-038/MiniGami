@@ -33,6 +33,11 @@ public final class Messages {
         reportedMissing.clear();
     }
 
+    /** Whether there is a text for the key, for something that falls back to a general text when it has none of its own. */
+    public boolean has(String key) {
+        return texts.isString(key);
+    }
+
     /** A missing key renders as the key itself, so the gap is visible in game and reported once in the log. */
     public Component render(String key, TagResolver... placeholders) {
         var texts = this.texts;

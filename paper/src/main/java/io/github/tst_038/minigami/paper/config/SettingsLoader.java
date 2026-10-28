@@ -4,13 +4,17 @@ import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.function.Function;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -30,6 +34,19 @@ public final class SettingsLoader {
     private SettingsLoader() {
     }
 
+    /** The HUD of the plugin's own {@code config.yml}, under what the admin's file sets, so a file from before a HUD setting existed still gets it. */
+    static ConfigurationSection bundledHud() {
+        var bundled = new YamlConfiguration();
+        try (var in = SettingsLoader.class.getResourceAsStream("/" + FILE)) {
+            bundled.loadFromString(new String(Objects.requireNonNull(in, "bundled " + FILE).readAllBytes(), StandardCharsets.UTF_8));
+        } catch (IOException | InvalidConfigurationException e) {
+            throw new IllegalStateException("The bundled " + FILE + " can't be read", e);
+        }
+        var hud = new YamlConfiguration();
+        Optional.ofNullable(bundled.getConfigurationSection("hud")).ifPresent(section -> YamlFiles.overlay(hud, section));
+        return hud;
+    }
+
     /** Looks up worlds, so run it on the server thread. */
     public static Loaded load(String yaml, Function<String, World> worlds) {
         var config = new YamlConfiguration();
@@ -44,10 +61,18 @@ public final class SettingsLoader {
         var lobby = reader.has("lobby")
                 ? Optional.of(ConfigLocations.readWithWorld(reader.section("lobby"), worlds))
                 : Optional.<Location>empty();
+        var hud = bundledHud();
+        if (reader.has("hud")) {
+            reader.section("hud").keys();
+            var own = config.getConfigurationSection("hud");
+            if (own != null) {
+                YamlFiles.overlay(hud, own);
+            }
+        }
         var keys = YamlFiles.keys(config, reader);
         try {
             reader.check();
-            return new Loaded(new Settings(lobby), List.of(), keys);
+            return new Loaded(new Settings(lobby, hud), List.of(), keys);
         } catch (InvalidConfigException e) {
             return new Loaded(Settings.DEFAULTS, e.problems(), keys);
         }

@@ -36,12 +36,14 @@ public final class Match {
     private final WinCondition winCondition;
     private final List<Consumer<MatchResult>> resultListeners = new ArrayList<>();
     private MatchResult result;
+    private long phaseStart;
 
     /** @param phaseListener told when each phase starts, e.g. to enable that phase's features */
     public Match(List<Phase> phases, WinCondition winCondition, PhaseListener phaseListener) {
         this.phases = new PhaseMachine(phases, clock, scope, new PhaseListener() {
             @Override
             public void onEnter(Phase phase, Scope phaseScope) {
+                phaseStart = clock.elapsedTicks();
                 // A single phase is also the first one; that match is only decided when it runs out.
                 if (phases.size() > 1 && phase.equals(phases.getLast())) {
                     decideAsThingsStand();
@@ -151,6 +153,11 @@ public final class Match {
 
     public Optional<Phase> currentPhase() {
         return phases.current();
+    }
+
+    /** How long the current phase has run, in match ticks, so a pause doesn't count. */
+    public long phaseElapsedTicks() {
+        return clock.elapsedTicks() - phaseStart;
     }
 
     /** True once the last phase has ended or the match was disposed. */

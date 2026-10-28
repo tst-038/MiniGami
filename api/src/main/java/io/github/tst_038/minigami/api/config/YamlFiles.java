@@ -93,6 +93,17 @@ public record YamlFiles(String folder, Map<String, YamlConfiguration> files, Lis
         return Collections.unmodifiableSortedMap(keys);
     }
 
+    /** Sets every value of {@code source} on {@code target}, section by section, so a value replaces one key and a list replaces the whole list. */
+    public static void overlay(ConfigurationSection target, ConfigurationSection source) {
+        for (String key : source.getKeys(false)) {
+            if (source.get(key) instanceof ConfigurationSection child) {
+                overlay(target.get(key) instanceof ConfigurationSection existing ? existing : target.createSection(key), child);
+            } else {
+                target.set(key, source.get(key));
+            }
+        }
+    }
+
     /** The name problems in this file are reported under, e.g. {@code arenas/winter.yml}. */
     public String fileName(String id) {
         return folder + "/" + id + EXTENSION;

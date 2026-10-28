@@ -1,10 +1,12 @@
 package io.github.tst_038.minigami.core.life;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +22,15 @@ class LivesTest {
 
         assertFalse(lives.die(alice));
         assertTrue(lives.die(alice));
+    }
+
+    @Test
+    void livesLeftCountDownAndAreEmptyWhenUnlimited() {
+        assertEquals(OptionalInt.empty(), lives.left(alice));
+        livesOf.put(alice, 3);
+        lives.die(alice);
+
+        assertEquals(OptionalInt.of(2), lives.left(alice));
     }
 
     @Test
