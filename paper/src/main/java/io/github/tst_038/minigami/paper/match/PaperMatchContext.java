@@ -100,7 +100,8 @@ public final class PaperMatchContext implements MatchContext {
 
     @Override
     public Optional<Player> player(UUID id) {
-        return match.match().roster().find(id).map(participant -> plugin.getServer().getPlayer(id));
+        // Only players the match has prepared: one who left or waits in place has their own things, which features must not touch.
+        return Optional.of(id).filter(match::isActive).map(plugin.getServer()::getPlayer);
     }
 
     @Override

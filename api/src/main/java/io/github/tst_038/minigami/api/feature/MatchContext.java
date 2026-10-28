@@ -58,7 +58,10 @@ public interface MatchContext {
     /** Eliminates a participant of this match. Repeats are ignored. */
     void eliminate(Player player);
 
-    /** The online player behind a participant of this match. */
+    /**
+     * The online player behind a participant who is in the match right now; empty for one who left,
+     * is away, or still waits in place with their own things.
+     */
     Optional<Player> player(UUID id);
 
     /** Empty until the match is decided. */
