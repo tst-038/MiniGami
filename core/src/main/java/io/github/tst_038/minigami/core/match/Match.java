@@ -10,9 +10,11 @@ import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.stat.Tally;
 import io.github.tst_038.minigami.core.win.WinCondition;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * One running round. Owns its scope, clock, roster, scores, stats and phases, and asks the win condition
@@ -32,6 +34,7 @@ public final class Match {
     private final Tally stats = new Tally();
     private final PhaseMachine phases;
     private final WinCondition winCondition;
+    private final List<Consumer<MatchResult>> resultListeners = new ArrayList<>();
     private MatchResult result;
 
     /** @param phaseListener told when each phase starts, e.g. to enable that phase's features */
@@ -119,7 +122,7 @@ public final class Match {
         if (this.result != null) {
             throw new IllegalStateException("Match already has a result");
         }
-        this.result = result;
+        decide(result);
         phases.skipToEnd();
     }
 
@@ -131,6 +134,14 @@ public final class Match {
      */
     public void endNow() {
         end(winCondition.finalResult(roster, scores));
+    }
+
+    /**
+     * Calls the listener once, when the match gets its result and before its last phase starts. A
+     * match ended without a result, by {@link #dispose()} before it was decided, never calls it.
+     */
+    public void onResult(Consumer<MatchResult> listener) {
+        resultListeners.add(listener);
     }
 
     /** The result once decided, at the latest when the last phase starts. */
@@ -175,7 +186,12 @@ public final class Match {
 
     private void decideAsThingsStand() {
         if (result == null) {
-            result = winCondition.finalResult(roster, scores);
+            decide(winCondition.finalResult(roster, scores));
         }
+    }
+
+    private void decide(MatchResult result) {
+        this.result = result;
+        resultListeners.forEach(listener -> listener.accept(result));
     }
 }

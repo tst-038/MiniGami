@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -153,6 +154,36 @@ class MatchTest {
         assertEquals("ending", phase(match));
         assertEquals(new Placement(1, List.of(alice, bob)), match.result().orElseThrow().placements().getFirst());
         assertThrows(IllegalStateException.class, match::endNow);
+    }
+
+    @Test
+    void theResultListenerIsToldOnceBeforeTheLastPhaseStarts() {
+        var match = match(Phase.untimed("playing"), Phase.timed("ending", 3));
+        var told = new ArrayList<String>();
+        match.onResult(result -> told.add(phase(match) + " " + result.placements().getFirst().participants()));
+        match.start();
+
+        match.eliminate(carol);
+        match.eliminate(alice);
+        match.eliminate(bob);
+
+        assertEquals(List.of("playing " + List.of(bob)), told);
+        assertEquals("ending", phase(match));
+    }
+
+    @Test
+    void runningOutOfTimeTellsTheResultListenerAndStoppingDoesNot() {
+        var told = new ArrayList<MatchResult>();
+        var timedOut = match(Phase.timed("playing", 2), Phase.untimed("ending"));
+        timedOut.onResult(told::add);
+        timedOut.start();
+        tick(timedOut, 2);
+        var stopped = match(Phase.timed("playing", 2), Phase.untimed("ending"));
+        stopped.onResult(told::add);
+        stopped.start();
+        stopped.dispose();
+
+        assertEquals(List.of(timedOut.result().orElseThrow()), told);
     }
 
     @Test

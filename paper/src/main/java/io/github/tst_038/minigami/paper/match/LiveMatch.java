@@ -3,9 +3,11 @@ package io.github.tst_038.minigami.paper.match;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
+import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
+import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.core.team.RandomTeams;
@@ -14,9 +16,11 @@ import io.github.tst_038.minigami.paper.mode.Mode;
 import io.github.tst_038.minigami.paper.mode.Role;
 import io.github.tst_038.minigami.paper.mode.TeamSetup;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +81,10 @@ public final class LiveMatch {
     private final Map<String, Team> scoreboardTeams = new HashMap<>();
     /** Participants who quit with a way back, each with the timer that puts them out. */
     private final Map<UUID, MatchClock.Task> away = new HashMap<>();
+    /** Participants who left after the start; the roster still has them. */
+    private final Set<UUID> left = new HashSet<>();
+    /** When play started, for the record; null until then. */
+    private Instant start;
     private MatchClock.Task startDelay;
 
     /**
@@ -97,6 +105,15 @@ public final class LiveMatch {
         this.messages = messages;
         var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(mode.game().phases(), mode.game().winCondition(), features);
+        match.onResult(result -> recordEnd());
+    }
+
+    /** Tells whoever keeps track of matches how this one went. Those still away when it is decided count as having left. */
+    private void recordEnd() {
+        var gone = new HashSet<>(left);
+        gone.addAll(away.keySet());
+        var record = MatchRecord.of(match, mode.game().id(), mode.id(), arena.id(), start, Instant.now(), gone);
+        plugin.getServer().getPluginManager().callEvent(new MatchEndEvent(record));
     }
 
     /**
@@ -228,6 +245,7 @@ public final class LiveMatch {
                 messages.send(audience(), "match.start-cancelled");
             }
         } else {
+            left.add(id);
             match.eliminate(id);
         }
         restore(id);
@@ -389,6 +407,7 @@ public final class LiveMatch {
     /** Prepares everyone for play, forms the teams or hands out the roles if the mode has them, and brings each to their spawns, round robin. */
     private void startPlaying() {
         startDelay = null;
+        start = Instant.now();
         var tracking = new PaperMatchContext(plugin, this, match.scope());
         mode.statGroups().forEach(group -> group.trackers().forEach(tracker -> tracker.track(tracking)));
         for (var id : List.copyOf(members)) {
