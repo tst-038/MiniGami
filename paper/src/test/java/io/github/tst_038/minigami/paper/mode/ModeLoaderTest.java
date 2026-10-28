@@ -163,7 +163,7 @@ class ModeLoaderTest {
     @Test
     void loadsAValidMode() throws Exception {
         var loaded = load("""
-                game: test
+                gametype: test
                 name: "<gold>Void Fall"
                 min-players: 2
                 max-players: 8
@@ -195,7 +195,7 @@ class ModeLoaderTest {
                 titles: true
                 sounds: { start: entity.player.levelup, win: false }
                 """);
-        var loaded = loadAll(Map.of("plain", "{game: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo]}",
+        var loaded = loadAll(Map.of("plain", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo]}",
                 "own", """
                         extends: plain
                         hud:
@@ -249,8 +249,8 @@ class ModeLoaderTest {
             }
         });
 
-        var byGame = load("{game: one-life, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}");
-        var set = load("{game: one-life, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], lives: 3}");
+        var byGame = load("{gametype: one-life, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}");
+        var set = load("{gametype: one-life, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], lives: 3}");
 
         assertEquals(1, byGame.entries().find("fall").orElseThrow().lives());
         assertEquals(3, set.entries().find("fall").orElseThrow().lives());
@@ -260,8 +260,8 @@ class ModeLoaderTest {
     void aGameReadsItsOwnSettingsAndOtherGamesDontKnowThem() throws Exception {
         games.register(new BuildBattle());
 
-        var buildBattle = load("{game: build-battle, min-players: 1, max-players: 1, waiting: arena, arenas: [hills], build-seconds: 60}");
-        var other = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], build-seconds: 60}");
+        var buildBattle = load("{gametype: build-battle, min-players: 1, max-players: 1, waiting: arena, arenas: [hills], build-seconds: 60}");
+        var other = load("{gametype: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], build-seconds: 60}");
 
         assertEquals(List.of(), problems(buildBattle));
         assertEquals(60 * 20, buildBattle.entries().find("fall").orElseThrow().game().phases().get(1).durationTicks());
@@ -270,7 +270,7 @@ class ModeLoaderTest {
 
     @Test
     void nameDefaultsToTheIdAndFeaturesAreOptional() throws Exception {
-        var mode = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}")
+        var mode = load("{gametype: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}")
                 .entries().find("fall").orElseThrow();
 
         assertEquals("fall", mode.name());
@@ -279,9 +279,9 @@ class ModeLoaderTest {
 
     @Test
     void quittingPutsPlayersOutUnlessTheModeGivesThemAWayBack() throws Exception {
-        var plain = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}");
-        var back = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], quit: {then: die, rejoin-seconds: 60}}");
-        var stuck = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], quit: {then: stay}}");
+        var plain = load("{gametype: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}");
+        var back = load("{gametype: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], quit: {then: die, rejoin-seconds: 60}}");
+        var stuck = load("{gametype: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], quit: {then: stay}}");
 
         assertEquals(Quit.OUT, plain.entries().find("fall").orElseThrow().quit());
         assertEquals(new Quit(Quit.Then.DIE, 60), back.entries().find("fall").orElseThrow().quit());
@@ -292,7 +292,7 @@ class ModeLoaderTest {
     @Test
     void reportsEveryProblemOfAnInvalidMode() throws Exception {
         var loaded = load("""
-                game: spleef
+                gametype: spleef
                 min-players: 4
                 max-players: 2
                 waiting: anywhere
@@ -304,7 +304,7 @@ class ModeLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "modes/fall.yml: game: unknown game 'spleef'; known: hide, hill, test",
+                "modes/fall.yml: gametype: unknown game type 'spleef'; known: hide, hill, test",
                 "modes/fall.yml: max-players: must be at least min-players (4)",
                 "modes/fall.yml: waiting: must be one of: in-place, lobby, arena",
                 "modes/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty, hills",
@@ -313,7 +313,7 @@ class ModeLoaderTest {
 
     @Test
     void anArenaWithoutSpawnsIsLeftOutUntilItHasSome() throws Exception {
-        var loaded = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo, empty]}");
+        var loaded = load("{gametype: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo, empty]}");
 
         assertEquals(List.of(), problems(loaded));
         assertEquals(List.of("demo"), loaded.entries().find("fall").orElseThrow().arenas().stream().map(Arena::id).toList());
@@ -322,7 +322,7 @@ class ModeLoaderTest {
     @Test
     void featuresMustBeInAPhaseOfTheGame() throws Exception {
         var loaded = load("""
-                game: test
+                gametype: test
                 min-players: 1
                 max-players: 2
                 waiting: arena
@@ -354,7 +354,7 @@ class ModeLoaderTest {
         })));
 
         var loaded = loadAll(Map.of(
-                "plain", "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo]}",
+                "plain", "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo]}",
                 "scored", "{extends: plain, stats: [scoring]}",
                 "typo", "{extends: plain, stats: [scorign]}"));
 
@@ -380,7 +380,7 @@ class ModeLoaderTest {
         });
 
         var loaded = loadAll(Map.of(
-                "base", "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], features: {playing: {probe: {a: 1, b: 2}}}}",
+                "base", "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], features: {playing: {probe: {a: 1, b: 2}}}}",
                 "changed", "{extends: base, min-players: 1, features: {playing: {probe: {b: 5}}}}",
                 "off", "{extends: changed, features: {playing: {probe: false}}}"));
 
@@ -395,13 +395,13 @@ class ModeLoaderTest {
     @Test
     void inheritedSettingsAreTheModesOwnOverItsParents() throws Exception {
         var base = new YamlConfiguration();
-        base.loadFromString("{game: test, max-players: 8, features: {playing: {void-kills: {y: 0}}}}");
+        base.loadFromString("{gametype: test, max-players: 8, features: {playing: {void-kills: {y: 0}}}}");
         var child = new YamlConfiguration();
         child.loadFromString("{extends: base, max-players: 4}");
 
         var inherited = ModeLoader.inherited("child", Map.of("base", base, "child", child));
 
-        assertEquals("test", inherited.getString("game"));
+        assertEquals("test", inherited.getString("gametype"));
         assertEquals(4, inherited.getInt("max-players"));
         assertEquals(0, inherited.getInt("features.playing.void-kills.y"));
     }
@@ -411,9 +411,9 @@ class ModeLoaderTest {
         var mode = "min-players: 1, max-players: 1, waiting: arena, arenas: [demo]";
 
         var loaded = loadAll(Map.of(
-                "lost", "{game: test, extends: nope, " + mode + "}",
-                "a", "{game: test, extends: b, " + mode + "}",
-                "b", "{game: test, extends: a, " + mode + "}"));
+                "lost", "{gametype: test, extends: nope, " + mode + "}",
+                "a", "{gametype: test, extends: b, " + mode + "}",
+                "b", "{gametype: test, extends: a, " + mode + "}"));
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
@@ -424,7 +424,7 @@ class ModeLoaderTest {
 
     @Test
     void waitingInTheLobbyNeedsALobby() throws Exception {
-        var yaml = "{game: test, min-players: 1, max-players: 1, waiting: lobby, arenas: [demo]}";
+        var yaml = "{gametype: test, min-players: 1, max-players: 1, waiting: lobby, arenas: [demo]}";
 
         assertEquals(List.of(), problems(load(yaml, true)));
         assertEquals(List.of("modes/fall.yml: waiting: no lobby is set; set one with /mg lobby set or in config.yml"),
@@ -433,8 +433,8 @@ class ModeLoaderTest {
 
     @Test
     void teamsAreAFixedNumberOrAFixedSize() throws Exception {
-        var byCount = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], teams: {count: 2}}");
-        var bySize = load("{game: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], teams: {size: 2}}");
+        var byCount = load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], teams: {count: 2}}");
+        var bySize = load("{gametype: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], teams: {size: 2}}");
 
         assertEquals(List.of(), problems(byCount));
         assertEquals(List.of(), problems(bySize));
@@ -447,7 +447,7 @@ class ModeLoaderTest {
 
     @Test
     void reportsTeamsThatCanNotWork() throws Exception {
-        var mode = "game: test, waiting: arena, arenas: [demo], ";
+        var mode = "gametype: test, waiting: arena, arenas: [demo], ";
 
         assertEquals(List.of("modes/fall.yml: teams: set either count or size"),
                 problems(load("{" + mode + "min-players: 2, max-players: 8, teams: {count: 2, size: 2}}")));
@@ -465,7 +465,7 @@ class ModeLoaderTest {
 
     @Test
     void rolesAreHandedOutInFileOrderWithTheirShareColourAndLives() throws Exception {
-        var loaded = load("{game: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], roles: {"
+        var loaded = load("{gametype: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], roles: {"
                 + "seeker: {name: Seekers, color: dark_red, players: 1, lives: 0}, hider: {}, guard: {per: 4}}}");
 
         assertEquals(List.of(), problems(loaded));
@@ -480,7 +480,7 @@ class ModeLoaderTest {
     @Test
     void anArenaNeedsARegionForEveryTeamAMatchCanHaveToBeUsed() throws Exception {
         games.register(new BuildBattle());
-        var mode = "{game: build-battle, min-players: 1, waiting: arena, arenas: [hills], ";
+        var mode = "{gametype: build-battle, min-players: 1, waiting: arena, arenas: [hills], ";
 
         assertEquals(List.of("hills"), arenaIds(load(mode + "max-players: 3}")));
         assertEquals(List.of("hills"), arenaIds(load(mode.replace("min-players: 1", "min-players: 3") + "max-players: 6, teams: {size: 2}}")));
@@ -493,7 +493,7 @@ class ModeLoaderTest {
         var hills = arenas.find("hills").orElseThrow();
         arenas.register(new Arena("unmapped", null, hills.spawns(), Optional.empty(), hills.regions(), Optional.empty()));
 
-        var loaded = load("{game: build-battle, min-players: 1, max-players: 3, waiting: arena, arenas: [hills, unmapped]}");
+        var loaded = load("{gametype: build-battle, min-players: 1, max-players: 3, waiting: arena, arenas: [hills, unmapped]}");
 
         assertEquals(List.of(), problems(loaded));
         assertEquals(List.of("hills"), arenaIds(loaded));
@@ -501,7 +501,7 @@ class ModeLoaderTest {
 
     @Test
     void anArenaWithoutTheRegionsTheGameNeedsIsLeftOut() throws Exception {
-        var mode = "{game: hill, min-players: 2, max-players: 8, waiting: arena, arenas: ";
+        var mode = "{gametype: hill, min-players: 2, max-players: 8, waiting: arena, arenas: ";
 
         var loaded = load(mode + "[hills, demo, empty]}");
 
@@ -516,7 +516,7 @@ class ModeLoaderTest {
 
     @Test
     void aRoleCanSwitchItsMembersToAnotherRoleInsteadOfTheirGoingOut() throws Exception {
-        var mode = "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {seeker: {players: 1}, ";
+        var mode = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {seeker: {players: 1}, ";
 
         var loaded = load(mode + "hider: {on-out: seeker}}}");
         assertEquals(List.of(), problems(loaded));
@@ -527,11 +527,11 @@ class ModeLoaderTest {
 
     @Test
     void aRoleHasItsOwnFeaturesInPhasesOfTheGame() throws Exception {
-        var loaded = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {"
+        var loaded = load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {"
                 + "seeker: {players: 1, features: {playing: {void-kills: {y: 0}}}}, hider: {features: {fighting: {void-kills: {}}}}}}");
 
         assertEquals(List.of("modes/fall.yml: roles.hider.features.fighting: unknown phase; test has: waiting, playing"), problems(loaded));
-        var good = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {"
+        var good = load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {"
                 + "seeker: {players: 1, features: {playing: {void-kills: {y: 0}}}}, hider: {}}}");
         var seeker = good.entries().find("fall").orElseThrow().role("seeker").orElseThrow();
         assertEquals(1, seeker.features().get("playing").size());
@@ -540,7 +540,7 @@ class ModeLoaderTest {
 
     @Test
     void reportsRolesThatCanNotWork() throws Exception {
-        var mode = "game: test, waiting: arena, arenas: [demo], max-players: 8, ";
+        var mode = "gametype: test, waiting: arena, arenas: [demo], max-players: 8, ";
 
         assertEquals(List.of("modes/fall.yml: roles: set either teams or roles"),
                 problems(load("{" + mode + "min-players: 2, teams: {count: 2}, roles: {a: {players: 1}, b: {}}}")));
@@ -562,7 +562,7 @@ class ModeLoaderTest {
 
     @Test
     void aModeDefinesExactlyTheRolesItsGameNeeds() throws Exception {
-        var mode = "game: hide, waiting: arena, arenas: [demo], min-players: 2, max-players: 8, ";
+        var mode = "gametype: hide, waiting: arena, arenas: [demo], min-players: 2, max-players: 8, ";
 
         assertEquals(List.of(), problems(load("{" + mode + "roles: {hider: {}, seeker: {players: 1}}}")));
         assertEquals(List.of("modes/fall.yml: roles: hide needs the roles seeker, hider"), problems(load("{" + mode + "}")));

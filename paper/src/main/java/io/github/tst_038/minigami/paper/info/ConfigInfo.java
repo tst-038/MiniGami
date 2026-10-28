@@ -100,7 +100,7 @@ public final class ConfigInfo {
             var loaded = modes.get().find(id);
             var status = loaded.isPresent() && loaded.get().arenas().isEmpty() ? status("info.status.no-arenas") : null;
             messages.send(sender, "info.mode-entry", Placeholder.unparsed("id", id),
-                    Placeholder.unparsed("game", config.getString("game", "?")),
+                    Placeholder.unparsed("game", config.getString("gametype", "?")),
                     Placeholder.component("status", status(Kind.MODE, id, loaded.isPresent(), status)),
                     infoClick("/mg mode " + id + " info"));
         });
@@ -122,7 +122,7 @@ public final class ConfigInfo {
     public void listGames(CommandSender sender) {
         messages.send(sender, "info.games", Formatter.number("count", games.ids().size()));
         games.ids().forEach(id -> messages.send(sender, "info.game-entry", Placeholder.unparsed("id", id),
-                Formatter.number("modes", modesWithGame(id).size()), infoClick("/mg game " + id + " info")));
+                Formatter.number("modes", modesWithGame(id).size()), infoClick("/mg gametype " + id + " info")));
     }
 
     public void listFeatures(CommandSender sender) {
@@ -142,7 +142,7 @@ public final class ConfigInfo {
         var config = current.inherited().get(id);
         var loaded = modes.get().find(id);
         messages.send(sender, "info.mode", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
-                Placeholder.unparsed("game", config.getString("game", "?")),
+                Placeholder.unparsed("game", config.getString("gametype", "?")),
                 Placeholder.component("status", status(Kind.MODE, id, loaded.isPresent(), null)));
         if (own.contains("extends")) {
             messages.send(sender, "info.mode-parent", Placeholder.unparsed("parent", own.getString("extends", "")),
@@ -266,7 +266,7 @@ public final class ConfigInfo {
     private List<String[]> modesWithGame(String game) {
         var uses = new ArrayList<String[]>();
         files.inherited().forEach((id, config) -> {
-            if (game.equals(config.getString("game"))) {
+            if (game.equals(config.getString("gametype"))) {
                 uses.add(new String[] {id});
             }
         });

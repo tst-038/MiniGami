@@ -14,14 +14,14 @@ import io.papermc.paper.command.brigadier.Commands;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-/** {@code /mg game list|<id> info} and {@code /mg feature list|<id> info}: what modes can be made of. */
+/** {@code /mg gametype list|<id> info} and {@code /mg feature list|<id> info}: what modes can be made of. */
 final class GameCommands {
 
     private GameCommands() {
     }
 
     static ArgumentBuilder<CommandSourceStack, ?> game(ConfigInfo info, Supplier<Collection<String>> ids, Command<CommandSourceStack> help) {
-        return Commands.literal("game")
+        return Commands.literal("gametype")
                 .requires(ADMIN)
                 .executes(help)
                 .then(Commands.literal("list").executes(bySender((sender, context) -> info.listGames(sender))))

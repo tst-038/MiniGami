@@ -131,11 +131,11 @@ public final class ModeLoader {
                 config.problem("extends", extendsProblem);
             }
         }
-        config.suggest("game", games.ids());
-        var gameId = config.string("game");
+        config.suggest("gametype", games.ids());
+        var gameId = config.string("gametype");
         var game = games.find(gameId).orElse(null);
         if (!gameId.isEmpty() && game == null) {
-            config.problem("game", "unknown game '" + gameId + "'; known: " + String.join(", ", games.ids()));
+            config.problem("gametype", "unknown game type '" + gameId + "'; known: " + String.join(", ", games.ids()));
         }
         if (game != null) {
             game = game.configure(config);

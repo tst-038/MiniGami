@@ -1,5 +1,5 @@
 # A mode: a playable variant of a game. Players join it with /mg join example.
-game: last-standing
+gametype: last-standing
 name: "<gold>Void Fall"
 min-players: 2
 max-players: 8

@@ -271,7 +271,7 @@ info:
   mode-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray><game>, <status>"
   arenas: "<prefix><gold>Arenas</gold> <gray>(<count>):"
   arena-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>in <world>, <spawns> spawns, <status>"
-  games: "<prefix><gold>Games</gold> <gray>(<count>):"
+  games: "<prefix><gold>Game types</gold> <gray>(<count>):"
   game-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <modes> mode(s)"
   features: "<prefix><gold>Features</gold> <gray>(<count>):"
   feature-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <modes> mode(s)"
@@ -317,7 +317,7 @@ info:
   # <modes>: clickable
   used-by: "<gray> Used by: <white><modes>"
   used-by-none: "<gray> Not used by any mode."
-  unknown-game: "<prefix><red>There is no game called <white><id></white>."
+  unknown-game: "<prefix><red>There is no game type called <white><id></white>."
   unknown-feature: "<prefix><red>There is no feature called <white><id></white>."
 
 # <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>

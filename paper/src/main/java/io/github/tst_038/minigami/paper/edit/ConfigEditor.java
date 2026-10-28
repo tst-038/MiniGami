@@ -193,7 +193,7 @@ public final class ConfigEditor {
     /** A mode that waits in the arena, for 2 to 8 players; change the rest with {@link #set}. */
     public void createMode(CommandSender sender, String id, String game, String arena) {
         edit(sender, Kind.MODE, id, true, config -> {
-            config.set("game", game);
+            config.set("gametype", game);
             config.set("min-players", 2);
             config.set("max-players", 8);
             config.set("waiting", "arena");
