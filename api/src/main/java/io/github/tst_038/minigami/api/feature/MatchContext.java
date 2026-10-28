@@ -57,7 +57,11 @@ public interface MatchContext {
     /** The phase scope, for custom cleanup that should run when the phase ends. */
     Scope scope();
 
-    /** Eliminates a participant of this match. Repeats are ignored. */
+    /**
+     * Puts a participant out at once, without dying, as losing their last life would: they join the
+     * role their role sends them to on the spot (see {@link RoleSwitchEvent}), else they spectate.
+     * Ignored for one already out, and before the start or after the result.
+     */
     void eliminate(Player player);
 
     /**

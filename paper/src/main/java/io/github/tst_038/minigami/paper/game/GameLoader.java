@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.scoreboard.Team.OptionStatus;
 
 /**
  * Turns {@code games/<id>.yml} files into games:
@@ -38,6 +39,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
+ * name-tags: for-own-team    # optional; who sees a team's name tags: always (the default), never, for-own-team or for-other-teams
  * roles:                      # optional, instead of teams; handed out in this order
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
  *   hider:                                                         # neither: everyone left over
@@ -174,6 +176,7 @@ public final class GameLoader {
             config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
+        var nameTags = config.has("name-tags") ? config.choice("name-tags", OptionStatus.class) : OptionStatus.ALWAYS;
         var teams = teams(config, minPlayers, maxPlayers);
         var roles = roles(config, minPlayers, game);
         var quit = quit(config);
@@ -187,7 +190,7 @@ public final class GameLoader {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features, stats, hud);
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, teams, roles, quit, playable, features, stats, hud);
     }
 
     /** Every stat a game or stat group keeps. */

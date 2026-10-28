@@ -12,10 +12,12 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.scoreboard.Team.Option;
+import org.bukkit.scoreboard.Team.OptionStatus;
 
 /**
- * A match's teams on a scoreboard, which colour their members' names and stop them hurting each
- * other. Everything goes away with the match's scope: the teams, and each member gets the
+ * A match's teams on a scoreboard, which colour their members' names, show their name tags as the
+ * game says and stop them hurting each other. Everything goes away with the match's scope: the teams, and each member gets the
  * scoreboard team they were in before back.
  */
 final class ScoreboardTeams {
@@ -23,6 +25,7 @@ final class ScoreboardTeams {
     private final Scoreboard scoreboard;
     /** Keeps the names apart from other matches' teams on the same scoreboard. */
     private final String namePrefix;
+    private final OptionStatus nameTags;
     private final Scope scope;
     private final Logger logger;
     /** Per team id, so a player who switches role joins the same team as the role's first members. */
@@ -30,10 +33,14 @@ final class ScoreboardTeams {
     /** Takes a member out of their team again; closing twice is harmless. */
     private final Map<UUID, AutoCloseable> leaves = new HashMap<>();
 
-    /** @param arenaId the arena the match plays in, which only one match uses at a time */
-    ScoreboardTeams(Scoreboard scoreboard, String arenaId, Scope scope, Logger logger) {
+    /**
+     * @param arenaId the arena the match plays in, which only one match uses at a time
+     * @param nameTags who sees the name tags of a team's members
+     */
+    ScoreboardTeams(Scoreboard scoreboard, String arenaId, OptionStatus nameTags, Scope scope, Logger logger) {
         this.scoreboard = scoreboard;
         this.namePrefix = "minigami." + arenaId + ".";
+        this.nameTags = nameTags;
         this.scope = scope;
         this.logger = logger;
     }
@@ -73,6 +80,7 @@ final class ScoreboardTeams {
                 copy.color(NamedTextColor.nearestTo(team.color()));
                 copy.setAllowFriendlyFire(false);
                 copy.setCanSeeFriendlyInvisibles(true);
+                copy.setOption(Option.NAME_TAG_VISIBILITY, nameTags);
             }
             var entries = team.getEntries();
             for (var entry : copy.getEntries()) {
@@ -100,6 +108,7 @@ final class ScoreboardTeams {
         team.color(color);
         team.setAllowFriendlyFire(false);
         team.setCanSeeFriendlyInvisibles(true);
+        team.setOption(Option.NAME_TAG_VISIBILITY, nameTags);
         scope.register(() -> {
             if (scoreboard.getTeam(teamName) == team) {
                 team.unregister();

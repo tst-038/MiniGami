@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.match;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
+import io.github.tst_038.minigami.api.feature.RoleSwitchEvent;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
@@ -121,7 +122,7 @@ public final class LiveMatch {
         this.messages = messages;
         var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
-        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
+        this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), variant.nameTags(), match.scope(), plugin.getLogger());
         this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror);
         match.onResult(result -> {
             recordEnd();
@@ -642,19 +643,8 @@ public final class LiveMatch {
         var id = player.getUniqueId();
         var playing = !isJoinable() && match.result().isEmpty();
         if (playing && match.roster().find(id).filter(Participant::isAlive).isPresent() && lives.die(id)) {
-            var onOut = teamOf(id).flatMap(variant::role).flatMap(Role::onOut).flatMap(variant::role);
-            if (onOut.isPresent()) {
-                // Dying clears their items and effects; respawning puts them at the new role's spawns with its kit.
-                lives.reset(id);
-                messages.send(audience(), "match.switched-role", Placeholder.component("player", player.name()),
-                        Placeholder.component("team", teamName(onOut.get().id())));
-                putInTeam(List.of(id), onOut.get().id(), onOut.get().color(), "match.your-role");
-                match.switchTeam(id, onOut.get().id());
-            } else {
-                messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
-                match.eliminate(id);
-                hud.out(player);
-            }
+            // Dying clears their items and effects; respawning puts them at their spawns with the new role's kit, or spectating.
+            goOut(player);
         }
         var killer = player.getKiller();
         if (playing && killer != null && !killer.equals(player) && isActive(killer.getUniqueId())) {
@@ -665,6 +655,44 @@ public final class LiveMatch {
                 player.spigot().respawn();
             }
         }, null);
+    }
+
+    /**
+     * Puts a participant out at once, without dying, as if they lost their last life: they switch role
+     * where they stand if their role says so, else they spectate. Ignored before the start, after the
+     * result, and for one already out.
+     */
+    void eliminate(Player player) {
+        var id = player.getUniqueId();
+        if (isJoinable() || match.result().isPresent() || match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
+            return;
+        }
+        var switches = goOut(player);
+        if (switches && match.roster().find(id).filter(Participant::isAlive).isPresent()) {
+            player.getInventory().clear();
+            player.clearActivePotionEffects();
+            plugin.getServer().getPluginManager().callEvent(new RoleSwitchEvent(player));
+        } else if (!switches) {
+            player.setGameMode(GameMode.SPECTATOR);
+        }
+    }
+
+    /** @return whether they switched role instead of going out */
+    private boolean goOut(Player player) {
+        var id = player.getUniqueId();
+        var onOut = teamOf(id).flatMap(variant::role).flatMap(Role::onOut).flatMap(variant::role);
+        if (onOut.isPresent()) {
+            lives.reset(id);
+            messages.send(audience(), "match.switched-role", Placeholder.component("player", player.name()),
+                    Placeholder.component("team", teamName(onOut.get().id())));
+            putInTeam(List.of(id), onOut.get().id(), onOut.get().color(), "match.your-role");
+            match.switchTeam(id, onOut.get().id());
+            return true;
+        }
+        messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
+        match.eliminate(id);
+        hud.out(player);
+        return false;
     }
 
     /** The lives of the player's role if it sets its own, else the variant's. */

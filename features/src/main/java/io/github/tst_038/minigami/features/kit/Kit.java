@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.features.kit;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
+import io.github.tst_038.minigami.api.feature.RoleSwitchEvent;
 import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import org.bukkit.Material;
@@ -12,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Gives every player still in the match the same items when the phase starts, and again when they
- * respawn or come back: only the ones they lack, so items kept through a death don't pile up.
+ * respawn, come back or switch role: only the ones they lack, so items kept through a death don't pile up.
  */
 public final class Kit implements Feature {
 
@@ -27,6 +28,7 @@ public final class Kit implements Feature {
         context.players().forEach(this::give);
         context.on(PlayerRespawnEvent.class, event -> topUp(context, event.getPlayer()));
         context.on(MatchRejoinEvent.class, event -> topUp(context, event.getPlayer()));
+        context.on(RoleSwitchEvent.class, event -> topUp(context, event.getPlayer()));
     }
 
     private void topUp(MatchContext context, Player player) {

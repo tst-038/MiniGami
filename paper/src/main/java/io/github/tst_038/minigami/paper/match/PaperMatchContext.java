@@ -103,7 +103,7 @@ public final class PaperMatchContext implements MatchContext {
 
     @Override
     public void eliminate(Player player) {
-        match.match().eliminate(player.getUniqueId());
+        match.eliminate(player);
     }
 
     @Override

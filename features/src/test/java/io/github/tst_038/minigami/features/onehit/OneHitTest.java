@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.features.onehit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.feature.FakeMatch;
 import java.util.Map;
@@ -26,19 +27,25 @@ class OneHitTest {
     }
 
     @SuppressWarnings("removal") // the one constructor that takes a damage source without a server
-    private double hit(Entity by) {
+    private boolean hit(Entity by) {
         var source = FakeMatch.proxy(DamageSource.class, Map.of("getCausingEntity", by));
-        return match.fire(new EntityDamageByEntityEvent(by, hider, DamageCause.ENTITY_ATTACK, source, 2)).getDamage();
+        return match.fire(new EntityDamageByEntityEvent(by, hider, DamageCause.ENTITY_ATTACK, source, 2)).isCancelled();
+    }
+
+    private boolean hiderIsIn() {
+        return match.roster.find(hider.getUniqueId()).orElseThrow().isAlive();
     }
 
     @Test
-    void aPlayersHitKills() {
-        assertEquals(1000, hit(seeker));
+    void aPlayersHitPutsThemOutWithoutHurting() {
+        assertTrue(hit(seeker));
+        assertFalse(hiderIsIn());
     }
 
     @Test
     void otherHitsAndOwnShotsHurtAsUsual() {
-        assertEquals(2, hit(FakeMatch.proxy(Zombie.class, Map.of("getUniqueId", UUID.randomUUID()))));
-        assertEquals(2, hit(hider));
+        assertFalse(hit(FakeMatch.proxy(Zombie.class, Map.of("getUniqueId", UUID.randomUUID()))));
+        assertFalse(hit(hider));
+        assertTrue(hiderIsIn());
     }
 }

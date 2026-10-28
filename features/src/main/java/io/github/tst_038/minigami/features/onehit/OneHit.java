@@ -6,19 +6,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 /**
- * Players die from one hit by another player, a shot included, such as a hider whom a seeker catches.
- * They die the usual way, so lives, kill stats and switching role on going out all still apply.
+ * One hit by another player, a shot included, puts a player out on the spot without dying, such as
+ * a hider whom a seeker tags: they join the role theirs sends them to where they stand, or spectate.
  */
 public final class OneHit implements Feature {
-
-    /** More than any health and armor can take. */
-    private static final double KILL = 1000;
 
     @Override
     public void enable(MatchContext context) {
         context.on(EntityDamageByEntityEvent.class, event -> {
-            if (event.getEntity() instanceof Player hit && event.getDamageSource().getCausingEntity() instanceof Player by && by != hit) {
-                event.setDamage(KILL);
+            if (!event.isCancelled() && event.getEntity() instanceof Player hit
+                    && event.getDamageSource().getCausingEntity() instanceof Player by && by != hit) {
+                event.setCancelled(true);
+                context.eliminate(hit);
             }
         });
     }

@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.bukkit.scoreboard.Team.OptionStatus;
 
 /**
  * What is played: a game as set up in {@code games/<game>.yml}, or one of its variants laid over
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
  * @param hud what players see of a match next to chat
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
+        OptionStatus nameTags, Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
 
     public Variant {
         id.ifPresent(variant -> {
