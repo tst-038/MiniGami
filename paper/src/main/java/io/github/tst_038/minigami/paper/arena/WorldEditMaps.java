@@ -58,15 +58,13 @@ final class WorldEditMaps {
      */
     Optional<Saving> save(Player player, Path file) {
         var world = BukkitAdapter.adapt(player.getWorld());
-        com.sk89q.worldedit.regions.Region selection;
-        try {
-            selection = WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player)).getSelection(world);
-        } catch (IncompleteRegionException e) {
+        var found = selection(player);
+        if (found.isEmpty()) {
             return Optional.empty();
         }
+        var selection = found.get();
         var min = selection.getMinimumPoint();
-        var max = selection.getMaximumPoint();
-        var box = Region.between("map", player.getWorld(), min.x(), min.y(), min.z(), max.x(), max.y(), max.z());
+        var box = box("map", player, selection);
         var clipboard = new BlockArrayClipboard(selection);
         clipboard.setOrigin(min);
         try (var edit = WorldEdit.getInstance().newEditSession(world)) {
@@ -77,6 +75,30 @@ final class WorldEditMaps {
             return Optional.of(new Saving(box, CompletableFuture.failedFuture(e)));
         }
         return Optional.of(new Saving(box, CompletableFuture.runAsync(() -> write(clipboard, file), offThread)));
+    }
+
+    /**
+     * The box around the player's selection, named {@code id}.
+     *
+     * @return empty if the player has no complete selection in their world
+     */
+    Optional<Region> selection(Player player, String id) {
+        return selection(player).map(selection -> box(id, player, selection));
+    }
+
+    private static Optional<com.sk89q.worldedit.regions.Region> selection(Player player) {
+        try {
+            return Optional.of(WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player))
+                    .getSelection(BukkitAdapter.adapt(player.getWorld())));
+        } catch (IncompleteRegionException e) {
+            return Optional.empty();
+        }
+    }
+
+    private static Region box(String id, Player player, com.sk89q.worldedit.regions.Region selection) {
+        var min = selection.getMinimumPoint();
+        var max = selection.getMaximumPoint();
+        return Region.between(id, player.getWorld(), min.x(), min.y(), min.z(), max.x(), max.y(), max.z());
     }
 
     /**

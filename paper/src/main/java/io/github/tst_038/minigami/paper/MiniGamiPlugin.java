@@ -109,7 +109,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(service, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, games, features, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
-        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, service::isArenaInUse, messages);
+        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, service::isArenaInUse, messages, this);
         info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, service::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(messages, service, new MatchAdmin(service, messages, getServer()), editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,

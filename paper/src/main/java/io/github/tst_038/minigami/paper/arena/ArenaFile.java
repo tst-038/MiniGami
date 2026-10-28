@@ -44,10 +44,31 @@ public final class ArenaFile {
 
     /** The box the saved map is pasted back into. */
     public static void setMap(YamlConfiguration config, Region box) {
-        var map = new LinkedHashMap<String, Object>();
-        map.put("from", corner(box.minX(), box.minY(), box.minZ()));
-        map.put("to", corner(box.maxX(), box.maxY(), box.maxZ()));
-        config.set("map", map);
+        config.set("map", box(box));
+    }
+
+    /** Adds the region, or replaces the one with its name in place. */
+    public static void setRegion(YamlConfiguration config, Region region) {
+        config.set("regions." + region.id(), box(region));
+    }
+
+    /** @return {@code false} if there is no region with that name */
+    public static boolean removeRegion(YamlConfiguration config, String name) {
+        if (!config.contains("regions." + name)) {
+            return false;
+        }
+        config.set("regions." + name, null);
+        if (config.getConfigurationSection("regions").getKeys(false).isEmpty()) {
+            config.set("regions", null);
+        }
+        return true;
+    }
+
+    private static Map<String, Object> box(Region region) {
+        var box = new LinkedHashMap<String, Object>();
+        box.put("from", corner(region.minX(), region.minY(), region.minZ()));
+        box.put("to", corner(region.maxX(), region.maxY(), region.maxZ()));
+        return box;
     }
 
     private static Map<String, Integer> corner(int x, int y, int z) {

@@ -50,13 +50,7 @@ public final class ArenaMaps {
      * @param saved gets the box the selection covered, once the file is written, to keep as the arena's map box
      */
     void save(Player player, Arena arena, Consumer<Region> saved) {
-        if (worldEdit.isEmpty()) {
-            messages.send(player, "arena.map.no-worldedit");
-            return;
-        }
-        if (!arena.world().equals(player.getWorld())) {
-            messages.send(player, "arena.other-world", Placeholder.unparsed("arena", arena.id()),
-                    Placeholder.unparsed("world", arena.world().getName()));
+        if (!canSelect(player, arena)) {
             return;
         }
         worldEdit.get().save(player, file(arena)).ifPresentOrElse(
@@ -69,6 +63,34 @@ public final class ArenaMaps {
                     }
                 }),
                 () -> messages.send(player, "arena.map.no-selection"));
+    }
+
+    /**
+     * The player's WorldEdit selection, which must be in the arena's world, as a region of that name.
+     * Tells the player what is missing if there is none.
+     */
+    Optional<Region> selection(Player player, Arena arena, String name) {
+        if (!canSelect(player, arena)) {
+            return Optional.empty();
+        }
+        var selection = worldEdit.get().selection(player, name);
+        if (selection.isEmpty()) {
+            messages.send(player, "arena.region.no-selection");
+        }
+        return selection;
+    }
+
+    private boolean canSelect(Player player, Arena arena) {
+        if (worldEdit.isEmpty()) {
+            messages.send(player, "arena.map.no-worldedit");
+            return false;
+        }
+        if (!arena.world().equals(player.getWorld())) {
+            messages.send(player, "arena.other-world", Placeholder.unparsed("arena", arena.id()),
+                    Placeholder.unparsed("world", arena.world().getName()));
+            return false;
+        }
+        return true;
     }
 
     /**

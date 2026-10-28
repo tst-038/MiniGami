@@ -24,7 +24,8 @@ import java.util.Optional;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn list|add [team]|remove <n>}, {@code waiting set}. Points are where the admin stands.
+ * {@code spawn list|add [team]|remove <n>}, {@code waiting set}, {@code region list|<name> set|remove|show}. Points are where the
+ * admin stands; regions and maps come from their WorldEdit selection.
  */
 final class ArenaCommands {
 
@@ -62,6 +63,18 @@ final class ArenaCommands {
                                         .then(Commands.argument("number", IntegerArgumentType.integer(1))
                                                 .executes(bySender((sender, context) -> arenas.removeSpawn(sender, arena(context),
                                                         IntegerArgumentType.getInteger(context, "number")))))))
+                        .then(Commands.literal("region")
+                                .executes(help)
+                                .then(Commands.literal("list").executes(bySender((sender, context) -> arenas.regions(sender, arena(context)))))
+                                .then(Commands.argument("name", StringArgumentType.word())
+                                        .suggests(suggest(context -> arenas.regionNames(arena(context))))
+                                        .executes(help)
+                                        .then(Commands.literal("set").requires(PLAYER)
+                                                .executes(byPlayer((player, context) -> arenas.setRegion(player, arena(context), string(context, "name")))))
+                                        .then(Commands.literal("remove")
+                                                .executes(bySender((sender, context) -> arenas.removeRegion(sender, arena(context), string(context, "name")))))
+                                        .then(Commands.literal("show").requires(PLAYER)
+                                                .executes(byPlayer((player, context) -> arenas.showRegion(player, arena(context), string(context, "name")))))))
                         .then(Commands.literal("map")
                                 .executes(help)
                                 .then(Commands.literal("save").requires(PLAYER)

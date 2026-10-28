@@ -2,8 +2,10 @@ package io.github.tst_038.minigami.paper.arena;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.region.Region;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,24 @@ class ArenaFileTest {
 
         assertEquals(List.of(new Arena.Spawn(new Location(world, 1.23, 65, 2, -45.1f, 0), Optional.empty()),
                 new Arena.Spawn(new Location(world, 9, 9, 9), Optional.of("red"))), arena.spawns());
+    }
+
+    @Test
+    void regionsAreAddedReplacedInPlaceAndRemoved() throws Exception {
+        var config = new YamlConfiguration();
+        ArenaFile.create(config, world);
+        ArenaFile.setRegion(config, new Region("hill", world, 0, 64, 0, 4, 66, 4));
+        ArenaFile.setRegion(config, new Region("base", world, 9, 60, 9, 9, 60, 9));
+        ArenaFile.setRegion(config, new Region("hill", world, -2, 64, -2, 2, 70, 2));
+
+        assertEquals(List.of(new Region("hill", world, -2, 64, -2, 2, 70, 2), new Region("base", world, 9, 60, 9, 9, 60, 9)),
+                List.copyOf(reload(config).regions().values()));
+
+        assertFalse(ArenaFile.removeRegion(config, "top"));
+        assertTrue(ArenaFile.removeRegion(config, "hill"));
+        assertTrue(ArenaFile.removeRegion(config, "base"));
+        assertEquals(Map.of(), reload(config).regions());
+        assertFalse(config.contains("regions"));
     }
 
     @Test
