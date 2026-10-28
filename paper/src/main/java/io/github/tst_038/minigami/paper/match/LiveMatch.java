@@ -7,7 +7,6 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.roster.Participant;
-import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.core.team.RandomTeams;
 import io.github.tst_038.minigami.paper.arena.Arena;
@@ -513,7 +512,7 @@ public final class LiveMatch {
 
     /**
      * A death stays inside the match: only the match hears of it, and while the match is on it costs a
-     * life and counts as a death, and as a kill for the killer. Items and XP drop as in vanilla unless a feature says otherwise. The player respawns at
+     * life. Items and XP drop as in vanilla unless a feature says otherwise. The player respawns at
      * once, so nobody sits on the death screen.
      */
     private void onDeath(PlayerDeathEvent event) {
@@ -525,13 +524,6 @@ public final class LiveMatch {
         }
         var id = player.getUniqueId();
         var playing = !isJoinable() && match.result().isEmpty();
-        if (playing && match.roster().find(id).filter(Participant::isAlive).isPresent()) {
-            match.stats().add(id, Stat.DEATHS, 1);
-            var killer = player.getKiller();
-            if (killer != null && !killer.equals(player) && match.roster().find(killer.getUniqueId()).isPresent()) {
-                match.stats().add(killer.getUniqueId(), Stat.KILLS, 1);
-            }
-        }
         var lives = livesOf(id);
         if (playing && lives > 0 && match.roster().find(id).filter(Participant::isAlive).isPresent()
                 && deaths.merge(id, 1, Integer::sum) >= lives) {

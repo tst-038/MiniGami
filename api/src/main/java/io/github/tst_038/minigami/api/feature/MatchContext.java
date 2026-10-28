@@ -75,15 +75,14 @@ public interface MatchContext {
     /** Gives a participant points, or takes them away when negative, and ends the match if that decides it. */
     void addPoints(UUID id, int points);
 
-    /**
-     * What is counted per participant for the match's record: kills and deaths by the engine, and
-     * whatever the game's features count with {@link #count}.
-     */
+    /** What the match's features counted per participant for its record, with {@link #count}. */
     Tally stats();
 
     /**
-     * Adds to a participant's stat for the record, or takes away when negative. Any stat can be made
-     * up here; it is stored and shown without further setup. Unlike points it never decides the match.
+     * Adds to a participant's stat for the record, or takes away when negative. Unlike points it
+     * never decides the match.
+     *
+     * @throws IllegalArgumentException if no feature of the mode declares the stat in {@link Feature#stats()}
      */
     void count(UUID id, Stat stat, long amount);
 

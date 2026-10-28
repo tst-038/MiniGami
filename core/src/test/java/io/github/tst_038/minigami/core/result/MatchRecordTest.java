@@ -19,6 +19,9 @@ import org.junit.jupiter.api.Test;
 
 class MatchRecordTest {
 
+    private final Stat kills = new Stat("kills");
+    private final Stat deaths = new Stat("deaths");
+
     private final UUID alice = UUID.randomUUID();
     private final UUID bob = UUID.randomUUID();
     private final UUID carol = UUID.randomUUID();
@@ -40,8 +43,8 @@ class MatchRecordTest {
     @Test
     void recordsTheResultAndEachParticipantsTeamStatsAndPoints() {
         var match = match();
-        match.stats().add(alice, Stat.KILLS, 2);
-        match.stats().add(carol, Stat.DEATHS, 1);
+        match.stats().add(alice, kills, 2);
+        match.stats().add(carol, deaths, 1);
         match.addPoints(alice, 3);
         match.endNow();
 
@@ -50,9 +53,9 @@ class MatchRecordTest {
         assertEquals(List.of("tdm", "tdm-2v2", "hills"), List.of(record.game(), record.mode(), record.arena()));
         assertEquals(match.result().orElseThrow(), record.result());
         var byId = record.participants().stream().collect(Collectors.toMap(MatchRecord.Entry::id, entry -> entry));
-        assertEquals(new MatchRecord.Entry(alice, Optional.of("red"), false, Map.of(Stat.KILLS, 2L, Stat.POINTS, 3L)), byId.get(alice));
+        assertEquals(new MatchRecord.Entry(alice, Optional.of("red"), false, Map.of(kills, 2L, Stat.POINTS, 3L)), byId.get(alice));
         assertEquals(new MatchRecord.Entry(bob, Optional.of("red"), true, Map.of()), byId.get(bob));
-        assertEquals(new MatchRecord.Entry(carol, Optional.of("blue"), false, Map.of(Stat.DEATHS, 1L)), byId.get(carol));
+        assertEquals(new MatchRecord.Entry(carol, Optional.of("blue"), false, Map.of(deaths, 1L)), byId.get(carol));
     }
 
     @Test

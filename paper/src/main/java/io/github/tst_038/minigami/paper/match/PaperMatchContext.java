@@ -138,6 +138,9 @@ public final class PaperMatchContext implements MatchContext {
 
     @Override
     public void count(UUID id, Stat stat, long amount) {
+        if (!match.mode().stats().contains(stat)) {
+            throw new IllegalArgumentException("Stat '" + stat.id() + "' is counted but no feature of mode " + match.mode().id() + " declares it");
+        }
         match.match().stats().add(id, stat, amount);
     }
 

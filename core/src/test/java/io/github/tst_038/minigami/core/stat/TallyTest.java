@@ -11,28 +11,30 @@ class TallyTest {
 
     private final UUID alice = UUID.randomUUID();
     private final Stat hill = new Stat("hill-seconds");
+    private final Stat kills = new Stat("kills");
+    private final Stat deaths = new Stat("deaths");
 
     @Test
     void countsPerParticipantAndStatFromZero() {
         var tally = new Tally();
 
-        tally.add(alice, Stat.KILLS, 1);
-        tally.add(alice, Stat.KILLS, 2);
+        tally.add(alice, kills, 1);
+        tally.add(alice, kills, 2);
         tally.add(alice, hill, 5);
 
-        assertEquals(3, tally.of(alice, Stat.KILLS));
-        assertEquals(0, tally.of(alice, Stat.DEATHS));
-        assertEquals(0, tally.of(UUID.randomUUID(), Stat.KILLS));
+        assertEquals(3, tally.of(alice, kills));
+        assertEquals(0, tally.of(alice, deaths));
+        assertEquals(0, tally.of(UUID.randomUUID(), kills));
     }
 
     @Test
     void aParticipantsStatsLeaveOutThoseBackAtZero() {
         var tally = new Tally();
-        tally.add(alice, Stat.KILLS, 1);
+        tally.add(alice, kills, 1);
         tally.add(alice, hill, 4);
         tally.add(alice, hill, -4);
 
-        assertEquals(Map.of(Stat.KILLS, 1L), tally.of(alice));
+        assertEquals(Map.of(kills, 1L), tally.of(alice));
     }
 
     @Test

@@ -8,11 +8,13 @@ import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
+import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -294,6 +297,37 @@ class ModeLoaderTest {
         assertEquals(List.of(
                 "modes/fall.yml: features.ending: unknown phase; test has: waiting, playing",
                 "modes/fall.yml: features.playing.void-kils: unknown feature; known: void-kills"), problems(loaded));
+    }
+
+    @Test
+    void aModeKeepsOnlyTheStatsItsFeaturesDeclare() throws Exception {
+        var goals = new Stat("goals");
+        features.register(new FeatureFactory() {
+            @Override
+            public String id() {
+                return "scored";
+            }
+
+            @Override
+            public Feature create(ConfigReader config) {
+                return new Feature() {
+                    @Override
+                    public void enable(MatchContext context) { }
+
+                    @Override
+                    public Set<Stat> stats() {
+                        return Set.of(goals);
+                    }
+                };
+            }
+        });
+
+        var loaded = loadAll(Map.of(
+                "plain", "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo]}",
+                "scored", "{extends: plain, features: {playing: {scored: {}}}}"));
+
+        assertEquals(Set.of(), loaded.entries().find("plain").orElseThrow().stats());
+        assertEquals(Set.of(goals), loaded.entries().find("scored").orElseThrow().stats());
     }
 
     @Test

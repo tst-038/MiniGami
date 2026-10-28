@@ -1,5 +1,8 @@
 package io.github.tst_038.minigami.api.feature;
 
+import io.github.tst_038.minigami.core.stat.Stat;
+import java.util.Set;
+
 /**
  * One reusable piece of game behaviour, such as void kills or no hunger, active during the phases
  * a game assigns it to.
@@ -18,5 +21,13 @@ public interface Feature {
      */
     default boolean changesBlocks() {
         return false;
+    }
+
+    /**
+     * The stats this feature counts with {@link MatchContext#count}. A mode keeps exactly the stats
+     * its features declare, so counting one that isn't declared is refused.
+     */
+    default Set<Stat> stats() {
+        return Set.of();
     }
 }

@@ -3,9 +3,9 @@ package io.github.tst_038.minigami.core.stat;
 import java.util.regex.Pattern;
 
 /**
- * Something counted per participant during a match, such as kills or seconds on the hill. A game or
- * feature makes up its own by name; nothing else has to know about it in advance, so storage and
- * leaderboards take new stats as they come.
+ * Something counted per participant during a match, such as kills or seconds on the hill. Stats belong
+ * to the game: a feature declares the ones it counts ({@code Feature.stats()}), so a game only keeps
+ * what makes sense for it. Storage and leaderboards take any stat without knowing it in advance.
  *
  * @param id lower case letters, digits and dashes; also the key of its display name in the messages
  */
@@ -13,11 +13,7 @@ public record Stat(String id) {
 
     private static final Pattern VALID_ID = Pattern.compile("[a-z0-9]+(-[a-z0-9]+)*");
 
-    /** Players this participant killed. Counted by the engine. */
-    public static final Stat KILLS = new Stat("kills");
-    /** Times this participant died. Counted by the engine. */
-    public static final Stat DEATHS = new Stat("deaths");
-    /** The participant's points at the end, as the win condition ranked them. Filled in by the engine. */
+    /** The participant's points at the end, as the win condition ranked them. Filled in by the engine for games that score. */
     public static final Stat POINTS = new Stat("points");
 
     public Stat {

@@ -2,10 +2,14 @@ package io.github.tst_038.minigami.paper.mode;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.GameType;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A playable variant of a game, as set up in {@code modes/<id>.yml}: its player limits, where
@@ -25,6 +29,21 @@ public record Mode(String id, GameType game, String name, int minPlayers, int ma
         roles = List.copyOf(roles);
         arenas = List.copyOf(arenas);
         features = Map.copyOf(features);
+    }
+
+    /** Every feature a match of this mode can enable: the game's own, the mode's and each role's. */
+    public Stream<Feature> allFeatures() {
+        return allFeatures(game, features, roles);
+    }
+
+    static Stream<Feature> allFeatures(GameType game, Map<String, List<Feature>> features, List<Role> roles) {
+        return Stream.concat(Stream.of(features, game == null ? Map.<String, List<Feature>>of() : game.features()), roles.stream().map(Role::features))
+                .flatMap(byPhase -> byPhase.values().stream()).flatMap(List::stream);
+    }
+
+    /** The stats a match of this mode keeps: those its features declare. */
+    public Set<Stat> stats() {
+        return allFeatures().flatMap(feature -> feature.stats().stream()).collect(Collectors.toUnmodifiableSet());
     }
 
     public Optional<Role> role(String id) {
