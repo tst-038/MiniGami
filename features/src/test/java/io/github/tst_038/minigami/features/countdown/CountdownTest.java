@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.core.phase.Phase;
-import io.github.tst_038.minigami.features.FakeMatch;
+import io.github.tst_038.minigami.api.feature.FakeMatch;
 import java.util.List;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.Test;

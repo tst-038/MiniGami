@@ -12,4 +12,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("core", "api", "features", "games:last-standing", "games:build-battle", "games:team-deathmatch", "games:hide-and-seek", "games:king-of-the-hill", "paper")
+include("core", "api", "features", "stats", "games:last-standing", "games:build-battle", "games:team-deathmatch", "games:hide-and-seek", "games:king-of-the-hill", "paper")

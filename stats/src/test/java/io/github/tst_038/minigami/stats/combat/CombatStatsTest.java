@@ -1,9 +1,9 @@
-package io.github.tst_038.minigami.features.combatstats;
+package io.github.tst_038.minigami.stats.combat;
 
-import static io.github.tst_038.minigami.features.FakeMatch.proxy;
+import static io.github.tst_038.minigami.api.feature.FakeMatch.proxy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.github.tst_038.minigami.features.FakeMatch;
+import io.github.tst_038.minigami.api.feature.FakeMatch;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
@@ -30,7 +30,7 @@ class CombatStatsTest {
     void aDeathCountsForTheVictimAndAKillForAKillerInTheMatch() {
         match.roster.add(killerId);
         match.roster.add(victimId);
-        CombatStats.group().trackers().forEach(tracker -> tracker.track(match));
+        new CombatStats().trackers().forEach(tracker -> tracker.track(match));
 
         die(victimId, killer);
         die(victimId, null);
@@ -42,7 +42,7 @@ class CombatStatsTest {
     @Test
     void aKillerOutsideTheMatchGetsNothing() {
         match.roster.add(victimId);
-        CombatStats.group().trackers().forEach(tracker -> tracker.track(match));
+        new CombatStats().trackers().forEach(tracker -> tracker.track(match));
 
         die(victimId, killer);
 

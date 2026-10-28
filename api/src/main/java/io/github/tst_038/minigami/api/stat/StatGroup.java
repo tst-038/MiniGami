@@ -8,13 +8,15 @@ import java.util.stream.Collectors;
 /**
  * Related stats a mode keeps together under one id, e.g. {@code stats: [combat]} for kills and deaths.
  */
-public record StatGroup(String id, List<StatTracker> trackers) {
+public interface StatGroup {
 
-    public StatGroup {
-        trackers = List.copyOf(trackers);
-    }
+    /** The key that selects this group in a mode's {@code stats} list, e.g. {@code "combat"}. */
+    String id();
 
-    public Set<Stat> stats() {
-        return trackers.stream().map(StatTracker::stat).collect(Collectors.toUnmodifiableSet());
+    /** One tracker per stat, shared by every match of the modes that keep the group. */
+    List<StatTracker> trackers();
+
+    default Set<Stat> stats() {
+        return trackers().stream().map(StatTracker::stat).collect(Collectors.toUnmodifiableSet());
     }
 }

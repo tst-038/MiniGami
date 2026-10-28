@@ -10,7 +10,7 @@ import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
-import io.github.tst_038.minigami.features.combatstats.CombatStats;
+import io.github.tst_038.minigami.stats.combat.CombatStats;
 import io.github.tst_038.minigami.features.countdown.CountdownFactory;
 import io.github.tst_038.minigami.features.deathitems.DeathItemsFactory;
 import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
@@ -112,7 +112,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new CountdownFactory());
         features.register(new FreezeFactory());
         features.register(new EffectsFactory());
-        statGroups.register(CombatStats.group());
+        statGroups.register(new CombatStats());
         maps = new ArenaMaps(this, messages);
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches, maps);
         getServer().getPluginManager().registerEvents(service, this);

@@ -1,11 +1,11 @@
 package io.github.tst_038.minigami.features.deathitems;
 
-import static io.github.tst_038.minigami.features.FakeMatch.proxy;
+import static io.github.tst_038.minigami.api.feature.FakeMatch.proxy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.minigami.features.FakeMatch;
+import io.github.tst_038.minigami.api.feature.FakeMatch;
 import io.github.tst_038.minigami.features.deathitems.DeathItems.Outcome;
 import java.util.ArrayList;
 import java.util.Arrays;

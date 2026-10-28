@@ -1,6 +1,5 @@
-package io.github.tst_038.minigami.features;
+package io.github.tst_038.minigami.api.feature;
 
-import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.core.clock.MatchClock;

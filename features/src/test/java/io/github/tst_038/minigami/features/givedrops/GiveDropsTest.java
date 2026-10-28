@@ -1,10 +1,10 @@
 package io.github.tst_038.minigami.features.givedrops;
 
-import static io.github.tst_038.minigami.features.FakeMatch.proxy;
+import static io.github.tst_038.minigami.api.feature.FakeMatch.proxy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.minigami.features.FakeMatch;
+import io.github.tst_038.minigami.api.feature.FakeMatch;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

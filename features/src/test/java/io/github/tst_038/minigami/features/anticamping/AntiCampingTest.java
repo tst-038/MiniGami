@@ -1,9 +1,9 @@
 package io.github.tst_038.minigami.features.anticamping;
 
-import static io.github.tst_038.minigami.features.FakeMatch.proxy;
+import static io.github.tst_038.minigami.api.feature.FakeMatch.proxy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.github.tst_038.minigami.features.FakeMatch;
+import io.github.tst_038.minigami.api.feature.FakeMatch;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

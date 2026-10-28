@@ -305,7 +305,8 @@ class ModeLoaderTest {
     @Test
     void aModeKeepsTheStatsOfItsStatGroups() throws Exception {
         var goals = new Stat("goals");
-        statGroups.register(new StatGroup("scoring", List.of(new StatTracker() {
+        record Scoring(String id, List<StatTracker> trackers) implements StatGroup { }
+        statGroups.register(new Scoring("scoring", List.of(new StatTracker() {
             @Override
             public Stat stat() {
                 return goals;

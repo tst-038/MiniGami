@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":api"))
     implementation(project(":features"))
+    implementation(project(":stats"))
     implementation(project(":games:last-standing"))
     implementation(project(":games:build-battle"))
     implementation(project(":games:team-deathmatch"))

@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.features.combatstats;
+package io.github.tst_038.minigami.stats.combat;
 
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.stat.StatTracker;
