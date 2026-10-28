@@ -2,7 +2,6 @@ package io.github.tst_038.minigami.paper.edit;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
-import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -90,12 +89,12 @@ public final class ConfigEditor {
      * @param arenaInUse whether a running match uses the arena with this id; such an arena can't be changed
      * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
-    public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> games, IdRegistry<FeatureFactory> features,
+    public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> games, ModeLoader modeLoader,
             Supplier<IdRegistry<Arena>> arenas, Supplier<Settings> settings, Predicate<String> arenaInUse, Consumer<Audience> reload) {
         this.plugin = plugin;
         this.messages = messages;
         this.games = games;
-        this.modeLoader = new ModeLoader(games, features);
+        this.modeLoader = modeLoader;
         this.arenas = arenas;
         this.settings = settings;
         this.arenaInUse = arenaInUse;

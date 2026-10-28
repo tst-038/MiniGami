@@ -96,7 +96,7 @@ public final class FakeMatch implements MatchContext {
     @Override
     @SuppressWarnings("unchecked")
     public <E extends Event> void on(Class<E> type, Consumer<? super E> handler) {
-        handlers.put(type, event -> ((Consumer<Event>) handler).accept(event));
+        handlers.merge(type, event -> ((Consumer<Event>) handler).accept(event), Consumer::andThen);
     }
 
     @Override

@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.paper.arena.Arena;
@@ -43,6 +44,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *   then: die                 # stay, die or out (the default)
  *   rejoin-seconds: 60        # how long they can come back; 0 (the default): not at all
  * arenas: [demo]
+ * stats: [combat]             # optional; stat groups to keep, next to the game's own stats
  * features:                   # optional; per phase of the game, per feature
  *   playing:
  *     void-kills: { y: 0 }
@@ -55,10 +57,12 @@ public final class ModeLoader {
 
     private final IdRegistry<GameType> games;
     private final IdRegistry<FeatureFactory> features;
+    private final IdRegistry<StatGroup> statGroups;
 
-    public ModeLoader(IdRegistry<GameType> games, IdRegistry<FeatureFactory> features) {
+    public ModeLoader(IdRegistry<GameType> games, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups) {
         this.games = games;
         this.features = features;
+        this.statGroups = statGroups;
     }
 
     /**
@@ -150,12 +154,26 @@ public final class ModeLoader {
         var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
         var playable = arenas(config, arenas, game, mostTeams);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
+        var stats = statGroups(config);
         var changesBlocks = Mode.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
         // Only the arena's saved map puts changed blocks back; an arena without one is still being set up.
         if (changesBlocks) {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features);
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features, stats);
+    }
+
+    private List<StatGroup> statGroups(ConfigReader config) {
+        config.suggest("stats", statGroups.ids());
+        var groups = new ArrayList<StatGroup>();
+        if (!config.has("stats")) {
+            return groups;
+        }
+        for (String id : config.strings("stats")) {
+            statGroups.find(id).ifPresentOrElse(groups::add,
+                    () -> config.problem("stats", "unknown stat group '" + id + "'; known: " + String.join(", ", statGroups.ids())));
+        }
+        return groups;
     }
 
     private static Quit quit(ConfigReader config) {

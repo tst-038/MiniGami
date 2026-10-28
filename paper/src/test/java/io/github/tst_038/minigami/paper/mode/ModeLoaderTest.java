@@ -12,6 +12,8 @@ import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.api.stat.StatGroup;
+import io.github.tst_038.minigami.api.stat.StatTracker;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.stat.Stat;
@@ -58,6 +60,7 @@ class ModeLoaderTest {
 
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
+    private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private final IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
 
     /** A game whose code relies on a seeker and a hider. */
@@ -136,7 +139,7 @@ class ModeLoaderTest {
     private YamlFiles.Loaded<Mode> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new ModeLoader(games, features).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas, hasLobby);
+        return new ModeLoader(games, features, statGroups).load(new YamlFiles("modes", Map.of("fall", config), List.of()), arenas, hasLobby);
     }
 
     private YamlFiles.Loaded<Mode> loadAll(Map<String, String> yamlById) throws Exception {
@@ -146,7 +149,7 @@ class ModeLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new ModeLoader(games, features).load(new YamlFiles("modes", files, List.of()), arenas, true);
+        return new ModeLoader(games, features, statGroups).load(new YamlFiles("modes", files, List.of()), arenas, true);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Mode> loaded) {
@@ -300,32 +303,24 @@ class ModeLoaderTest {
     }
 
     @Test
-    void aModeKeepsOnlyTheStatsItsFeaturesDeclare() throws Exception {
+    void aModeKeepsTheStatsOfItsStatGroups() throws Exception {
         var goals = new Stat("goals");
-        features.register(new FeatureFactory() {
+        statGroups.register(new StatGroup("scoring", List.of(new StatTracker() {
             @Override
-            public String id() {
-                return "scored";
+            public Stat stat() {
+                return goals;
             }
 
             @Override
-            public Feature create(ConfigReader config) {
-                return new Feature() {
-                    @Override
-                    public void enable(MatchContext context) { }
-
-                    @Override
-                    public Set<Stat> stats() {
-                        return Set.of(goals);
-                    }
-                };
-            }
-        });
+            public void track(MatchContext context) { }
+        })));
 
         var loaded = loadAll(Map.of(
                 "plain", "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo]}",
-                "scored", "{extends: plain, features: {playing: {scored: {}}}}"));
+                "scored", "{extends: plain, stats: [scoring]}",
+                "typo", "{extends: plain, stats: [scorign]}"));
 
+        assertEquals(List.of("modes/typo.yml: stats: unknown stat group 'scorign'; known: scoring"), problems(loaded));
         assertEquals(Set.of(), loaded.entries().find("plain").orElseThrow().stats());
         assertEquals(Set.of(goals), loaded.entries().find("scored").orElseThrow().stats());
     }

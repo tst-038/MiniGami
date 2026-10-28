@@ -389,6 +389,8 @@ public final class LiveMatch {
     /** Prepares everyone for play, forms the teams or hands out the roles if the mode has them, and brings each to their spawns, round robin. */
     private void startPlaying() {
         startDelay = null;
+        var tracking = new PaperMatchContext(plugin, this, match.scope());
+        mode.statGroups().forEach(group -> group.trackers().forEach(tracker -> tracker.track(tracking)));
         for (var id : List.copyOf(members)) {
             var player = plugin.getServer().getPlayer(id);
             if (player == null) {

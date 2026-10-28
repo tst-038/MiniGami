@@ -6,7 +6,6 @@ import io.github.tst_038.minigami.core.roster.MatchTeam;
 import io.github.tst_038.minigami.core.stat.Stat;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -22,11 +21,6 @@ final class Hill implements Feature {
     static final String REGION = "hill";
     /** Seconds each player stood on the hill while their team held it. */
     static final Stat HILL_SECONDS = new Stat("hill-seconds");
-
-    @Override
-    public Set<Stat> stats() {
-        return Set.of(HILL_SECONDS);
-    }
 
     @Override
     public void enable(MatchContext context) {

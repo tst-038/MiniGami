@@ -6,10 +6,11 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
-import io.github.tst_038.minigami.features.combatstats.CombatStatsFactory;
+import io.github.tst_038.minigami.features.combatstats.CombatStats;
 import io.github.tst_038.minigami.features.countdown.CountdownFactory;
 import io.github.tst_038.minigami.features.deathitems.DeathItemsFactory;
 import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
@@ -67,6 +68,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
 
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
+    private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
+    private final ModeLoader modeLoader = new ModeLoader(games, features, statGroups);
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
     private IdRegistry<Mode> modes = new IdRegistry<>(Mode::id);
@@ -99,7 +102,6 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new DeathItemsFactory());
-        features.register(new CombatStatsFactory());
         features.register(new BreakBlocksFactory());
         features.register(new NoDamageFactory());
         features.register(new GiveDropsFactory());
@@ -110,11 +112,12 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new CountdownFactory());
         features.register(new FreezeFactory());
         features.register(new EffectsFactory());
+        statGroups.register(CombatStats.group());
         maps = new ArenaMaps(this, messages);
         var service = new MatchService(this, () -> modes, () -> settings.lobby(), sessions, messages, matches, maps);
         getServer().getPluginManager().registerEvents(service, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, games, features, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
+        editor = new ConfigEditor(this, messages, games, modeLoader, () -> arenas, () -> settings, service::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, service::isArenaInUse, messages, this);
         info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, service::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
@@ -154,8 +157,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
-                var loadedModes = new ModeLoader(games, features)
-                        .load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent());
+                var loadedModes = modeLoader.load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent());
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());

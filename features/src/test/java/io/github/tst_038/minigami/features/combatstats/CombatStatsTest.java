@@ -30,23 +30,23 @@ class CombatStatsTest {
     void aDeathCountsForTheVictimAndAKillForAKillerInTheMatch() {
         match.roster.add(killerId);
         match.roster.add(victimId);
-        new CombatStats().enable(match);
+        CombatStats.group().trackers().forEach(tracker -> tracker.track(match));
 
         die(victimId, killer);
         die(victimId, null);
 
-        assertEquals(2, match.stats.of(victimId, CombatStats.DEATHS));
-        assertEquals(1, match.stats.of(killerId, CombatStats.KILLS));
+        assertEquals(2, match.stats.of(victimId, DeathCount.DEATHS));
+        assertEquals(1, match.stats.of(killerId, KillCount.KILLS));
     }
 
     @Test
     void aKillerOutsideTheMatchGetsNothing() {
         match.roster.add(victimId);
-        new CombatStats().enable(match);
+        CombatStats.group().trackers().forEach(tracker -> tracker.track(match));
 
         die(victimId, killer);
 
-        assertEquals(1, match.stats.of(victimId, CombatStats.DEATHS));
-        assertEquals(0, match.stats.of(killerId, CombatStats.KILLS));
+        assertEquals(1, match.stats.of(victimId, DeathCount.DEATHS));
+        assertEquals(0, match.stats.of(killerId, KillCount.KILLS));
     }
 }

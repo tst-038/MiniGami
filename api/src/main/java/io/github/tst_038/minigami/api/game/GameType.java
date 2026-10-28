@@ -3,10 +3,12 @@ package io.github.tst_038.minigami.api.game;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * What a game is: its phases, the features active in each, and how a winner is decided. The first
@@ -58,6 +60,14 @@ public interface GameType {
      */
     default Optional<String> regionPerTeam() {
         return Optional.empty();
+    }
+
+    /**
+     * The stats the game's own code counts with {@link io.github.tst_038.minigami.api.feature.MatchContext#count},
+     * such as the time a player held the hill. Every mode of the game keeps them, next to its stat groups.
+     */
+    default Set<Stat> stats() {
+        return Set.of();
     }
 
     /** How many deaths put a player out, unless the mode sets its own; 0 means they always respawn. */

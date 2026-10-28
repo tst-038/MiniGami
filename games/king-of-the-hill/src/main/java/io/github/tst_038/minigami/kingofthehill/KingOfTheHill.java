@@ -5,10 +5,12 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Hold the hill: every second that only one team stands on the arena's {@code hill} region scores
@@ -40,6 +42,11 @@ public final class KingOfTheHill implements GameType {
     @Override
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed("playing", playSeconds * 20L), Phase.timed("ending", 5 * 20));
+    }
+
+    @Override
+    public Set<Stat> stats() {
+        return Set.of(Hill.HILL_SECONDS);
     }
 
     @Override
