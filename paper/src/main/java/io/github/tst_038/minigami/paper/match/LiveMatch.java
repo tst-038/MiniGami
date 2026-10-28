@@ -93,8 +93,9 @@ public final class LiveMatch {
     /** When play started, for the record; null until then. */
     private Instant start;
     private MatchClock.Task startDelay;
-    /** Holds players still and unhurt while an admin paused the match; null otherwise. */
+    /** Holds players still and unhurt while an admin paused the match, until the countdown after resuming ends; null otherwise. */
     private Scope paused;
+    private boolean resuming;
     /** Holds players at their spawns until play begins; null outside the countdown. */
     private Scope countdown;
     /** The match clock's tick play begins at, while the start delay or the countdown runs. */
@@ -479,14 +480,37 @@ public final class LiveMatch {
         messages.send(audience(), "match.paused");
     }
 
+    public boolean isResuming() {
+        return resuming;
+    }
+
+    /**
+     * Counts down, as before the start, and then lets play go on. The match clock stands still
+     * while paused, so the countdown runs on a server task that the pause owns.
+     */
     public void resume() {
-        if (paused == null) {
-            throw new IllegalStateException("Not paused");
+        if (paused == null || resuming) {
+            throw new IllegalStateException(resuming ? "Already resuming" : "Not paused");
         }
+        resuming = true;
+        var secondsLeft = new long[] {COUNTDOWN_TICKS / 20};
+        hud.countDown(secondsLeft[0]);
+        var task = plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, timer -> {
+            if (--secondsLeft[0] > 0) {
+                hud.countDown(secondsLeft[0]);
+            } else {
+                goOn();
+            }
+        }, 20, 20);
+        paused.register(task::cancel);
+    }
+
+    private void goOn() {
         paused.close();
         paused = null;
+        resuming = false;
         match.clock().resume();
-        hud.resumed();
+        hud.started();
         messages.send(audience(), "match.resumed");
     }
 

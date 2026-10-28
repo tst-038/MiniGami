@@ -78,7 +78,9 @@ match:
     ended: "<prefix><green>Ended <white><match></white>; the win condition decided the result."
     stopped: "<prefix><green>Stopped <white><match></white> without a result."
     paused: "<prefix><green>Paused <white><match></white>; resume it with <white>/mg match <match> resume</white>."
-    resumed: "<prefix><green>Resumed <white><match></white>."
+    # <seconds>: the countdown before play goes on
+    resumed: "<prefix><green>Resuming <white><match></white> in <seconds> seconds."
+    already-resuming: "<prefix><red><white><match></white> is already counting down to go on."
     already-paused: "<prefix><red><white><match></white> is already paused."
     not-paused: "<prefix><red><white><match></white> isn't paused."
     # <phase>: the phase asked for, <phases>: those it can skip to

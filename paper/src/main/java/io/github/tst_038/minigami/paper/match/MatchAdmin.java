@@ -134,12 +134,14 @@ public final class MatchAdmin {
 
     public void resume(CommandSender sender, String id) {
         find(sender, id).ifPresent(live -> {
-            if (!live.isPaused()) {
-                messages.send(sender, "match.admin.not-paused", Placeholder.unparsed("match", id));
+            if (!live.isPaused() || live.isResuming()) {
+                messages.send(sender, live.isResuming() ? "match.admin.already-resuming" : "match.admin.not-paused",
+                        Placeholder.unparsed("match", id));
                 return;
             }
             live.resume();
-            messages.send(sender, "match.admin.resumed", Placeholder.unparsed("match", id));
+            messages.send(sender, "match.admin.resumed", Placeholder.unparsed("match", id),
+                    Formatter.number("seconds", LiveMatch.COUNTDOWN_TICKS / 20));
         });
     }
 

@@ -119,16 +119,10 @@ public final class MatchHud {
         }
     }
 
-    /** Stays up until {@link #resumed}, since the refresh stands still with the match clock. */
+    /** Stays up until the countdown after resuming, since the refresh stands still with the match clock. */
     public void paused() {
         for (var player : online()) {
             title(player, "hud.title.paused", "hud.title.paused-subtitle", PAUSED_TIMES);
-        }
-    }
-
-    public void resumed() {
-        if (hud.titles()) {
-            online().forEach(Player::clearTitle);
         }
     }
 
@@ -174,7 +168,7 @@ public final class MatchHud {
             }
         }
         refreshBossBar();
-        countDown();
+        countDownToStart();
     }
 
     private void refresh(Player player, Scoreboard board) {
@@ -309,7 +303,7 @@ public final class MatchHud {
     }
 
     /** The seconds players stand at their spawns before play begins, once each. */
-    private void countDown() {
+    private void countDownToStart() {
         var startsIn = match.startsIn();
         if (startsIn.isEmpty()) {
             lastCountdown = -1;
@@ -320,6 +314,11 @@ public final class MatchHud {
             return;
         }
         lastCountdown = seconds;
+        countDown(seconds);
+    }
+
+    /** One second of a countdown: before the start, or before play goes on after a pause. */
+    public void countDown(long seconds) {
         for (var player : online()) {
             title(player, "hud.title.countdown", "hud.title.countdown-subtitle", COUNTDOWN_TIMES, Formatter.number("seconds", seconds));
             play(player, Hud.Moment.COUNTDOWN);
