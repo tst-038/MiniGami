@@ -32,6 +32,12 @@ match:
   # <player>: the player who left
   left: "<prefix><yellow><player></yellow> left the match."
   you-left: "<prefix><gray>You left the match."
+  # A participant quit the server but may still come back. <player>, <seconds>: how long they have
+  away: "<prefix><yellow><player></yellow> <gray>left; they have <white><seconds></white> seconds to come back."
+  # <player>: who didn't come back in time
+  away-expired: "<prefix><red><player></red> didn't come back in time and is out!"
+  # The death message of a participant whose mode kills them for quitting. <player>
+  died-quitting: "<red><player></red> <gray>died by quitting the match"
   # <player>: the winner
   winner: "<prefix><gold><player></gold> wins the match!"
   # Above the hotbar in the last seconds of a phase with the countdown feature. <seconds>: seconds left

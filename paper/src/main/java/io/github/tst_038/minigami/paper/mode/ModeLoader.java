@@ -39,6 +39,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *     name: "Hiders"
  *     on-out: seeker                                              # optional; joins it instead of going out
  *     features: { playing: { kit: { items: [stick] } } }          # optional; only for this role
+ * quit:                       # optional; what quitting a running match does
+ *   then: die                 # stay, die or out (the default)
+ *   rejoin-seconds: 60        # how long they can come back; 0 (the default): not at all
  * arenas: [demo]
  * features:                   # optional; per phase of the game, per feature
  *   playing:
@@ -143,6 +146,7 @@ public final class ModeLoader {
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         var teams = teams(config, minPlayers, maxPlayers);
         var roles = roles(config, minPlayers, game);
+        var quit = quit(config);
         var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
         var playable = arenas(config, arenas, game, mostTeams);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
@@ -153,7 +157,22 @@ public final class ModeLoader {
         if (changesBlocks) {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, playable, features);
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features);
+    }
+
+    private static Quit quit(ConfigReader config) {
+        config.suggest("quit.then", List.of("stay", "die", "out"));
+        config.suggest("quit.rejoin-seconds", List.of("60"));
+        if (!config.has("quit")) {
+            return Quit.OUT;
+        }
+        var quit = config.section("quit");
+        var then = quit.has("then") ? quit.choice("then", Quit.Then.class) : Quit.Then.OUT;
+        var seconds = quit.has("rejoin-seconds") ? quit.integer("rejoin-seconds", 0, 3600) : 0;
+        if (then == Quit.Then.STAY && seconds == 0) {
+            quit.problem("then", "stay needs rejoin-seconds above 0; without a way back quitting puts them out");
+        }
+        return new Quit(then, seconds);
     }
 
     private static Optional<TeamSetup> teams(ConfigReader config, int minPlayers, int maxPlayers) {

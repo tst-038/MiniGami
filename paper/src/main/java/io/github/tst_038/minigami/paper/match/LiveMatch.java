@@ -33,9 +33,13 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Team;
 
@@ -70,7 +74,8 @@ public final class LiveMatch {
     private final Map<UUID, AutoCloseable> scoreboardLeaves = new HashMap<>();
     /** Per team id, so a player who switches role joins the same team as the role's first members. */
     private final Map<String, Team> scoreboardTeams = new HashMap<>();
-    // shortcut: only kept in memory, so a crash leaves the arena changed; fine until matches get their own world.
+    /** Participants who quit with a way back, each with the timer that puts them out. */
+    private final Map<UUID, MatchClock.Task> away = new HashMap<>();
     private MatchClock.Task startDelay;
 
     /**
@@ -231,6 +236,69 @@ public final class LiveMatch {
             match.dispose();
         }
         return true;
+    }
+
+    /**
+     * The player quit the server. A participant still playing first dies, is made out or stays as
+     * the mode sets; with time to come back they are away until it runs out, else they leave.
+     */
+    public void quit(Player player) {
+        var id = player.getUniqueId();
+        var quit = mode.quit();
+        if (isJoinable() || match.result().isPresent() || !isActive(id)
+                || match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
+            leave(player);
+            return;
+        }
+        switch (quit.then()) {
+            case DIE -> dieQuitting(player);
+            case OUT -> match.eliminate(id);
+            case STAY -> { }
+        }
+        if (quit.rejoinSeconds() == 0) {
+            leave(player);
+            return;
+        }
+        members.remove(id);
+        restore(id);
+        var expiry = match.clock().schedule(quit.rejoinSeconds() * 20L, () -> {
+            away.remove(id);
+            if (match.roster().find(id).filter(Participant::isAlive).isPresent()) {
+                match.eliminate(id);
+                messages.send(audience(), "match.away-expired", Placeholder.component("player", player.name()));
+            }
+        });
+        match.scope().register(expiry);
+        away.put(id, expiry);
+        messages.send(audience(), "match.away", Placeholder.component("player", player.name()),
+                Formatter.number("seconds", quit.rejoinSeconds()));
+        if (members.isEmpty()) {
+            match.dispose();
+        }
+    }
+
+    /**
+     * Dies as if killed, so the match and its features handle it like any death: it costs a life
+     * and the items drop or not as the features say. A real kill could lose the state the player
+     * gets back, so the death is only announced.
+     */
+    private void dieQuitting(Player player) {
+        var drops = new ArrayList<ItemStack>();
+        for (var item : player.getInventory().getContents()) {
+            if (item != null && !item.isEmpty()) {
+                drops.add(item);
+            }
+        }
+        var event = new PlayerDeathEvent(player, DamageSource.builder(DamageType.GENERIC).build(), drops,
+                Math.min(player.getLevel() * 7, 100), messages.render("match.died-quitting", Placeholder.component("player", player.name())), true);
+        plugin.getServer().getPluginManager().callEvent(event);
+        var where = player.getLocation();
+        if (!event.getKeepInventory()) {
+            event.getDrops().forEach(item -> where.getWorld().dropItemNaturally(where, item));
+        }
+        if (event.shouldDropExperience() && event.getDroppedExp() > 0) {
+            where.getWorld().spawn(where, ExperienceOrb.class, orb -> orb.setExperience(event.getDroppedExp()));
+        }
     }
 
     /**

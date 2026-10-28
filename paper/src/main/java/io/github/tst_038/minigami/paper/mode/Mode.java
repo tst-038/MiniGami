@@ -15,10 +15,11 @@ import java.util.Optional;
  * @param lives how many deaths put a player out; 0 means they always respawn
  * @param teams empty when everyone plays on their own or the mode has roles
  * @param roles in the order they are handed out; empty when the mode has none
+ * @param quit what quitting a running match does to a player still in it
  * @param features feature instances are shared by every match of the mode, so they keep no match state themselves
  */
 public record Mode(String id, GameType game, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        Optional<TeamSetup> teams, List<Role> roles, List<Arena> arenas, Map<String, List<Feature>> features) {
+        Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features) {
 
     public Mode {
         roles = List.copyOf(roles);

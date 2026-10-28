@@ -169,7 +169,7 @@ public final class MatchService implements Listener {
      */
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        find(event.getPlayer().getUniqueId()).ifPresent(match -> match.leave(event.getPlayer()));
+        find(event.getPlayer().getUniqueId()).ifPresent(match -> match.quit(event.getPlayer()));
     }
 
     /** The matches that haven't finished, oldest first. */

@@ -235,6 +235,18 @@ class ModeLoaderTest {
     }
 
     @Test
+    void quittingPutsPlayersOutUnlessTheModeGivesThemAWayBack() throws Exception {
+        var plain = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo]}");
+        var back = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], quit: {then: die, rejoin-seconds: 60}}");
+        var stuck = load("{game: test, min-players: 1, max-players: 1, waiting: arena, arenas: [demo], quit: {then: stay}}");
+
+        assertEquals(Quit.OUT, plain.entries().find("fall").orElseThrow().quit());
+        assertEquals(new Quit(Quit.Then.DIE, 60), back.entries().find("fall").orElseThrow().quit());
+        assertEquals(List.of("modes/fall.yml: quit.then: stay needs rejoin-seconds above 0; without a way back quitting puts them out"),
+                problems(stuck));
+    }
+
+    @Test
     void reportsEveryProblemOfAnInvalidMode() throws Exception {
         var loaded = load("""
                 game: spleef
