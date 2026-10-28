@@ -12,10 +12,10 @@ import java.util.Map;
 
 /**
  * A timed fight in which every kill gives the killer's team a point; the team with the most kills
- * when time is up wins. Players always respawn. Without teams in the mode, everyone fights for
+ * when time is up wins. Players always respawn. Without teams in the game, everyone fights for
  * themselves.
  *
- * <p>Mode settings, all optional: {@code fight-seconds} (300) and {@code kills-to-win}, which ends the
+ * <p>Game settings, all optional: {@code fight-seconds} (300) and {@code kills-to-win}, which ends the
  * fight as soon as a team has that many kills (none).
  */
 public final class TeamDeathmatch implements GameType {
@@ -53,9 +53,9 @@ public final class TeamDeathmatch implements GameType {
     }
 
     @Override
-    public GameType configure(ConfigReader mode) {
+    public GameType configure(ConfigReader config) {
         return new TeamDeathmatch(
-                mode.has("fight-seconds") ? mode.integer("fight-seconds", 10, 3600) : fightSeconds,
-                mode.has("kills-to-win") ? mode.integer("kills-to-win", 1, 1000) : killsToWin);
+                config.has("fight-seconds") ? config.integer("fight-seconds", 10, 3600) : fightSeconds,
+                config.has("kills-to-win") ? config.integer("kills-to-win", 1, 1000) : killsToWin);
     }
 }

@@ -1,9 +1,9 @@
-package io.github.tst_038.minigami.paper.mode;
+package io.github.tst_038.minigami.paper.game;
 
 import java.util.List;
 
 /**
- * How a mode splits its players into teams at the start: into a fixed number of teams, or into teams
+ * How a game splits its players into teams at the start: into a fixed number of teams, or into teams
  * of a fixed size. Use {@link #ofCount} or {@link #ofSize}.
  *
  * @param count the number of teams, or 0 when set by size

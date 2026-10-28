@@ -11,9 +11,10 @@ import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
-import io.github.tst_038.minigami.paper.mode.Mode;
-import io.github.tst_038.minigami.paper.mode.ModeLoader;
-import io.github.tst_038.minigami.paper.mode.Role;
+import io.github.tst_038.minigami.paper.game.Game;
+import io.github.tst_038.minigami.paper.game.Variant;
+import io.github.tst_038.minigami.paper.game.GameLoader;
+import io.github.tst_038.minigami.paper.game.Role;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,7 +39,7 @@ import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
- * Shows what is set up: lists of modes, arenas, games and features, and the details of one. Files are
+ * Shows what is set up: lists of games, arenas, game types and features, and the details of one. Files are
  * shown as the last config load read them, problems included, so a file that failed to load can
  * still be looked at and fixed. Lines with a setting can be clicked to change it.
  *
@@ -47,7 +48,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 public final class ConfigInfo {
 
     private record Files(YamlConfiguration config, SortedMap<String, YamlConfiguration> arenas,
-            SortedMap<String, YamlConfiguration> modes, SortedMap<String, YamlConfiguration> inherited, List<ConfigProblem> problems) {
+            SortedMap<String, YamlConfiguration> games, List<ConfigProblem> problems) {
     }
 
     /** A setting a game or feature reads; required ones have no default. */
@@ -56,31 +57,31 @@ public final class ConfigInfo {
 
     private final Messages messages;
     private final ConfigEditor editor;
-    private final IdRegistry<GameType> games;
+    private final IdRegistry<GameType> gametypes;
     private final IdRegistry<FeatureFactory> features;
     private final Supplier<IdRegistry<Arena>> arenas;
-    private final Supplier<IdRegistry<Mode>> modes;
+    private final Supplier<IdRegistry<Game>> games;
     private final Predicate<String> arenaInUse;
-    private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), List.of());
+    private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), List.of());
 
     /**
      * @param arenas the arenas currently loaded
-     * @param modes the modes currently loaded
+     * @param games the games currently loaded
      * @param arenaInUse whether a running match uses the arena with this id
      */
-    public ConfigInfo(Messages messages, ConfigEditor editor, IdRegistry<GameType> games, IdRegistry<FeatureFactory> features,
-            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Mode>> modes, Predicate<String> arenaInUse) {
+    public ConfigInfo(Messages messages, ConfigEditor editor, IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features,
+            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games, Predicate<String> arenaInUse) {
         this.messages = messages;
         this.editor = editor;
-        this.games = games;
+        this.gametypes = gametypes;
         this.features = features;
         this.arenas = arenas;
-        this.modes = modes;
+        this.games = games;
         this.arenaInUse = arenaInUse;
     }
 
     /** Takes the files a config load read, valid or not, and every problem it found. */
-    public void loaded(String settings, Map<String, YamlConfiguration> arenaFiles, Map<String, YamlConfiguration> modeFiles,
+    public void loaded(String settings, Map<String, YamlConfiguration> arenaFiles, Map<String, YamlConfiguration> gameFiles,
             List<ConfigProblem> problems) {
         var config = new YamlConfiguration();
         try {
@@ -88,21 +89,20 @@ public final class ConfigInfo {
         } catch (InvalidConfigurationException e) {
             // Already one of the problems.
         }
-        var inherited = new TreeMap<String, YamlConfiguration>();
-        modeFiles.keySet().forEach(id -> inherited.put(id, ModeLoader.inherited(id, modeFiles)));
-        files = new Files(config, new TreeMap<>(arenaFiles), new TreeMap<>(modeFiles), inherited, List.copyOf(problems));
+        files = new Files(config, new TreeMap<>(arenaFiles), new TreeMap<>(gameFiles), List.copyOf(problems));
     }
 
-    public void listModes(CommandSender sender) {
+    public void listGames(CommandSender sender) {
         var current = files;
-        messages.send(sender, "info.modes", Formatter.number("count", current.modes().size()));
-        current.inherited().forEach((id, config) -> {
-            var loaded = modes.get().find(id);
-            var status = loaded.isPresent() && loaded.get().arenas().isEmpty() ? status("info.status.no-arenas") : null;
-            messages.send(sender, "info.mode-entry", Placeholder.unparsed("id", id),
-                    Placeholder.unparsed("game", config.getString("gametype", "?")),
-                    Placeholder.component("status", status(Kind.MODE, id, loaded.isPresent(), status)),
-                    infoClick("/mg mode " + id + " info"));
+        messages.send(sender, "info.games", Formatter.number("count", current.games().size()));
+        current.games().forEach((id, config) -> {
+            var loaded = games.get().find(id);
+            var status = loaded.isPresent() && loaded.get().base().arenas().isEmpty() ? status("info.status.no-arenas") : null;
+            messages.send(sender, "info.game-entry", Placeholder.unparsed("id", id),
+                    Placeholder.unparsed("gametype", config.getString("gametype", "?")),
+                    Formatter.number("variants", loaded.map(game -> game.variants().size()).orElse(0)),
+                    Placeholder.component("status", status(Kind.GAME, id, loaded.isPresent(), status)),
+                    infoClick("/mg game " + id + " info"));
         });
     }
 
@@ -119,59 +119,60 @@ public final class ConfigInfo {
         });
     }
 
-    public void listGames(CommandSender sender) {
-        messages.send(sender, "info.games", Formatter.number("count", games.ids().size()));
-        games.ids().forEach(id -> messages.send(sender, "info.game-entry", Placeholder.unparsed("id", id),
-                Formatter.number("modes", modesWithGame(id).size()), infoClick("/mg gametype " + id + " info")));
+    public void listGametypes(CommandSender sender) {
+        messages.send(sender, "info.gametypes", Formatter.number("count", gametypes.ids().size()));
+        gametypes.ids().forEach(id -> messages.send(sender, "info.gametype-entry", Placeholder.unparsed("id", id),
+                Formatter.number("games", gamesOfType(id).size()), infoClick("/mg gametype " + id + " info")));
     }
 
     public void listFeatures(CommandSender sender) {
         messages.send(sender, "info.features", Formatter.number("count", features.ids().size()));
         features.ids().forEach(id -> messages.send(sender, "info.feature-entry", Placeholder.unparsed("id", id),
-                Formatter.number("modes", usesOfFeature(id).size()), infoClick("/mg feature " + id + " info")));
+                Formatter.number("games", usesOfFeature(id).size()), infoClick("/mg feature " + id + " info")));
     }
 
-    /** The settings after inheritance, marking inherited ones, then what else can be set and any problems. */
-    public void mode(CommandSender sender, String id) {
+    /** The game's settings, variants included, then what else can be set and any problems. */
+    public void game(CommandSender sender, String id) {
         var current = files;
-        var own = current.modes().get(id);
-        if (own == null) {
-            messages.send(sender, "join.unknown-mode", Placeholder.unparsed("mode", id));
+        var config = current.games().get(id);
+        if (config == null) {
+            messages.send(sender, "join.unknown-game", Placeholder.unparsed("game", id));
             return;
         }
-        var config = current.inherited().get(id);
-        var loaded = modes.get().find(id);
-        messages.send(sender, "info.mode", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
-                Placeholder.unparsed("game", config.getString("gametype", "?")),
-                Placeholder.component("status", status(Kind.MODE, id, loaded.isPresent(), null)));
-        if (own.contains("extends")) {
-            messages.send(sender, "info.mode-parent", Placeholder.unparsed("parent", own.getString("extends", "")),
-                    infoClick("/mg mode " + own.getString("extends") + " info"));
-        }
-        loaded.ifPresent(mode -> messages.send(sender, "info.mode-arenas",
-                Placeholder.unparsed("arenas", mode.arenas().isEmpty() ? "-" : mode.arenas().stream().map(Arena::id).collect(Collectors.joining(", ")))));
-        loaded.flatMap(Mode::teams).ifPresent(teams -> {
+        var game = games.get().find(id);
+        var loaded = game.map(Game::base);
+        messages.send(sender, "info.game", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
+                Placeholder.unparsed("gametype", config.getString("gametype", "?")),
+                Placeholder.component("status", status(Kind.GAME, id, game.isPresent(), null)));
+        game.filter(found -> !found.variants().isEmpty()).ifPresent(found -> messages.send(sender, "info.game-variants",
+                Placeholder.component("variants", Component.join(JoinConfiguration.commas(true), found.variants().values().stream()
+                        .map(variant -> messages.render("info.game-variant", Placeholder.unparsed("id", variant.id().orElseThrow()),
+                                Placeholder.parsed("name", variant.name())))
+                        .toList()))));
+        loaded.ifPresent(variant -> messages.send(sender, "info.game-arenas",
+                Placeholder.unparsed("arenas", variant.arenas().isEmpty() ? "-" : variant.arenas().stream().map(Arena::id).collect(Collectors.joining(", ")))));
+        loaded.flatMap(Variant::teams).ifPresent(teams -> {
             if (teams.count() > 0) {
-                messages.send(sender, "info.mode-teams-count", Formatter.number("count", teams.count()));
+                messages.send(sender, "info.game-teams-count", Formatter.number("count", teams.count()));
             } else {
-                messages.send(sender, "info.mode-teams-size", Formatter.number("size", teams.size()));
+                messages.send(sender, "info.game-teams-size", Formatter.number("size", teams.size()));
             }
         });
-        loaded.map(Mode::roles).filter(roles -> !roles.isEmpty()).ifPresent(roles -> messages.send(sender, "info.mode-roles",
+        loaded.map(Variant::roles).filter(roles -> !roles.isEmpty()).ifPresent(roles -> messages.send(sender, "info.game-roles",
                 Placeholder.component("roles", Component.join(JoinConfiguration.commas(true), roles.stream().map(Role::displayName).toList()))));
-        values(sender, config, own, "/mg mode " + id + " set ");
-        unset(sender, editor.keys(Kind.MODE, id), config, "/mg mode " + id + " set ");
-        problems(sender, Kind.MODE, id);
+        values(sender, config, config, "/mg game " + id + " set ");
+        unset(sender, editor.keys(Kind.GAME, id), config, "/mg game " + id + " set ");
+        problems(sender, Kind.GAME, id);
     }
 
-    public void game(CommandSender sender, String id) {
-        var found = games.find(id);
+    public void gametype(CommandSender sender, String id) {
+        var found = gametypes.find(id);
         if (found.isEmpty()) {
-            messages.send(sender, "info.unknown-game", Placeholder.unparsed("id", id));
+            messages.send(sender, "info.unknown-gametype", Placeholder.unparsed("id", id));
             return;
         }
         var game = found.get();
-        messages.send(sender, "info.game", Placeholder.unparsed("id", id),
+        messages.send(sender, "info.gametype", Placeholder.unparsed("id", id),
                 Placeholder.unparsed("win-condition", game.winCondition().getClass().getSimpleName()), Formatter.number("lives", game.lives()));
         for (var phase : game.phases()) {
             if (phase.isTimed()) {
@@ -182,14 +183,14 @@ public final class ConfigInfo {
             }
         }
         if (!game.roles().isEmpty()) {
-            messages.send(sender, "info.game-roles", Placeholder.unparsed("roles", String.join(", ", game.roles())));
+            messages.send(sender, "info.gametype-roles", Placeholder.unparsed("roles", String.join(", ", game.roles())));
         }
         if (!game.regions().isEmpty()) {
-            messages.send(sender, "info.game-regions", Placeholder.unparsed("regions", String.join(", ", game.regions())));
+            messages.send(sender, "info.gametype-regions", Placeholder.unparsed("regions", String.join(", ", game.regions())));
         }
-        game.regionPerTeam().ifPresent(region -> messages.send(sender, "info.game-region-per-team", Placeholder.unparsed("region", region)));
+        game.regionPerTeam().ifPresent(region -> messages.send(sender, "info.gametype-region-per-team", Placeholder.unparsed("region", region)));
         settings(sender, settingsRead(game::configure));
-        usedBy(sender, modesWithGame(id));
+        usedBy(sender, gamesOfType(id));
     }
 
     public void feature(CommandSender sender, String id) {
@@ -252,43 +253,55 @@ public final class ConfigInfo {
         }
     }
 
-    /** @param uses a mode id, or a mode id and what it uses there; each clickable to that mode's info */
+    /** @param uses a game id, or a game id and what it uses there; each clickable to that game's info */
     private void usedBy(CommandSender sender, List<String[]> uses) {
         if (uses.isEmpty()) {
             messages.send(sender, "info.used-by-none");
             return;
         }
-        var modeLinks = uses.stream().map(use -> Component.text(String.join(" ", use))
-                .clickEvent(ClickEvent.runCommand("/mg mode " + use[0] + " info"))).toList();
-        messages.send(sender, "info.used-by", Placeholder.component("modes", Component.join(JoinConfiguration.commas(true), modeLinks)));
+        var gameLinks = uses.stream().map(use -> Component.text(String.join(" ", use))
+                .clickEvent(ClickEvent.runCommand("/mg game " + use[0] + " info"))).toList();
+        messages.send(sender, "info.used-by", Placeholder.component("games", Component.join(JoinConfiguration.commas(true), gameLinks)));
     }
 
-    private List<String[]> modesWithGame(String game) {
+    private List<String[]> gamesOfType(String gametype) {
         var uses = new ArrayList<String[]>();
-        files.inherited().forEach((id, config) -> {
-            if (game.equals(config.getString("gametype"))) {
+        files.games().forEach((id, config) -> {
+            if (gametype.equals(config.getString("gametype"))) {
                 uses.add(new String[] {id});
             }
         });
         return uses;
     }
 
-    /** Per mode, the phases it turns the feature on in. */
+    /** Per game, the phases it, or one of its variants, turns the feature on in. */
     private List<String[]> usesOfFeature(String feature) {
         var uses = new ArrayList<String[]>();
-        files.inherited().forEach((id, config) -> {
-            var phases = config.getConfigurationSection("features");
-            if (phases == null) {
-                return;
-            }
-            for (String phase : phases.getKeys(false)) {
-                var value = phases.get(phase + "." + feature);
-                if (value != null && !Boolean.FALSE.equals(value)) {
-                    uses.add(new String[] {id, "(" + phase + ")"});
+        files.games().forEach((id, config) -> {
+            usesOfFeature(feature, config, id, "", uses);
+            var variants = config.getConfigurationSection(GameLoader.VARIANTS);
+            if (variants != null) {
+                for (String variant : variants.getKeys(false)) {
+                    if (variants.isConfigurationSection(variant)) {
+                        usesOfFeature(feature, variants.getConfigurationSection(variant), id, variant + " ", uses);
+                    }
                 }
             }
         });
         return uses;
+    }
+
+    private static void usesOfFeature(String feature, ConfigurationSection config, String id, String variant, List<String[]> uses) {
+        var phases = config.getConfigurationSection("features");
+        if (phases == null) {
+            return;
+        }
+        for (String phase : phases.getKeys(false)) {
+            var value = phases.get(phase + "." + feature);
+            if (value != null && !Boolean.FALSE.equals(value)) {
+                uses.add(new String[] {id, "(" + variant + phase + ")"});
+            }
+        }
     }
 
     /** The status of a file: its problems first, then whether it is loaded, then the given status, else fine. */

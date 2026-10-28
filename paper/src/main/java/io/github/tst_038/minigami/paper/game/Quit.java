@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.mode;
+package io.github.tst_038.minigami.paper.game;
 
 /**
  * What quitting a running match does to a player still in it, and how long they have to come back.

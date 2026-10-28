@@ -15,9 +15,9 @@ import java.util.Set;
 /**
  * Hold the hill: every second that only one team stands on the arena's {@code hill} region scores
  * that team a point. Most points when time is up wins. Players always respawn. Without teams in the
- * mode, everyone plays for themselves.
+ * game, everyone plays for themselves.
  *
- * <p>Mode settings, all optional: {@code play-seconds} (300) and {@code points-to-win}, which ends the
+ * <p>Game settings, all optional: {@code play-seconds} (300) and {@code points-to-win}, which ends the
  * match as soon as a team has that many points (none).
  */
 public final class KingOfTheHill implements GameType {
@@ -65,9 +65,9 @@ public final class KingOfTheHill implements GameType {
     }
 
     @Override
-    public GameType configure(ConfigReader mode) {
+    public GameType configure(ConfigReader config) {
         return new KingOfTheHill(
-                mode.has("play-seconds") ? mode.integer("play-seconds", 10, 3600) : playSeconds,
-                mode.has("points-to-win") ? mode.integer("points-to-win", 1, 10000) : pointsToWin);
+                config.has("play-seconds") ? config.integer("play-seconds", 10, 3600) : playSeconds,
+                config.has("points-to-win") ? config.integer("points-to-win", 1, 10000) : pointsToWin);
     }
 }

@@ -12,5 +12,5 @@ dependencies:
       join-classpath: true
 permissions:
   minigami.admin:
-    description: Set up arenas, modes and the config, and manage matches and players
+    description: Set up arenas, games and the config, and manage matches and players
     default: op

@@ -164,7 +164,7 @@ public final class ConfigReader {
                 value instanceof ConfigurationSection child ? child : new MemoryConfiguration());
     }
 
-    /** Whether the key is set to {@code false}, as a way to turn off something inherited, such as a feature of the mode a mode extends. */
+    /** Whether the key is set to {@code false}, as a way to turn off something inherited, such as a feature of the game a variant is laid over. */
     public boolean isOff(String key) {
         if (Boolean.FALSE.equals(section.get(key))) {
             read.add(key);

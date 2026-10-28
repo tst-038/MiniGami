@@ -14,7 +14,7 @@ public interface Feature {
 
     /**
      * Whether it changes the arena's blocks. Nothing puts them back but the arena's saved map, pasted
-     * after every match, so a mode with such a feature only plays in arenas that have one.
+     * after every match, so a game with such a feature only plays in arenas that have one.
      */
     default boolean changesBlocks() {
         return false;

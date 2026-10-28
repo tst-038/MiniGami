@@ -1,6 +1,7 @@
-package io.github.tst_038.minigami.paper.mode;
+package io.github.tst_038.minigami.paper.game;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
@@ -28,10 +29,10 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
- * Turns {@code modes/<id>.yml} files into modes:
+ * Turns {@code games/<id>.yml} files into games:
  *
  * <pre>
- * game: last-standing
+ * gametype: last-standing
  * name: "&lt;gold&gt;Void Fall"   # optional, defaults to the id
  * min-players: 2
  * max-players: 8
@@ -47,95 +48,117 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *   then: die                 # stay, die or out (the default)
  *   rejoin-seconds: 60        # how long they can come back; 0 (the default): not at all
  * arenas: [demo]
- * stats: [combat]             # optional; stat groups to keep, next to the game's own stats
- * features:                   # optional; per phase of the game, per feature
+ * stats: [combat]             # optional; stat groups to keep, next to the game type's own stats
+ * features:                   # optional; per phase of the game type, per feature
  *   playing:
  *     void-kills: { y: 0 }
  * hud:                        # optional; replaces parts of the HUD from config.yml, or false for none
- *   sidebar: { playing: [mode, time, blank, kills] }
+ *   sidebar: { playing: [game, time, blank, kills] }
+ * variants:                   # optional; each is played as its own choice
+ *   lives:                    # only what differs; it needs its own name
+ *     name: "&lt;gold&gt;Void Fall Lives"
+ *     lives: 3
  * </pre>
  *
- * <p>A mode can {@code extends: <mode>} and set only what differs: its keys replace the other mode's
- * one by one, lists as a whole, and {@code <feature>: false} turns off a feature it would inherit.
+ * <p>A variant's keys replace the game's one by one, lists as a whole, and {@code <feature>: false}
+ * turns off a feature of the game. Each game file stands on its own: games don't extend each other.
  */
-public final class ModeLoader {
+public final class GameLoader {
 
-    private final IdRegistry<GameType> games;
+    public static final String VARIANTS = "variants";
+
+    private final IdRegistry<GameType> gametypes;
     private final IdRegistry<FeatureFactory> features;
     private final IdRegistry<StatGroup> statGroups;
 
-    public ModeLoader(IdRegistry<GameType> games, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups) {
-        this.games = games;
+    public GameLoader(IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups) {
+        this.gametypes = gametypes;
         this.features = features;
         this.statGroups = statGroups;
     }
 
     /**
-     * @param arenas the arenas loaded so far; a mode may only use playable ones
-     * @param hasLobby whether a lobby is set, which modes that wait in the lobby need
-     * @param hud the HUD every mode has unless it sets its own under {@code hud}
+     * @param arenas the arenas loaded so far; a game may only use playable ones
+     * @param hasLobby whether a lobby is set, which games that wait in the lobby need
+     * @param hud the HUD every game has unless it sets its own under {@code hud}
      */
-    public YamlFiles.Loaded<Mode> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud) {
-        var own = files.files();
-        var merged = new TreeMap<String, YamlConfiguration>();
-        var extendsProblems = new HashMap<String, String>();
-        own.keySet().forEach(id -> {
-            var withDefaults = new YamlConfiguration();
-            if (!hud.getKeys(false).isEmpty()) {
-                YamlFiles.overlay(withDefaults.createSection("hud"), hud);
-            }
-            YamlFiles.overlay(withDefaults, withParents(id, own, new ArrayList<>(), extendsProblems));
-            merged.put(id, withDefaults);
-        });
-        return new YamlFiles(files.folder(), merged, files.problems())
-                .parse(Mode::id, (id, config) -> parse(id, config, own.keySet(), extendsProblems.get(id), arenas, hasLobby));
+    public YamlFiles.Loaded<Game> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud) {
+        var withHud = new TreeMap<String, YamlConfiguration>();
+        files.files().forEach((id, own) -> withHud.put(id, withHud(hud, own, null)));
+        return new YamlFiles(files.folder(), withHud, files.problems())
+                .parse(Game::id, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud));
     }
 
-    /** The mode's file over the modes it extends; a broken link is left out, as {@link #load} reports it. */
-    public static YamlConfiguration inherited(String id, Map<String, YamlConfiguration> files) {
-        return withParents(id, files, new ArrayList<>(), new HashMap<>());
-    }
-
-    /**
-     * The mode's file over the modes it extends. A link to a missing mode, or back into the chain, is
-     * left out and reported for the mode at the start of the chain.
-     */
-    private static YamlConfiguration withParents(String id, Map<String, YamlConfiguration> files, List<String> chain,
-            Map<String, String> problems) {
-        var own = files.get(id);
-        var parent = own.getString("extends");
-        chain.add(id);
-        if (parent == null) {
-            return own;
-        }
-        if (!files.containsKey(parent)) {
-            problems.put(chain.getFirst(), "no mode '" + parent + "'" + (chain.size() > 1 ? " in " + String.join(" > ", chain) : ""));
-            return own;
-        }
-        if (chain.contains(parent)) {
-            problems.put(chain.getFirst(), "goes round in a circle: " + String.join(" > ", chain) + " > " + parent);
-            return own;
-        }
+    /** The HUD defaults, the game's own settings over them, and the variant's over those if one is given. */
+    private static YamlConfiguration withHud(ConfigurationSection hud, YamlConfiguration own, ConfigurationSection variant) {
         var merged = new YamlConfiguration();
-        YamlFiles.overlay(merged, withParents(parent, files, chain, problems));
+        if (!hud.getKeys(false).isEmpty()) {
+            YamlFiles.overlay(merged.createSection("hud"), hud);
+        }
         YamlFiles.overlay(merged, own);
+        if (variant != null) {
+            merged.set(VARIANTS, null);
+            YamlFiles.overlay(merged, variant);
+        }
         return merged;
     }
 
-    /** @param extendsProblem what is wrong with the mode it extends, if anything */
-    private Mode parse(String id, ConfigReader config, Set<String> modes, String extendsProblem, IdRegistry<Arena> arenas, boolean hasLobby) {
-        config.suggest("extends", modes);
+    private Game parseGame(String id, ConfigReader config, String file, YamlConfiguration own, IdRegistry<Arena> arenas, boolean hasLobby,
+            ConfigurationSection hud) {
         if (config.has("extends")) {
             config.string("extends");
-            if (extendsProblem != null) {
-                config.problem("extends", extendsProblem);
+            config.problem("extends", "games don't extend each other; put what differs under variants, or copy the other game's file");
+        }
+        var base = parse(id, Optional.empty(), config, arenas, hasLobby);
+        // Each variant is checked on its own below; here they only count as read.
+        var section = config.has(VARIANTS) ? Optional.of(config.section(VARIANTS)) : Optional.<ConfigReader>empty();
+        var ids = section.map(ConfigReader::keys).orElse(Set.of());
+        ids.stream().filter(variant -> own.isConfigurationSection(VARIANTS + "." + variant))
+                .forEach(variant -> section.orElseThrow().section(variant).keys());
+        try {
+            config.check();
+        } catch (InvalidConfigException e) {
+            // The variants would only repeat what is wrong with the game itself.
+            return new Game(id, base, Map.of());
+        }
+        var variants = new HashMap<String, Variant>();
+        for (String variant : ids) {
+            var key = VARIANTS + "." + variant;
+            if (!IdRegistry.isValid(variant)) {
+                config.problem(key, "use lower case letters, digits and dashes");
+                continue;
+            }
+            var settings = own.getConfigurationSection(key);
+            if (settings == null) {
+                config.problem(key, "must be the settings that differ from the game, such as { name: ..., lives: 3 }");
+                continue;
+            }
+            if (!settings.isString("name")) {
+                config.problem(key, "needs a name, so players can tell it from the game itself");
+            }
+            if (settings.contains("gametype")) {
+                // Its stats count as the game's, so it has to be the same kind of game.
+                config.problem(key + ".gametype", "a variant plays its game's game type; make another game for another type");
+                continue;
+            }
+            var reader = ConfigReader.of(file, withHud(hud, own, settings));
+            variants.put(variant, parse(id, Optional.of(variant), reader, arenas, hasLobby));
+            try {
+                reader.check();
+            } catch (InvalidConfigException e) {
+                e.problems().forEach(problem -> config.problem(key + (problem.key().isEmpty() ? "" : "." + problem.key()), problem.message()));
             }
         }
-        config.suggest("gametype", games.ids());
-        var gameId = config.string("gametype");
-        var game = games.find(gameId).orElse(null);
-        if (!gameId.isEmpty() && game == null) {
-            config.problem("gametype", "unknown game type '" + gameId + "'; known: " + String.join(", ", games.ids()));
+        return new Game(id, base, variants);
+    }
+
+    /** @param variant empty for the game itself */
+    private Variant parse(String id, Optional<String> variant, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby) {
+        config.suggest("gametype", gametypes.ids());
+        var gametypeId = config.string("gametype");
+        var game = gametypes.find(gametypeId).orElse(null);
+        if (!gametypeId.isEmpty() && game == null) {
+            config.problem("gametype", "unknown game type '" + gametypeId + "'; known: " + String.join(", ", gametypes.ids()));
         }
         if (game != null) {
             game = game.configure(config);
@@ -158,18 +181,18 @@ public final class ModeLoader {
         var playable = arenas(config, arenas, game, mostTeams);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         var stats = statGroups(config);
-        var changesBlocks = Mode.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
+        var changesBlocks = Variant.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
         // Only the arena's saved map puts changed blocks back; an arena without one is still being set up.
         if (changesBlocks) {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features, stats, hud);
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, quit, playable, features, stats, hud);
     }
 
     /** Every stat a game or stat group keeps. */
     private Set<String> knownStats() {
-        return Stream.concat(games.ids().stream().flatMap(id -> games.find(id).orElseThrow().stats().stream()),
+        return Stream.concat(gametypes.ids().stream().flatMap(id -> gametypes.find(id).orElseThrow().stats().stream()),
                 statGroups.ids().stream().flatMap(id -> statGroups.find(id).orElseThrow().stats().stream()))
                 .map(Stat::id).collect(Collectors.toSet());
     }

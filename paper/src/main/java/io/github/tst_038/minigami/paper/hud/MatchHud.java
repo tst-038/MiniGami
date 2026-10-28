@@ -36,7 +36,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Scoreboard;
 
 /**
- * Shows a match to its members as its mode's {@link Hud} says: each member gets a scoreboard of
+ * Shows a match to its members as its game's {@link Hud} says: each member gets a scoreboard of
  * their own for a personal sidebar, and their old one back when they leave. Refreshed on the match
  * clock; everything goes with the match's scope.
  *
@@ -70,7 +70,7 @@ public final class MatchHud {
     public MatchHud(Server server, LiveMatch match, Consumer<Scoreboard> mirrorTeams) {
         this.server = server;
         this.match = match;
-        this.hud = match.mode().hud();
+        this.hud = match.variant().hud();
         this.mirrorTeams = mirrorTeams;
         this.bossBar = BossBar.bossBar(Component.empty(), 1, hud.bossBar().orElse(BossBar.Color.WHITE), BossBar.Overlay.PROGRESS);
     }
@@ -217,11 +217,11 @@ public final class MatchHud {
         for (var line : hud.sidebar(phase.get().id())) {
             switch (line) {
                 case "blank" -> lines.add(Component.empty());
-                case "mode" -> lines.add(render("hud.line.mode", Placeholder.parsed("mode", match.mode().name())));
+                case "game" -> lines.add(render("hud.line.game", Placeholder.parsed("game", match.variant().name())));
                 case "arena" -> lines.add(render("hud.line.arena", Placeholder.unparsed("arena", match.arena().id())));
                 case "time" -> lines.add(time());
                 case "players" -> lines.add(render("hud.line.players", Formatter.number("players", match.match().roster().size()),
-                        Formatter.number("max", match.mode().maxPlayers())));
+                        Formatter.number("max", match.variant().maxPlayers())));
                 case "alive" -> lines.add(render("hud.line.alive", Formatter.number("alive", match.match().roster().alive().size()),
                         Formatter.number("players", match.match().roster().size())));
                 case "team" -> participant.flatMap(Participant::team)
@@ -237,7 +237,7 @@ public final class MatchHud {
                 case "footer" -> lines.add(render("hud.line.footer"));
                 default -> {
                     var stat = new Stat(line);
-                    if (participant.isPresent() && match.mode().stats().contains(stat)) {
+                    if (participant.isPresent() && match.variant().stats().contains(stat)) {
                         lines.add(render("hud.line.stat", Placeholder.component("stat", render("stats.name." + line)),
                                 Formatter.number("amount", match.match().stats().of(id, stat))));
                     }

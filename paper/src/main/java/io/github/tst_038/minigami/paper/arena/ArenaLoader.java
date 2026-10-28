@@ -5,7 +5,7 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
-import io.github.tst_038.minigami.paper.mode.TeamSetup;
+import io.github.tst_038.minigami.paper.game.TeamSetup;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import org.bukkit.World;
  * </pre>
  *
  * Yaw, pitch, the spawns, the waiting spot, the regions and the map are optional. A spawn with a team is only
- * used by that team in modes with teams; spawns without one are for everyone. A region is the box of
+ * used by that team in games with teams; spawns without one are for everyone. A region is the box of
  * blocks between its two corners, both included. {@code map} is the box the arena's saved map is
  * pasted back into; saving the map sets it.
  */
@@ -96,7 +96,7 @@ public final class ArenaLoader {
 
     private static Arena.Spawn spawn(ConfigReader config, World world) {
         var location = ConfigLocations.read(config, world);
-        // A role's id works too; roles belong to modes, which are loaded after arenas.
+        // A role's id works too; roles belong to games, which are loaded after arenas.
         config.suggest("team", TeamSetup.IDS);
         if (!config.has("team")) {
             return new Arena.Spawn(location, Optional.empty());

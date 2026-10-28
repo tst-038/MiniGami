@@ -3,7 +3,7 @@ package io.github.tst_038.minigami.paper.match;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
-import io.github.tst_038.minigami.paper.mode.Mode;
+import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -54,19 +54,19 @@ public final class RunningMatches implements Listener {
     }
 
     /**
-     * Opens a match of the mode in its first free arena, waiting for players.
+     * Opens a match of the variant in its first free arena, waiting for players.
      *
-     * @return empty if every arena of the mode is in use or being reset
+     * @return empty if every arena of the variant is in use or being reset
      */
-    public Optional<LiveMatch> open(Mode mode, Opening opening) {
-        return mode.arenas().stream()
+    public Optional<LiveMatch> open(Variant variant, Opening opening) {
+        return variant.arenas().stream()
                 .filter(arena -> !byArena.containsKey(arena.id()) && !maps.isResetting(arena.id()))
                 .findFirst()
-                .map(arena -> open(mode, arena, opening));
+                .map(arena -> open(variant, arena, opening));
     }
 
-    private LiveMatch open(Mode mode, Arena arena, Opening opening) {
-        var match = new LiveMatch(plugin, mode, arena, opening, lobby.get(), sessions, messages);
+    private LiveMatch open(Variant variant, Arena arena, Opening opening) {
+        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages);
         // Registered first so it runs last, once the match has let go of the arena.
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {
@@ -114,8 +114,8 @@ public final class RunningMatches implements Listener {
         for (var live : running()) {
             var match = live.match();
             messages.send(sender, "debug.match",
-                    Placeholder.unparsed("game", live.mode().game().id()),
-                    Placeholder.unparsed("mode", live.mode().id()),
+                    Placeholder.unparsed("gametype", live.variant().gametype().id()),
+                    Placeholder.unparsed("game", live.variant().key()),
                     Placeholder.unparsed("arena", live.arena().id()),
                     Placeholder.unparsed("phase", match.currentPhase().map(phase -> phase.id()).orElse("-")),
                     Formatter.number("members", live.members().size()),
@@ -125,7 +125,7 @@ public final class RunningMatches implements Listener {
     }
 
     /**
-     * A player who quits leaves their match, or is away from it if the mode gives them time to come back. Bukkit saves the player after this event, so their restored state is
+     * A player who quits leaves their match, or is away from it if the game gives them time to come back. Bukkit saves the player after this event, so their restored state is
      * what gets saved.
      */
     @EventHandler

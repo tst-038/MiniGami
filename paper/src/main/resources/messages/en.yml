@@ -5,11 +5,13 @@ prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
 join:
   # <player>: who tried to join
   already-in-match: "<prefix><red><player> is already in a match; leave it first with <white>/mg leave</white>."
-  name-a-player: "<prefix><red>Name who should join: <white>/mg join <mode> <player></white>."
-  # <mode>: the mode as typed
-  unknown-mode: "<prefix><red>There is no mode called <white><mode></white>."
-  # <mode>: the mode's name
-  no-free-arena: "<prefix><red>All arenas of <mode><red> are busy or full. Try again later."
+  name-a-player: "<prefix><red>Name who should join: <white>/mg join <game> [variant] <player></white>."
+  # <game>: the game as typed
+  unknown-game: "<prefix><red>There is no game called <white><game></white>."
+  # <game>: the game's name, <variant>: as typed, <variants>: the ones it has
+  unknown-variant: "<prefix><red><game><red> has no variant called <white><variant></white>. It has: <white><variants></white>"
+  # <game>: the game's or variant's name
+  no-free-arena: "<prefix><red>All arenas of <game><red> are busy or full. Try again later."
   failed: "<prefix><red><player> can't join right now: their things from an earlier match still need to be given back. Rejoining the server does that, or staff can with <white>/mg player <player> snapshot restore</white>."
 
 leave:
@@ -24,7 +26,7 @@ match:
   joined: "<prefix><yellow><player></yellow> joined <gray>(<players>/<needed>)"
   # A player ran out of lives.
   eliminated: "<prefix><red><player></red> is out!"
-  # Instead of going out, joins the role the mode names in on-out. <team>: that role's name
+  # Instead of going out, joins the role the game names in on-out. <team>: that role's name
   switched-role: "<prefix><white><player></white> <gray>is now one of the <team><gray>."
   # <seconds>: delay before the start
   starting: "<prefix><green>Enough players! Starting in <seconds> seconds."
@@ -38,7 +40,7 @@ match:
   back: "<prefix><yellow><player></yellow> <gray>is back."
   # <player>: who didn't come back in time
   away-expired: "<prefix><red><player></red> didn't come back in time and is out!"
-  # The death message of a participant whose mode kills them for quitting. <player>
+  # The death message of a participant whose game kills them for quitting. <player>
   died-quitting: "<red><player></red> <gray>died by quitting the match"
   # <player>: the winner
   winner: "<prefix><gold><player></gold> wins the match!"
@@ -54,14 +56,14 @@ match:
   stopped: "<prefix><red>An admin stopped the match; you get your own things back."
   paused: "<prefix><yellow>An admin paused the match; nobody can move or get hurt."
   resumed: "<prefix><green>The match goes on!"
-  # For admins. <match>: a match's id, its arena; <mode>, <phase>, <players>: how many are in it
+  # For admins. <match>: a match's id, its arena; <game>: the game and any variant, <phase>, <players>: how many are in it
   admin:
     none: "<prefix><gray>No matches are running."
     # <count>
     list: "<prefix><gold>Matches</gold> <gray>(<count>):"
-    entry: "<gray> - <info><hover:show_text:'Show details'><white><match></white></hover></info> <gray><mode>, <phase>, <white><players></white> players"
-    # <mode>: its name, <game>, <seconds>: since it opened
-    info: "<prefix><gold><match></gold> <gray>(<mode><gray>, <game>) in phase <white><phase></white> after <seconds> s:"
+    entry: "<gray> - <info><hover:show_text:'Show details'><white><match></white></hover></info> <gray><game>, <phase>, <white><players></white> players"
+    # <game>: its name, <gametype>, <seconds>: since it opened
+    info: "<prefix><gold><match></gold> <gray>(<game><gray>, <gametype>) in phase <white><phase></white> after <seconds> s:"
     # <player>, <team>: the team line below or nothing, <state>, <points>; <kick>…</kick> fills in the kick command
     player: "<kick><hover:show_text:'Click to kick'><gray> - <team><white><player></white> <state> <gray><points> points</hover></kick>"
     # <team>: the team's name
@@ -126,13 +128,12 @@ build-battle:
   # <player>, <points>: a team's or builder's total, best first
   score: "<gray> - <white><player></white>: <gold><points></gold> points"
 
-# /mg list. <mode>: a mode's name, <id>: its id, <players>: how many are in its matches; <join>…</join> joins on click
-# What players see of a match next to chat; config.yml and the modes choose which of it is shown.
+# What players see of a match next to chat; config.yml and the games choose which of it is shown.
 hud:
   sidebar-title: "<gradient:gold:yellow><bold>MINIGAMI</bold></gradient>"
   # A sidebar line per id. A stat line (kills, deaths, ...) uses stat with the stat's name from stats.name.
   line:
-    mode: "<gray>Mode: <white><mode>"
+    game: "<gray>Game: <white><game>"
     arena: "<gray>Map: <white><arena>"
     players: "<gray>Players: <white><players><gray>/<white><max>"
     alive: "<gray>Alive: <white><alive><gray>/<white><players>"
@@ -173,28 +174,30 @@ hud:
     paused: "<yellow><bold>PAUSED"
     paused-subtitle: "<gray>An admin paused the match"
 
+# /mg list. <game>: a game's or variant's name, <players>: how many are in its matches; <join>…</join> joins on click
 list:
-  header: "<prefix><gold>Modes you can join:"
-  mode: "<gray> - <join><hover:show_text:'Click to join'><mode></hover></join> <gray>(<white><players></white> playing)"
-  none: "<prefix><gray>There are no modes to join right now."
+  header: "<prefix><gold>Games you can join:"
+  game: "<gray> - <join><hover:show_text:'Click to join'><game></hover></join> <gray>(<white><players></white> playing)"
+  variant: "<gray>    - <join><hover:show_text:'Click to join'><game></hover></join> <gray>(<white><players></white> playing)"
+  none: "<prefix><gray>There are no games to join right now."
 
-# /mg stats and /mg top. <player>: a player's name, <mode>: a mode's name or the id typed, <game>: a game's id,
+# /mg stats and /mg top. <player>: a player's name, <game>: a game's name or the id typed, <gametype>: a game type's id,
 # <stat>: a stat's name from below; totals: <played>, <wins>, <place>: average place or -, <left>: matches left early, <minutes> played
 stats:
   name-a-player: "<prefix><red>Name a player: <white>/mg stats <player></white>."
   loading: "<prefix><gray>The stats of <player> are still loading; try again in a moment."
   failed: "<prefix><red>Could not load the stats; see the server log."
   unknown-player: "<prefix><red>Nobody called <white><player></white> has played here."
-  unknown-mode: "<prefix><red>There is no mode called <white><mode></white>."
-  unknown-stat: "<prefix><red><mode> <red>has no leaderboard called <white><stat></white>."
+  unknown-game: "<prefix><red>There is no game called <white><game></white>."
+  unknown-stat: "<prefix><red><game> <red>has no leaderboard called <white><stat></white>."
   header: "<prefix><gold><player></gold><gray>'s stats:"
   none: "<gray> No matches played yet."
-  game: "<gray> - <white><game></white>: <played> played, <wins> won, average place <place>, <minutes> min"
-  mode-header: "<prefix><gold><player></gold><gray> in <mode><gray>:"
-  mode-totals: "<gray> <played> played, <wins> won, average place <place>, left <left>, <minutes> min"
+  gametype: "<gray> - <white><gametype></white>: <played> played, <wins> won, average place <place>, <minutes> min"
+  game-header: "<prefix><gold><player></gold><gray> in <game><gray>:"
+  game-totals: "<gray> <played> played, <wins> won, average place <place>, left <left>, <minutes> min"
   # <amount>
   stat: "<gray> - <stat>: <white><amount>"
-  top-header: "<prefix><gold>Top <stat></gold> <gray>in <mode><gray>:"
+  top-header: "<prefix><gold>Top <stat></gold> <gray>in <game><gray>:"
   # <position>, <amount>
   top-entry: "<gray> <position>. <white><player></white>: <gold><amount>"
   top-none: "<gray> Nobody yet."
@@ -266,15 +269,15 @@ help:
 
 # Lists and details for admins. <info>…</info> shows an entry's details on click, <set>…</set> fills in a set command.
 info:
-  # <count>; per entry <id>, <status>, and <game>, <world>, <spawns> or <modes>: how many modes use it
-  modes: "<prefix><gold>Modes</gold> <gray>(<count>):"
-  mode-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray><game>, <status>"
+  # <count>; per entry <id>, <status>, and <gametype> and <variants>, <world> and <spawns>, or <games>: how many games use it
+  games: "<prefix><gold>Games</gold> <gray>(<count>):"
+  game-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray><gametype>, <variants> variant(s), <status>"
   arenas: "<prefix><gold>Arenas</gold> <gray>(<count>):"
   arena-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>in <world>, <spawns> spawns, <status>"
-  games: "<prefix><gold>Game types</gold> <gray>(<count>):"
-  game-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <modes> mode(s)"
+  gametypes: "<prefix><gold>Game types</gold> <gray>(<count>):"
+  gametype-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <games> game(s)"
   features: "<prefix><gold>Features</gold> <gray>(<count>):"
-  feature-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <modes> mode(s)"
+  feature-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <games> game(s)"
   status:
     ok: "<green>ready"
     # <problems>: how many
@@ -283,16 +286,19 @@ info:
     no-arenas: "<yellow>no playable arena: its arenas lack spawns, the game's regions, or a saved map (needed when blocks change)"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"
-  # <name>: the mode's display name
-  mode: "<prefix><gold><id></gold> <gray>(<name><gray>) plays <white><game></white>, <status>"
-  mode-parent: "<gray> Extends <info><hover:show_text:'Show details'><white><parent></white></hover></info>; grey settings come from it."
-  mode-arenas: "<gray> Playable arenas: <white><arenas>"
+  # <name>: the game's display name
+  game: "<prefix><gold><id></gold> <gray>(<name><gray>) plays <white><gametype></white>, <status>"
+  # <variants>: each a game-variant
+  game-variants: "<gray> Variants: <variants>"
+  # <id>, <name>: the variant's
+  game-variant: "<white><id></white> <gray>(<name><gray>)"
+  game-arenas: "<gray> Playable arenas: <white><arenas>"
   # <count>
-  mode-teams-count: "<gray> Teams: <white><count></white>, formed at random when the match starts"
+  game-teams-count: "<gray> Teams: <white><count></white>, formed at random when the match starts"
   # <size>: players per team
-  mode-teams-size: "<gray> Teams: of <white><size></white> players each, formed at random when the match starts"
+  game-teams-size: "<gray> Teams: of <white><size></white> players each, formed at random when the match starts"
   # <roles>: the roles' names, in the order they are handed out
-  mode-roles: "<gray> Roles: <roles><gray>, handed out at random when the match starts"
+  game-roles: "<gray> Roles: <roles><gray>, handed out at random when the match starts"
   # <key>, <value>
   value: "<set><hover:show_text:'Click to change'><gray> - <white><key></white>: <yellow><value></yellow></hover></set>"
   value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - <key>: <value></hover></set>"
@@ -300,12 +306,12 @@ info:
   unset: "<gray> Not set: <white><keys>"
   config: "<prefix><gold><file></gold><gray>:"
   # <win-condition>, <lives>: default lives, 0 means always respawn
-  game: "<prefix><gold><id></gold> <gray>is won by <white><win-condition></white>; lives: <white><lives></white>. Phases:"
+  gametype: "<prefix><gold><id></gold> <gray>is won by <white><win-condition></white>; lives: <white><lives></white>. Phases:"
   # <roles>: the role ids the game needs
-  game-roles: "<gray> Its modes define the roles <white><roles></white> under <white>roles.<id></white>."
-  game-regions: "<gray> Its arenas need the regions <white><regions></white>."
+  gametype-roles: "<gray> Its games define the roles <white><roles></white> under <white>roles.<id></white>."
+  gametype-regions: "<gray> Its arenas need the regions <white><regions></white>."
   # <region>: the name every team's region starts with
-  game-region-per-team: "<gray> Its arenas need a region per team: <white><region>-1</white>, <white><region>-2</white>, and so on."
+  gametype-region-per-team: "<gray> Its arenas need a region per team: <white><region>-1</white>, <white><region>-2</white>, and so on."
   phase-timed: "<gray> - <white><phase></white> for <seconds> s"
   phase-untimed: "<gray> - <white><phase></white> until it ends"
   feature: "<prefix><gold><id></gold><gray>, set per phase under <white>features.<phase>.<id></white>:"
@@ -314,15 +320,15 @@ info:
   setting-required: "<gray> - <white><key></white> <red>(required)</red>: <values>"
   any-value: "<dark_gray>any value"
   no-settings: "<gray> No settings of its own."
-  # <modes>: clickable
-  used-by: "<gray> Used by: <white><modes>"
-  used-by-none: "<gray> Not used by any mode."
-  unknown-game: "<prefix><red>There is no game type called <white><id></white>."
+  # <games>: clickable
+  used-by: "<gray> Used by: <white><games>"
+  used-by-none: "<gray> Not used by any game."
+  unknown-gametype: "<prefix><red>There is no game type called <white><id></white>."
   unknown-feature: "<prefix><red>There is no feature called <white><id></white>."
 
-# <matches>, <listeners>, <snapshots>; per match: <game>, <mode>, <arena>, <phase>, <members>, <alive>, <tick>
+# <matches>, <listeners>, <snapshots>; per match: <gametype>, <game>, <arena>, <phase>, <members>, <alive>, <tick>
 reload:
-  done: "<prefix><green>Config loaded: <white><arenas></white> arenas, <white><modes></white> modes."
+  done: "<prefix><green>Config loaded: <white><arenas></white> arenas, <white><games></white> games."
   failed: "<prefix><red>Config not loaded, the old one stays in use. <white><problems></white> problem(s):"
   problem: "<red> - <problem>"
 
@@ -357,4 +363,4 @@ snapshot:
 
 debug:
   summary: "<prefix><gray>Matches: <white><matches></white>, listeners: <white><listeners></white>, players with saved state: <white><snapshots></white>"
-  match: "<prefix><gray><mode> on <arena>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"
+  match: "<prefix><gray><game> on <arena>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"

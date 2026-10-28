@@ -9,6 +9,7 @@ import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
@@ -40,6 +41,14 @@ public final class GamesCommand {
     private GamesCommand() {
     }
 
+    private static void joinSelf(Messages messages, PublicMatches publicMatches, CommandContext<CommandSourceStack> context, Optional<String> variant) {
+        if (context.getSource().getExecutor() instanceof Player player) {
+            publicMatches.join(player, string(context, "game"), variant);
+        } else {
+            messages.send(context.getSource().getSender(), "join.name-a-player");
+        }
+    }
+
     /**
      * @param games ids of the registered games
      * @param features ids of the registered features
@@ -54,27 +63,36 @@ public final class GamesCommand {
                 .then(Commands.literal("list").executes(bySender((sender, context) -> publicMatches.list(sender))))
                 .then(Commands.literal("join")
                         .requires(PLAYER.or(ADMIN))
-                        .then(Commands.argument("mode", StringArgumentType.word())
-                                .suggests(suggest(publicMatches::modeIds))
-                                .executes(bySender((sender, context) -> {
-                                    if (context.getSource().getExecutor() instanceof Player player) {
-                                        publicMatches.join(player, string(context, "mode"));
-                                    } else {
-                                        messages.send(sender, "join.name-a-player");
-                                    }
-                                }))
-                                .then(Commands.argument("player", ArgumentTypes.player())
-                                        .requires(ADMIN)
-                                        .executes(bySender((sender, context) -> publicMatches.join(sender, player(context), string(context, "mode")))))))
+                        .then(Commands.argument("game", StringArgumentType.word())
+                                .suggests(suggest(publicMatches::gameIds))
+                                .executes(bySender((sender, context) -> joinSelf(messages, publicMatches, context, Optional.empty())))
+                                // A variant of the game, or for admins a player to put in the game itself; a variant wins a tie.
+                                .then(Commands.argument("variant", StringArgumentType.word())
+                                        .suggests(suggest(context -> publicMatches.variantIds(string(context, "game"))))
+                                        .executes(bySender((sender, context) -> {
+                                            var game = string(context, "game");
+                                            var word = string(context, "variant");
+                                            var named = ADMIN.test(context.getSource()) && !publicMatches.hasVariant(game, word)
+                                                    ? Optional.ofNullable(sender.getServer().getPlayerExact(word)) : Optional.<Player>empty();
+                                            if (named.isPresent()) {
+                                                publicMatches.join(sender, named.get(), game, Optional.empty());
+                                            } else {
+                                                joinSelf(messages, publicMatches, context, Optional.of(word));
+                                            }
+                                        }))
+                                        .then(Commands.argument("player", ArgumentTypes.player())
+                                                .requires(ADMIN)
+                                                .executes(bySender((sender, context) -> publicMatches.join(sender, player(context),
+                                                        string(context, "game"), Optional.of(string(context, "variant")))))))))
                 .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> running.leave(player))))
                 .then(StatsCommands.stats(stats, messages))
                 .then(StatsCommands.top(stats))
                 .then(Commands.literal("start").requires(ADMIN).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
-                .then(ModeCommands.node(editor, info, help))
+                .then(GameCommands.node(editor, info, help))
                 .then(ArenaCommands.node(editor, arenas, info, help))
-                .then(GameCommands.game(info, () -> games, help))
-                .then(GameCommands.feature(info, () -> features, help))
+                .then(GameTypeCommands.game(info, () -> games, help))
+                .then(GameTypeCommands.feature(info, () -> features, help))
                 .then(ConfigCommands.lobby(editor, lobby, messages, help))
                 .then(ConfigCommands.config(editor, info, help))
                 .then(PlayerCommands.node(snapshots))

@@ -82,7 +82,7 @@ public interface MatchContext {
      * Adds to a participant's stat for the record, or takes away when negative. Unlike points it
      * never decides the match. Ignored once the match has a result: the record is settled then.
      *
-     * @throws IllegalArgumentException if the mode doesn't keep the stat: it is neither the game's own nor in one of the mode's stat groups
+     * @throws IllegalArgumentException if the game doesn't keep the stat: it is neither the game's own nor in one of the game's stat groups
      */
     void count(UUID id, Stat stat, long amount);
 

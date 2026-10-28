@@ -14,12 +14,12 @@ import java.util.Map;
  * Hiders get a head start to hide, then the seekers hunt them. A hider who dies is caught and out.
  * Seekers win once every hider is caught; hiders still in when time runs out win.
  *
- * <p>The mode defines the roles {@code seeker} and {@code hider} and what each gets per phase, such
+ * <p>The game defines the roles {@code seeker} and {@code hider} and what each gets per phase, such
  * as {@code freeze} and {@code effects} for seekers while the hiders hide, and a kit to catch with.
- * A hider has one life unless the mode says otherwise; give seekers {@code lives: 0} so they always
+ * A hider has one life unless the game says otherwise; give seekers {@code lives: 0} so they always
  * come back.
  *
- * <p>Mode settings, all optional: {@code hide-seconds} (30) and {@code seek-seconds} (300).
+ * <p>Game settings, all optional: {@code hide-seconds} (30) and {@code seek-seconds} (300).
  */
 public final class HideAndSeek implements GameType {
 
@@ -70,9 +70,9 @@ public final class HideAndSeek implements GameType {
     }
 
     @Override
-    public GameType configure(ConfigReader mode) {
+    public GameType configure(ConfigReader config) {
         return new HideAndSeek(
-                mode.has("hide-seconds") ? mode.integer("hide-seconds", 5, 600) : hideSeconds,
-                mode.has("seek-seconds") ? mode.integer("seek-seconds", 10, 3600) : seekSeconds);
+                config.has("hide-seconds") ? config.integer("hide-seconds", 5, 600) : hideSeconds,
+                config.has("seek-seconds") ? config.integer("seek-seconds", 10, 3600) : seekSeconds);
     }
 }

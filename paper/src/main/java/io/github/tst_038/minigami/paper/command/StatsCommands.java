@@ -14,7 +14,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;
 import org.bukkit.entity.Player;
 
-/** {@code /mg stats [player] [mode]} and {@code /mg top <mode> [stat]}, for everyone. */
+/** {@code /mg stats [player] [game]} and {@code /mg top <game> [stat]}, for everyone. */
 final class StatsCommands {
 
     private StatsCommands() {
@@ -32,19 +32,19 @@ final class StatsCommands {
                 .then(Commands.argument("player", StringArgumentType.word())
                         .suggests(suggest(view::onlineNames))
                         .executes(bySender((sender, context) -> view.show(sender, string(context, "player"), Optional.empty())))
-                        .then(Commands.argument("mode", StringArgumentType.word())
-                                .suggests(suggest(view::modeIds))
+                        .then(Commands.argument("game", StringArgumentType.word())
+                                .suggests(suggest(view::gameIds))
                                 .executes(bySender((sender, context) ->
-                                        view.show(sender, string(context, "player"), Optional.of(string(context, "mode")))))));
+                                        view.show(sender, string(context, "player"), Optional.of(string(context, "game")))))));
     }
 
     static ArgumentBuilder<CommandSourceStack, ?> top(StatsView view) {
         return Commands.literal("top")
-                .then(Commands.argument("mode", StringArgumentType.word())
-                        .suggests(suggest(view::modeIds))
-                        .executes(bySender((sender, context) -> view.top(sender, string(context, "mode"), Leaderboards.WINS)))
+                .then(Commands.argument("game", StringArgumentType.word())
+                        .suggests(suggest(view::gameIds))
+                        .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), Leaderboards.WINS)))
                         .then(Commands.argument("stat", StringArgumentType.word())
-                                .suggests(suggest(context -> view.boardStats(string(context, "mode"))))
-                                .executes(bySender((sender, context) -> view.top(sender, string(context, "mode"), string(context, "stat"))))));
+                                .suggests(suggest(context -> view.boardStats(string(context, "game"))))
+                                .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), string(context, "stat"))))));
     }
 }

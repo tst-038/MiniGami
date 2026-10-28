@@ -13,11 +13,11 @@ import java.util.Optional;
 
 /**
  * Every team builds on a theme in its own plot, then everyone scores the other teams' builds; the
- * highest total wins. Without teams in the mode, everyone builds alone; with {@code teams: { size: 2 }}
+ * highest total wins. Without teams in the game, everyone builds alone; with {@code teams: { size: 2 }}
  * it is duos. A plot is an arena region {@code plot-1}, {@code plot-2} and so on, one for every team a
  * match can have.
  *
- * <p>Mode settings, all optional: {@code build-seconds} (300), {@code vote-seconds} per build (15) and
+ * <p>Game settings, all optional: {@code build-seconds} (300), {@code vote-seconds} per build (15) and
  * {@code themes}, one picked at random (none: free build).
  */
 public final class BuildBattle implements GameType {
@@ -70,10 +70,10 @@ public final class BuildBattle implements GameType {
     }
 
     @Override
-    public GameType configure(ConfigReader mode) {
+    public GameType configure(ConfigReader config) {
         return new BuildBattle(
-                mode.has("build-seconds") ? mode.integer("build-seconds", 10, 3600) : buildSeconds,
-                mode.has("vote-seconds") ? mode.integer("vote-seconds", 3, 120) : voteSeconds,
-                mode.has("themes") ? mode.strings("themes") : themes);
+                config.has("build-seconds") ? config.integer("build-seconds", 10, 3600) : buildSeconds,
+                config.has("vote-seconds") ? config.integer("vote-seconds", 3, 120) : voteSeconds,
+                config.has("themes") ? config.strings("themes") : themes);
     }
 }

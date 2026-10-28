@@ -19,12 +19,12 @@ class ConfigFilesTest {
 
     @Test
     void fileWithProblemsIsNotWritten() throws Exception {
-        var path = directory.resolve("modes/spleef.yml");
+        var path = directory.resolve("games/spleef.yml");
         Files.createDirectories(path.getParent());
         Files.writeString(path, "max-players: 8\n");
 
         var problems = ConfigFiles.update(path, config -> config.set("max-players", -1),
-                config -> List.of(new ConfigProblem("modes/spleef.yml", "max-players", "must be at least 1")));
+                config -> List.of(new ConfigProblem("games/spleef.yml", "max-players", "must be at least 1")));
 
         assertEquals(1, problems.size());
         assertEquals("max-players: 8\n", Files.readString(path));

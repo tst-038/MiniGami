@@ -14,7 +14,7 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
 
 /**
- * What a mode shows its players next to chat: the sidebar lines per phase, a boss bar with the
+ * What a game shows its players next to chat: the sidebar lines per phase, a boss bar with the
  * time left, titles, celebration fireworks and sounds. The texts themselves are messages under
  * {@code hud}.
  *
@@ -27,7 +27,7 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
     public static final Hud NONE = new Hud(Map.of(), Optional.empty(), false, false, Map.of());
     public static final String DEFAULT = "default";
     /** Lines filled by the engine itself; any stat id is a line too, showing the player's own count. */
-    public static final List<String> LINES = List.of("mode", "arena", "time", "players", "alive", "team", "lives", "points", "scores", "blank", "footer");
+    public static final List<String> LINES = List.of("game", "arena", "time", "players", "alive", "team", "lives", "points", "scores", "blank", "footer");
 
     /** When a sound plays. */
     public enum Moment {
@@ -49,16 +49,16 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
     }
 
     /**
-     * Reads the {@code hud} key of a mode; {@code hud: false} shows nothing.
+     * Reads the {@code hud} key of a game; {@code hud: false} shows nothing.
      *
      * @param phases the game's phases, which the sidebar may set lines for
-     * @param stats every stat a mode could keep; one the mode doesn't keep is simply not shown, so a shared layout can list it
+     * @param stats every stat a game could keep; one the game doesn't keep is simply not shown, so a shared layout can list it
      */
-    public static Hud read(ConfigReader mode, List<String> phases, Set<String> stats) {
-        if (!mode.has("hud") || mode.isOff("hud")) {
+    public static Hud read(ConfigReader game, List<String> phases, Set<String> stats) {
+        if (!game.has("hud") || game.isOff("hud")) {
             return NONE;
         }
-        var config = mode.section("hud");
+        var config = game.section("hud");
         var sidebar = new HashMap<String, List<String>>();
         if (config.has("sidebar")) {
             var section = config.section("sidebar");

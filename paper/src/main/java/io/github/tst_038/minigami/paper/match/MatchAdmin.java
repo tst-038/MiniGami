@@ -45,17 +45,17 @@ public final class MatchAdmin {
         messages.send(sender, "match.admin.list", Formatter.number("count", running.size()));
         for (var live : running) {
             messages.send(sender, "match.admin.entry", Placeholder.unparsed("match", live.arena().id()),
-                    Placeholder.unparsed("mode", live.mode().id()), phase(live), Formatter.number("players", live.members().size()),
+                    Placeholder.unparsed("game", live.variant().key()), phase(live), Formatter.number("players", live.members().size()),
                     Placeholder.styling("info", ClickEvent.runCommand("/mg match " + live.arena().id() + " info")));
         }
     }
 
-    /** The match's mode, phase and time, then everyone who took part with their state and points. */
+    /** The match's game, phase and time, then everyone who took part with their state and points. */
     public void info(CommandSender sender, String id) {
         find(sender, id).ifPresent(live -> {
             var match = live.match();
-            messages.send(sender, "match.admin.info", Placeholder.unparsed("match", id), Placeholder.parsed("mode", live.mode().name()),
-                    Placeholder.unparsed("game", live.mode().game().id()), phase(live),
+            messages.send(sender, "match.admin.info", Placeholder.unparsed("match", id), Placeholder.parsed("game", live.variant().name()),
+                    Placeholder.unparsed("gametype", live.variant().gametype().id()), phase(live),
                     Formatter.number("seconds", match.clock().elapsedTicks() / 20));
             var roster = match.roster();
             Stream.concat(roster.alive().stream(), roster.eliminationOrder().reversed().stream()).map(Participant::id).forEach(player -> {

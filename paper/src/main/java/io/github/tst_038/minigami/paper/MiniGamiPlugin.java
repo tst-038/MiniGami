@@ -38,8 +38,8 @@ import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
-import io.github.tst_038.minigami.paper.mode.Mode;
-import io.github.tst_038.minigami.paper.mode.ModeLoader;
+import io.github.tst_038.minigami.paper.game.Game;
+import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
@@ -81,13 +81,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
     /** Five minutes: boards lag a little behind, but are never read from storage per view. */
     private static final long LEADERBOARD_REFRESH_TICKS = 5 * 60 * 20;
 
-    private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
+    private final IdRegistry<GameType> gametypes = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
-    private final ModeLoader modeLoader = new ModeLoader(games, features, statGroups);
+    private final GameLoader gameLoader = new GameLoader(gametypes, features, statGroups);
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
-    private IdRegistry<Mode> modes = new IdRegistry<>(Mode::id);
+    private IdRegistry<Game> games = new IdRegistry<>(Game::id);
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
@@ -119,11 +119,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
-        games.register(new LastStanding());
-        games.register(new BuildBattle());
-        games.register(new TeamDeathmatch());
-        games.register(new HideAndSeek());
-        games.register(new KingOfTheHill());
+        gametypes.register(new LastStanding());
+        gametypes.register(new BuildBattle());
+        gametypes.register(new TeamDeathmatch());
+        gametypes.register(new HideAndSeek());
+        gametypes.register(new KingOfTheHill());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new DeathItemsFactory());
@@ -141,14 +141,14 @@ public final class MiniGamiPlugin extends JavaPlugin {
         maps = new ArenaMaps(this, messages);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps);
         getServer().getPluginManager().registerEvents(running, this);
-        var publicMatches = new PublicMatches(this, () -> modes, messages, running);
+        var publicMatches = new PublicMatches(this, () -> games, messages, running);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, games, modeLoader, () -> arenas, () -> settings, running::isArenaInUse, this::loadConfig);
+        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> settings, running::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
-        info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, running::isArenaInUse);
+        info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,
-                        new StatsView(profiles, leaderboards, () -> modes, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin,
+                        new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
@@ -177,9 +177,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var settingsText = readSettings(fileProblems);
             var messageTexts = readMessages(fileProblems);
             saveExample("arenas");
-            saveExample("modes");
+            saveExample("games");
+            warnOldModes();
             var arenaFiles = YamlFiles.read(getDataPath().resolve("arenas"));
-            var modeFiles = YamlFiles.read(getDataPath().resolve("modes"));
+            var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
             if (!isEnabled()) {
                 return;
             }
@@ -189,14 +190,14 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
-                var loadedModes = modeLoader.load(modeFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud());
+                var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud());
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
                 problems.addAll(loadedArenas.problems());
-                problems.addAll(loadedModes.problems());
-                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedModes.keys());
-                info.loaded(settingsText, arenaFiles.files(), modeFiles.files(), problems);
+                problems.addAll(loadedGames.problems());
+                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys());
+                info.loaded(settingsText, arenaFiles.files(), gameFiles.files(), problems);
                 var waiting = new ArrayList<Audience>();
                 for (Audience next; (next = requesters.poll()) != null; ) {
                     waiting.add(next);
@@ -212,22 +213,38 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 messages.replace(messageTexts);
                 settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
-                modes = loadedModes.entries();
+                games = loadedGames.entries();
                 fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
-                loadedModes.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
-                getLogger().info("Loaded arenas: " + arenas.ids() + ", modes: " + modes.ids());
+                loadedGames.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
+                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids());
                 if (requester == null) {
                     // A match the server stopped in the middle of left its arena changed.
                     maps.resetAll(arenas.ids().stream().map(id -> arenas.find(id).orElseThrow()).toList());
                 }
                 for (Audience audience : waiting) {
                     messages.send(audience, "reload.done", Formatter.number("arenas", arenas.ids().size()),
-                            Formatter.number("modes", modes.ids().size()));
+                            Formatter.number("games", games.ids().size()));
                 }
             });
         });
+    }
+
+    /** Blocking IO. Games used to be called modes; their old files load no more until moved to games/ and converted. */
+    private void warnOldModes() {
+        var folder = getDataPath().resolve("modes");
+        if (!Files.isDirectory(folder)) {
+            return;
+        }
+        try (var paths = Files.list(folder)) {
+            var old = paths.map(path -> path.getFileName().toString()).filter(name -> name.endsWith(".yml")).sorted().toList();
+            if (!old.isEmpty()) {
+                getLogger().warning("The modes/ folder is no longer read; convert " + old + " into games/<id>.yml, with variants under 'variants:'");
+            }
+        } catch (IOException e) {
+            getLogger().warning("Can't read the old modes/ folder: " + e.getMessage());
+        }
     }
 
     /** Blocking IO. On a fresh install, writes the bundled example into the folder so admins have one to copy. */

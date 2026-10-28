@@ -1,18 +1,18 @@
 # MiniGami settings.
 
-# Where players wait for modes with "waiting: lobby". Set it in-game with /mg lobby set, or here:
+# Where players wait for games with "waiting: lobby". Set it in-game with /mg lobby set, or here:
 # lobby: { world: world, x: 0.5, y: 64, z: 0.5, yaw: 0, pitch: 0 }
 
-# What players see of a match next to chat. Every mode gets this; a mode file can override any part
+# What players see of a match next to chat. Every game gets this; a game file can override any part
 # of it under its own hud: key, or turn it all off with hud: false. The texts are in messages/en.yml under hud.
 hud:
   # Sidebar lines per phase of the game; default covers the phases not listed, and [] hides the sidebar.
-  # Lines: mode, arena, time, players, alive, team, lives, points, scores (the teams, or the top three),
+  # Lines: game, arena, time, players, alive, team, lives, points, scores (the teams, or the top three),
   # blank, footer, or a stat such as kills or deaths. A line with nothing to show is left out,
-  # such as lives when they are unlimited or a stat the mode doesn't keep.
+  # such as lives when they are unlimited or a stat the game doesn't keep.
   sidebar:
-    waiting: [blank, mode, arena, blank, players, time, blank, footer]
-    default: [blank, mode, arena, time, blank, team, lives, kills, blank, scores, blank, footer]
+    waiting: [blank, game, arena, blank, players, time, blank, footer]
+    default: [blank, game, arena, time, blank, team, lives, kills, blank, scores, blank, footer]
   # The time left of a timed phase and before the start; false hides it.
   boss-bar: { color: yellow }
   # The 3-2-1 before the start, GO, being out, and winning or losing.

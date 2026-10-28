@@ -12,7 +12,7 @@ import io.github.tst_038.minigami.paper.config.ConfigFiles;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
-import io.github.tst_038.minigami.paper.mode.ModeLoader;
+import io.github.tst_038.minigami.paper.game.GameLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
@@ -43,7 +43,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Edits any setting of a mode, an arena or {@code config.yml} by command. The edited file is checked
+ * Edits any setting of a game, an arena or {@code config.yml} by command. The edited file is checked
  * by the loader that loads it and only written when it has no problems, after which the config is
  * loaded again. Keys complete from what the loaders asked for, so new settings need no code here.
  *
@@ -53,26 +53,26 @@ public final class ConfigEditor {
 
     /** The files that can be edited. */
     public enum Kind {
-        CONFIG, ARENA, MODE;
+        CONFIG, ARENA, GAME;
 
-        /** The file, relative to the plugin folder, such as {@code modes/fall.yml}; the id is ignored for {@link #CONFIG}. */
+        /** The file, relative to the plugin folder, such as {@code games/spleef.yml}; the id is ignored for {@link #CONFIG}. */
         public String file(String id) {
             return switch (this) {
                 case CONFIG -> SettingsLoader.FILE;
                 case ARENA -> "arenas/" + id + ".yml";
-                case MODE -> "modes/" + id + ".yml";
+                case GAME -> "games/" + id + ".yml";
             };
         }
     }
 
-    /** Taken by commands such as {@code /mg mode list}, so an arena or mode with one of these ids couldn't be reached. */
+    /** Taken by commands such as {@code /mg game list}, so an arena or game with one of these ids couldn't be reached. */
     private static final Set<String> RESERVED_IDS = Set.of("create", "list");
     private static final long CHECK_TIMEOUT_SECONDS = 10;
 
     private final Plugin plugin;
     private final Messages messages;
-    private final IdRegistry<GameType> games;
-    private final ModeLoader modeLoader;
+    private final IdRegistry<GameType> gametypes;
+    private final GameLoader gameLoader;
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Supplier<Settings> settings;
     private final Predicate<String> arenaInUse;
@@ -80,21 +80,21 @@ public final class ConfigEditor {
     private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of());
 
     private record Keys(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> modes) {
+            Map<String, SortedMap<String, List<String>>> games) {
     }
 
     /**
-     * @param arenas the arenas currently loaded, which modes are checked against
-     * @param settings the settings currently loaded, for whether modes may wait in the lobby
+     * @param arenas the arenas currently loaded, which games are checked against
+     * @param settings the settings currently loaded, for whether games may wait in the lobby
      * @param arenaInUse whether a running match uses the arena with this id; such an arena can't be changed
      * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
-    public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> games, ModeLoader modeLoader,
+    public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> gametypes, GameLoader gameLoader,
             Supplier<IdRegistry<Arena>> arenas, Supplier<Settings> settings, Predicate<String> arenaInUse, Consumer<Audience> reload) {
         this.plugin = plugin;
         this.messages = messages;
-        this.games = games;
-        this.modeLoader = modeLoader;
+        this.gametypes = gametypes;
+        this.gameLoader = gameLoader;
         this.arenas = arenas;
         this.settings = settings;
         this.arenaInUse = arenaInUse;
@@ -103,8 +103,8 @@ public final class ConfigEditor {
 
     /** Takes the keys of every file from a config load, valid files or not, for completion. Any thread. */
     public void keysLoaded(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> modes) {
-        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(modes));
+            Map<String, SortedMap<String, List<String>>> games) {
+        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(games));
     }
 
     /** Ids of the files in the folder, including those that failed to load. Any thread. */
@@ -112,7 +112,7 @@ public final class ConfigEditor {
         return switch (kind) {
             case CONFIG -> List.of();
             case ARENA -> keys.arenas().keySet().stream().sorted().toList();
-            case MODE -> keys.modes().keySet().stream().sorted().toList();
+            case GAME -> keys.games().keySet().stream().sorted().toList();
         };
     }
 
@@ -131,12 +131,12 @@ public final class ConfigEditor {
         return switch (kind) {
             case CONFIG -> current.config();
             case ARENA -> current.arenas().getOrDefault(id, Collections.emptySortedMap());
-            case MODE -> current.modes().getOrDefault(id, Collections.emptySortedMap());
+            case GAME -> current.games().getOrDefault(id, Collections.emptySortedMap());
         };
     }
 
-    public Collection<String> gameIds() {
-        return games.ids();
+    public Collection<String> gametypeIds() {
+        return gametypes.ids();
     }
 
     /**
@@ -190,10 +190,10 @@ public final class ConfigEditor {
         edit(sender, kind, id, false, change, done, placeholders);
     }
 
-    /** A mode that waits in the arena, for 2 to 8 players; change the rest with {@link #set}. */
-    public void createMode(CommandSender sender, String id, String game, String arena) {
-        edit(sender, Kind.MODE, id, true, config -> {
-            config.set("gametype", game);
+    /** A game that waits in the arena, for 2 to 8 players; change the rest with {@link #set}. */
+    public void createGame(CommandSender sender, String id, String gametype, String arena) {
+        edit(sender, Kind.GAME, id, true, config -> {
+            config.set("gametype", gametype);
             config.set("min-players", 2);
             config.set("max-players", 8);
             config.set("waiting", "arena");
@@ -201,7 +201,7 @@ public final class ConfigEditor {
         }, "edit.created");
     }
 
-    /** Arenas and modes only; the file is kept as {@code <file>.deleted}. */
+    /** Arenas and games only; the file is kept as {@code <file>.deleted}. */
     public void delete(CommandSender sender, Kind kind, String id) {
         var file = kind.file(id);
         if (!editable(sender, kind, id)) {
@@ -257,9 +257,7 @@ public final class ConfigEditor {
             List<ConfigProblem> problems;
             try {
                 problems = ConfigFiles.update(path, change, config -> {
-                    // Other modes too, for the ones it extends; read here, off the server thread.
-                    var modes = kind == Kind.MODE ? YamlFiles.read(path.getParent()).files() : Map.<String, YamlConfiguration>of();
-                    return onServerThread(() -> check(kind, id, config, modes));
+                    return onServerThread(() -> check(kind, id, config));
                 });
             } catch (IllegalArgumentException e) {
                 problems = List.of(new ConfigProblem(file, "", e.getMessage()));
@@ -281,20 +279,14 @@ public final class ConfigEditor {
 
     /**
      * The problems the file's own loader finds in it. Looks up worlds, so runs on the server thread.
-     *
-     * @param modes the saved modes, which a mode may extend
      */
-    private List<ConfigProblem> check(Kind kind, String id, YamlConfiguration config, Map<String, YamlConfiguration> modes) {
+    private List<ConfigProblem> check(Kind kind, String id, YamlConfiguration config) {
         var worlds = plugin.getServer();
         return switch (kind) {
             case CONFIG -> SettingsLoader.load(config.saveToString(), worlds::getWorld).problems();
             case ARENA -> ArenaLoader.load(new YamlFiles("arenas", Map.of(id, config), List.of()), worlds::getWorld).problems();
-            case MODE -> {
-                var files = new HashMap<>(modes);
-                files.put(id, config);
-                yield modeLoader.load(new YamlFiles("modes", files, List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud())
-                        .problems().stream().filter(problem -> problem.file().equals(kind.file(id))).toList();
-            }
+            case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud())
+                    .problems();
         };
     }
 

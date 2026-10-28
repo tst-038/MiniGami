@@ -11,7 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 /**
- * Kills a player who falls below a Y level. It counts as any other death, so the mode's lives decide
+ * Kills a player who falls below a Y level. It counts as any other death, so the game's lives decide
  * whether they are out. Without a level, it is just below the lowest player when the phase starts,
  * which is the lowest spawn: right for a single floor.
  */

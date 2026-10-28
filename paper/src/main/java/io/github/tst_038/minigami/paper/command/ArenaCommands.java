@@ -17,7 +17,7 @@ import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
-import io.github.tst_038.minigami.paper.mode.TeamSetup;
+import io.github.tst_038.minigami.paper.game.TeamSetup;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;

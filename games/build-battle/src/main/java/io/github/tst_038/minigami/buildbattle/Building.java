@@ -51,7 +51,7 @@ final class Building implements Feature {
         }
         var teams = context.roster().teamsLeft();
         for (int i = 0; i < teams.size(); i++) {
-            // The mode loader made sure the arena has a plot for every team a match can have.
+            // The game loader made sure the arena has a plot for every team a match can have.
             var region = context.region(BuildBattle.PLOT + "-" + (i + 1)).orElseThrow();
             var builders = teams.get(i).ids();
             plots.claim(region, teams.get(i).id(), builders);

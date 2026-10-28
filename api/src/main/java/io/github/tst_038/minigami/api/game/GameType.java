@@ -27,10 +27,10 @@ public interface GameType {
     Map<String, List<Feature>> features();
 
     /**
-     * The game with the settings of its own a mode gives it, read from the mode's top level, such as
+     * The game type with the settings of its own a game gives it, read from the game's top level, such as
      * a build time. Games without settings keep the default, so such keys are unknown keys.
      */
-    default GameType configure(ConfigReader mode) {
+    default GameType configure(ConfigReader config) {
         return this;
     }
 
@@ -38,7 +38,7 @@ public interface GameType {
     WinCondition winCondition();
 
     /**
-     * The role ids the game's own code relies on, such as {@code seeker} and {@code hider}; its modes
+     * The role ids the game's own code relies on, such as {@code seeker} and {@code hider}; its games
      * must define exactly these. Empty when the game works with any roles, teams or none.
      */
     default List<String> roles() {
@@ -46,7 +46,7 @@ public interface GameType {
     }
 
     /**
-     * The arena regions the game's code relies on, such as {@code hill}; every arena of its modes must
+     * The arena regions the game's code relies on, such as {@code hill}; every arena of its games must
      * have them. Empty when the game needs none.
      */
     default List<String> regions() {
@@ -55,7 +55,7 @@ public interface GameType {
 
     /**
      * A region every team gets one of, numbered from 1: {@code plot} means {@code plot-1}, {@code plot-2},
-     * and so on, as many as a match of the mode can have teams (without teams, a player is a team of one).
+     * and so on, as many as a match of the game can have teams (without teams, a player is a team of one).
      * The game hands them out itself. Empty when the game needs none.
      */
     default Optional<String> regionPerTeam() {
@@ -64,13 +64,13 @@ public interface GameType {
 
     /**
      * The stats the game's own code counts with {@link io.github.tst_038.minigami.api.feature.MatchContext#count},
-     * such as the time a player held the hill. Every mode of the game keeps them, next to its stat groups.
+     * such as the time a player held the hill. Every game of this type keeps them, next to its stat groups.
      */
     default Set<Stat> stats() {
         return Set.of();
     }
 
-    /** How many deaths put a player out, unless the mode sets its own; 0 means they always respawn. */
+    /** How many deaths put a player out, unless the game sets its own; 0 means they always respawn. */
     default int lives() {
         return 0;
     }

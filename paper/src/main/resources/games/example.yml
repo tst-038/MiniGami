@@ -1,4 +1,4 @@
-# A mode: a playable variant of a game. Players join it with /mg join example.
+# A game: what players join, with /mg join example, and see their stats of. The game type is the code it runs.
 gametype: last-standing
 name: "<gold>Void Fall"
 min-players: 2
@@ -15,3 +15,9 @@ features:
   playing:
     # Players below this height die.
     void-kills: { y: 0 }
+# Variants are laid over the settings above and counted as this game in the stats; each needs a name.
+# Players join one with /mg join example <variant>.
+variants:
+  lives:
+    name: "<gold>Void Fall <gray>(3 lives)"
+    lives: 3

@@ -5,7 +5,7 @@ import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
-import io.github.tst_038.minigami.paper.mode.TeamSetup;
+import io.github.tst_038.minigami.paper.game.TeamSetup;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;

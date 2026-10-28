@@ -15,9 +15,9 @@ import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.hud.MatchHud;
-import io.github.tst_038.minigami.paper.mode.Mode;
-import io.github.tst_038.minigami.paper.mode.Role;
-import io.github.tst_038.minigami.paper.mode.TeamSetup;
+import io.github.tst_038.minigami.paper.game.Variant;
+import io.github.tst_038.minigami.paper.game.Role;
+import io.github.tst_038.minigami.paper.game.TeamSetup;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -55,10 +55,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 /**
- * A match of a mode in one arena, together with the players in it. Players join during the first
- * phase, up to the mode's maximum, and get their own state back when they leave or the match ends.
+ * A match of a variant in one arena, together with the players in it. Players join during the first
+ * phase, up to the variant's maximum, and get their own state back when they leave or the match ends.
  *
- * <p>Where they wait depends on the mode: in place, untouched until the start; or in the lobby or
+ * <p>Where they wait depends on the variant: in place, untouched until the start; or in the lobby or
  * the arena, with their state saved and already prepared.
  *
  * <p>Not thread-safe: use it from the server thread only.
@@ -71,7 +71,7 @@ public final class LiveMatch {
     public static final long COUNTDOWN_TICKS = 3 * 20;
 
     private final Plugin plugin;
-    private final Mode mode;
+    private final Variant variant;
     private final Arena arena;
     private final Opening opening;
     /** Where joining players are sent; empty when they wait in place. */
@@ -103,23 +103,23 @@ public final class LiveMatch {
     /**
      * @param arena must be playable
      * @param opening whether it is public and how its teams are formed
-     * @param lobby where players wait in a mode that waits in the lobby
-     * @throws IllegalArgumentException if the mode waits in the lobby and there is none
+     * @param lobby where players wait in a variant that waits in the lobby
+     * @throws IllegalArgumentException if the variant waits in the lobby and there is none
      */
-    public LiveMatch(Plugin plugin, Mode mode, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages) {
+    public LiveMatch(Plugin plugin, Variant variant, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages) {
         this.plugin = plugin;
-        this.mode = mode;
+        this.variant = variant;
         this.arena = arena;
         this.opening = opening;
-        this.waitingSpot = switch (mode.waiting()) {
+        this.waitingSpot = switch (variant.waiting()) {
             case IN_PLACE -> Optional.empty();
-            case LOBBY -> Optional.of(lobby.orElseThrow(() -> new IllegalArgumentException(mode.id() + " waits in a lobby, but none is set")));
+            case LOBBY -> Optional.of(lobby.orElseThrow(() -> new IllegalArgumentException(variant.key() + " waits in a lobby, but none is set")));
             case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst().location()));
         };
         this.sessions = sessions;
         this.messages = messages;
-        var features = new PhaseFeatures(features(mode), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
-        this.match = new Match(mode.game().phases(), mode.game().winCondition(), features);
+        var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
+        this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
         this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror);
         match.onResult(result -> {
@@ -132,19 +132,19 @@ public final class LiveMatch {
     private void recordEnd() {
         var gone = new HashSet<>(left);
         gone.addAll(away.keySet());
-        var record = MatchRecord.of(match, mode.game().id(), mode.id(), arena.id(), start, Instant.now(), gone);
+        var record = MatchRecord.of(match, variant.gametype().id(), variant.game(), arena.id(), start, Instant.now(), gone);
         plugin.getServer().getPluginManager().callEvent(new MatchEndEvent(record));
     }
 
     /**
-     * The game's own features per phase, then those the mode configures, then each role's, which get
+     * The game's own features per phase, then those the variant configures, then each role's, which get
      * a context of their own that only covers the role's members.
      */
-    private Map<String, List<Feature>> features(Mode mode) {
+    private Map<String, List<Feature>> features(Variant variant) {
         var merged = new HashMap<String, List<Feature>>();
-        mode.game().features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
-        mode.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
-        for (var role : mode.roles()) {
+        variant.gametype().features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
+        variant.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
+        for (var role : variant.roles()) {
             var forRole = Optional.of(role.id());
             role.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features.stream()
                     .map(feature -> (Feature) context -> feature.enable(new PaperMatchContext(plugin, this, context.scope(), forRole)))
@@ -170,8 +170,8 @@ public final class LiveMatch {
         return match;
     }
 
-    public Mode mode() {
-        return mode;
+    public Variant variant() {
+        return variant;
     }
 
     public Arena arena() {
@@ -202,7 +202,7 @@ public final class LiveMatch {
 
     /** The name of a team or role of this match, in its colour. */
     public Component teamName(String teamId) {
-        return mode.role(teamId).map(Role::displayName).orElseGet(() -> messages.render("team." + teamId));
+        return variant.role(teamId).map(Role::displayName).orElseGet(() -> messages.render("team." + teamId));
     }
 
     public Audience audience() {
@@ -212,7 +212,7 @@ public final class LiveMatch {
 
     /** Whether the match is still gathering players: in its first phase, and nobody was brought to their spawn yet. */
     public boolean isJoinable() {
-        var first = mode.game().phases().getFirst();
+        var first = variant.gametype().phases().getFirst();
         return countdown == null && !match.isFinished() && match.currentPhase().filter(first::equals).isPresent();
     }
 
@@ -227,9 +227,9 @@ public final class LiveMatch {
         return lives.left(id);
     }
 
-    /** Whether another player fits in before the mode's maximum is reached. */
+    /** Whether another player fits in before the variant's maximum is reached. */
     public boolean hasRoom() {
-        return match.roster().size() < mode.maxPlayers();
+        return match.roster().size() < variant.maxPlayers();
     }
 
     /**
@@ -243,7 +243,7 @@ public final class LiveMatch {
         join(player, false);
     }
 
-    /** @param evenIfFull lets an admin add a player beyond the mode's maximum */
+    /** @param evenIfFull lets an admin add a player beyond the variant's maximum */
     public void join(Player player, boolean evenIfFull) {
         if (!isJoinable() || !(evenIfFull || hasRoom())) {
             throw new IllegalStateException("The match is not accepting players");
@@ -261,8 +261,8 @@ public final class LiveMatch {
         members.add(id);
         hud.show(player);
         messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
-                Formatter.number("players", match.roster().size()), Formatter.number("needed", mode.minPlayers()));
-        if (startDelay == null && match.roster().size() >= mode.minPlayers()) {
+                Formatter.number("players", match.roster().size()), Formatter.number("needed", variant.minPlayers()));
+        if (startDelay == null && match.roster().size() >= variant.minPlayers()) {
             startDelay = match.clock().schedule(START_DELAY_TICKS, () -> startPlaying(true));
             goAt = match.clock().elapsedTicks() + START_DELAY_TICKS + COUNTDOWN_TICKS;
             match.scope().register(startDelay);
@@ -283,7 +283,7 @@ public final class LiveMatch {
         }
         if (isJoinable()) {
             match.roster().remove(id);
-            if (startDelay != null && match.roster().size() < mode.minPlayers()) {
+            if (startDelay != null && match.roster().size() < variant.minPlayers()) {
                 startDelay.close();
                 startDelay = null;
                 messages.send(audience(), "match.start-cancelled");
@@ -303,11 +303,11 @@ public final class LiveMatch {
 
     /**
      * The player quit the server. A participant still playing first dies, is made out or stays as
-     * the mode sets; with time to come back they are away until it runs out, else they leave.
+     * the variant sets; with time to come back they are away until it runs out, else they leave.
      */
     public void quit(Player player) {
         var id = player.getUniqueId();
-        var quit = mode.quit();
+        var quit = variant.quit();
         if (isJoinable() || match.result().isPresent() || !isActive(id)
                 || match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
             leave(player);
@@ -497,7 +497,7 @@ public final class LiveMatch {
     }
 
     /**
-     * Prepares everyone for play, forms the teams or hands out the roles if the mode has them, and brings each to their spawns, round robin.
+     * Prepares everyone for play, forms the teams or hands out the roles if the variant has them, and brings each to their spawns, round robin.
      *
      * @param countDown whether they first stand frozen at their spawns for the countdown, or play begins at once
      */
@@ -505,7 +505,7 @@ public final class LiveMatch {
         startDelay = null;
         start = Instant.now();
         var tracking = new PaperMatchContext(plugin, this, match.scope());
-        mode.statGroups().forEach(group -> group.trackers().forEach(tracker -> tracker.track(tracking)));
+        variant.statGroups().forEach(group -> group.trackers().forEach(tracker -> tracker.track(tracking)));
         for (var id : List.copyOf(members)) {
             var player = plugin.getServer().getPlayer(id);
             if (player == null) {
@@ -529,8 +529,8 @@ public final class LiveMatch {
             match.dispose();
             return;
         }
-        mode.teams().ifPresent(this::formTeams);
-        if (!mode.roles().isEmpty()) {
+        variant.teams().ifPresent(this::formTeams);
+        if (!variant.roles().isEmpty()) {
             handOutRoles();
         }
         var next = new HashMap<Optional<String>, Integer>();
@@ -555,7 +555,7 @@ public final class LiveMatch {
             countdown.close();
             countdown = null;
             // An admin may have ended it in the meantime.
-            if (match.currentPhase().filter(mode.game().phases().getFirst()::equals).isPresent()) {
+            if (match.currentPhase().filter(variant.gametype().phases().getFirst()::equals).isPresent()) {
                 match.advancePhase();
                 hud.started();
             }
@@ -577,7 +577,7 @@ public final class LiveMatch {
 
     /** Hands out the roles at random, each a team of its own, and tells each player their role. */
     private void handOutRoles() {
-        var roles = mode.roles();
+        var roles = variant.roles();
         var players = new RandomRoles(ThreadLocalRandom.current()).deal(List.copyOf(members), roles.stream().map(Role::share).toList());
         for (int i = 0; i < roles.size(); i++) {
             if (!players.get(i).isEmpty()) {
@@ -618,7 +618,7 @@ public final class LiveMatch {
         var id = player.getUniqueId();
         var playing = !isJoinable() && match.result().isEmpty();
         if (playing && match.roster().find(id).filter(Participant::isAlive).isPresent() && lives.die(id)) {
-            var onOut = teamOf(id).flatMap(mode::role).flatMap(Role::onOut).flatMap(mode::role);
+            var onOut = teamOf(id).flatMap(variant::role).flatMap(Role::onOut).flatMap(variant::role);
             if (onOut.isPresent()) {
                 // Dying clears their items and effects; respawning puts them at the new role's spawns with its kit.
                 lives.reset(id);
@@ -643,9 +643,9 @@ public final class LiveMatch {
         }, null);
     }
 
-    /** The lives of the player's role if it sets its own, else the mode's. */
+    /** The lives of the player's role if it sets its own, else the variant's. */
     private int livesOf(UUID id) {
-        return teamOf(id).flatMap(mode::role).map(role -> role.lives().orElse(mode.lives())).orElse(mode.lives());
+        return teamOf(id).flatMap(variant::role).map(role -> role.lives().orElse(variant.lives())).orElse(variant.lives());
     }
 
     /** Before the start back to where they wait; after it to a random spawn of their team, as a spectator once they are out. */
@@ -658,7 +658,7 @@ public final class LiveMatch {
         var spawns = arena.spawnsFor(teamOf(player.getUniqueId()));
         event.setRespawnLocation(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
         if (match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty()) {
-            // The game mode is reset during the respawn, so it is set right after.
+            // The game variant is reset during the respawn, so it is set right after.
             player.getScheduler().run(plugin, task -> player.setGameMode(GameMode.SPECTATOR), null);
         }
     }

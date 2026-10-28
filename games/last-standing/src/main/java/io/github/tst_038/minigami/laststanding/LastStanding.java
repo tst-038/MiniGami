@@ -9,7 +9,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 
-/** Last one standing wins. By default a single death puts a player out; modes can give more lives. */
+/** Last one standing wins. By default a single death puts a player out; games can give more lives. */
 public final class LastStanding implements GameType {
 
     @Override
