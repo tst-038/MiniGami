@@ -348,6 +348,10 @@ edit:
   unset: "<prefix><green>Removed <white><key></white> from <white><file></white>."
   created: "<prefix><green>Created <white><file></white>. Change it with <white>set</white> and <white>unset</white>."
   deleted: "<prefix><green>Deleted <white><file></white>. A copy is kept as <white><file>.deleted</white> until the next delete of it."
+  # <variant>: the variant's id, <file>: its game's file
+  unknown-variant: "<prefix><red><white><file></white> has no variant <white><variant></white>."
+  variant-created: "<prefix><green>Added variant <white><variant></white> to <white><file></white>. Change it with <white>variant <variant> set</white>."
+  variant-deleted: "<prefix><green>Removed variant <white><variant></white> from <white><file></white>."
 
 snapshot:
   none: "<prefix><gray><player> has no saved state."

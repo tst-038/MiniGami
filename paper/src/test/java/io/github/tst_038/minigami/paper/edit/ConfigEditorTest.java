@@ -25,4 +25,12 @@ class ConfigEditorTest {
         assertNull(ConfigEditor.parse("a: b"));
         assertNull(ConfigEditor.parse("# only a comment"));
     }
+
+    @Test
+    void variantsAndTheirKeysComeFromTheGamesKeys() {
+        var keys = List.of("gametype", "name", "lives", "features.playing.decay", "variants", "variants.duos", "variants.duos.name",
+                "variants.lives");
+        assertEquals(List.of("duos", "lives"), ConfigEditor.variantIds(keys));
+        assertEquals(List.of("features.playing.decay", "lives", "name"), ConfigEditor.variantKeys(keys));
+    }
 }

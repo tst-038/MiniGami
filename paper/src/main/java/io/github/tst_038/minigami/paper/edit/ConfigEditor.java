@@ -135,6 +135,82 @@ public final class ConfigEditor {
         };
     }
 
+    /** The variants in the game's file, valid or not. Any thread. */
+    public List<String> variantIds(String game) {
+        return variantIds(keys(Kind.GAME, game));
+    }
+
+    /** The keys a variant of the game can set: the game's own, but not its game type or variants. Any thread. */
+    public List<String> variantKeys(String game) {
+        return variantKeys(keys(Kind.GAME, game));
+    }
+
+    static List<String> variantIds(Collection<String> gameKeys) {
+        var prefix = GameLoader.VARIANTS + ".";
+        return gameKeys.stream().filter(key -> key.startsWith(prefix)).map(key -> key.substring(prefix.length()).split("\\.")[0])
+                .distinct().sorted().toList();
+    }
+
+    static List<String> variantKeys(Collection<String> gameKeys) {
+        return gameKeys.stream().filter(key -> !key.equals("gametype") && !key.equals(GameLoader.VARIANTS)
+                && !key.startsWith(GameLoader.VARIANTS + ".")).sorted().toList();
+    }
+
+    /** A variant of the game with only a name; change the rest with {@link #setVariant}. */
+    public void createVariant(CommandSender sender, String game, String variant, String name) {
+        if (!IdRegistry.isValid(variant) || RESERVED_IDS.contains(variant)) {
+            messages.send(sender, "edit.invalid-id", Placeholder.unparsed("id", variant));
+            return;
+        }
+        var key = GameLoader.VARIANTS + "." + variant;
+        edit(sender, Kind.GAME, game, false, config -> {
+            if (config.contains(key)) {
+                throw new IllegalArgumentException("already has a variant " + variant);
+            }
+            config.set(key + ".name", name);
+        }, "edit.variant-created", Placeholder.unparsed("variant", variant));
+    }
+
+    public void setVariant(CommandSender sender, String game, String variant, String key, String text) {
+        if (knownVariant(sender, game, variant)) {
+            set(sender, Kind.GAME, game, GameLoader.VARIANTS + "." + variant + "." + key, text);
+        }
+    }
+
+    public void unsetVariant(CommandSender sender, String game, String variant, String key) {
+        if (knownVariant(sender, game, variant)) {
+            unset(sender, Kind.GAME, game, GameLoader.VARIANTS + "." + variant + "." + key);
+        }
+    }
+
+    /** Takes the variant out of the game's file; its stats stay in the game's totals. */
+    public void deleteVariant(CommandSender sender, String game, String variant) {
+        if (!knownVariant(sender, game, variant)) {
+            return;
+        }
+        var key = GameLoader.VARIANTS + "." + variant;
+        edit(sender, Kind.GAME, game, false, config -> {
+            if (!config.contains(key)) {
+                throw new IllegalArgumentException("has no variant " + variant);
+            }
+            config.set(key, null);
+            var variants = config.getConfigurationSection(GameLoader.VARIANTS);
+            if (variants != null && variants.getKeys(false).isEmpty()) {
+                config.set(GameLoader.VARIANTS, null);
+            }
+        }, "edit.variant-deleted", Placeholder.unparsed("variant", variant));
+    }
+
+    /** Checked against the last load, so the message names the variant rather than a key in it. */
+    private boolean knownVariant(CommandSender sender, String game, String variant) {
+        if (variantIds(game).contains(variant)) {
+            return true;
+        }
+        messages.send(sender, "edit.unknown-variant", Placeholder.unparsed("file", Kind.GAME.file(game)),
+                Placeholder.unparsed("variant", variant));
+        return false;
+    }
+
     public Collection<String> gametypeIds() {
         return gametypes.ids();
     }
