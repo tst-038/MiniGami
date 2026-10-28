@@ -34,6 +34,8 @@ match:
   you-left: "<prefix><gray>You left the match."
   # A participant quit the server but may still come back. <player>, <seconds>: how long they have
   away: "<prefix><yellow><player></yellow> <gray>left; they have <white><seconds></white> seconds to come back."
+  # <player>: who came back in time
+  back: "<prefix><yellow><player></yellow> <gray>is back."
   # <player>: who didn't come back in time
   away-expired: "<prefix><red><player></red> didn't come back in time and is out!"
   # The death message of a participant whose mode kills them for quitting. <player>

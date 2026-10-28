@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
@@ -163,13 +164,26 @@ public final class MatchService implements Listener {
     }
 
     /**
-     * A player who quits leaves their match: before it starts they are simply removed, after that
-     * they count as eliminated. Bukkit saves the player after this event, so their restored state is
+     * A player who quits leaves their match, or is away from it if the mode gives them time to come back. Bukkit saves the player after this event, so their restored state is
      * what gets saved.
      */
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         find(event.getPlayer().getUniqueId()).ifPresent(match -> match.quit(event.getPlayer()));
+    }
+
+    /** A participant who quit with time to come back is put back in their match. */
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        var player = event.getPlayer();
+        running().stream().filter(match -> match.isAway(player.getUniqueId())).findFirst().ifPresent(match -> {
+            try {
+                match.rejoin(player);
+            } catch (IllegalStateException e) {
+                plugin.getLogger().log(Level.WARNING, player.getName() + " could not be brought back into their match", e);
+                messages.send(player, "join.failed", Placeholder.component("player", player.name()));
+            }
+        });
     }
 
     /** The matches that haven't finished, oldest first. */

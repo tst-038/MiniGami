@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.features.breakblocks;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import java.util.Set;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -35,6 +36,11 @@ public final class BreakBlocks implements Feature {
         // Adventure mode can't break blocks at all, so players switch to survival and this feature limits what they break.
         setGameMode(context, GameMode.ADVENTURE, GameMode.SURVIVAL);
         context.scope().register(() -> setGameMode(context, GameMode.SURVIVAL, GameMode.ADVENTURE));
+        context.on(MatchRejoinEvent.class, event -> {
+            if (event.getPlayer().getGameMode() == GameMode.ADVENTURE) {
+                event.getPlayer().setGameMode(GameMode.SURVIVAL);
+            }
+        });
 
         context.on(BlockDamageEvent.class, event -> {
             if (instant && blocks.contains(event.getBlock().getType())) {

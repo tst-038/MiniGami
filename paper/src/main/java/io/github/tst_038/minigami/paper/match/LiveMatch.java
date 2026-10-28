@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.feature.Feature;
+import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -275,6 +276,37 @@ public final class LiveMatch {
         if (members.isEmpty()) {
             match.dispose();
         }
+    }
+
+    /** Whether the participant quit and may still come back. */
+    public boolean isAway(UUID id) {
+        return away.containsKey(id);
+    }
+
+    /**
+     * Brings back a participant who quit: their state is saved again, they are prepared and sent to a
+     * spawn of their team, or spectate if they are out by now. Then the phase's features set them up.
+     *
+     * @throws IllegalStateException if they aren't away from this match or their state can't be saved
+     */
+    public void rejoin(Player player) {
+        var id = player.getUniqueId();
+        if (!isAway(id)) {
+            throw new IllegalStateException(player.getName() + " is not away from this match");
+        }
+        saveState(player);
+        away.remove(id).close();
+        members.add(id);
+        prepare(player);
+        var team = teamOf(id);
+        team.map(scoreboardTeams::get).ifPresent(scoreboardTeam -> joinScoreboardTeam(player, scoreboardTeam));
+        var spawns = arena.spawnsFor(team);
+        player.teleport(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
+        if (match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
+            player.setGameMode(GameMode.SPECTATOR);
+        }
+        messages.send(audience(), "match.back", Placeholder.component("player", player.name()));
+        plugin.getServer().getPluginManager().callEvent(new MatchRejoinEvent(player));
     }
 
     /**

@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.buildbattle;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.buildbattle.Plots.Plot;
 import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.Comparator;
@@ -47,15 +48,7 @@ final class Voting implements Feature {
         }
         var votes = new Votes();
         var shown = new int[1];
-        voters(context).forEach(player -> {
-            player.setAllowFlight(true);
-            for (int score = 1; score <= SCORES.size(); score++) {
-                var item = new ItemStack(SCORES.get(score - 1));
-                var name = context.messages().render("build-battle.vote-item", Formatter.number("score", score));
-                item.editMeta(meta -> meta.itemName(name));
-                player.getInventory().setItem(score + 1, item);
-            }
-        });
+        voters(context).forEach(player -> giveVoteItems(context, player));
         context.scope().register(() -> voters(context).forEach(player -> {
             player.getInventory().clear();
             player.setAllowFlight(false);
@@ -88,6 +81,22 @@ final class Voting implements Feature {
             context.messages().send(voter, "build-battle.voted", Formatter.number("score", score));
         });
         context.on(PlayerDropItemEvent.class, event -> event.setCancelled(true));
+        context.on(MatchRejoinEvent.class, event -> {
+            if (context.roster().find(event.getPlayer().getUniqueId()).filter(Participant::isAlive).isPresent()) {
+                giveVoteItems(context, event.getPlayer());
+                event.getPlayer().teleport(shownPlots.get(shown[0]).start());
+            }
+        });
+    }
+
+    private static void giveVoteItems(MatchContext context, Player player) {
+        player.setAllowFlight(true);
+        for (int score = 1; score <= SCORES.size(); score++) {
+            var item = new ItemStack(SCORES.get(score - 1));
+            var name = context.messages().render("build-battle.vote-item", Formatter.number("score", score));
+            item.editMeta(meta -> meta.itemName(name));
+            player.getInventory().setItem(score + 1, item);
+        }
     }
 
     private static List<Player> voters(MatchContext context) {

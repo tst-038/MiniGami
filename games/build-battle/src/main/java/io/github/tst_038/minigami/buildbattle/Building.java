@@ -2,6 +2,8 @@ package io.github.tst_038.minigami.buildbattle;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
+import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -90,6 +92,12 @@ final class Building implements Feature {
             }
         });
         context.on(PlayerDropItemEvent.class, event -> event.setCancelled(true));
+        context.on(MatchRejoinEvent.class, event -> plots.of(event.getPlayer().getUniqueId())
+                .filter(plot -> context.roster().find(event.getPlayer().getUniqueId()).filter(Participant::isAlive).isPresent())
+                .ifPresent(plot -> {
+                    event.getPlayer().teleport(plot.start());
+                    event.getPlayer().setGameMode(GameMode.CREATIVE);
+                }));
         // shortcut: items that aren't blocks (buckets, spawn eggs, flint and steel, armour stands) make fluids,
         // fire and entities the match can't put back; allow them once matches get their own world.
         context.on(PlayerInteractEvent.class, event -> {
