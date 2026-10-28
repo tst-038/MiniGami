@@ -36,13 +36,12 @@ class ProjectileBreaksTest {
     }
 
     @Test
-    void aListedBlockThatIsHitBreaksAndIsRemembered() {
+    void aListedBlockThatIsHitBreaks() {
         var snow = block(Material.SNOW_BLOCK);
 
         hit(snow);
 
         assertEquals(List.of(snow), broken);
-        assertEquals(List.of(snow), match.remembered);
     }
 
     @Test
@@ -51,6 +50,5 @@ class ProjectileBreaksTest {
         match.fire(new ProjectileHitEvent(proxy(Snowball.class, Map.of()), null, null, null));
 
         assertTrue(broken.isEmpty());
-        assertTrue(match.remembered.isEmpty());
     }
 }

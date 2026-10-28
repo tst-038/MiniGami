@@ -11,4 +11,12 @@ public interface Feature {
 
     /** Called when one of the feature's phases starts. Subscribe to events and schedule tasks here. */
     void enable(MatchContext context);
+
+    /**
+     * Whether it changes the arena's blocks. Nothing puts them back but the arena's saved map, pasted
+     * after every match, so a mode with such a feature only plays in arenas that have one.
+     */
+    default boolean changesBlocks() {
+        return false;
+    }
 }

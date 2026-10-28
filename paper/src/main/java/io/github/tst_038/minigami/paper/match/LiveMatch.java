@@ -16,7 +16,6 @@ import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +33,6 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -74,7 +71,6 @@ public final class LiveMatch {
     /** Per team id, so a player who switches role joins the same team as the role's first members. */
     private final Map<String, Team> scoreboardTeams = new HashMap<>();
     // shortcut: only kept in memory, so a crash leaves the arena changed; fine until matches get their own world.
-    private final Map<Block, BlockState> originals = new LinkedHashMap<>();
     private MatchClock.Task startDelay;
 
     /**
@@ -118,8 +114,6 @@ public final class LiveMatch {
         var context = new PaperMatchContext(plugin, this, match.scope());
         context.on(PlayerDeathEvent.class, this::onDeath);
         context.on(PlayerRespawnEvent.class, this::onRespawn);
-        // Without physics, so a restored block doesn't make its neighbours fall or flow before they are back too.
-        match.scope().register(() -> originals.values().forEach(state -> state.update(true, false)));
         match.start();
     }
 
@@ -150,11 +144,6 @@ public final class LiveMatch {
 
     public Messages messages() {
         return messages;
-    }
-
-    /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#rememberOriginal(Block)}. */
-    public void rememberOriginal(BlockState original) {
-        originals.putIfAbsent(original.getBlock(), original);
     }
 
     /** The name of a team or role of this match, in its colour. */

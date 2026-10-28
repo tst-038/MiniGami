@@ -190,7 +190,7 @@ info:
     # <problems>: how many
     problems: "<red><problems> problem(s)"
     not-loaded: "<yellow>not loaded; /mg reload"
-    no-arenas: "<yellow>no playable arena: its arenas lack spawns or the game's regions"
+    no-arenas: "<yellow>no playable arena: its arenas lack spawns, the game's regions, or a saved map (needed when blocks change)"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"
   # <name>: the mode's display name

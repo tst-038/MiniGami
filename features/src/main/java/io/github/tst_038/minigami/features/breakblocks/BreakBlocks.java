@@ -26,6 +26,11 @@ public final class BreakBlocks implements Feature {
     }
 
     @Override
+    public boolean changesBlocks() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         // Adventure mode can't break blocks at all, so players switch to survival and this feature limits what they break.
         setGameMode(context, GameMode.ADVENTURE, GameMode.SURVIVAL);
@@ -42,7 +47,6 @@ public final class BreakBlocks implements Feature {
                 event.setCancelled(true);
                 return;
             }
-            context.rememberOriginal(block);
             if (!drops) {
                 event.setDropItems(false);
                 event.setExpToDrop(0);

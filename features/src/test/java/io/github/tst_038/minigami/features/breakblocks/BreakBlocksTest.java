@@ -61,7 +61,6 @@ class BreakBlocksTest {
 
         assertFalse(mined.isCancelled());
         assertTrue(mined.isDropItems());
-        assertEquals(List.of(snow), match.remembered);
     }
 
     @Test
@@ -82,6 +81,5 @@ class BreakBlocksTest {
         assertFalse(match.fire(new BlockDamageEvent(player, stone, BlockFace.UP, null, false)).getInstaBreak());
         assertTrue(match.fire(new BlockBreakEvent(stone, player)).isCancelled());
         assertTrue(match.fire(new BlockPlaceEvent(snow, null, stone, null, player, true, null)).isCancelled());
-        assertTrue(match.remembered.isEmpty());
     }
 }

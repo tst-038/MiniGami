@@ -144,8 +144,16 @@ public final class ModeLoader {
         var teams = teams(config, minPlayers, maxPlayers);
         var roles = roles(config, minPlayers, game);
         var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, arenas(config, arenas, game, mostTeams),
-                config.has("features") ? features(config.section("features"), game) : Map.of());
+        var playable = arenas(config, arenas, game, mostTeams);
+        var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
+        var changesBlocks = Stream.concat(Stream.of(features, game == null ? Map.<String, List<Feature>>of() : game.features()),
+                        roles.stream().map(Role::features))
+                .flatMap(byPhase -> byPhase.values().stream()).flatMap(List::stream).anyMatch(Feature::changesBlocks);
+        // Only the arena's saved map puts changed blocks back; an arena without one is still being set up.
+        if (changesBlocks) {
+            playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
+        }
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, playable, features);
     }
 
     private static Optional<TeamSetup> teams(ConfigReader config, int minPlayers, int maxPlayers) {

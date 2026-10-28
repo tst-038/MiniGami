@@ -34,6 +34,11 @@ final class Building implements Feature {
     }
 
     @Override
+    public boolean changesBlocks() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         var seconds = Formatter.number("seconds", ticks / 20);
         if (themes.isEmpty()) {
@@ -63,16 +68,12 @@ final class Building implements Feature {
         context.on(BlockPlaceEvent.class, event -> {
             List<BlockState> replaced = event instanceof BlockMultiPlaceEvent multi
                     ? multi.getReplacedBlockStates() : List.of(event.getBlockReplacedState());
-            if (replaced.stream().allMatch(state -> plots.contains(event.getPlayer().getUniqueId(), state.getLocation()))) {
-                replaced.forEach(context::rememberOriginal);
-            } else {
+            if (!replaced.stream().allMatch(state -> plots.contains(event.getPlayer().getUniqueId(), state.getLocation()))) {
                 event.setCancelled(true);
             }
         });
         context.on(BlockBreakEvent.class, event -> {
-            if (plots.contains(event.getPlayer().getUniqueId(), event.getBlock().getLocation())) {
-                context.rememberOriginal(event.getBlock());
-            } else {
+            if (!plots.contains(event.getPlayer().getUniqueId(), event.getBlock().getLocation())) {
                 event.setCancelled(true);
             }
         });

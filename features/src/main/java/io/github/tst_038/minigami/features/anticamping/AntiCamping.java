@@ -30,6 +30,11 @@ public final class AntiCamping implements Feature {
     }
 
     @Override
+    public boolean changesBlocks() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         var spots = new HashMap<UUID, Spot>();
         context.scope().register(context.clock().repeat(CHECK_TICKS, () -> {
@@ -45,10 +50,7 @@ public final class AntiCamping implements Feature {
                     return;
                 }
                 var under = Footprint.under(location).stream().filter(block -> blocks.contains(block.getType())).toList();
-                under.forEach(block -> {
-                    context.rememberOriginal(block);
-                    block.setType(Material.AIR);
-                });
+                under.forEach(block -> block.setType(Material.AIR));
                 if (!under.isEmpty()) {
                     spots.remove(player.getUniqueId());
                 }

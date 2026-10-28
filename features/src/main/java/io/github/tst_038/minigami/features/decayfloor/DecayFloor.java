@@ -24,6 +24,11 @@ public final class DecayFloor implements Feature {
     }
 
     @Override
+    public boolean changesBlocks() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         // When each stepped-on block breaks; one repeating task instead of one per block, so the match owns it all.
         var due = new LinkedHashMap<Block, Long>();
@@ -40,7 +45,6 @@ public final class DecayFloor implements Feature {
                 var block = entry.getKey();
                 // Something else may have broken it in the meantime.
                 if (blocks.contains(block.getType())) {
-                    context.rememberOriginal(block);
                     block.setType(Material.AIR);
                 }
                 return true;

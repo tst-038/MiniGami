@@ -65,7 +65,6 @@ class DecayFloorTest {
         match.tick(1);
 
         assertEquals(List.of(Material.AIR), floor(0, 0));
-        assertEquals(1, match.remembered.size());
     }
 
     @Test
@@ -98,6 +97,5 @@ class DecayFloorTest {
         match.tick(DELAY * 3);
 
         assertEquals(List.of(Material.STONE), floor(0, 0));
-        assertEquals(0, match.remembered.size());
     }
 }

@@ -41,8 +41,6 @@ public final class FakeMatch implements MatchContext {
     public final YamlConfiguration texts = new YamlConfiguration();
     /** Action bars shown to {@link #audience()}, in order. */
     public final List<Component> actionBars = new ArrayList<>();
-    /** Blocks passed to {@link #rememberOriginal(Block)}, in order. */
-    public final List<Block> remembered = new ArrayList<>();
     /** The arena's regions by name, for {@link #region(String)}. */
     public final Map<String, Region> regions = new HashMap<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
@@ -166,15 +164,5 @@ public final class FakeMatch implements MatchContext {
                 actionBars.add(message);
             }
         };
-    }
-
-    @Override
-    public void rememberOriginal(Block block) {
-        remembered.add(block);
-    }
-
-    @Override
-    public void rememberOriginal(BlockState original) {
-        remembered.add(original.getBlock());
     }
 }

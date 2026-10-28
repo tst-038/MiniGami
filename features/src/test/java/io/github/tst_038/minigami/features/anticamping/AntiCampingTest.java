@@ -65,7 +65,6 @@ class AntiCampingTest {
         match.tick(1);
 
         assertEquals(List.of(Material.AIR), floor(0, 0));
-        assertEquals(1, match.remembered.size());
     }
 
     @Test

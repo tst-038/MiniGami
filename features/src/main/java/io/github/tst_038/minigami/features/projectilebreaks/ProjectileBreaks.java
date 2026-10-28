@@ -16,11 +16,15 @@ public final class ProjectileBreaks implements Feature {
     }
 
     @Override
+    public boolean changesBlocks() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         context.on(ProjectileHitEvent.class, event -> {
             var block = event.getHitBlock();
             if (block != null && blocks.contains(block.getType())) {
-                context.rememberOriginal(block);
                 block.setType(Material.AIR);
             }
         });
