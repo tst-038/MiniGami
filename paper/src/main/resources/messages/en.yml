@@ -24,6 +24,8 @@ match:
   joined: "<prefix><yellow><player></yellow> joined <gray>(<players>/<needed>)"
   # A player ran out of lives.
   eliminated: "<prefix><red><player></red> is out!"
+  # Instead of going out, joins the role the mode names in on-out. <team>: that role's name
+  switched-role: "<prefix><white><player></white> <gray>is now one of the <team><gray>."
   # <seconds>: delay before the start
   starting: "<prefix><green>Enough players! Starting in <seconds> seconds."
   start-cancelled: "<prefix><red>Not enough players anymore, start cancelled."

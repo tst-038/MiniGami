@@ -87,6 +87,23 @@ class MatchTest {
     }
 
     @Test
+    void switchingTeamCanDecideTheMatch() {
+        var match = match(Phase.untimed("playing"), Phase.timed("ending", 3));
+        match.roster().assignTeam(alice, "seeker");
+        match.roster().assignTeam(bob, "hider");
+        match.roster().assignTeam(carol, "hider");
+        match.start();
+
+        match.switchTeam(bob, "seeker");
+        assertTrue(match.result().isEmpty());
+
+        match.switchTeam(carol, "seeker");
+
+        assertEquals(List.of(alice, bob, carol), match.result().orElseThrow().placements().getFirst().participants());
+        assertEquals("ending", phase(match));
+    }
+
+    @Test
     void eliminationsAfterTheResultDoNotChangeIt() {
         var match = match(Phase.untimed("playing"), Phase.untimed("ending"));
         match.start();

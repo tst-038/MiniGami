@@ -35,6 +35,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
  *   hider:                                                         # neither: everyone left over
  *     name: "Hiders"
+ *     on-out: seeker                                              # optional; joins it instead of going out
  *     features: { playing: { kit: { items: [stick] } } }          # optional; only for this role
  * arenas: [demo]
  * features:                   # optional; per phase of the game, per feature
@@ -218,7 +219,12 @@ public final class ModeLoader {
                     : role.has("per") ? RoleShare.onePer(role.integer("per", 2, Integer.MAX_VALUE))
                     : RoleShare.rest();
             var lives = role.has("lives") ? OptionalInt.of(role.integer("lives", 0, Integer.MAX_VALUE)) : OptionalInt.empty();
-            roles.add(new Role(id, name, color, share, lives, role.has("features") ? features(role.section("features"), game) : Map.of()));
+            var onOut = role.has("on-out") ? Optional.of(role.string("on-out")) : Optional.<String>empty();
+            var others = section.keys().stream().filter(other -> !other.equals(id)).toList();
+            if (onOut.isPresent() && !others.contains(onOut.get())) {
+                role.problem("on-out", "must be one of the other roles: " + String.join(", ", others));
+            }
+            roles.add(new Role(id, name, color, share, lives, onOut, role.has("features") ? features(role.section("features"), game) : Map.of()));
         }
         var ids = roles.stream().map(Role::id).toList();
         if (!needed.isEmpty() && !Set.copyOf(ids).equals(Set.copyOf(needed))) {

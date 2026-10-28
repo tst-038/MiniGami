@@ -73,6 +73,17 @@ public final class Match {
         }
     }
 
+    /**
+     * Moves a participant to another team mid-match, for example a caught hider who becomes a seeker,
+     * and ends the match if that decides it.
+     */
+    public void switchTeam(UUID id, String team) {
+        roster.assignTeam(id, team);
+        if (result == null) {
+            winCondition.check(roster, scores).ifPresent(this::end);
+        }
+    }
+
     /** Gives a participant points, or takes them away when negative, and ends the match if that decides it. */
     public void addPoints(UUID id, int points) {
         scores.add(id, points);

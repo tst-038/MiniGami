@@ -358,10 +358,21 @@ class ModeLoaderTest {
         assertEquals(List.of(), problems(loaded));
         var mode = loaded.entries().find("fall").orElseThrow();
         assertEquals(List.of(
-                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0), Map.of()),
-                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty(), Map.of()),
-                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty(), Map.of())), mode.roles());
+                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0), Optional.empty(), Map.of()),
+                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty(), Optional.empty(), Map.of()),
+                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty(), Optional.empty(), Map.of())), mode.roles());
         assertEquals(Optional.of("Seekers"), mode.role("seeker").map(Role::name));
+    }
+
+    @Test
+    void aRoleCanSwitchItsMembersToAnotherRoleInsteadOfTheirGoingOut() throws Exception {
+        var mode = "{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {seeker: {players: 1}, ";
+
+        var loaded = load(mode + "hider: {on-out: seeker}}}");
+        assertEquals(List.of(), problems(loaded));
+        assertEquals(Optional.of("seeker"), loaded.entries().find("fall").orElseThrow().role("hider").orElseThrow().onOut());
+        assertEquals(List.of("modes/fall.yml: roles.hider.on-out: must be one of the other roles: seeker"), problems(load(mode + "hider: {on-out: zombie}}}")));
+        assertEquals(List.of("modes/fall.yml: roles.hider.on-out: must be one of the other roles: seeker"), problems(load(mode + "hider: {on-out: hider}}}")));
     }
 
     @Test

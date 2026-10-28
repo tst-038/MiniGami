@@ -71,6 +71,8 @@ public final class LiveMatch {
     private final Map<UUID, Integer> deaths = new HashMap<>();
     /** Takes a member out of their scoreboard team again; closing twice is harmless. */
     private final Map<UUID, AutoCloseable> scoreboardLeaves = new HashMap<>();
+    /** Per team id, so a player who switches role joins the same team as the role's first members. */
+    private final Map<String, Team> scoreboardTeams = new HashMap<>();
     // shortcut: only kept in memory, so a crash leaves the arena changed; fine until matches get their own world.
     private final Map<Block, BlockState> originals = new LinkedHashMap<>();
     private MatchClock.Task startDelay;
@@ -364,11 +366,12 @@ public final class LiveMatch {
     /** @param told the message each player gets, with the team's name as {@code <team>} */
     private void putInTeam(List<UUID> players, String teamId, NamedTextColor color, String told) {
         var name = teamName(teamId);
-        var scoreboardTeam = scoreboardTeam(teamId, name, color);
+        var scoreboardTeam = scoreboardTeams.computeIfAbsent(teamId, id -> scoreboardTeam(id, name, color));
         for (var id : players) {
             match.roster().assignTeam(id, teamId);
             var player = plugin.getServer().getPlayer(id);
             if (player != null) {
+                leaveScoreboardTeam(id);
                 joinScoreboardTeam(player, scoreboardTeam);
                 messages.send(player, told, Placeholder.component("team", name));
             }
@@ -436,8 +439,18 @@ public final class LiveMatch {
         var lives = livesOf(id);
         if (playing && lives > 0 && match.roster().find(id).filter(Participant::isAlive).isPresent()
                 && deaths.merge(id, 1, Integer::sum) >= lives) {
-            messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
-            match.eliminate(id);
+            var onOut = teamOf(id).flatMap(mode::role).flatMap(Role::onOut).flatMap(mode::role);
+            if (onOut.isPresent()) {
+                // Dying clears their items and effects; respawning puts them at the new role's spawns with its kit.
+                deaths.remove(id);
+                messages.send(audience(), "match.switched-role", Placeholder.component("player", player.name()),
+                        Placeholder.component("team", teamName(onOut.get().id())));
+                putInTeam(List.of(id), onOut.get().id(), onOut.get().color(), "match.your-role");
+                match.switchTeam(id, onOut.get().id());
+            } else {
+                messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
+                match.eliminate(id);
+            }
         }
         player.getScheduler().run(plugin, task -> {
             if (player.isDead()) {
@@ -472,8 +485,7 @@ public final class LiveMatch {
         restores.put(player.getUniqueId(), restore);
     }
 
-    /** Players who waited in place had nothing changed, so there is nothing to give back. */
-    private void restore(UUID id) {
+    private void leaveScoreboardTeam(UUID id) {
         var leave = scoreboardLeaves.remove(id);
         if (leave != null) {
             try {
@@ -482,6 +494,11 @@ public final class LiveMatch {
                 plugin.getLogger().log(Level.WARNING, "Could not take " + id + " out of their scoreboard team", e);
             }
         }
+    }
+
+    /** Players who waited in place had nothing changed, so there is nothing to give back. */
+    private void restore(UUID id) {
+        leaveScoreboardTeam(id);
         var restore = restores.remove(id);
         if (restore == null) {
             return;
