@@ -17,6 +17,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -139,8 +141,10 @@ public final class ModeLoader {
             config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
-        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams(config, minPlayers, maxPlayers),
-                roles(config, minPlayers, game), arenas(config, arenas, game),
+        var teams = teams(config, minPlayers, maxPlayers);
+        var roles = roles(config, minPlayers, game);
+        var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
+        return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams, roles, arenas(config, arenas, game, mostTeams),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
     }
 
@@ -251,8 +255,11 @@ public final class ModeLoader {
         return roles;
     }
 
-    /** @param game checks its arenas have the regions it needs; may be null when unknown */
-    private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry, GameType game) {
+    /**
+     * @param game checks its arenas have the regions it needs; may be null when unknown
+     * @param mostTeams how many teams a match can have, for the game's region per team
+     */
+    private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry, GameType game, int mostTeams) {
         var ids = config.strings("arenas");
         if (ids.isEmpty() && config.has("arenas")) {
             config.problem("arenas", "needs at least one arena");
@@ -264,8 +271,9 @@ public final class ModeLoader {
                 config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids()));
             } else if (arena.get().isPlayable()) {
                 arenas.add(arena.get());
-                var missing = game == null ? List.<String>of()
-                        : game.regions().stream().filter(region -> !arena.get().regions().containsKey(region)).toList();
+                var needed = game == null ? List.<String>of() : Stream.concat(game.regions().stream(), game.regionPerTeam().stream()
+                        .flatMap(prefix -> IntStream.rangeClosed(1, mostTeams).mapToObj(number -> prefix + "-" + number))).toList();
+                var missing = needed.stream().filter(region -> !arena.get().regions().containsKey(region)).toList();
                 if (!missing.isEmpty()) {
                     config.problem("arenas", "arena '" + id + "' lacks the regions " + game.id() + " needs: " + String.join(", ", missing)
                             + "; save them with /mg arena " + id + " region <name> set");

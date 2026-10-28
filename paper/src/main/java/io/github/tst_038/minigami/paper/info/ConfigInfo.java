@@ -187,6 +187,7 @@ public final class ConfigInfo {
         if (!game.regions().isEmpty()) {
             messages.send(sender, "info.game-regions", Placeholder.unparsed("regions", String.join(", ", game.regions())));
         }
+        game.regionPerTeam().ifPresent(region -> messages.send(sender, "info.game-region-per-team", Placeholder.unparsed("region", region)));
         settings(sender, settingsRead(game::configure));
         usedBy(sender, modesWithGame(id));
     }

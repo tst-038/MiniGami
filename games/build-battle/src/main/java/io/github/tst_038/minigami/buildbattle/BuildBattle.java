@@ -9,30 +9,32 @@ import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
- * Everyone builds on a theme in their own plot, then everyone scores the others' builds; the
- * highest total wins. Each spawn of the arena is the middle of one plot, so an arena needs a
- * spawn per player.
+ * Every team builds on a theme in its own plot, then everyone scores the other teams' builds; the
+ * highest total wins. Without teams in the mode, everyone builds alone; with {@code teams: { size: 2 }}
+ * it is duos. A plot is an arena region {@code plot-1}, {@code plot-2} and so on, one for every team a
+ * match can have.
  *
- * <p>Mode settings, all optional: {@code build-seconds} (300), {@code vote-seconds} per build (15),
- * {@code plot-radius} (10) and {@code themes}, one picked at random (none: free build).
+ * <p>Mode settings, all optional: {@code build-seconds} (300), {@code vote-seconds} per build (15) and
+ * {@code themes}, one picked at random (none: free build).
  */
 public final class BuildBattle implements GameType {
 
+    static final String PLOT = "plot";
+
     private final int buildSeconds;
     private final int voteSeconds;
-    private final int plotRadius;
     private final List<String> themes;
 
     public BuildBattle() {
-        this(300, 15, 10, List.of());
+        this(300, 15, List.of());
     }
 
-    private BuildBattle(int buildSeconds, int voteSeconds, int plotRadius, List<String> themes) {
+    private BuildBattle(int buildSeconds, int voteSeconds, List<String> themes) {
         this.buildSeconds = buildSeconds;
         this.voteSeconds = voteSeconds;
-        this.plotRadius = plotRadius;
         this.themes = List.copyOf(themes);
     }
 
@@ -49,11 +51,16 @@ public final class BuildBattle implements GameType {
 
     @Override
     public Map<String, List<Feature>> features() {
-        var plots = new Plots(plotRadius);
+        var plots = new Plots();
         return Map.of(
                 "building", List.of(new Building(plots, themes, buildSeconds * 20L)),
                 "voting", List.of(new Voting(plots, voteSeconds * 20L)),
                 "ending", List.of(new AnnounceWinner()));
+    }
+
+    @Override
+    public Optional<String> regionPerTeam() {
+        return Optional.of(PLOT);
     }
 
     /** The votes are the points; the match also ends early when everyone else has left. */
@@ -67,7 +74,6 @@ public final class BuildBattle implements GameType {
         return new BuildBattle(
                 mode.has("build-seconds") ? mode.integer("build-seconds", 10, 3600) : buildSeconds,
                 mode.has("vote-seconds") ? mode.integer("vote-seconds", 3, 120) : voteSeconds,
-                mode.has("plot-radius") ? mode.integer("plot-radius", 2, 64) : plotRadius,
                 mode.has("themes") ? mode.strings("themes") : themes);
     }
 }

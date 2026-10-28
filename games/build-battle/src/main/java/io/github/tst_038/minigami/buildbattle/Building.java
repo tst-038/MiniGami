@@ -17,8 +17,9 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 /**
- * Every builder claims the plot around the spawn they start on and builds there in creative, on a
- * theme picked at random. Nothing they do reaches past their plot.
+ * Every team gets a plot, the arena regions {@code plot-1}, {@code plot-2} and so on in team order, and
+ * its builders build there together in creative, on a theme picked at random. A player without a team
+ * builds alone. Nothing they do reaches past their plot.
  */
 final class Building implements Feature {
 
@@ -41,14 +42,23 @@ final class Building implements Feature {
             var theme = themes.get(ThreadLocalRandom.current().nextInt(themes.size()));
             context.messages().send(context.audience(), "build-battle.theme", Placeholder.unparsed("theme", theme), seconds);
         }
-        context.players().forEach(player -> {
-            plots.claim(player.getUniqueId(), player.getLocation());
-            player.setGameMode(GameMode.CREATIVE);
-        });
-        context.scope().register(() -> plots.builders().forEach(id -> context.player(id).ifPresent(player -> {
-            player.getInventory().clear();
-            player.setGameMode(GameMode.ADVENTURE);
-        })));
+        var teams = context.roster().teamsLeft();
+        for (int i = 0; i < teams.size(); i++) {
+            // The mode loader made sure the arena has a plot for every team a match can have.
+            var region = context.region(BuildBattle.PLOT + "-" + (i + 1)).orElseThrow();
+            var builders = teams.get(i).ids();
+            plots.claim(region, teams.get(i).id(), builders);
+            var start = plots.of(builders.getFirst()).orElseThrow().start();
+            builders.forEach(id -> context.player(id).ifPresent(player -> {
+                player.teleport(start);
+                player.setGameMode(GameMode.CREATIVE);
+            }));
+        }
+        context.scope().register(() -> plots.all().stream().flatMap(plot -> plot.builders().stream())
+                .forEach(id -> context.player(id).ifPresent(player -> {
+                    player.getInventory().clear();
+                    player.setGameMode(GameMode.ADVENTURE);
+                })));
 
         context.on(BlockPlaceEvent.class, event -> {
             List<BlockState> replaced = event instanceof BlockMultiPlaceEvent multi
@@ -71,11 +81,11 @@ final class Building implements Feature {
             if (plots.contains(id, event.getTo())) {
                 return;
             }
-            // Someone who got outside some other way, such as by respawning on another spawn, is brought home.
+            // Someone who got outside some other way, such as by respawning at a spawn, is brought home.
             if (plots.contains(id, event.getFrom())) {
                 event.setCancelled(true);
             } else {
-                plots.center(id).ifPresent(event::setTo);
+                plots.of(id).ifPresent(plot -> event.setTo(plot.start()));
             }
         });
         context.on(PlayerDropItemEvent.class, event -> event.setCancelled(true));

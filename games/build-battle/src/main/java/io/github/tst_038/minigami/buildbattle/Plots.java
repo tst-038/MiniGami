@@ -1,45 +1,60 @@
 package io.github.tst_038.minigami.buildbattle;
 
-import java.util.LinkedHashMap;
+import io.github.tst_038.minigami.api.region.Region;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.bukkit.Location;
 
-/**
- * The plot of each builder in one match: a square of {@code radius} blocks around the spawn they
- * started on, from the floor block under it up to twice the radius above.
- */
+/** The plots of one match, each an arena region shared by the builders of one team, in the order they were handed out. */
 final class Plots {
 
-    private final int radius;
-    private final Map<UUID, Location> centers = new LinkedHashMap<>();
+    /** @param team the team's id, or empty for a player without a team */
+    record Plot(Region region, Optional<String> team, List<UUID> builders) {
 
-    Plots(int radius) {
-        this.radius = radius;
+        Plot {
+            builders = List.copyOf(builders);
+        }
+
+        /**
+         * Where builders start and voters look from: above the middle of the plot, on the first free
+         * block over the floor, or at the top if the middle is built full.
+         */
+        Location start() {
+            var world = region.world();
+            int x = Math.floorDiv(region.minX() + region.maxX(), 2);
+            int z = Math.floorDiv(region.minZ() + region.maxZ(), 2);
+            for (int y = region.minY() + 1; y < region.maxY(); y++) {
+                if (world.getBlockAt(x, y - 1, z).isSolid() && world.getBlockAt(x, y, z).isPassable()
+                        && world.getBlockAt(x, y + 1, z).isPassable()) {
+                    return new Location(world, x + 0.5, y, z + 0.5);
+                }
+            }
+            return new Location(world, x + 0.5, region.maxY(), z + 0.5);
+        }
     }
 
-    void claim(UUID builder, Location center) {
-        centers.put(builder, center.clone());
+    private final List<Plot> plots = new ArrayList<>();
+    private final Map<UUID, Plot> byBuilder = new HashMap<>();
+
+    void claim(Region region, Optional<String> team, List<UUID> builders) {
+        var plot = new Plot(region, team, builders);
+        plots.add(plot);
+        builders.forEach(id -> byBuilder.put(id, plot));
     }
 
-    List<UUID> builders() {
-        return List.copyOf(centers.keySet());
+    List<Plot> all() {
+        return List.copyOf(plots);
     }
 
-    Optional<Location> center(UUID builder) {
-        return Optional.ofNullable(centers.get(builder)).map(Location::clone);
+    Optional<Plot> of(UUID builder) {
+        return Optional.ofNullable(byBuilder.get(builder));
     }
 
     boolean contains(UUID builder, Location location) {
-        var center = centers.get(builder);
-        if (center == null || center.getWorld() != location.getWorld()) {
-            return false;
-        }
-        var dy = location.getBlockY() - center.getBlockY();
-        return Math.abs(location.getBlockX() - center.getBlockX()) <= radius
-                && Math.abs(location.getBlockZ() - center.getBlockZ()) <= radius
-                && dy >= -1 && dy <= 2 * radius;
+        return of(builder).filter(plot -> plot.region().contains(location)).isPresent();
     }
 }

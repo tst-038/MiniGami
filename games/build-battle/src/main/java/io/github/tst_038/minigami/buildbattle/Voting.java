@@ -2,10 +2,10 @@ package io.github.tst_038.minigami.buildbattle;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import io.github.tst_038.minigami.buildbattle.Plots.Plot;
 import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -17,9 +17,9 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Takes everyone past each build in turn; players score it from 1 to 5 with the items in their
- * hotbar. Each vote counts as points for the builder; after the last build the phase ends and the
- * match's win condition ranks the builders.
+ * Takes everyone past each plot in turn; players score it from 1 to 5 with the items in their hotbar,
+ * but not their own team's. Each vote counts as points for the plot's team; after the last plot the
+ * phase ends and the match's win condition ranks the teams.
  */
 final class Voting implements Feature {
 
@@ -37,10 +37,11 @@ final class Voting implements Feature {
 
     @Override
     public void enable(MatchContext context) {
-        // Builds of those who left are skipped.
-        var builders = plots.builders().stream()
-                .filter(id -> context.roster().find(id).filter(Participant::isAlive).isPresent()).toList();
-        if (builders.isEmpty()) {
+        // Builds whose builders all left are skipped.
+        var shownPlots = plots.all().stream()
+                .filter(plot -> plot.builders().stream().anyMatch(id -> context.roster().find(id).filter(Participant::isAlive).isPresent()))
+                .toList();
+        if (shownPlots.isEmpty()) {
             context.endPhase();
             return;
         }
@@ -59,12 +60,12 @@ final class Voting implements Feature {
             player.getInventory().clear();
             player.setAllowFlight(false);
         }));
-        show(context, builders.getFirst());
+        show(context, shownPlots.getFirst());
         context.scope().register(context.clock().repeat(ticksPerBuild, () -> {
-            if (++shown[0] < builders.size()) {
-                show(context, builders.get(shown[0]));
+            if (++shown[0] < shownPlots.size()) {
+                show(context, shownPlots.get(shown[0]));
             } else {
-                announceTotals(context, builders);
+                announceTotals(context, shownPlots);
                 context.endPhase();
             }
         }));
@@ -76,11 +77,13 @@ final class Voting implements Feature {
             }
             event.setCancelled(true);
             var voter = event.getPlayer();
-            var builder = builders.get(shown[0]);
-            if (voter.getUniqueId().equals(builder)) {
+            var plot = shownPlots.get(shown[0]);
+            if (plot.builders().contains(voter.getUniqueId())) {
                 context.messages().send(voter, "build-battle.own-build");
                 return;
             }
+            // A team scores as one: the win condition adds up its members' points.
+            var builder = plot.builders().getFirst();
             context.addPoints(builder, votes.vote(builder, voter.getUniqueId(), score));
             context.messages().send(voter, "build-battle.voted", Formatter.number("score", score));
         });
@@ -91,18 +94,25 @@ final class Voting implements Feature {
         return context.players();
     }
 
-    private void show(MatchContext context, UUID builder) {
-        plots.center(builder).ifPresent(center -> voters(context).forEach(player -> player.teleport(center)));
-        context.messages().send(context.audience(), "build-battle.showing", Placeholder.component("player", name(context, builder)));
+    private void show(MatchContext context, Plot plot) {
+        var start = plot.start();
+        voters(context).forEach(player -> player.teleport(start));
+        context.messages().send(context.audience(), "build-battle.showing", Placeholder.component("player", name(context, plot)));
     }
 
-    private static void announceTotals(MatchContext context, List<UUID> builders) {
-        builders.stream().sorted(Comparator.comparingInt((UUID builder) -> context.scores().of(builder)).reversed())
-                .forEach(builder -> context.messages().send(context.audience(), "build-battle.score",
-                        Placeholder.component("player", name(context, builder)), Formatter.number("points", context.scores().of(builder))));
+    private static void announceTotals(MatchContext context, List<Plot> shown) {
+        shown.stream().sorted(Comparator.comparingInt((Plot plot) -> points(context, plot)).reversed())
+                .forEach(plot -> context.messages().send(context.audience(), "build-battle.score",
+                        Placeholder.component("player", name(context, plot)), Formatter.number("points", points(context, plot))));
     }
 
-    private static Component name(MatchContext context, UUID id) {
-        return context.player(id).map(Player::name).orElse(Component.text("?"));
+    private static int points(MatchContext context, Plot plot) {
+        return plot.builders().stream().mapToInt(context.scores()::of).sum();
+    }
+
+    /** The team's name, or for a player without a team their own. */
+    private static Component name(MatchContext context, Plot plot) {
+        return plot.team().map(context::teamName)
+                .orElseGet(() -> context.player(plot.builders().getFirst()).map(Player::name).orElse(Component.text("?")));
     }
 }

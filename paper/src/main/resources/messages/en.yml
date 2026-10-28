@@ -103,13 +103,13 @@ build-battle:
   # <theme>: the theme, <seconds>: build time
   theme: "<prefix><gold>Build: <white><theme></white>!</gold> <gray>You have <seconds> seconds; stay on your plot."
   free-build: "<prefix><gold>Build anything you like!</gold> <gray>You have <seconds> seconds; stay on your plot."
-  # <player>: whose build everyone is looking at
+  # <player>: whose build everyone is looking at: the team's name, or the builder's without teams
   showing: "<prefix><yellow>Now scoring the build of <white><player></white>. Click an item in your hotbar to vote."
   # <score>: 1 to 5
   vote-item: "<yellow>Vote <score>"
   voted: "<prefix><green>You gave this build <white><score></white>."
-  own-build: "<prefix><red>You can't vote on your own build."
-  # <player>, <points>: a builder's total, best first
+  own-build: "<prefix><red>You can't vote on your own team's build."
+  # <player>, <points>: a team's or builder's total, best first
   score: "<gray> - <white><player></white>: <gold><points></gold> points"
 
 # /mg list. <mode>: a mode's name, <id>: its id, <players>: how many are in its matches; <join>…</join> joins on click
@@ -214,6 +214,8 @@ info:
   # <roles>: the role ids the game needs
   game-roles: "<gray> Its modes define the roles <white><roles></white> under <white>roles.<id></white>."
   game-regions: "<gray> Its arenas need the regions <white><regions></white>."
+  # <region>: the name every team's region starts with
+  game-region-per-team: "<gray> Its arenas need a region per team: <white><region>-1</white>, <white><region>-2</white>, and so on."
   phase-timed: "<gray> - <white><phase></white> for <seconds> s"
   phase-untimed: "<gray> - <white><phase></white> until it ends"
   feature: "<prefix><gold><id></gold><gray>, set per phase under <white>features.<phase>.<id></white>:"

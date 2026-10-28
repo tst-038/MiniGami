@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * What a game is: its phases, the features active in each, and how a winner is decided. The first
@@ -48,6 +49,15 @@ public interface GameType {
      */
     default List<String> regions() {
         return List.of();
+    }
+
+    /**
+     * A region every team gets one of, numbered from 1: {@code plot} means {@code plot-1}, {@code plot-2},
+     * and so on, as many as a match of the mode can have teams (without teams, a player is a team of one).
+     * The game hands them out itself. Empty when the game needs none.
+     */
+    default Optional<String> regionPerTeam() {
+        return Optional.empty();
     }
 
     /** How many deaths put a player out, unless the mode sets its own; 0 means they always respawn. */
