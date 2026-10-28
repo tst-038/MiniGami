@@ -102,10 +102,10 @@ team:
   white: "<white>White"
 
 hide-and-seek:
-  # When the hiders get their head start. <seconds>: how long it lasts
-  hiding: "<prefix><green>Hide! <gray>The seekers come for you in <white><seconds></white> seconds."
-  # When the seekers are let go. <seconds>: how long the hiders must last
-  seeking: "<prefix><red>The seekers are coming! <gray>Last <white><seconds></white> seconds to win."
+  # When the hunted get their head start; worded for any roles, such as infection's. <seconds>: how long it lasts
+  hiding: "<prefix><green>Hide! <gray>The hunt starts in <white><seconds></white> seconds."
+  # When the hunters are let go. <seconds>: how long the hunted must last
+  seeking: "<prefix><red>The hunt is on! <gray>Last <white><seconds></white> seconds to win."
 king-of-the-hill:
   # A team, or a player without teams, now has the hill to itself. <team>: its name
   taken: "<prefix><team> <gray>took the hill!"
@@ -157,8 +157,8 @@ hud:
     starting: "<green>Starting in <white><time>"
     building: "<aqua>Build! <white><time> <gray>left"
     voting: "<light_purple>Vote! <white><time> <gray>left"
-    hiding: "<green>Hide! <white><time> <gray>until the seekers come"
-    seeking: "<red>Seekers are out! <white><time> <gray>left"
+    hiding: "<green>Hide! <white><time> <gray>until the hunt starts"
+    seeking: "<red>The hunt is on! <white><time> <gray>left"
     ending: "<gray>Back in <white><time>"
     default: "<yellow>Time left: <white><time>"
   title:
