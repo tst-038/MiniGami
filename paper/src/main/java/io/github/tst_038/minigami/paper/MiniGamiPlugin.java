@@ -43,6 +43,7 @@ import io.github.tst_038.minigami.paper.mode.ModeLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
+import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
 import io.github.tst_038.minigami.paper.stats.StatsRecorder;
 import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
@@ -98,7 +99,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         messages = new Messages(bundledMessages, getLogger());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
-        getServer().getPluginManager().registerEvents(new StatsRecorder(storage, getLogger()), this);
+        var profiles = new PlayerProfiles(storage, task -> getServer().getGlobalRegionScheduler().execute(this, task), getLogger());
+        getServer().getPluginManager().registerEvents(profiles, this);
+        // Players already online after a reload of the plugin.
+        getServer().getOnlinePlayers().forEach(player -> profiles.load(player.getUniqueId()));
+        getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());

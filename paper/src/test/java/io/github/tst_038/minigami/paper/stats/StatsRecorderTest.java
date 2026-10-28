@@ -41,7 +41,8 @@ class StatsRecorderTest {
         // The migrations the plugin ships.
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"),
                 Logger.getLogger(getClass().getName()));
-        recorder = new StatsRecorder(storage, Logger.getLogger(getClass().getName()));
+        recorder = new StatsRecorder(storage, new PlayerProfiles(storage, Runnable::run, Logger.getLogger(getClass().getName())),
+                Logger.getLogger(getClass().getName()));
     }
 
     @AfterEach

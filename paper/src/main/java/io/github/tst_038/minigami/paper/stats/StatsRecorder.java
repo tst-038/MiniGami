@@ -12,21 +12,24 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 /**
  * Keeps every match that gets a result: the match with its players and their stats, and each
  * player's running totals for the game and mode, in one transaction, so a crash leaves all of it
- * or none.
+ * or none. The profiles of its players who are online are loaded again after.
  */
 public final class StatsRecorder implements Listener {
 
     private final Storage storage;
+    private final PlayerProfiles profiles;
     private final Logger logger;
 
-    public StatsRecorder(Storage storage, Logger logger) {
+    public StatsRecorder(Storage storage, PlayerProfiles profiles, Logger logger) {
         this.storage = storage;
+        this.profiles = profiles;
         this.logger = logger;
     }
 
@@ -37,6 +40,7 @@ public final class StatsRecorder implements Listener {
             logger.log(Level.SEVERE, "Could not store the match " + record, failure);
             return null;
         });
+        profiles.reload(record.participants().stream().map(MatchRecord.Entry::id).collect(Collectors.toSet()));
     }
 
     /** Stores the match in the background; the record is immutable, so it is safe to hand over. */
