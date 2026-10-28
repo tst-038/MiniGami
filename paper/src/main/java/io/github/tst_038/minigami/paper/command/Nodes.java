@@ -8,6 +8,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -60,7 +61,7 @@ final class Nodes {
 
     static SuggestionProvider<CommandSourceStack> suggest(Function<CommandContext<CommandSourceStack>, ? extends Collection<String>> ids) {
         return (context, builder) -> {
-            ids.apply(context).stream().filter(id -> id.startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
+            ids.apply(context).stream().filter(id -> id.toLowerCase(Locale.ROOT).startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
             return builder.buildFuture();
         };
     }

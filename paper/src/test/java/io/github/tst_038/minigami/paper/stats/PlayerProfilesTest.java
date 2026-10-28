@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
 import io.github.tst_038.minigami.paper.storage.Storage;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ class PlayerProfilesTest {
     @BeforeEach
     void open() {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), LOGGER);
-        profiles = new PlayerProfiles(storage, serverThread::add, LOGGER);
+        profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
         recorder = new StatsRecorder(storage, profiles, LOGGER);
     }
 
@@ -121,5 +122,23 @@ class PlayerProfilesTest {
         settle();
 
         assertTrue(profiles.of(alice).isEmpty());
+    }
+
+    @Test
+    void anyoneWhoJoinedCanBeFoundByNameInAnyCase() {
+        play("tdm", 1, 3);
+        profiles.join(alice, "Alice");
+        profiles.forget(alice);
+        settle();
+
+        var lookup = profiles.find("ALICE");
+        var nobody = profiles.find("bob");
+        settle();
+
+        var found = lookup.join();
+        assertEquals(alice, found.orElseThrow().id());
+        assertEquals("Alice", found.get().name());
+        assertEquals(3, found.get().profile().mode("team-deathmatch", "tdm").stat(KILLS));
+        assertTrue(nobody.join().isEmpty(), "bob never joined");
     }
 }

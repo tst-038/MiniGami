@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.paper.storage.SqliteStorage;
 import io.github.tst_038.minigami.paper.storage.Storage;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ class StatsRecorderTest {
         // The migrations the plugin ships.
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"),
                 Logger.getLogger(getClass().getName()));
-        recorder = new StatsRecorder(storage, new PlayerProfiles(storage, Runnable::run, Logger.getLogger(getClass().getName())),
+        recorder = new StatsRecorder(storage, new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), Logger.getLogger(getClass().getName())),
                 Logger.getLogger(getClass().getName()));
     }
 

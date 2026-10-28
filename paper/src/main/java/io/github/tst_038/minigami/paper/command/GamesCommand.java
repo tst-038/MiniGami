@@ -18,6 +18,7 @@ import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
+import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
@@ -46,7 +47,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> create(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
-            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, StatsView stats, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
@@ -66,6 +67,8 @@ public final class GamesCommand {
                                         .requires(ADMIN)
                                         .executes(bySender((sender, context) -> publicMatches.join(sender, player(context), string(context, "mode")))))))
                 .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> running.leave(player))))
+                .then(StatsCommands.stats(stats, messages))
+                .then(StatsCommands.top(stats))
                 .then(Commands.literal("start").requires(ADMIN).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
                 .then(ModeCommands.node(editor, info, help))

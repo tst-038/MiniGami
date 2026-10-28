@@ -126,6 +126,36 @@ list:
   mode: "<gray> - <join><hover:show_text:'Click to join'><mode></hover></join> <gray>(<white><players></white> playing)"
   none: "<prefix><gray>There are no modes to join right now."
 
+# /mg stats and /mg top. <player>: a player's name, <mode>: a mode's name or the id typed, <game>: a game's id,
+# <stat>: a stat's name from below; totals: <played>, <wins>, <place>: average place or -, <left>: matches left early, <minutes> played
+stats:
+  name-a-player: "<prefix><red>Name a player: <white>/mg stats <player></white>."
+  loading: "<prefix><gray>The stats of <player> are still loading; try again in a moment."
+  failed: "<prefix><red>Could not load the stats; see the server log."
+  unknown-player: "<prefix><red>Nobody called <white><player></white> has played here."
+  unknown-mode: "<prefix><red>There is no mode called <white><mode></white>."
+  unknown-stat: "<prefix><red><mode> <red>has no leaderboard called <white><stat></white>."
+  header: "<prefix><gold><player></gold><gray>'s stats:"
+  none: "<gray> No matches played yet."
+  game: "<gray> - <white><game></white>: <played> played, <wins> won, average place <place>, <minutes> min"
+  mode-header: "<prefix><gold><player></gold><gray> in <mode><gray>:"
+  mode-totals: "<gray> <played> played, <wins> won, average place <place>, left <left>, <minutes> min"
+  # <amount>
+  stat: "<gray> - <stat>: <white><amount>"
+  top-header: "<prefix><gold>Top <stat></gold> <gray>in <mode><gray>:"
+  # <position>, <amount>
+  top-entry: "<gray> <position>. <white><player></white>: <gold><amount>"
+  top-none: "<gray> Nobody yet."
+  # On a board, for a player whose name isn't known
+  unknown-name: "<dark_gray>unknown player"
+  # A stat's display name by its id; a game's own stats need one here too.
+  name:
+    wins: "wins"
+    points: "points"
+    kills: "kills"
+    deaths: "deaths"
+    hill-seconds: "seconds on the hill"
+
 lobby:
   none: "<prefix><red>No lobby is set; set one with <white>/mg lobby set</white>."
 

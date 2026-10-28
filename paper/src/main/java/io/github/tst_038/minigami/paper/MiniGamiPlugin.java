@@ -43,8 +43,10 @@ import io.github.tst_038.minigami.paper.mode.ModeLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
+import io.github.tst_038.minigami.paper.stats.Leaderboards;
 import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
 import io.github.tst_038.minigami.paper.stats.StatsRecorder;
+import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
 import io.github.tst_038.minigami.paper.storage.Storage;
@@ -55,11 +57,15 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -71,6 +77,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class MiniGamiPlugin extends JavaPlugin {
 
     private static final String MESSAGES = "messages/en.yml";
+    private static final int LEADERBOARD_SIZE = 10;
+    /** Five minutes: boards lag a little behind, but are never read from storage per view. */
+    private static final long LEADERBOARD_REFRESH_TICKS = 5 * 60 * 20;
 
     private final IdRegistry<GameType> games = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
@@ -99,10 +108,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
         messages = new Messages(bundledMessages, getLogger());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
-        var profiles = new PlayerProfiles(storage, task -> getServer().getGlobalRegionScheduler().execute(this, task), getLogger());
+        Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
+        var profiles = new PlayerProfiles(storage, serverThread, Clock.systemUTC(), getLogger());
         getServer().getPluginManager().registerEvents(profiles, this);
         // Players already online after a reload of the plugin.
-        getServer().getOnlinePlayers().forEach(player -> profiles.load(player.getUniqueId()));
+        getServer().getOnlinePlayers().forEach(player -> profiles.join(player.getUniqueId(), player.getName()));
+        var leaderboards = new Leaderboards(storage, serverThread, getLogger(), this::cachedName, LEADERBOARD_SIZE);
+        getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
@@ -136,10 +148,16 @@ public final class MiniGamiPlugin extends JavaPlugin {
         info = new ConfigInfo(messages, editor, games, features, () -> arenas, () -> modes, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, games.ids(), features.ids(), snapshotAdmin,
-                        () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
+                        new StatsView(profiles, leaderboards, () -> modes, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
+    }
+
+    /** From the server's user cache only, so it never blocks; empty for players it has forgotten. */
+    private Optional<String> cachedName(UUID id) {
+        var profile = getServer().createProfile(id);
+        return profile.completeFromCache() ? Optional.ofNullable(profile.getName()) : Optional.empty();
     }
 
     /**
