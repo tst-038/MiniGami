@@ -4,9 +4,11 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
+import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -23,13 +25,24 @@ import org.bukkit.event.Event;
  */
 public interface MatchContext {
 
-    /** Handles events of {@code type} that belong to this match only, until the phase ends. */
+    /**
+     * Handles events of {@code type} that belong to this match only, until the phase ends. A role's
+     * features only get the events of that role's members.
+     */
     <E extends Event> void on(Class<E> type, Consumer<? super E> handler);
 
     /** Tasks scheduled here should be registered in {@link #scope()} so they stop with the phase. */
     MatchClock clock();
 
     Roster roster();
+
+    /**
+     * The online players still in whom these features are for: everyone in the match, or for a role's
+     * features that role's members.
+     */
+    default List<Player> players() {
+        return roster().alive().stream().map(Participant::id).flatMap(id -> player(id).stream()).toList();
+    }
 
     /** The phase the match is in, which for a feature is the phase it runs in. */
     Phase phase();

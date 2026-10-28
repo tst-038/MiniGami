@@ -33,7 +33,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
  * roles:                      # optional, instead of teams; handed out in this order
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
- *   hider: { name: "Hiders", color: green }                        # neither: everyone left over
+ *   hider:                                                         # neither: everyone left over
+ *     name: "Hiders"
+ *     features: { playing: { kit: { items: [stick] } } }          # optional; only for this role
  * arenas: [demo]
  * features:                   # optional; per phase of the game, per feature
  *   playing:
@@ -137,7 +139,7 @@ public final class ModeLoader {
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams(config, minPlayers, maxPlayers),
-                roles(config, minPlayers), arenas(config, arenas),
+                roles(config, minPlayers, game), arenas(config, arenas),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
     }
 
@@ -177,7 +179,7 @@ public final class ModeLoader {
         return Optional.of(setup);
     }
 
-    private static List<Role> roles(ConfigReader config, int minPlayers) {
+    private List<Role> roles(ConfigReader config, int minPlayers, GameType game) {
         if (!config.has("roles")) {
             return List.of();
         }
@@ -211,7 +213,7 @@ public final class ModeLoader {
                     : role.has("per") ? RoleShare.onePer(role.integer("per", 2, Integer.MAX_VALUE))
                     : RoleShare.rest();
             var lives = role.has("lives") ? OptionalInt.of(role.integer("lives", 0, Integer.MAX_VALUE)) : OptionalInt.empty();
-            roles.add(new Role(id, name, color, share, lives));
+            roles.add(new Role(id, name, color, share, lives, role.has("features") ? features(role.section("features"), game) : Map.of()));
         }
         if (roles.size() < 2) {
             config.problem("roles", "needs at least two roles");

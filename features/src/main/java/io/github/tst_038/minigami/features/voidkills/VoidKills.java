@@ -35,8 +35,7 @@ public final class VoidKills implements Feature {
 
     @Override
     public void enable(MatchContext context) {
-        var minY = this.minY.orElseGet(() -> context.roster().alive().stream()
-                .flatMap(participant -> context.player(participant.id()).stream())
+        var minY = this.minY.orElseGet(() -> context.players().stream()
                 .mapToDouble(player -> player.getLocation().getY()).min().orElse(0) - BELOW_SPAWN);
         context.on(PlayerMoveEvent.class, event -> {
             if (event.getTo().getY() >= minY) {

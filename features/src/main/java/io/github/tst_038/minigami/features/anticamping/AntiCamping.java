@@ -2,7 +2,6 @@ package io.github.tst_038.minigami.features.anticamping;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
-import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.features.footprint.Footprint;
 import java.util.HashMap;
 import java.util.Set;
@@ -35,7 +34,7 @@ public final class AntiCamping implements Feature {
         var spots = new HashMap<UUID, Spot>();
         context.scope().register(context.clock().repeat(CHECK_TICKS, () -> {
             var now = context.clock().elapsedTicks();
-            context.roster().alive().stream().map(Participant::id).flatMap(id -> context.player(id).stream()).forEach(player -> {
+            context.players().forEach(player -> {
                 var location = player.getLocation();
                 var spot = spots.get(player.getUniqueId());
                 if (spot == null || moved(spot.location(), location)) {

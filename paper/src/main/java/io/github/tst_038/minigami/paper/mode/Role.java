@@ -1,6 +1,9 @@
 package io.github.tst_038.minigami.paper.mode;
 
+import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.core.team.RoleShare;
+import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -13,8 +16,13 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
  * @param name display name, in MiniMessage
  * @param color colours the members' names and the parts of the name without a colour of their own
  * @param lives the role's own lives, instead of the mode's
+ * @param features per phase, on top of the mode's; they only see the role's members
  */
-public record Role(String id, String name, NamedTextColor color, RoleShare share, OptionalInt lives) {
+public record Role(String id, String name, NamedTextColor color, RoleShare share, OptionalInt lives, Map<String, List<Feature>> features) {
+
+    public Role {
+        features = Map.copyOf(features);
+    }
 
     public Component displayName() {
         return MiniMessage.miniMessage().deserialize(name).colorIfAbsent(color);

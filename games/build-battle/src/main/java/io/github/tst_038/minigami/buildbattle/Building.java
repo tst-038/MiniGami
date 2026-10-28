@@ -2,7 +2,6 @@ package io.github.tst_038.minigami.buildbattle;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
-import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -42,7 +41,7 @@ final class Building implements Feature {
             var theme = themes.get(ThreadLocalRandom.current().nextInt(themes.size()));
             context.messages().send(context.audience(), "build-battle.theme", Placeholder.unparsed("theme", theme), seconds);
         }
-        context.roster().alive().stream().map(Participant::id).flatMap(id -> context.player(id).stream()).forEach(player -> {
+        context.players().forEach(player -> {
             plots.claim(player.getUniqueId(), player.getLocation());
             player.setGameMode(GameMode.CREATIVE);
         });

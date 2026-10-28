@@ -10,7 +10,7 @@ public final class NoHunger implements Feature {
 
     @Override
     public void enable(MatchContext context) {
-        context.roster().alive().forEach(participant -> context.player(participant.id()).ifPresent(NoHunger::feed));
+        context.players().forEach(NoHunger::feed);
         context.on(FoodLevelChangeEvent.class, event -> {
             if (event.getEntity() instanceof Player player && event.getFoodLevel() < player.getFoodLevel()) {
                 event.setCancelled(true);

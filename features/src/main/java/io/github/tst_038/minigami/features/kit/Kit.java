@@ -20,7 +20,7 @@ public final class Kit implements Feature {
 
     @Override
     public void enable(MatchContext context) {
-        context.roster().alive().forEach(participant -> context.player(participant.id()).ifPresent(this::give));
+        context.players().forEach(this::give);
         context.on(PlayerRespawnEvent.class, event -> {
             if (context.roster().find(event.getPlayer().getUniqueId()).filter(Participant::isAlive).isPresent()) {
                 give(event.getPlayer());

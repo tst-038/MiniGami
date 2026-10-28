@@ -88,7 +88,7 @@ final class Voting implements Feature {
     }
 
     private static List<Player> voters(MatchContext context) {
-        return context.roster().alive().stream().map(Participant::id).flatMap(id -> context.player(id).stream()).toList();
+        return context.players();
     }
 
     private void show(MatchContext context, UUID builder) {

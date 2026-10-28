@@ -329,10 +329,23 @@ class ModeLoaderTest {
         assertEquals(List.of(), problems(loaded));
         var mode = loaded.entries().find("fall").orElseThrow();
         assertEquals(List.of(
-                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0)),
-                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty()),
-                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty())), mode.roles());
+                new Role("seeker", "Seekers", NamedTextColor.DARK_RED, RoleShare.of(1), OptionalInt.of(0), Map.of()),
+                new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty(), Map.of()),
+                new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty(), Map.of())), mode.roles());
         assertEquals(Optional.of("Seekers"), mode.role("seeker").map(Role::name));
+    }
+
+    @Test
+    void aRoleHasItsOwnFeaturesInPhasesOfTheGame() throws Exception {
+        var loaded = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {"
+                + "seeker: {players: 1, features: {playing: {void-kills: {y: 0}}}}, hider: {features: {fighting: {void-kills: {}}}}}}");
+
+        assertEquals(List.of("modes/fall.yml: roles.hider.features.fighting: unknown phase; test has: waiting, playing"), problems(loaded));
+        var good = load("{game: test, min-players: 2, max-players: 8, waiting: arena, arenas: [demo], roles: {"
+                + "seeker: {players: 1, features: {playing: {void-kills: {y: 0}}}}, hider: {}}}");
+        var seeker = good.entries().find("fall").orElseThrow().role("seeker").orElseThrow();
+        assertEquals(1, seeker.features().get("playing").size());
+        assertEquals(Map.of(), good.entries().find("fall").orElseThrow().features());
     }
 
     @Test

@@ -54,8 +54,6 @@ public final class BreakBlocks implements Feature {
 
     /** Only players still in, and only from the expected mode, so spectators stay spectators. */
     private static void setGameMode(MatchContext context, GameMode from, GameMode to) {
-        context.roster().alive().forEach(participant -> context.player(participant.id())
-                .filter(player -> player.getGameMode() == from)
-                .ifPresent(player -> player.setGameMode(to)));
+        context.players().stream().filter(player -> player.getGameMode() == from).forEach(player -> player.setGameMode(to));
     }
 }

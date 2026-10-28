@@ -95,11 +95,20 @@ public final class LiveMatch {
         this.match = new Match(mode.game().phases(), mode.game().winCondition(), features);
     }
 
-    /** The game's own features per phase, followed by those the mode configures. */
-    private static Map<String, List<Feature>> features(Mode mode) {
+    /**
+     * The game's own features per phase, then those the mode configures, then each role's, which get
+     * a context of their own that only covers the role's members.
+     */
+    private Map<String, List<Feature>> features(Mode mode) {
         var merged = new HashMap<String, List<Feature>>();
         mode.game().features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
         mode.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
+        for (var role : mode.roles()) {
+            var forRole = Optional.of(role.id());
+            role.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features.stream()
+                    .map(feature -> (Feature) context -> feature.enable(new PaperMatchContext(plugin, this, context.scope(), forRole)))
+                    .toList()));
+        }
         return merged;
     }
 

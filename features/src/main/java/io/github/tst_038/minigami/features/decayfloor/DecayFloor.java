@@ -2,7 +2,6 @@ package io.github.tst_038.minigami.features.decayfloor;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
-import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.features.footprint.Footprint;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -30,7 +29,7 @@ public final class DecayFloor implements Feature {
         var due = new LinkedHashMap<Block, Long>();
         context.scope().register(context.clock().repeat(1, () -> {
             var now = context.clock().elapsedTicks();
-            context.roster().alive().stream().map(Participant::id).flatMap(id -> context.player(id).stream())
+            context.players().stream()
                     .flatMap(player -> Footprint.under(player.getLocation()).stream())
                     .filter(block -> blocks.contains(block.getType()))
                     .forEach(block -> due.putIfAbsent(block, now + delayTicks));

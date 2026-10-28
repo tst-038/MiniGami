@@ -5,9 +5,11 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
+import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.roster.Roster;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -21,17 +23,32 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
-/** A match's context for one phase: listeners registered here only see this match's events. */
+/**
+ * A match's context for one phase: listeners registered here only see this match's events, and for
+ * a role's features only those of the role's members.
+ */
 public final class PaperMatchContext implements MatchContext {
 
     private final Plugin plugin;
     private final LiveMatch match;
     private final Scope scope;
+    /** The role whose features get this context; empty for features of the whole match. */
+    private final Optional<String> role;
 
     public PaperMatchContext(Plugin plugin, LiveMatch match, Scope scope) {
+        this(plugin, match, scope, Optional.empty());
+    }
+
+    public PaperMatchContext(Plugin plugin, LiveMatch match, Scope scope, Optional<String> role) {
         this.plugin = plugin;
         this.match = match;
         this.scope = scope;
+        this.role = role;
+    }
+
+    /** Asked at each event, so a player who changes role is covered by their new role's features from then on. */
+    private boolean covers(UUID id) {
+        return match.isActive(id) && (role.isEmpty() || roster().find(id).flatMap(Participant::team).equals(role));
     }
 
     /**
@@ -47,7 +64,7 @@ public final class PaperMatchContext implements MatchContext {
         var listener = new Listener() {};
         plugin.getServer().getPluginManager().registerEvent(type, listener, EventPriority.NORMAL, (ignored, event) -> {
             // Bukkit also calls the executor for subclasses of type; isInstance keeps the cast safe.
-            if (type.isInstance(event) && EventOwnership.belongsTo(event, match::isActive)) {
+            if (type.isInstance(event) && EventOwnership.belongsTo(event, this::covers)) {
                 handler.accept(type.cast(event));
             }
         }, plugin);
@@ -62,6 +79,13 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public Roster roster() {
         return match.match().roster();
+    }
+
+    @Override
+    public List<Player> players() {
+        return roster().alive().stream().map(Participant::id)
+                .filter(id -> role.isEmpty() || roster().find(id).flatMap(Participant::team).equals(role))
+                .flatMap(id -> player(id).stream()).toList();
     }
 
     @Override
