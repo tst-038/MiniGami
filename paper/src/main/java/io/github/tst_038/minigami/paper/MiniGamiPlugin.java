@@ -20,6 +20,7 @@ import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
 import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.hideandseek.HideAndSeek;
+import io.github.tst_038.minigami.kingofthehill.KingOfTheHill;
 import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
@@ -92,6 +93,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         games.register(new BuildBattle());
         games.register(new TeamDeathmatch());
         games.register(new HideAndSeek());
+        games.register(new KingOfTheHill());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory());
         features.register(new BreakBlocksFactory());

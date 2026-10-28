@@ -1,0 +1,66 @@
+package io.github.tst_038.minigami.kingofthehill;
+
+import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.feature.Feature;
+import io.github.tst_038.minigami.api.game.AnnounceWinner;
+import io.github.tst_038.minigami.api.game.GameType;
+import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.win.MostPoints;
+import io.github.tst_038.minigami.core.win.WinCondition;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Hold the hill: every second that only one team stands on the arena's {@code hill} region scores
+ * that team a point. Most points when time is up wins. Players always respawn. Without teams in the
+ * mode, everyone plays for themselves.
+ *
+ * <p>Mode settings, all optional: {@code play-seconds} (300) and {@code points-to-win}, which ends the
+ * match as soon as a team has that many points (none).
+ */
+public final class KingOfTheHill implements GameType {
+
+    private final int playSeconds;
+    private final int pointsToWin;
+
+    public KingOfTheHill() {
+        this(300, 0);
+    }
+
+    private KingOfTheHill(int playSeconds, int pointsToWin) {
+        this.playSeconds = playSeconds;
+        this.pointsToWin = pointsToWin;
+    }
+
+    @Override
+    public String id() {
+        return "king-of-the-hill";
+    }
+
+    @Override
+    public List<Phase> phases() {
+        return List.of(Phase.untimed("waiting"), Phase.timed("playing", playSeconds * 20L), Phase.timed("ending", 5 * 20));
+    }
+
+    @Override
+    public Map<String, List<Feature>> features() {
+        return Map.of("playing", List.of(new Hill()), "ending", List.of(new AnnounceWinner()));
+    }
+
+    @Override
+    public List<String> regions() {
+        return List.of(Hill.REGION);
+    }
+
+    @Override
+    public WinCondition winCondition() {
+        return new MostPoints(pointsToWin);
+    }
+
+    @Override
+    public GameType configure(ConfigReader mode) {
+        return new KingOfTheHill(
+                mode.has("play-seconds") ? mode.integer("play-seconds", 10, 3600) : playSeconds,
+                mode.has("points-to-win") ? mode.integer("points-to-win", 1, 10000) : pointsToWin);
+    }
+}
