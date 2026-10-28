@@ -1,0 +1,1 @@
+CREATE TABLE fine (id INTEGER);

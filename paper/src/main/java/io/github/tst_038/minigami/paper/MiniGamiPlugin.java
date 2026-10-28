@@ -43,6 +43,9 @@ import io.github.tst_038.minigami.paper.mode.ModeLoader;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
+import io.github.tst_038.minigami.paper.storage.Migrations;
+import io.github.tst_038.minigami.paper.storage.SqliteStorage;
+import io.github.tst_038.minigami.paper.storage.Storage;
 import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
@@ -77,6 +80,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
+    private Storage storage;
     private ConfigEditor editor;
     private ConfigInfo info;
     private Messages messages;
@@ -92,6 +96,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // Until the first load has read the admin's copy.
         messages = new Messages(bundledMessages, getLogger());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
+        storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
@@ -249,6 +254,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // After the matches: disposing them restores players and queues the deletes of their snapshot files.
         if (snapshots != null) {
             snapshots.close();
+        }
+        if (storage != null) {
+            storage.close();
         }
     }
 

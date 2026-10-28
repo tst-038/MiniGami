@@ -1,0 +1,2 @@
+CREATE TABLE half (id INTEGER);
+NOT SQL AT ALL;

@@ -5,11 +5,14 @@ run-paper = "3.1.0"
 worldedit = "7.4.6"
 # Only on the test server, as the WorldEdit implementation.
 fawe = "2.16.1"
+# The driver Paper 26.3 ships in its server libraries; only for tests, the server provides it at runtime.
+sqlite-jdbc = "3.49.1.0"
 
 [libraries]
 paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
 worldedit-core = { module = "com.sk89q.worldedit:worldedit-core", version.ref = "worldedit" }
 worldedit-bukkit = { module = "com.sk89q.worldedit:worldedit-bukkit", version.ref = "worldedit" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }

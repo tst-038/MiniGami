@@ -20,6 +20,7 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
+    testRuntimeOnly(libs.sqlite.jdbc)
 }
 
 base {
@@ -32,6 +33,11 @@ tasks.jar {
     inputs.files(configurations.runtimeClasspath)
     from(configurations.runtimeClasspath.map { files -> files.map { zipTree(it) } })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.test {
+    // The SQLite driver loads its native library.
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.processResources {
