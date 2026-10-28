@@ -26,4 +26,5 @@ hud:
     kill: entity.experience_orb.pickup
     out: entity.blaze.death
     win: ui.toast.challenge_complete
+    podium: entity.player.levelup
     lose: entity.villager.no

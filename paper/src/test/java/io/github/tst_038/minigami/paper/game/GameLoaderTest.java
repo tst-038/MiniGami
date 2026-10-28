@@ -223,7 +223,7 @@ class GameLoaderTest {
         assertEquals(Hud.NONE, plain.variants().get("none").hud());
         assertEquals(List.of("games/broken.yml: variants.odd.hud.sidebar.fighting: unknown phase; the game has: waiting, playing, or default",
                 "games/broken.yml: variants.odd.hud.sidebar.playing: unknown line 'hearts'; lines: alive, arena, blank, footer, game, lives, players, points, scores, team, time",
-                "games/broken.yml: variants.odd.hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, lose"), problems(loaded));
+                "games/broken.yml: variants.odd.hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, podium, lose"), problems(loaded));
     }
 
     @Test

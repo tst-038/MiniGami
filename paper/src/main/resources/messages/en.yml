@@ -170,6 +170,9 @@ hud:
     out-subtitle: "<gray>You are spectating now"
     win: "<gold><bold>VICTORY!"
     win-subtitle: "<yellow>You won the match"
+    # 2nd and 3rd place. <place>
+    podium: "<aqua><bold>#<place> PLACE"
+    podium-subtitle: "<gray>On the podium, well played!"
     lose: "<red><bold>GAME OVER"
     lose-subtitle: "<gray>You placed <white>#<place>"
     lose-subtitle-unplaced: "<gray>Better luck next time"

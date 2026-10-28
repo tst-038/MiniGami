@@ -31,7 +31,7 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
 
     /** When a sound plays. */
     public enum Moment {
-        COUNTDOWN, START, KILL, OUT, WIN, LOSE;
+        COUNTDOWN, START, KILL, OUT, WIN, PODIUM, LOSE;
 
         String configName() {
             return name().toLowerCase(Locale.ROOT);

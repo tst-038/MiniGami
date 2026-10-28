@@ -50,6 +50,8 @@ public final class MatchHud {
     private static final long REFRESH_TICKS = 5;
     /** The most lines a sidebar shows. */
     private static final int MAX_LINES = 15;
+    /** Places after the winner that still get cheered rather than a game over. */
+    private static final int LAST_ON_PODIUM = 3;
     private static final Title.Times COUNTDOWN_TIMES = Title.Times.times(Duration.ZERO, Duration.ofMillis(900), Duration.ofMillis(150));
     private static final Title.Times PAUSED_TIMES = Title.Times.times(Duration.ofMillis(250), Duration.ofHours(1), Duration.ofMillis(250));
     private static final List<Color> FIREWORK_COLORS = List.of(Color.RED, Color.ORANGE, Color.YELLOW, Color.LIME, Color.AQUA, Color.FUCHSIA);
@@ -145,6 +147,9 @@ public final class MatchHud {
             if (winners.contains(id)) {
                 title(player, "hud.title.win", "hud.title.win-subtitle", Title.DEFAULT_TIMES);
                 play(player, Hud.Moment.WIN);
+            } else if (place.filter(placed -> placed <= LAST_ON_PODIUM).isPresent()) {
+                title(player, "hud.title.podium", "hud.title.podium-subtitle", Title.DEFAULT_TIMES, Formatter.number("place", place.get()));
+                play(player, Hud.Moment.PODIUM);
             } else {
                 var placed = Formatter.number("place", place.orElse(0));
                 title(player, "hud.title.lose", place.isPresent() ? "hud.title.lose-subtitle" : "hud.title.lose-subtitle-unplaced", Title.DEFAULT_TIMES, placed);
