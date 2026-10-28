@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.features;
 
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
@@ -42,6 +43,8 @@ public final class FakeMatch implements MatchContext {
     public final List<Component> actionBars = new ArrayList<>();
     /** Blocks passed to {@link #rememberOriginal(Block)}, in order. */
     public final List<Block> remembered = new ArrayList<>();
+    /** The arena's regions by name, for {@link #region(String)}. */
+    public final Map<String, Region> regions = new HashMap<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
     private final Map<UUID, Player> players = new HashMap<>();
 
@@ -103,6 +106,11 @@ public final class FakeMatch implements MatchContext {
     @Override
     public Roster roster() {
         return roster;
+    }
+
+    @Override
+    public Optional<Region> region(String name) {
+        return Optional.ofNullable(regions.get(name));
     }
 
     @Override

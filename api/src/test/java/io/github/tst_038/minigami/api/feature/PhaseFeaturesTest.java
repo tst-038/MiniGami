@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.feature;
 
+import io.github.tst_038.minigami.api.region.Region;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -101,6 +102,11 @@ class PhaseFeaturesTest {
 
         @Override
         public MatchClock clock() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Region> region(String name) {
             throw new UnsupportedOperationException();
         }
 

@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.feature;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
@@ -43,6 +44,12 @@ public interface MatchContext {
     default List<Player> players() {
         return roster().alive().stream().map(Participant::id).flatMap(id -> player(id).stream()).toList();
     }
+
+    /**
+     * A named box of the arena the match is played in, such as {@code hill}. The regions the game
+     * names are always there; others only if the arena has them.
+     */
+    Optional<Region> region(String name);
 
     /** The phase the match is in, which for a feature is the phase it runs in. */
     Phase phase();

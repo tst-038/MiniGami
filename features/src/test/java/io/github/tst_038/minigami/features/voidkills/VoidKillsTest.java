@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.features.voidkills;
 
+import io.github.tst_038.minigami.api.region.Region;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -108,6 +109,11 @@ class VoidKillsTest {
         @Override
         public Roster roster() {
             return roster;
+        }
+
+        @Override
+        public Optional<Region> region(String name) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

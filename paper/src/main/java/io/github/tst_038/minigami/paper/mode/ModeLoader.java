@@ -140,7 +140,7 @@ public final class ModeLoader {
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         return new Mode(id, game, name, minPlayers, maxPlayers, waiting, lives, teams(config, minPlayers, maxPlayers),
-                roles(config, minPlayers, game), arenas(config, arenas),
+                roles(config, minPlayers, game), arenas(config, arenas, game),
                 config.has("features") ? features(config.section("features"), game) : Map.of());
     }
 
@@ -251,7 +251,8 @@ public final class ModeLoader {
         return roles;
     }
 
-    private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {
+    /** @param game checks its arenas have the regions it needs; may be null when unknown */
+    private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry, GameType game) {
         var ids = config.strings("arenas");
         if (ids.isEmpty() && config.has("arenas")) {
             config.problem("arenas", "needs at least one arena");
@@ -263,6 +264,12 @@ public final class ModeLoader {
                 config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids()));
             } else if (arena.get().isPlayable()) {
                 arenas.add(arena.get());
+                var missing = game == null ? List.<String>of()
+                        : game.regions().stream().filter(region -> !arena.get().regions().containsKey(region)).toList();
+                if (!missing.isEmpty()) {
+                    config.problem("arenas", "arena '" + id + "' lacks the regions " + game.id() + " needs: " + String.join(", ", missing)
+                            + "; save them with /mg arena " + id + " region <name> set");
+                }
             }
             // Left out without a problem: an arena without spawns is still being set up, and a problem would fail the reload it needs to get them.
         }

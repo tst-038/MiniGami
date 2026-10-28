@@ -184,6 +184,9 @@ public final class ConfigInfo {
         if (!game.roles().isEmpty()) {
             messages.send(sender, "info.game-roles", Placeholder.unparsed("roles", String.join(", ", game.roles())));
         }
+        if (!game.regions().isEmpty()) {
+            messages.send(sender, "info.game-regions", Placeholder.unparsed("regions", String.join(", ", game.regions())));
+        }
         settings(sender, settingsRead(game::configure));
         usedBy(sender, modesWithGame(id));
     }

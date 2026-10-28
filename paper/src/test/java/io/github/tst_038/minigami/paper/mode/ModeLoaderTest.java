@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.core.phase.Phase;
@@ -84,9 +85,40 @@ class ModeLoaderTest {
         }
     };
 
+    /** A game whose code relies on a hill region in its arenas. */
+    private static final GameType HILL = new GameType() {
+        @Override
+        public String id() {
+            return "hill";
+        }
+
+        @Override
+        public List<Phase> phases() {
+            return GAME.phases();
+        }
+
+        @Override
+        public Map<String, List<Feature>> features() {
+            return Map.of();
+        }
+
+        @Override
+        public WinCondition winCondition() {
+            return new LastManStanding();
+        }
+
+        @Override
+        public List<String> regions() {
+            return List.of("hill");
+        }
+    };
+
     ModeLoaderTest() {
         games.register(GAME);
         games.register(HIDE);
+        games.register(HILL);
+        arenas.register(new Arena("hills", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(),
+                Map.of("hill", new Region("hill", null, 0, 64, 0, 4, 64, 4)), Optional.empty()));
         features.register(new VoidKillsFactory());
         arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Map.of(), Optional.empty()));
         arenas.register(new Arena("empty", null, List.of(), Optional.empty(), Map.of(), Optional.empty()));
@@ -215,10 +247,10 @@ class ModeLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "modes/fall.yml: game: unknown game 'spleef'; known: hide, test",
+                "modes/fall.yml: game: unknown game 'spleef'; known: hide, hill, test",
                 "modes/fall.yml: max-players: must be at least min-players (4)",
                 "modes/fall.yml: waiting: must be one of: in-place, lobby, arena",
-                "modes/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty",
+                "modes/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty, hills",
                 "modes/fall.yml: features.playing.void-kills.y: must be a number"), problems(loaded));
     }
 
@@ -362,6 +394,15 @@ class ModeLoaderTest {
                 new Role("hider", "hider", NamedTextColor.BLUE, RoleShare.rest(), OptionalInt.empty(), Optional.empty(), Map.of()),
                 new Role("guard", "guard", NamedTextColor.GREEN, RoleShare.onePer(4), OptionalInt.empty(), Optional.empty(), Map.of())), mode.roles());
         assertEquals(Optional.of("Seekers"), mode.role("seeker").map(Role::name));
+    }
+
+    @Test
+    void everyArenaMustHaveTheRegionsTheGameNeeds() throws Exception {
+        var mode = "{game: hill, min-players: 2, max-players: 8, waiting: arena, arenas: ";
+
+        assertEquals(List.of(), problems(load(mode + "[hills]}")));
+        assertEquals(List.of("modes/fall.yml: arenas: arena 'demo' lacks the regions hill needs: hill; save them with /mg arena demo region <name> set"),
+                problems(load(mode + "[hills, demo, empty]}")));
     }
 
     @Test

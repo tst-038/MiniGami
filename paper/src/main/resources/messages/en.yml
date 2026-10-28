@@ -206,6 +206,7 @@ info:
   game: "<prefix><gold><id></gold> <gray>is won by <white><win-condition></white>; lives: <white><lives></white>. Phases:"
   # <roles>: the role ids the game needs
   game-roles: "<gray> Its modes define the roles <white><roles></white> under <white>roles.<id></white>."
+  game-regions: "<gray> Its arenas need the regions <white><regions></white>."
   phase-timed: "<gray> - <white><phase></white> for <seconds> s"
   phase-untimed: "<gray> - <white><phase></white> until it ends"
   feature: "<prefix><gold><id></gold><gray>, set per phase under <white>features.<phase>.<id></white>:"

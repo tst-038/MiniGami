@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
@@ -101,6 +102,11 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public Optional<Player> player(UUID id) {
         return match.match().roster().find(id).map(participant -> plugin.getServer().getPlayer(id));
+    }
+
+    @Override
+    public Optional<Region> region(String name) {
+        return Optional.ofNullable(match.arena().regions().get(name));
     }
 
     @Override

@@ -42,6 +42,14 @@ public interface GameType {
         return List.of();
     }
 
+    /**
+     * The arena regions the game's code relies on, such as {@code hill}; every arena of its modes must
+     * have them. Empty when the game needs none.
+     */
+    default List<String> regions() {
+        return List.of();
+    }
+
     /** How many deaths put a player out, unless the mode sets its own; 0 means they always respawn. */
     default int lives() {
         return 0;
