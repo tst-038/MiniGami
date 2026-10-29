@@ -41,6 +41,7 @@ import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.GameLoader;
+import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
@@ -120,8 +121,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
+        var matchValues = new MatchValues();
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles));
+            StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues);
         }
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
@@ -147,7 +149,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         features.register(new EffectsFactory());
         statGroups.register(new CombatStats());
         maps = new ArenaMaps(this, messages);
-        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps);
+        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);
         var publicMatches = new PublicMatches(this, () -> games, messages, running);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);

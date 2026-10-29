@@ -42,7 +42,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
  *   hide-and-seek:
- *     hiding: "<prefix><green>Run!"
+ *     hiding: "%prefix%<green>Run!"
  *   hud:
  *     line:
  *       discord: "<blue>discord.gg/x" # a sidebar line of its own, shown by naming discord under hud.sidebar

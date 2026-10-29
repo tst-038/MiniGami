@@ -16,6 +16,7 @@ import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.hud.MatchHud;
+import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.game.Role;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
@@ -108,7 +109,8 @@ public final class LiveMatch {
      * @param lobby where players wait in a variant that waits in the lobby
      * @throws IllegalArgumentException if the variant waits in the lobby and there is none
      */
-    public LiveMatch(Plugin plugin, Variant variant, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages) {
+    public LiveMatch(Plugin plugin, Variant variant, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages,
+            MatchValues values) {
         this.plugin = plugin;
         this.variant = variant;
         this.arena = arena;
@@ -123,7 +125,7 @@ public final class LiveMatch {
         var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
-        this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror);
+        this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror, values);
         match.onResult(result -> {
             recordEnd();
             hud.decided(result);

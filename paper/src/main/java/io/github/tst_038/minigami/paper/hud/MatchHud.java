@@ -15,16 +15,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
@@ -47,6 +52,9 @@ public final class MatchHud {
     /** Fireworks with it hurt nobody; the match cancels their damage. */
     public static final String CELEBRATION = "minigami.celebration";
 
+    /** The match's values every HUD text can use, next to each stat the match keeps. */
+    static final List<String> VALUES = List.of("game", "arena", "players", "max", "alive", "time", "team", "lives", "points");
+
     private static final long REFRESH_TICKS = 5;
     /** The most lines a sidebar shows. */
     private static final int MAX_LINES = 15;
@@ -61,8 +69,9 @@ public final class MatchHud {
     private final Hud hud;
     /** Puts the match's teams on a member's board, so names keep their colours there. */
     private final Consumer<Scoreboard> mirrorTeams;
+    private final MatchValues published;
     private final BossBar bossBar;
-    private final boolean placeholders;
+    private final boolean placeholderApi;
     private final Map<UUID, Scoreboard> boards = new HashMap<>();
     /** The board each member had before, to give back. */
     private final Map<UUID, Scoreboard> previous = new HashMap<>();
@@ -70,12 +79,14 @@ public final class MatchHud {
     private final Map<UUID, List<Component>> shown = new HashMap<>();
     private long lastCountdown = -1;
 
-    public MatchHud(Server server, LiveMatch match, Consumer<Scoreboard> mirrorTeams) {
+    /** @param published where each member's values go for other plugins */
+    public MatchHud(Server server, LiveMatch match, Consumer<Scoreboard> mirrorTeams, MatchValues published) {
         this.server = server;
         this.match = match;
         this.hud = match.variant().hud();
         this.mirrorTeams = mirrorTeams;
-        this.placeholders = server.getPluginManager().isPluginEnabled("PlaceholderAPI");
+        this.published = published;
+        this.placeholderApi = server.getPluginManager().isPluginEnabled("PlaceholderAPI");
         this.bossBar = BossBar.bossBar(Component.empty(), 1, hud.bossBar().orElse(BossBar.Color.WHITE), BossBar.Overlay.PROGRESS);
     }
 
@@ -104,6 +115,7 @@ public final class MatchHud {
         var board = boards.remove(id);
         var old = previous.remove(id);
         shown.remove(id);
+        published.remove(id);
         var player = server.getPlayer(id);
         if (board == null || player == null) {
             return;
@@ -180,6 +192,7 @@ public final class MatchHud {
 
     private void refresh(Player player, Scoreboard board) {
         mirrorTeams.accept(board);
+        publish(player);
         var lines = sidebar(player);
         if (lines.equals(shown.put(player.getUniqueId(), lines))) {
             return;
@@ -192,7 +205,7 @@ public final class MatchHud {
             return;
         }
         if (objective == null) {
-            objective = board.registerNewObjective("hud", Criteria.DUMMY, render("hud.sidebar-title"));
+            objective = board.registerNewObjective("hud", Criteria.DUMMY, render(player, "hud.sidebar-title"));
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
             objective.numberFormat(NumberFormat.blank());
         }
@@ -218,30 +231,29 @@ public final class MatchHud {
         for (var line : hud.sidebar(phase.get().id())) {
             switch (line) {
                 case "blank" -> lines.add(Component.empty());
-                case "game" -> lines.add(render("hud.line.game", Placeholder.parsed("game", match.variant().name())));
-                case "arena" -> lines.add(render("hud.line.arena", Placeholder.unparsed("arena", match.arena().id())));
-                case "time" -> lines.add(time());
-                case "players" -> lines.add(render("hud.line.players", Formatter.number("players", match.match().roster().size()),
+                case "game" -> lines.add(render(viewer, "hud.line.game", Placeholder.parsed("game", match.variant().name())));
+                case "arena" -> lines.add(render(viewer, "hud.line.arena", Placeholder.unparsed("arena", match.arena().id())));
+                case "time" -> lines.add(time(viewer));
+                case "players" -> lines.add(render(viewer, "hud.line.players", Formatter.number("players", match.match().roster().size()),
                         Formatter.number("max", match.variant().maxPlayers())));
-                case "alive" -> lines.add(render("hud.line.alive", Formatter.number("alive", match.match().roster().alive().size()),
+                case "alive" -> lines.add(render(viewer, "hud.line.alive", Formatter.number("alive", match.match().roster().alive().size()),
                         Formatter.number("players", match.match().roster().size())));
                 case "team" -> participant.flatMap(Participant::team)
-                        .ifPresent(team -> lines.add(render("hud.line.team", Placeholder.component("team", match.teamName(team)))));
+                        .ifPresent(team -> lines.add(render(viewer, "hud.line.team", Placeholder.component("team", match.teamName(team)))));
                 case "lives" -> {
                     var lives = match.livesLeft(id);
                     if (participant.isPresent() && lives.isPresent()) {
-                        lines.add(render("hud.line.lives", Formatter.number("lives", lives.getAsInt())));
+                        lines.add(render(viewer, "hud.line.lives", Formatter.number("lives", lives.getAsInt())));
                     }
                 }
-                case "points" -> participant.ifPresent(ignored -> lines.add(render("hud.line.points", Formatter.number("points", match.match().scores().of(id)))));
-                case "scores" -> lines.addAll(scores());
+                case "points" -> participant.ifPresent(ignored -> lines.add(render(viewer, "hud.line.points", Formatter.number("points", match.match().scores().of(id)))));
+                case "scores" -> lines.addAll(scores(viewer));
                 default -> {
                     var stat = new Stat(line);
                     if (match.messages().has("hud.line." + line)) {
-                        var text = render("hud.line." + line);
-                        lines.add(placeholders ? PlaceholderText.fill(viewer, text) : text);
+                        lines.add(render(viewer, "hud.line." + line));
                     } else if (participant.isPresent() && match.variant().stats().contains(stat)) {
-                        lines.add(render("hud.line.stat", Placeholder.component("stat", render("stats.name." + line)),
+                        lines.add(render(viewer, "hud.line.stat", Placeholder.component("stat", render(viewer, "stats.name." + line)),
                                 Formatter.number("amount", match.match().stats().of(id, stat))));
                     }
                 }
@@ -251,14 +263,14 @@ public final class MatchHud {
     }
 
     /** The teams by points, or without teams the top three players. */
-    private List<Component> scores() {
+    private List<Component> scores(Player viewer) {
         var roster = match.match().roster();
         var scores = match.match().scores();
         var teams = roster.teams().stream().filter(team -> team.id().isPresent()).toList();
         if (!teams.isEmpty()) {
             return teams.stream()
                     .sorted(Comparator.comparingInt((MatchTeam team) -> team.ids().stream().mapToInt(scores::of).sum()).reversed())
-                    .map(team -> render("hud.line.team-score", Placeholder.component("team", match.teamName(team.id().orElseThrow())),
+                    .map(team -> render(viewer, "hud.line.team-score", Placeholder.component("team", match.teamName(team.id().orElseThrow())),
                             Formatter.number("points", team.ids().stream().mapToInt(scores::of).sum())))
                     .toList();
         }
@@ -267,23 +279,23 @@ public final class MatchHud {
         var lines = new ArrayList<Component>();
         for (int i = 0; i < best.size(); i++) {
             var name = server.getOfflinePlayer(best.get(i)).getName();
-            lines.add(render("hud.line.player-score", Formatter.number("place", i + 1),
+            lines.add(render(viewer, "hud.line.player-score", Formatter.number("place", i + 1),
                     Placeholder.unparsed("player", Objects.requireNonNullElse(name, "?")), Formatter.number("points", scores.of(best.get(i)))));
         }
         return lines;
     }
 
-    private Component time() {
+    private Component time(Player viewer) {
         var startsIn = match.startsIn();
         if (startsIn.isPresent()) {
-            return render("hud.line.starting", clock(startsIn.getAsLong()));
+            return render(viewer, "hud.line.starting", clock(startsIn.getAsLong()));
         }
         if (match.isJoinable()) {
-            return render("hud.line.waiting");
+            return render(viewer, "hud.line.waiting");
         }
         var left = phaseLeft();
-        return left.isPresent() ? render("hud.line.time", clock(left.getAsLong()))
-                : render("hud.line.elapsed", clock(match.match().phaseElapsedTicks()));
+        return left.isPresent() ? render(viewer, "hud.line.time", clock(left.getAsLong()))
+                : render(viewer, "hud.line.elapsed", clock(match.match().phaseElapsedTicks()));
     }
 
     private OptionalLong phaseLeft() {
@@ -306,7 +318,7 @@ public final class MatchHud {
         }
         var total = startsIn.isPresent() ? LiveMatch.START_DELAY_TICKS + LiveMatch.COUNTDOWN_TICKS : phase.get().durationTicks();
         var key = startsIn.isPresent() ? "hud.boss-bar.starting" : "hud.boss-bar." + phase.get().id();
-        bossBar.name(render(match.messages().has(key) ? key : "hud.boss-bar.default", clock(left.getAsLong())));
+        bossBar.name(render(null, match.messages().has(key) ? key : "hud.boss-bar.default", clock(left.getAsLong())));
         bossBar.progress(Math.clamp((float) left.getAsLong() / total, 0f, 1f));
         online().forEach(player -> player.showBossBar(bossBar));
     }
@@ -336,7 +348,7 @@ public final class MatchHud {
 
     private void title(Player player, String title, String subtitle, Title.Times times, TagResolver... placeholders) {
         if (hud.titles()) {
-            player.showTitle(Title.title(render(title, placeholders), render(subtitle, placeholders), times));
+            player.showTitle(Title.title(render(player, title, placeholders), render(player, subtitle, placeholders), times));
         }
     }
 
@@ -362,8 +374,53 @@ public final class MatchHud {
         return boards.keySet().stream().map(server::getPlayer).filter(Objects::nonNull).toList();
     }
 
-    private Component render(String key, TagResolver... placeholders) {
-        return match.messages().render(key, placeholders);
+    /**
+     * Every HUD text can use the match's values, such as {@code %time%} and the viewer's {@code %lives%},
+     * and PlaceholderAPI's placeholders when it is installed.
+     *
+     * @param viewer null for a text everyone shares, which then has only the values of the match itself
+     */
+    private Component render(Player viewer, String key, TagResolver... placeholders) {
+        var text = match.messages().render(key, TagResolver.resolver(TagResolver.resolver(placeholders), values(viewer)));
+        return placeholderApi && viewer != null ? PlaceholderText.fill(viewer, text) : text;
+    }
+
+    private TagResolver values(Player viewer) {
+        var roster = match.match().roster();
+        var values = new ArrayList<TagResolver>(List.of(
+                Placeholder.parsed("game", match.variant().name()),
+                Placeholder.unparsed("arena", match.arena().id()),
+                Formatter.number("players", roster.size()),
+                Formatter.number("max", match.variant().maxPlayers()),
+                Formatter.number("alive", roster.alive().size()),
+                clock(timeShown())));
+        if (viewer != null) {
+            var id = viewer.getUniqueId();
+            var participant = roster.find(id);
+            var lives = participant.isPresent() ? match.livesLeft(id) : OptionalInt.empty();
+            values.add(Placeholder.component("team", participant.flatMap(Participant::team).map(match::teamName).orElse(Component.empty())));
+            values.add(Placeholder.unparsed("lives", lives.isPresent() ? Integer.toString(lives.getAsInt()) : ""));
+            values.add(Formatter.number("points", match.match().scores().of(id)));
+            match.variant().stats().forEach(stat -> values.add(Formatter.number(stat.id(), match.match().stats().of(id, stat))));
+        }
+        return TagResolver.resolver(values);
+    }
+
+    private void publish(Player viewer) {
+        var values = values(viewer);
+        var names = Stream.concat(VALUES.stream(), match.variant().stats().stream().map(Stat::id)).distinct();
+        published.put(viewer.getUniqueId(), names.collect(Collectors.toMap(name -> name,
+                name -> LegacyComponentSerializer.legacySection().serialize(MiniMessage.miniMessage().deserialize("<" + name + ">", values)))));
+    }
+
+    /** Before the start the time to it, else the time left of a timed phase, else how long the phase has run. */
+    private long timeShown() {
+        var startsIn = match.startsIn();
+        if (startsIn.isPresent()) {
+            return startsIn.getAsLong();
+        }
+        var left = phaseLeft();
+        return left.isPresent() ? left.getAsLong() : match.match().phaseElapsedTicks();
     }
 
     /** {@code m:ss}, rounding up so it never shows 0:00 while time is left. */

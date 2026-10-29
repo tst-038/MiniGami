@@ -107,4 +107,16 @@ class MessagesTest {
         assertEquals("gone", plain(game.render("match.left")));
         assertEquals("tagged in", plain(game.render("match.joined")));
     }
+
+    @Test
+    void placeholdersCanBeWrittenLikePlaceholderApisAndOthersAreLeftAlone() throws Exception {
+        var messages = messages("""
+                prefix: "[SG] "
+                line: "%prefix%<green>%player% has %server_online% at 50% off"
+                """);
+
+        var text = messages.render("line", Placeholder.unparsed("player", "Steve"));
+
+        assertEquals("[SG] Steve has %server_online% at 50% off", plain(text));
+    }
 }

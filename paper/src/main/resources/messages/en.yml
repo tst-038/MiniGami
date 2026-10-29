@@ -1,94 +1,94 @@
 # Player-facing text, in MiniMessage: https://docs.papermc.io/adventure/minimessage/format
-# <prefix> works in every message. Other placeholders are listed per message.
+# %prefix% works in every message. Other placeholders are listed per message; <name>…</name> ones wrap text, e.g. to make it clickable.
 prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
 
 join:
-  # <player>: who tried to join
-  already-in-match: "<prefix><red><player> is already in a match; leave it first with <white>/mg leave</white>."
-  name-a-player: "<prefix><red>Name who should join: <white>/mg join <game> [variant] <player></white>."
-  # <game>: the game as typed
-  unknown-game: "<prefix><red>There is no game called <white><game></white>."
-  # <game>: the game's name, <variant>: as typed, <variants>: the ones it has
-  unknown-variant: "<prefix><red><game><red> has no variant called <white><variant></white>. It has: <white><variants></white>"
-  # <game>: the game's or variant's name
-  no-free-arena: "<prefix><red>All arenas of <game><red> are busy or full. Try again later."
-  failed: "<prefix><red><player> can't join right now: their things from an earlier match still need to be given back. Rejoining the server does that, or staff can with <white>/mg player <player> snapshot restore</white>."
+  # %player%: who tried to join
+  already-in-match: "%prefix%<red>%player% is already in a match; leave it first with <white>/mg leave</white>."
+  name-a-player: "%prefix%<red>Name who should join: <white>/mg join %game% [variant] %player%</white>."
+  # %game%: the game as typed
+  unknown-game: "%prefix%<red>There is no game called <white>%game%</white>."
+  # %game%: the game's name, %variant%: as typed, %variants%: the ones it has
+  unknown-variant: "%prefix%<red>%game%<red> has no variant called <white>%variant%</white>. It has: <white>%variants%</white>"
+  # %game%: the game's or variant's name
+  no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy or full. Try again later."
+  failed: "%prefix%<red>%player% can't join right now: their things from an earlier match still need to be given back. Rejoining the server does that, or staff can with <white>/mg player %player% snapshot restore</white>."
 
 leave:
-  not-in-match: "<prefix><red>You are not in a match."
+  not-in-match: "%prefix%<red>You are not in a match."
 
 start:
-  nothing-to-start: "<prefix><red>There is no match waiting for players."
-  started: "<prefix><green>Match started."
+  nothing-to-start: "%prefix%<red>There is no match waiting for players."
+  started: "%prefix%<green>Match started."
 
-# <player>: the player, <players>: how many joined, <needed>: how many are needed to start
+# %player%: the player, %players%: how many joined, %needed%: how many are needed to start
 match:
-  joined: "<prefix><yellow><player></yellow> joined <gray>(<players>/<needed>)"
+  joined: "%prefix%<yellow>%player%</yellow> joined <gray>(%players%/%needed%)"
   # A player ran out of lives.
-  eliminated: "<prefix><red><player></red> is out!"
-  # Instead of going out, joins the role the game names in on-out. <team>: that role's name
-  switched-role: "<prefix><white><player></white> <gray>is now one of the <team><gray>."
-  # <seconds>: delay before the start
-  starting: "<prefix><green>Enough players! Starting in <seconds> seconds."
-  start-cancelled: "<prefix><red>Not enough players anymore, start cancelled."
-  # <player>: the player who left
-  left: "<prefix><yellow><player></yellow> left the match."
-  you-left: "<prefix><gray>You left the match."
-  # A participant quit the server but may still come back. <player>, <seconds>: how long they have
-  away: "<prefix><yellow><player></yellow> <gray>left; they have <white><seconds></white> seconds to come back."
-  # <player>: who came back in time
-  back: "<prefix><yellow><player></yellow> <gray>is back."
-  # <player>: who didn't come back in time
-  away-expired: "<prefix><red><player></red> didn't come back in time and is out!"
-  # The death message of a participant whose game kills them for quitting. <player>
-  died-quitting: "<red><player></red> <gray>died by quitting the match"
-  # <player>: the winner
-  winner: "<prefix><gold><player></gold> wins the match!"
-  # Above the hotbar in the last seconds of a phase with the countdown feature. <seconds>: seconds left
-  countdown: "<yellow>Ending in <gold><seconds></gold>"
-  # <team>: the winning team's name, in its colour
-  winner-team: "<prefix><team> <gold>wins the match!"
-  no-winner: "<prefix><gray>The match ended without a winner."
-  # <team>: the player's team, in its colour
-  your-team: "<prefix><gray>You are in team <team><gray>."
-  # <team>: the player's role, in its colour
-  your-role: "<prefix><gray>You are one of the <team><gray>."
-  stopped: "<prefix><red>An admin stopped the match; you get your own things back."
-  paused: "<prefix><yellow>An admin paused the match; nobody can move or get hurt."
-  resumed: "<prefix><green>The match goes on!"
-  # For admins. <match>: a match's id, its arena; <game>: the game and any variant, <phase>, <players>: how many are in it
+  eliminated: "%prefix%<red>%player%</red> is out!"
+  # Instead of going out, joins the role the game names in on-out. %team%: that role's name
+  switched-role: "%prefix%<white>%player%</white> <gray>is now one of the %team%<gray>."
+  # %seconds%: delay before the start
+  starting: "%prefix%<green>Enough players! Starting in %seconds% seconds."
+  start-cancelled: "%prefix%<red>Not enough players anymore, start cancelled."
+  # %player%: the player who left
+  left: "%prefix%<yellow>%player%</yellow> left the match."
+  you-left: "%prefix%<gray>You left the match."
+  # A participant quit the server but may still come back. %player%, %seconds%: how long they have
+  away: "%prefix%<yellow>%player%</yellow> <gray>left; they have <white>%seconds%</white> seconds to come back."
+  # %player%: who came back in time
+  back: "%prefix%<yellow>%player%</yellow> <gray>is back."
+  # %player%: who didn't come back in time
+  away-expired: "%prefix%<red>%player%</red> didn't come back in time and is out!"
+  # The death message of a participant whose game kills them for quitting. %player%
+  died-quitting: "<red>%player%</red> <gray>died by quitting the match"
+  # %player%: the winner
+  winner: "%prefix%<gold>%player%</gold> wins the match!"
+  # Above the hotbar in the last seconds of a phase with the countdown feature. %seconds%: seconds left
+  countdown: "<yellow>Ending in <gold>%seconds%</gold>"
+  # %team%: the winning team's name, in its colour
+  winner-team: "%prefix%%team% <gold>wins the match!"
+  no-winner: "%prefix%<gray>The match ended without a winner."
+  # %team%: the player's team, in its colour
+  your-team: "%prefix%<gray>You are in team %team%<gray>."
+  # %team%: the player's role, in its colour
+  your-role: "%prefix%<gray>You are one of the %team%<gray>."
+  stopped: "%prefix%<red>An admin stopped the match; you get your own things back."
+  paused: "%prefix%<yellow>An admin paused the match; nobody can move or get hurt."
+  resumed: "%prefix%<green>The match goes on!"
+  # For admins. %match%: a match's id, its arena; %game%: the game and any variant, %phase%, %players%: how many are in it
   admin:
-    none: "<prefix><gray>No matches are running."
-    # <count>
-    list: "<prefix><gold>Matches</gold> <gray>(<count>):"
-    entry: "<gray> - <info><hover:show_text:'Show details'><white><match></white></hover></info> <gray><game>, <phase>, <white><players></white> players"
-    # <game>: its name, <gametype>, <seconds>: since it opened
-    info: "<prefix><gold><match></gold> <gray>(<game><gray>, <gametype>) in phase <white><phase></white> after <seconds> s:"
-    # <player>, <team>: the team line below or nothing, <state>, <points>; <kick>…</kick> fills in the kick command
-    player: "<kick><hover:show_text:'Click to kick'><gray> - <team><white><player></white> <state> <gray><points> points</hover></kick>"
-    # <team>: the team's name
-    team: "<team> "
+    none: "%prefix%<gray>No matches are running."
+    # %count%
+    list: "%prefix%<gold>Matches</gold> <gray>(%count%):"
+    entry: "<gray> - <info><hover:show_text:'Show details'><white>%match%</white></hover></info> <gray>%game%, %phase%, <white>%players%</white> players"
+    # %game%: its name, %gametype%, %seconds%: since it opened
+    info: "%prefix%<gold>%match%</gold> <gray>(%game%<gray>, %gametype%) in phase <white>%phase%</white> after %seconds% s:"
+    # %player%, %team%: the team line below or nothing, %state%, %points%; <kick>…</kick> fills in the kick command
+    player: "<kick><hover:show_text:'Click to kick'><gray> - %team%<white>%player%</white> %state% <gray>%points% points</hover></kick>"
+    # %team%: the team's name
+    team: "%team% "
     state-alive: "<green>playing"
     state-out: "<red>out"
     state-left: "<dark_gray>left"
-    unknown: "<prefix><red>No match is running in <white><match></white>."
-    cannot-start: "<prefix><red><white><match></white> has already started or has no players."
-    cannot-end: "<prefix><red><white><match></white> hasn't started or is already ending; stop it instead with <white>/mg match <match> stop</white>."
-    started: "<prefix><red><white><match></white> has already started; players can only be added before."
-    ended: "<prefix><green>Ended <white><match></white>; the win condition decided the result."
-    stopped: "<prefix><green>Stopped <white><match></white> without a result."
-    paused: "<prefix><green>Paused <white><match></white>; resume it with <white>/mg match <match> resume</white>."
-    # <seconds>: the countdown before play goes on
-    resumed: "<prefix><green>Resuming <white><match></white> in <seconds> seconds."
-    already-resuming: "<prefix><red><white><match></white> is already counting down to go on."
-    already-paused: "<prefix><red><white><match></white> is already paused."
-    not-paused: "<prefix><red><white><match></white> isn't paused."
-    # <phase>: the phase asked for, <phases>: those it can skip to
-    phase-skipped: "<prefix><green>Skipped <white><match></white> to <white><phase></white>."
-    no-later-phase: "<prefix><red><white><match></white> has no phase <white><phase></white> ahead; it can skip to: <white><phases></white>."
-    added: "<prefix><green>Added <white><player></white> to <white><match></white>."
-    kicked: "<prefix><green>Kicked <white><player></white> from <white><match></white>."
-    not-member: "<prefix><red><white><player></white> isn't in <white><match></white>."
+    unknown: "%prefix%<red>No match is running in <white>%match%</white>."
+    cannot-start: "%prefix%<red><white>%match%</white> has already started or has no players."
+    cannot-end: "%prefix%<red><white>%match%</white> hasn't started or is already ending; stop it instead with <white>/mg match %match% stop</white>."
+    started: "%prefix%<red><white>%match%</white> has already started; players can only be added before."
+    ended: "%prefix%<green>Ended <white>%match%</white>; the win condition decided the result."
+    stopped: "%prefix%<green>Stopped <white>%match%</white> without a result."
+    paused: "%prefix%<green>Paused <white>%match%</white>; resume it with <white>/mg match %match% resume</white>."
+    # %seconds%: the countdown before play goes on
+    resumed: "%prefix%<green>Resuming <white>%match%</white> in %seconds% seconds."
+    already-resuming: "%prefix%<red><white>%match%</white> is already counting down to go on."
+    already-paused: "%prefix%<red><white>%match%</white> is already paused."
+    not-paused: "%prefix%<red><white>%match%</white> isn't paused."
+    # %phase%: the phase asked for, %phases%: those it can skip to
+    phase-skipped: "%prefix%<green>Skipped <white>%match%</white> to <white>%phase%</white>."
+    no-later-phase: "%prefix%<red><white>%match%</white> has no phase <white>%phase%</white> ahead; it can skip to: <white>%phases%</white>."
+    added: "%prefix%<green>Added <white>%player%</white> to <white>%match%</white>."
+    kicked: "%prefix%<green>Kicked <white>%player%</white> from <white>%match%</white>."
+    not-member: "%prefix%<red><white>%player%</white> isn't in <white>%match%</white>."
 
 # Team names by id; teams are handed out in this order, and the id is also the team's colour.
 team:
@@ -102,69 +102,72 @@ team:
   white: "<white>White"
 
 hide-and-seek:
-  # When the hunted get their head start; worded for any roles, such as infection's. <seconds>: how long it lasts
-  hiding: "<prefix><green>Hide! <gray>The hunt starts in <white><seconds></white> seconds."
-  # When the hunters are let go. <seconds>: how long the hunted must last
-  seeking: "<prefix><red>The hunt is on! <gray>Last <white><seconds></white> seconds to win."
+  # When the hunted get their head start; worded for any roles, such as infection's. %seconds%: how long it lasts
+  hiding: "%prefix%<green>Hide! <gray>The hunt starts in <white>%seconds%</white> seconds."
+  # When the hunters are let go. %seconds%: how long the hunted must last
+  seeking: "%prefix%<red>The hunt is on! <gray>Last <white>%seconds%</white> seconds to win."
 king-of-the-hill:
-  # A team, or a player without teams, now has the hill to itself. <team>: its name
-  taken: "<prefix><team> <gray>took the hill!"
-  # Action bar every second while one team holds it. <points>: that team's points so far
-  holding: "<team> <gray>holds the hill: <gold><points></gold> points"
+  # A team, or a player without teams, now has the hill to itself. %team%: its name
+  taken: "%prefix%%team% <gray>took the hill!"
+  # Action bar every second while one team holds it. %points%: that team's points so far
+  holding: "%team% <gray>holds the hill: <gold>%points%</gold> points"
   # Action bar while several teams stand on it
   contested: "<red>The hill is contested!"
 team-deathmatch:
-  # After a kill. <team>: the killer's team, or the killer without teams; <kills>: its kills so far
-  kills: "<prefix><team> <gray>has <gold><kills></gold> kills."
+  # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
+  kills: "%prefix%%team% <gray>has <gold>%kills%</gold> kills."
 
 build-battle:
-  # <theme>: the theme, <seconds>: build time
-  theme: "<prefix><gold>Build: <white><theme></white>!</gold> <gray>You have <seconds> seconds; stay on your plot."
-  free-build: "<prefix><gold>Build anything you like!</gold> <gray>You have <seconds> seconds; stay on your plot."
-  # <player>: whose build everyone is looking at: the team's name, or the builder's without teams
-  showing: "<prefix><yellow>Now scoring the build of <white><player></white>. Click an item in your hotbar to vote."
-  # <score>: 1 to 5
-  vote-item: "<yellow>Vote <score>"
-  voted: "<prefix><green>You gave this build <white><score></white>."
-  own-build: "<prefix><red>You can't vote on your own team's build."
-  # <player>, <points>: a team's or builder's total, best first
-  score: "<gray> - <white><player></white>: <gold><points></gold> points"
+  # %theme%: the theme, %seconds%: build time
+  theme: "%prefix%<gold>Build: <white>%theme%</white>!</gold> <gray>You have %seconds% seconds; stay on your plot."
+  free-build: "%prefix%<gold>Build anything you like!</gold> <gray>You have %seconds% seconds; stay on your plot."
+  # %player%: whose build everyone is looking at: the team's name, or the builder's without teams
+  showing: "%prefix%<yellow>Now scoring the build of <white>%player%</white>. Click an item in your hotbar to vote."
+  # %score%: 1 to 5
+  vote-item: "<yellow>Vote %score%"
+  voted: "%prefix%<green>You gave this build <white>%score%</white>."
+  own-build: "%prefix%<red>You can't vote on your own team's build."
+  # %player%, %points%: a team's or builder's total, best first
+  score: "<gray> - <white>%player%</white>: <gold>%points%</gold> points"
 
 # What players see of a match next to chat; config.yml and the games choose which of it is shown.
 hud:
   sidebar-title: "<gradient:gold:yellow><bold>MINIGAMI</bold></gradient>"
   # A sidebar line per id. A stat line (kills, deaths, ...) uses stat with the stat's name from stats.name.
   # Add a key here (or under messages: in a game) for a line of your own, e.g. discord: "<blue>discord.gg/x",
-  # and name it in a sidebar. PlaceholderAPI's %placeholders% are filled in it when that plugin is installed.
+  # and name it in a sidebar.
+  # Every text under hud can use the match's values: %game%, %arena%, %players%, %max%, %alive%, %time%,
+  # and the viewer's %team%, %lives%, %points% and each stat the game keeps (%kills%, ...). Other plugins
+  # get them as %mg_match_time% and so on. The boss bar is one for everyone, so it has only the match's values. PlaceholderAPI's own placeholders work here too when it is installed.
   line:
-    game: "<gray>Game: <white><game>"
-    arena: "<gray>Map: <white><arena>"
-    players: "<gray>Players: <white><players><gray>/<white><max>"
-    alive: "<gray>Alive: <white><alive><gray>/<white><players>"
-    # The time line, depending on where the match is. <time>: as m:ss
+    game: "<gray>Game: <white>%game%"
+    arena: "<gray>Map: <white>%arena%"
+    players: "<gray>Players: <white>%players%<gray>/<white>%max%"
+    alive: "<gray>Alive: <white>%alive%<gray>/<white>%players%"
+    # The time line, depending on where the match is. %time%: as m:ss
     waiting: "<gray>Waiting for players..."
-    starting: "<gray>Starting in <green><time>"
-    time: "<gray>Time left: <yellow><time>"
-    elapsed: "<gray>Time: <yellow><time>"
-    team: "<gray>Team: <team>"
-    lives: "<gray>Lives: <red><lives> ❤"
-    points: "<gray>Points: <yellow><points>"
-    stat: "<white><amount> <gray><stat>"
+    starting: "<gray>Starting in <green>%time%"
+    time: "<gray>Time left: <yellow>%time%"
+    elapsed: "<gray>Time: <yellow>%time%"
+    team: "<gray>Team: %team%"
+    lives: "<gray>Lives: <red>%lives% ❤"
+    points: "<gray>Points: <yellow>%points%"
+    stat: "<white>%amount% <gray>%stat%"
     # The scores line: a line per team, or without teams the top three players.
-    team-score: "<team><gray>: <white><points>"
-    player-score: "<gray><place>. <white><player> <dark_gray>- <yellow><points>"
+    team-score: "%team%<gray>: <white>%points%"
+    player-score: "<gray>%place%. <white>%player% <dark_gray>- <yellow>%points%"
     footer: "<yellow>play.example.com"
-  # Over the time left; per phase id, else default. <time>: as m:ss
+  # Over the time left; per phase id, else default. %time%: as m:ss
   boss-bar:
-    starting: "<green>Starting in <white><time>"
-    building: "<aqua>Build! <white><time> <gray>left"
-    voting: "<light_purple>Vote! <white><time> <gray>left"
-    hiding: "<green>Hide! <white><time> <gray>until the hunt starts"
-    seeking: "<red>The hunt is on! <white><time> <gray>left"
-    ending: "<gray>Back in <white><time>"
-    default: "<yellow>Time left: <white><time>"
+    starting: "<green>Starting in <white>%time%"
+    building: "<aqua>Build! <white>%time% <gray>left"
+    voting: "<light_purple>Vote! <white>%time% <gray>left"
+    hiding: "<green>Hide! <white>%time% <gray>until the hunt starts"
+    seeking: "<red>The hunt is on! <white>%time% <gray>left"
+    ending: "<gray>Back in <white>%time%"
+    default: "<yellow>Time left: <white>%time%"
   title:
-    countdown: "<gold><bold><seconds>"
+    countdown: "<gold><bold>%seconds%"
     countdown-subtitle: "<gray>Get ready!"
     start: "<green><bold>GO!"
     start-subtitle: "<gray>Good luck"
@@ -172,44 +175,44 @@ hud:
     out-subtitle: "<gray>You are spectating now"
     win: "<gold><bold>VICTORY!"
     win-subtitle: "<yellow>You won the match"
-    # 2nd and 3rd place. <place>
-    podium: "<aqua><bold>#<place> PLACE"
+    # 2nd and 3rd place. %place%
+    podium: "<aqua><bold>#%place% PLACE"
     podium-subtitle: "<gray>On the podium, well played!"
     lose: "<red><bold>GAME OVER"
-    lose-subtitle: "<gray>You placed <white>#<place>"
+    lose-subtitle: "<gray>You placed <white>#%place%"
     lose-subtitle-unplaced: "<gray>Better luck next time"
     paused: "<yellow><bold>PAUSED"
     paused-subtitle: "<gray>An admin paused the match"
 
-# /mg list. <game>: a game's or variant's name, <players>: how many are in its matches; <join>…</join> joins on click
+# /mg list. %game%: a game's or variant's name, %players%: how many are in its matches; <join>…</join> joins on click
 list:
-  header: "<prefix><gold>Games you can join:"
-  game: "<gray> - <join><hover:show_text:'Click to join'><game></hover></join> <gray>(<white><players></white> playing)"
-  variant: "<gray>    - <join><hover:show_text:'Click to join'><game></hover></join> <gray>(<white><players></white> playing)"
-  none: "<prefix><gray>There are no games to join right now."
+  header: "%prefix%<gold>Games you can join:"
+  game: "<gray> - <join><hover:show_text:'Click to join'>%game%</hover></join> <gray>(<white>%players%</white> playing)"
+  variant: "<gray>    - <join><hover:show_text:'Click to join'>%game%</hover></join> <gray>(<white>%players%</white> playing)"
+  none: "%prefix%<gray>There are no games to join right now."
 
-# /mg stats and /mg top. <player>: a player's name, <game>: a game's name or the id typed, <gametype>: a game type's id,
-# <stat>: a stat's name from below; totals: <played>, <wins>, <place>: average place or -, <left>: matches left early, <minutes> played
+# /mg stats and /mg top. %player%: a player's name, %game%: a game's name or the id typed, %gametype%: a game type's id,
+# %stat%: a stat's name from below; totals: %played%, %wins%, %place%: average place or -, %left%: matches left early, %minutes% played
 stats:
-  name-a-player: "<prefix><red>Name a player: <white>/mg stats <player></white>."
-  loading: "<prefix><gray>The stats of <player> are still loading; try again in a moment."
-  failed: "<prefix><red>Could not load the stats; see the server log."
-  unknown-player: "<prefix><red>Nobody called <white><player></white> has played here."
-  unknown-game: "<prefix><red>There is no game called <white><game></white>."
-  unknown-variant: "<prefix><red><game> <red>has no variant called <white><variant></white>; it has: <white><variants></white>."
-  unknown-stat: "<prefix><red><game> <red>has no leaderboard called <white><stat></white>."
-  header: "<prefix><gold><player></gold><gray>'s stats:"
+  name-a-player: "%prefix%<red>Name a player: <white>/mg stats %player%</white>."
+  loading: "%prefix%<gray>The stats of %player% are still loading; try again in a moment."
+  failed: "%prefix%<red>Could not load the stats; see the server log."
+  unknown-player: "%prefix%<red>Nobody called <white>%player%</white> has played here."
+  unknown-game: "%prefix%<red>There is no game called <white>%game%</white>."
+  unknown-variant: "%prefix%<red>%game% <red>has no variant called <white>%variant%</white>; it has: <white>%variants%</white>."
+  unknown-stat: "%prefix%<red>%game% <red>has no leaderboard called <white>%stat%</white>."
+  header: "%prefix%<gold>%player%</gold><gray>'s stats:"
   none: "<gray> No matches played yet."
-  game: "<gray> - <game><gray>: <played> played, <wins> won, average place <place>, <minutes> min"
-  game-header: "<prefix><gold><player></gold><gray> in <game><gray>:"
-  game-totals: "<gray> <played> played, <wins> won, average place <place>, left <left>, <minutes> min"
+  game: "<gray> - %game%<gray>: %played% played, %wins% won, average place %place%, %minutes% min"
+  game-header: "%prefix%<gold>%player%</gold><gray> in %game%<gray>:"
+  game-totals: "<gray> %played% played, %wins% won, average place %place%, left %left%, %minutes% min"
   # A line per variant played, under the game's totals and stats
-  variant: "<gray> - <variant><gray>: <played> played, <wins> won, average place <place>, <minutes> min"
-  # <amount>
-  stat: "<gray> - <stat>: <white><amount>"
-  top-header: "<prefix><gold>Top <stat></gold> <gray>in <game><gray>:"
-  # <position>, <amount>
-  top-entry: "<gray> <position>. <white><player></white>: <gold><amount>"
+  variant: "<gray> - %variant%<gray>: %played% played, %wins% won, average place %place%, %minutes% min"
+  # %amount%
+  stat: "<gray> - %stat%: <white>%amount%"
+  top-header: "%prefix%<gold>Top %stat%</gold> <gray>in %game%<gray>:"
+  # %position%, %amount%
+  top-entry: "<gray> %position%. <white>%player%</white>: <gold>%amount%"
   top-none: "<gray> Nobody yet."
   # On a board, for a player whose name isn't known
   unknown-name: "<dark_gray>unknown player"
@@ -222,159 +225,159 @@ stats:
     hill-seconds: "seconds on the hill"
 
 lobby:
-  none: "<prefix><red>No lobby is set; set one with <white>/mg lobby set</white>."
+  none: "%prefix%<red>No lobby is set; set one with <white>/mg lobby set</white>."
 
-# Arena setup. <arena>: the arena id, <world>: its world, <number>: a spawn's number as listed by info
+# Arena setup. %arena%: the arena id, %world%: its world, %number%: a spawn's number as listed by info
 arena:
-  unknown: "<prefix><red>There is no arena called <white><arena></white>."
-  exists: "<prefix><red>An arena called <white><arena></white> already exists."
-  invalid-id: "<prefix><red><white><arena></white> can't be an arena id: use lower case letters, digits and dashes."
-  in-use: "<prefix><red>A match is running in <white><arena></white>; change it once the match has ended."
-  other-world: "<prefix><red><white><arena></white> is in world <white><world></white>; go there to set its points."
-  no-spawn: "<prefix><red><white><arena></white> has no spawn <white><number></white>."
-  created: "<prefix><green>Created arena <white><arena></white> in <white><world></white>. Add spawns with <white>/mg arena <arena> spawn add</white>."
-  spawn-added: "<prefix><green>Added spawn <white><number></white> to <white><arena></white>."
-  spawn-removed: "<prefix><green>Removed spawn <white><number></white> from <white><arena></white>."
-  # <spawns>: how many spawns
-  info: "<prefix><gold><arena></gold> <gray>in <white><world></white>, <white><spawns></white> spawns. Click a point to go there."
-  # <x>, <y>, <z>; wrap text in <teleport>…</teleport> to make it teleport on click
-  info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn <number></white><team>: <x>, <y>, <z></hover></teleport>"
-  # <team>: the team's name; shown after a spawn that only that team uses
-  spawn-team: " <gray>(<team><gray>)"
-  # <team>: what was typed, <teams>: the team colours; a role's id works too
-  unknown-team: "<prefix><red><white><team></white> is neither a team (<white><teams></white>) nor a role id in lower case letters, digits and dashes."
-  info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: <x>, <y>, <z></hover></teleport>"
-  no-spawns: "<prefix><gray><white><arena></white> has no spawns yet; add one with <white>/mg arena <arena> spawn add</white>."
+  unknown: "%prefix%<red>There is no arena called <white>%arena%</white>."
+  exists: "%prefix%<red>An arena called <white>%arena%</white> already exists."
+  invalid-id: "%prefix%<red><white>%arena%</white> can't be an arena id: use lower case letters, digits and dashes."
+  in-use: "%prefix%<red>A match is running in <white>%arena%</white>; change it once the match has ended."
+  other-world: "%prefix%<red><white>%arena%</white> is in world <white>%world%</white>; go there to set its points."
+  no-spawn: "%prefix%<red><white>%arena%</white> has no spawn <white>%number%</white>."
+  created: "%prefix%<green>Created arena <white>%arena%</white> in <white>%world%</white>. Add spawns with <white>/mg arena %arena% spawn add</white>."
+  spawn-added: "%prefix%<green>Added spawn <white>%number%</white> to <white>%arena%</white>."
+  spawn-removed: "%prefix%<green>Removed spawn <white>%number%</white> from <white>%arena%</white>."
+  # %spawns%: how many spawns
+  info: "%prefix%<gold>%arena%</gold> <gray>in <white>%world%</white>, <white>%spawns%</white> spawns. Click a point to go there."
+  # %x%, %y%, %z%; wrap text in <teleport>…</teleport> to make it teleport on click
+  info-spawn: "<gray> - <teleport><hover:show_text:'Teleport'><white>spawn %number%</white>%team%: %x%, %y%, %z%</hover></teleport>"
+  # %team%: the team's name; shown after a spawn that only that team uses
+  spawn-team: " <gray>(%team%<gray>)"
+  # %team%: what was typed, %teams%: the team colours; a role's id works too
+  unknown-team: "%prefix%<red><white>%team%</white> is neither a team (<white>%teams%</white>) nor a role id in lower case letters, digits and dashes."
+  info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: %x%, %y%, %z%</hover></teleport>"
+  no-spawns: "%prefix%<gray><white>%arena%</white> has no spawns yet; add one with <white>/mg arena %arena% spawn add</white>."
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
-  # <region>: its name; <from>, <to>: its lowest and highest corner block
-  info-region: "<gray> - <white>region <region></white>: <from> to <to>"
-  # <from>, <to>: the lowest and highest corner block of the box it is pasted into
-  info-map: "<gray> - <white>map</white>: <from> to <to>; pasted back after each match"
-  info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena <arena> map save</white>"
-  # Named boxes games use, saved from a WorldEdit selection. <region>: its name
+  # %region%: its name; %from%, %to%: its lowest and highest corner block
+  info-region: "<gray> - <white>region %region%</white>: %from% to %to%"
+  # %from%, %to%: the lowest and highest corner block of the box it is pasted into
+  info-map: "<gray> - <white>map</white>: %from% to %to%; pasted back after each match"
+  info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena %arena% map save</white>"
+  # Named boxes games use, saved from a WorldEdit selection. %region%: its name
   region:
-    invalid-name: "<prefix><red><white><region></white> can't be a region name: use lower case letters, digits and dashes."
-    no-selection: "<prefix><red>Select the region with WorldEdit first, for example with <white>//wand</white>."
-    # <from>, <to>: its lowest and highest corner block
-    saved: "<prefix><green>Saved region <white><region></white> of <white><arena></white>: <from> to <to>."
-    removed: "<prefix><green>Removed region <white><region></white> from <white><arena></white>."
-    unknown: "<prefix><red><white><arena></white> has no region <white><region></white>."
-    none: "<prefix><gray><white><arena></white> has no regions yet; select one with WorldEdit and save it with <white>/mg arena <arena> region <name> set</white>."
-    showing: "<prefix><gray>Showing region <white><region></white> for <seconds> seconds."
+    invalid-name: "%prefix%<red><white>%region%</white> can't be a region name: use lower case letters, digits and dashes."
+    no-selection: "%prefix%<red>Select the region with WorldEdit first, for example with <white>//wand</white>."
+    # %from%, %to%: its lowest and highest corner block
+    saved: "%prefix%<green>Saved region <white>%region%</white> of <white>%arena%</white>: %from% to %to%."
+    removed: "%prefix%<green>Removed region <white>%region%</white> from <white>%arena%</white>."
+    unknown: "%prefix%<red><white>%arena%</white> has no region <white>%region%</white>."
+    none: "%prefix%<gray><white>%arena%</white> has no regions yet; select one with WorldEdit and save it with <white>/mg arena %arena% region %name% set</white>."
+    showing: "%prefix%<gray>Showing region <white>%region%</white> for %seconds% seconds."
   # The arena's map: a WorldEdit schematic pasted back after each match and at startup
   map:
-    no-worldedit: "<prefix><red>This needs WorldEdit or FastAsyncWorldEdit."
-    no-selection: "<prefix><red>Select the arena with WorldEdit first, for example with <white>//wand</white>."
-    saved: "<prefix><green>Saved the map of <white><arena></white>; it is pasted back after each match."
-    save-failed: "<prefix><red>Could not save the map of <white><arena></white>; the server log says why."
-    none: "<prefix><red><white><arena></white> has no saved map; save one with <white>/mg arena <arena> map save</white>."
-    resetting: "<prefix><red>The map of <white><arena></white> is already being reset."
-    reset: "<prefix><green>Reset the map of <white><arena></white>."
-    reset-failed: "<prefix><red>Could not reset the map of <white><arena></white>; the server log says why."
+    no-worldedit: "%prefix%<red>This needs WorldEdit or FastAsyncWorldEdit."
+    no-selection: "%prefix%<red>Select the arena with WorldEdit first, for example with <white>//wand</white>."
+    saved: "%prefix%<green>Saved the map of <white>%arena%</white>; it is pasted back after each match."
+    save-failed: "%prefix%<red>Could not save the map of <white>%arena%</white>; the server log says why."
+    none: "%prefix%<red><white>%arena%</white> has no saved map; save one with <white>/mg arena %arena% map save</white>."
+    resetting: "%prefix%<red>The map of <white>%arena%</white> is already being reset."
+    reset: "%prefix%<green>Reset the map of <white>%arena%</white>."
+    reset-failed: "%prefix%<red>Could not reset the map of <white>%arena%</white>; the server log says why."
 
-# <command>: a command; click a line to put it in the chat box
+# %command%: a command; click a line to put it in the chat box
 help:
-  header: "<prefix><gold><command></gold> <gray>can be followed by:"
-  line: "<suggest><hover:show_text:'Click to fill in'><gray> - <white><command></white></hover></suggest>"
+  header: "%prefix%<gold>%command%</gold> <gray>can be followed by:"
+  line: "<suggest><hover:show_text:'Click to fill in'><gray> - <white>%command%</white></hover></suggest>"
 
 # Lists and details for admins. <info>…</info> shows an entry's details on click, <set>…</set> fills in a set command.
 info:
-  # <count>; per entry <id>, <status>, and <gametype> and <variants>, <world> and <spawns>, or <games>: how many games use it
-  games: "<prefix><gold>Games</gold> <gray>(<count>):"
-  game-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray><gametype>, <variants> variant(s), <status>"
-  arenas: "<prefix><gold>Arenas</gold> <gray>(<count>):"
-  arena-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>in <world>, <spawns> spawns, <status>"
-  gametypes: "<prefix><gold>Game types</gold> <gray>(<count>):"
-  gametype-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <games> game(s)"
-  features: "<prefix><gold>Features</gold> <gray>(<count>):"
-  feature-entry: "<gray> - <info><hover:show_text:'Show details'><white><id></white></hover></info> <gray>used by <games> game(s)"
+  # %count%; per entry %id%, %status%, and %gametype% and %variants%, %world% and %spawns%, or %games%: how many games use it
+  games: "%prefix%<gold>Games</gold> <gray>(%count%):"
+  game-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>%gametype%, %variants% variant(s), %status%"
+  arenas: "%prefix%<gold>Arenas</gold> <gray>(%count%):"
+  arena-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>in %world%, %spawns% spawns, %status%"
+  gametypes: "%prefix%<gold>Game types</gold> <gray>(%count%):"
+  gametype-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>used by %games% game(s)"
+  features: "%prefix%<gold>Features</gold> <gray>(%count%):"
+  feature-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>used by %games% game(s)"
   status:
     ok: "<green>ready"
-    # <problems>: how many
-    problems: "<red><problems> problem(s)"
+    # %problems%: how many
+    problems: "<red>%problems% problem(s)"
     not-loaded: "<yellow>not loaded; /mg reload"
     no-arenas: "<yellow>no playable arena: its arenas lack spawns, the game's regions, or a saved map (needed when blocks change)"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"
-  # <name>: the game's display name
-  game: "<prefix><gold><id></gold> <gray>(<name><gray>) plays <white><gametype></white>, <status>"
-  # <variants>: each a game-variant
-  game-variants: "<gray> Variants: <variants>"
-  # <id>, <name>: the variant's
-  game-variant: "<white><id></white> <gray>(<name><gray>)"
-  game-arenas: "<gray> Playable arenas: <white><arenas>"
-  # <count>
-  game-teams-count: "<gray> Teams: <white><count></white>, formed at random when the match starts"
-  # <size>: players per team
-  game-teams-size: "<gray> Teams: of <white><size></white> players each, formed at random when the match starts"
-  # <roles>: the roles' names, in the order they are handed out
-  game-roles: "<gray> Roles: <roles><gray>, handed out at random when the match starts"
-  # <key>, <value>
-  value: "<set><hover:show_text:'Click to change'><gray> - <white><key></white>: <yellow><value></yellow></hover></set>"
-  value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - <key>: <value></hover></set>"
-  # <keys>: clickable
-  unset: "<gray> Not set: <white><keys>"
-  config: "<prefix><gold><file></gold><gray>:"
-  # <win-condition>, <lives>: default lives, 0 means always respawn
-  gametype: "<prefix><gold><id></gold> <gray>is won by <white><win-condition></white>; lives: <white><lives></white>. Phases:"
-  # <roles>: the role ids the game needs
-  gametype-roles: "<gray> Its games define the roles <white><roles></white> under <white>roles.<id></white>."
-  gametype-regions: "<gray> Its arenas need the regions <white><regions></white>."
-  # <region>: the name every team's region starts with
-  gametype-region-per-team: "<gray> Its arenas need a region per team: <white><region>-1</white>, <white><region>-2</white>, and so on."
-  phase-timed: "<gray> - <white><phase></white> for <seconds> s"
-  phase-untimed: "<gray> - <white><phase></white> until it ends"
-  feature: "<prefix><gold><id></gold><gray>, set per phase under <white>features.<phase>.<id></white>:"
-  # <key>, <values>: what it can be
-  setting: "<gray> - <white><key></white>: <values>"
-  setting-required: "<gray> - <white><key></white> <red>(required)</red>: <values>"
+  # %name%: the game's display name
+  game: "%prefix%<gold>%id%</gold> <gray>(%name%<gray>) plays <white>%gametype%</white>, %status%"
+  # %variants%: each a game-variant
+  game-variants: "<gray> Variants: %variants%"
+  # %id%, %name%: the variant's
+  game-variant: "<white>%id%</white> <gray>(%name%<gray>)"
+  game-arenas: "<gray> Playable arenas: <white>%arenas%"
+  # %count%
+  game-teams-count: "<gray> Teams: <white>%count%</white>, formed at random when the match starts"
+  # %size%: players per team
+  game-teams-size: "<gray> Teams: of <white>%size%</white> players each, formed at random when the match starts"
+  # %roles%: the roles' names, in the order they are handed out
+  game-roles: "<gray> Roles: %roles%<gray>, handed out at random when the match starts"
+  # %key%, %value%
+  value: "<set><hover:show_text:'Click to change'><gray> - <white>%key%</white>: <yellow>%value%</yellow></hover></set>"
+  value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - %key%: %value%</hover></set>"
+  # %keys%: clickable
+  unset: "<gray> Not set: <white>%keys%"
+  config: "%prefix%<gold>%file%</gold><gray>:"
+  # %win-condition%, %lives%: default lives, 0 means always respawn
+  gametype: "%prefix%<gold>%id%</gold> <gray>is won by <white>%win-condition%</white>; lives: <white>%lives%</white>. Phases:"
+  # %roles%: the role ids the game needs
+  gametype-roles: "<gray> Its games define the roles <white>%roles%</white> under <white>roles.%id%</white>."
+  gametype-regions: "<gray> Its arenas need the regions <white>%regions%</white>."
+  # %region%: the name every team's region starts with
+  gametype-region-per-team: "<gray> Its arenas need a region per team: <white>%region%-1</white>, <white>%region%-2</white>, and so on."
+  phase-timed: "<gray> - <white>%phase%</white> for %seconds% s"
+  phase-untimed: "<gray> - <white>%phase%</white> until it ends"
+  feature: "%prefix%<gold>%id%</gold><gray>, set per phase under <white>features.%phase%.%id%</white>:"
+  # %key%, %values%: what it can be
+  setting: "<gray> - <white>%key%</white>: %values%"
+  setting-required: "<gray> - <white>%key%</white> <red>(required)</red>: %values%"
   any-value: "<dark_gray>any value"
   no-settings: "<gray> No settings of its own."
-  # <games>: clickable
-  used-by: "<gray> Used by: <white><games>"
+  # %games%: clickable
+  used-by: "<gray> Used by: <white>%games%"
   used-by-none: "<gray> Not used by any game."
-  unknown-gametype: "<prefix><red>There is no game type called <white><id></white>."
-  unknown-feature: "<prefix><red>There is no feature called <white><id></white>."
+  unknown-gametype: "%prefix%<red>There is no game type called <white>%id%</white>."
+  unknown-feature: "%prefix%<red>There is no feature called <white>%id%</white>."
 
-# <matches>, <listeners>, <snapshots>; per match: <gametype>, <game>, <arena>, <phase>, <members>, <alive>, <tick>
+# %matches%, %listeners%, %snapshots%; per match: %gametype%, %game%, %arena%, %phase%, %members%, %alive%, %tick%
 reload:
-  done: "<prefix><green>Config loaded: <white><arenas></white> arenas, <white><games></white> games."
-  failed: "<prefix><red>Config not loaded, the old one stays in use. <white><problems></white> problem(s):"
-  problem: "<red> - <problem>"
+  done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games."
+  failed: "%prefix%<red>Config not loaded, the old one stays in use. <white>%problems%</white> problem(s):"
+  problem: "<red> - %problem%"
 
 edit:
-  invalid-id: "<prefix><red><white><id></white> can't be an id: use lower case letters, digits and dashes."
-  unknown: "<prefix><red>There is no <white><file></white>."
-  exists: "<prefix><red><white><file></white> already exists."
-  here-needs-player: "<prefix><red>Only a player can use <white>here</white> as a value."
-  bad-value: "<prefix><red><white><value></white> isn't a value; put text in quotes, e.g. <white>\"<value>\"</white>."
-  invalid: "<prefix><red>Not saved: <white><file></white> would have these problems:"
-  problem: "<red> - <problem>"
-  save-failed: "<prefix><red>Could not save <white><file></white>; see the server log."
-  set: "<prefix><green>Set <white><key></white> in <white><file></white>."
-  unset: "<prefix><green>Removed <white><key></white> from <white><file></white>."
-  created: "<prefix><green>Created <white><file></white>. Change it with <white>set</white> and <white>unset</white>."
-  deleted: "<prefix><green>Deleted <white><file></white>. A copy is kept as <white><file>.deleted</white> until the next delete of it."
-  # <variant>: the variant's id, <file>: its game's file
-  unknown-variant: "<prefix><red><white><file></white> has no variant <white><variant></white>."
-  variant-created: "<prefix><green>Added variant <white><variant></white> to <white><file></white>. Change it with <white>variant <variant> set</white>."
-  variant-deleted: "<prefix><green>Removed variant <white><variant></white> from <white><file></white>."
+  invalid-id: "%prefix%<red><white>%id%</white> can't be an id: use lower case letters, digits and dashes."
+  unknown: "%prefix%<red>There is no <white>%file%</white>."
+  exists: "%prefix%<red><white>%file%</white> already exists."
+  here-needs-player: "%prefix%<red>Only a player can use <white>here</white> as a value."
+  bad-value: "%prefix%<red><white>%value%</white> isn't a value; put text in quotes, e.g. <white>\"%value%\"</white>."
+  invalid: "%prefix%<red>Not saved: <white>%file%</white> would have these problems:"
+  problem: "<red> - %problem%"
+  save-failed: "%prefix%<red>Could not save <white>%file%</white>; see the server log."
+  set: "%prefix%<green>Set <white>%key%</white> in <white>%file%</white>."
+  unset: "%prefix%<green>Removed <white>%key%</white> from <white>%file%</white>."
+  created: "%prefix%<green>Created <white>%file%</white>. Change it with <white>set</white> and <white>unset</white>."
+  deleted: "%prefix%<green>Deleted <white>%file%</white>. A copy is kept as <white>%file%.deleted</white> until the next delete of it."
+  # %variant%: the variant's id, %file%: its game's file
+  unknown-variant: "%prefix%<red><white>%file%</white> has no variant <white>%variant%</white>."
+  variant-created: "%prefix%<green>Added variant <white>%variant%</white> to <white>%file%</white>. Change it with <white>variant %variant% set</white>."
+  variant-deleted: "%prefix%<green>Removed variant <white>%variant%</white> from <white>%file%</white>."
 
 snapshot:
-  none: "<prefix><gray><player> has no saved state."
-  in-match: "<prefix><red><player> is in a match; their state comes back when they leave it."
-  unreadable: "<prefix><red>The saved state of <player> can't be read; the server log names the file to fix."
-  saved: "<prefix><gold><player></gold><gray>: state saved for a match, not given back yet."
-  last: "<prefix><gold><player></gold><gray>: state given back last."
-  details: "<gray> <game-mode> at <x>, <y>, <z> in <world>, health <health>, food <food>, level <level>"
-  items: "<gray> Items: <white><items>"
-  effects: "<gray> Effects: <white><effects>"
-  restore-hint: "<gray> Give it back with <white>/mg player <player> snapshot restore</white>."
-  restore-last-hint: "<gray> Put it back with <white>/mg player <player> snapshot restore</white>; their current state is kept, so doing it again undoes it."
-  restored: "<prefix><green>Gave <player> their saved state back."
-  restored-last: "<prefix><green>Put the last state of <player> back. Run it again to undo."
-  restore-failed: "<prefix><red>Could not give <player> their state back; see the server log."
+  none: "%prefix%<gray>%player% has no saved state."
+  in-match: "%prefix%<red>%player% is in a match; their state comes back when they leave it."
+  unreadable: "%prefix%<red>The saved state of %player% can't be read; the server log names the file to fix."
+  saved: "%prefix%<gold>%player%</gold><gray>: state saved for a match, not given back yet."
+  last: "%prefix%<gold>%player%</gold><gray>: state given back last."
+  details: "<gray> %game-mode% at %x%, %y%, %z% in %world%, health %health%, food %food%, level %level%"
+  items: "<gray> Items: <white>%items%"
+  effects: "<gray> Effects: <white>%effects%"
+  restore-hint: "<gray> Give it back with <white>/mg player %player% snapshot restore</white>."
+  restore-last-hint: "<gray> Put it back with <white>/mg player %player% snapshot restore</white>; their current state is kept, so doing it again undoes it."
+  restored: "%prefix%<green>Gave %player% their saved state back."
+  restored-last: "%prefix%<green>Put the last state of %player% back. Run it again to undo."
+  restore-failed: "%prefix%<red>Could not give %player% their state back; see the server log."
 
 debug:
-  summary: "<prefix><gray>Matches: <white><matches></white>, listeners: <white><listeners></white>, players with saved state: <white><snapshots></white>"
-  match: "<prefix><gray><game> on <arena>: phase <white><phase></white>, <white><members></white> in match, <white><alive></white> alive, tick <white><tick></white>"
+  summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"
+  match: "%prefix%<gray>%game% on %arena%: phase <white>%phase%</white>, <white>%members%</white> in match, <white>%alive%</white> alive, tick <white>%tick%</white>"

@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.game.Variant;
+import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -39,18 +40,20 @@ public final class RunningMatches implements Listener {
     private final Messages messages;
     private final ActiveMatches matches;
     private final ArenaMaps maps;
+    private final MatchValues values;
     /** Per arena id, its latest match; finished ones are dropped lazily. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
     /** @param lobby the lobby currently set */
     public RunningMatches(Plugin plugin, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
-            ActiveMatches matches, ArenaMaps maps) {
+            ActiveMatches matches, ArenaMaps maps, MatchValues values) {
         this.plugin = plugin;
         this.lobby = lobby;
         this.sessions = sessions;
         this.messages = messages;
         this.matches = matches;
         this.maps = maps;
+        this.values = values;
     }
 
     /**
@@ -66,7 +69,7 @@ public final class RunningMatches implements Listener {
     }
 
     private LiveMatch open(Variant variant, Arena arena, Opening opening) {
-        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages);
+        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values);
         // Registered first so it runs last, once the match has let go of the arena.
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {

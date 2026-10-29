@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.api.message;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -12,10 +13,12 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.configuration.ConfigurationSection;
 
 /**
- * Player-facing text by key, written in MiniMessage. Every text can use {@code <prefix>}, plus the
- * placeholders the caller passes.
+ * Player-facing text by key, written in MiniMessage. Every text can use {@code %prefix%}, plus the
+ * placeholders the caller passes, written {@code %name%} like PlaceholderAPI's; {@code <name>} works too.
  */
 public final class Messages {
+
+    private static final Pattern PERCENT_NAME = Pattern.compile("%([a-z0-9_-]+)%");
 
     private volatile ConfigurationSection texts;
     private final Map<String, String> own;
@@ -75,7 +78,10 @@ public final class Messages {
         }
         var prefixText = text("prefix");
         var prefix = Placeholder.parsed("prefix", prefixText == null ? "" : prefixText);
-        return miniMessage.deserialize(text, TagResolver.resolver(TagResolver.resolver(placeholders), prefix));
+        var resolver = TagResolver.resolver(TagResolver.resolver(placeholders), prefix);
+        // Any other %name% is left alone, for PlaceholderAPI to fill.
+        var tags = PERCENT_NAME.matcher(text).replaceAll(found -> resolver.has(found.group(1)) ? "<" + found.group(1) + ">" : "$0");
+        return miniMessage.deserialize(tags, resolver);
     }
 
     private String text(String key) {
