@@ -75,6 +75,11 @@ public final class Night {
         return at(position);
     }
 
+    /** The 1-based number of the current game; the playlist's size once it is finished. */
+    public int gameNumber() {
+        return Math.min(position + 1, template.playlist().size());
+    }
+
     public Optional<PlaylistEntry> next() {
         return at(position + 1);
     }

@@ -46,11 +46,14 @@ class NightTest {
 
         assertEquals("spleef", night.current().orElseThrow().game());
         assertEquals("tdm", night.next().orElseThrow().game());
+        assertEquals(1, night.gameNumber());
         night.advance();
+        assertEquals(2, night.gameNumber());
         assertEquals("tdm", night.current().orElseThrow().game());
         assertTrue(night.next().isEmpty());
         night.advance();
         assertTrue(night.finished());
+        assertEquals(2, night.gameNumber());
         assertTrue(night.current().isEmpty());
         night.advance();
         assertTrue(night.finished());
