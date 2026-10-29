@@ -12,7 +12,9 @@ import io.github.tst_038.minigami.paper.config.ConfigFiles;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
+import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.GameLoader;
+import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
@@ -43,7 +45,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Edits any setting of a game, an arena or {@code config.yml} by command. The edited file is checked
+ * Edits any setting of a game, an arena, a game night or {@code config.yml} by command. The edited file is checked
  * by the loader that loads it and only written when it has no problems, after which the config is
  * loaded again. Keys complete from what the loaders asked for, so new settings need no code here.
  *
@@ -53,7 +55,7 @@ public final class ConfigEditor {
 
     /** The files that can be edited. */
     public enum Kind {
-        CONFIG, ARENA, GAME;
+        CONFIG, ARENA, GAME, NIGHT;
 
         /** The file, relative to the plugin folder, such as {@code games/spleef.yml}; the id is ignored for {@link #CONFIG}. */
         public String file(String id) {
@@ -61,11 +63,12 @@ public final class ConfigEditor {
                 case CONFIG -> SettingsLoader.FILE;
                 case ARENA -> "arenas/" + ArenaLoader.LAYOUT.formatted(id);
                 case GAME -> "games/" + id + ".yml";
+                case NIGHT -> NightTemplateLoader.FOLDER + "/" + id + ".yml";
             };
         }
     }
 
-    /** Taken by commands such as {@code /mg game list}, so an arena or game with one of these ids couldn't be reached. */
+    /** Taken by commands such as {@code /mg game list}, so an arena, game or game night with one of these ids couldn't be reached. */
     private static final Set<String> RESERVED_IDS = Set.of("create", "list");
     private static final long CHECK_TIMEOUT_SECONDS = 10;
 
@@ -73,29 +76,32 @@ public final class ConfigEditor {
     private final Messages messages;
     private final IdRegistry<GameType> gametypes;
     private final GameLoader gameLoader;
+    private final Supplier<IdRegistry<Game>> games;
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Supplier<Settings> settings;
     private final Predicate<String> arenaInUse;
     private final Consumer<Audience> reload;
-    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of());
+    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of(), Map.of());
 
     private record Keys(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> games) {
+            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights) {
     }
 
     /**
      * @param arenas the arenas currently loaded, which games are checked against
+     * @param games the games currently loaded, which game nights are checked against
      * @param settings the settings currently loaded, for whether games may wait in the lobby
      * @param arenaInUse whether a running match uses the arena with this id; such an arena can't be changed
      * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
     public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> gametypes, GameLoader gameLoader,
-            Supplier<IdRegistry<Arena>> arenas, Supplier<Settings> settings, Predicate<String> arenaInUse, Consumer<Audience> reload) {
+            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games, Supplier<Settings> settings, Predicate<String> arenaInUse, Consumer<Audience> reload) {
         this.plugin = plugin;
         this.messages = messages;
         this.gametypes = gametypes;
         this.gameLoader = gameLoader;
         this.arenas = arenas;
+        this.games = games;
         this.settings = settings;
         this.arenaInUse = arenaInUse;
         this.reload = reload;
@@ -103,8 +109,8 @@ public final class ConfigEditor {
 
     /** Takes the keys of every file from a config load, valid files or not, for completion. Any thread. */
     public void keysLoaded(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> games) {
-        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(games));
+            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights) {
+        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(games), Map.copyOf(nights));
     }
 
     /** Ids of the files in the folder, including those that failed to load. Any thread. */
@@ -113,6 +119,7 @@ public final class ConfigEditor {
             case CONFIG -> List.of();
             case ARENA -> keys.arenas().keySet().stream().sorted().toList();
             case GAME -> keys.games().keySet().stream().sorted().toList();
+            case NIGHT -> keys.nights().keySet().stream().sorted().toList();
         };
     }
 
@@ -132,6 +139,7 @@ public final class ConfigEditor {
             case CONFIG -> current.config();
             case ARENA -> current.arenas().getOrDefault(id, Collections.emptySortedMap());
             case GAME -> current.games().getOrDefault(id, Collections.emptySortedMap());
+            case NIGHT -> current.nights().getOrDefault(id, Collections.emptySortedMap());
         };
     }
 
@@ -277,7 +285,16 @@ public final class ConfigEditor {
         }, "edit.created");
     }
 
-    /** Arenas and games only; the file is kept as {@code <file>.deleted}. */
+    /** A game night playing one game, for solo players; change the rest with {@link #set} and {@link #change}. */
+    public void createNight(CommandSender sender, String id, String game, String name) {
+        edit(sender, Kind.NIGHT, id, true, config -> {
+            config.set("name", name);
+            config.set("teams", "solo");
+            config.set("playlist", List.of(game));
+        }, "edit.night-created");
+    }
+
+    /** Arenas, games and game nights; the file is kept as {@code <file>.deleted}. */
     public void delete(CommandSender sender, Kind kind, String id) {
         var file = kind.file(id);
         if (!editable(sender, kind, id)) {
@@ -363,6 +380,7 @@ public final class ConfigEditor {
             case ARENA -> ArenaLoader.load(new YamlFiles("arenas", ArenaLoader.LAYOUT, Map.of(id, config), List.of()), worlds::getWorld).problems();
             case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud(), messages::has)
                     .problems();
+            case NIGHT -> NightTemplateLoader.load(new YamlFiles(NightTemplateLoader.FOLDER, Map.of(id, config), List.of()), games.get()).problems();
         };
     }
 

@@ -177,9 +177,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(nights, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> settings, running::isArenaInUse, this::loadConfig);
+        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
-        info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, running::isArenaInUse);
+        info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights,
                         new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
@@ -237,8 +237,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedGames.problems());
                 problems.addAll(loadedNights.problems());
-                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys());
-                info.loaded(settingsText, arenaFiles.files(), gameFiles.files(), problems);
+                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys(), loadedNights.keys());
+                info.loaded(settingsText, arenaFiles.files(), gameFiles.files(), nightFiles.files(), problems);
                 var waiting = new ArrayList<Audience>();
                 for (Audience next; (next = requesters.poll()) != null; ) {
                     waiting.add(next);
@@ -268,7 +268,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 for (Audience audience : waiting) {
                     messages.send(audience, "reload.done", Formatter.number("arenas", arenas.ids().size()),
-                            Formatter.number("games", games.ids().size()));
+                            Formatter.number("games", games.ids().size()), Formatter.number("nights", nightTemplates.ids().size()));
                 }
             });
         });

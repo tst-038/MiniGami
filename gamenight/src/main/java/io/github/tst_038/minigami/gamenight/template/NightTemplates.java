@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.gamenight.template;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
@@ -43,6 +44,7 @@ public final class NightTemplates {
     }
 
     private static Teams teams(ConfigReader root) {
+        root.suggest("teams", List.of("solo", "{ size: 2 }"));
         if (root.isSection("teams")) {
             return new Teams(root.section("teams").integer("size", 2, Integer.MAX_VALUE));
         }

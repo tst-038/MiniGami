@@ -7,6 +7,8 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.gamenight.template.NightTemplate;
+import io.github.tst_038.minigami.gamenight.template.PlaylistEdit;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
@@ -15,6 +17,7 @@ import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.game.Role;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -48,7 +51,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 public final class ConfigInfo {
 
     private record Files(YamlConfiguration config, SortedMap<String, YamlConfiguration> arenas,
-            SortedMap<String, YamlConfiguration> games, List<ConfigProblem> problems) {
+            SortedMap<String, YamlConfiguration> games, SortedMap<String, YamlConfiguration> nights, List<ConfigProblem> problems) {
     }
 
     /** A setting a game or feature reads; required ones have no default. */
@@ -61,35 +64,39 @@ public final class ConfigInfo {
     private final IdRegistry<FeatureFactory> features;
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Supplier<IdRegistry<Game>> games;
+    private final Supplier<IdRegistry<NightTemplate>> nights;
     private final Predicate<String> arenaInUse;
-    private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), List.of());
+    private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), List.of());
 
     /**
      * @param arenas the arenas currently loaded
      * @param games the games currently loaded
+     * @param nights the game night templates currently loaded
      * @param arenaInUse whether a running match uses the arena with this id
      */
     public ConfigInfo(Messages messages, ConfigEditor editor, IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features,
-            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games, Predicate<String> arenaInUse) {
+            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games,
+            Supplier<IdRegistry<NightTemplate>> nights, Predicate<String> arenaInUse) {
         this.messages = messages;
         this.editor = editor;
         this.gametypes = gametypes;
         this.features = features;
         this.arenas = arenas;
         this.games = games;
+        this.nights = nights;
         this.arenaInUse = arenaInUse;
     }
 
     /** Takes the files a config load read, valid or not, and every problem it found. */
     public void loaded(String settings, Map<String, YamlConfiguration> arenaFiles, Map<String, YamlConfiguration> gameFiles,
-            List<ConfigProblem> problems) {
+            Map<String, YamlConfiguration> nightFiles, List<ConfigProblem> problems) {
         var config = new YamlConfiguration();
         try {
             config.loadFromString(settings);
         } catch (InvalidConfigurationException e) {
             // Already one of the problems.
         }
-        files = new Files(config, new TreeMap<>(arenaFiles), new TreeMap<>(gameFiles), List.copyOf(problems));
+        files = new Files(config, new TreeMap<>(arenaFiles), new TreeMap<>(gameFiles), new TreeMap<>(nightFiles), List.copyOf(problems));
     }
 
     public void listGames(CommandSender sender) {
@@ -104,6 +111,60 @@ public final class ConfigInfo {
                     Placeholder.component("status", status(Kind.GAME, id, loaded.isPresent(), status)),
                     infoClick("/mg game " + id + " info"));
         });
+    }
+
+    public void listNights(CommandSender sender) {
+        var current = files;
+        messages.send(sender, "info.nights", Formatter.number("count", current.nights().size()));
+        current.nights().forEach((id, config) -> {
+            var loaded = nights.get().find(id);
+            messages.send(sender, "info.night-entry", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
+                    Formatter.number("games", config.getList(PlaylistEdit.KEY, List.of()).size()),
+                    Placeholder.component("status", status(Kind.NIGHT, id, loaded.isPresent(), null)),
+                    infoClick("/mg night info " + id));
+        });
+    }
+
+    /** The night's settings, its numbered playlist, then what else can be set and any problems. */
+    public void night(CommandSender sender, String id) {
+        var config = files.nights().get(id);
+        if (config == null) {
+            unknownNight(sender, id);
+            return;
+        }
+        messages.send(sender, "info.night", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
+                Placeholder.component("status", status(Kind.NIGHT, id, nights.get().find(id).isPresent(), null)));
+        var settings = YamlConfiguration.loadConfiguration(new StringReader(config.saveToString()));
+        settings.set(PlaylistEdit.KEY, null);
+        var set = "/mg night edit " + id + " set ";
+        values(sender, settings, settings, set);
+        unset(sender, editor.keys(Kind.NIGHT, id).stream().filter(key -> !key.startsWith(PlaylistEdit.KEY)).toList(), settings, set);
+        nightPlaylist(sender, id);
+        problems(sender, Kind.NIGHT, id);
+    }
+
+    /** The games of the night one per line, numbered as the playlist commands count them. */
+    public void nightPlaylist(CommandSender sender, String id) {
+        var config = files.nights().get(id);
+        if (config == null) {
+            unknownNight(sender, id);
+            return;
+        }
+        var playlist = config.getList(PlaylistEdit.KEY, List.of());
+        messages.send(sender, "info.night-playlist", Formatter.number("count", playlist.size()));
+        for (int i = 0; i < playlist.size(); i++) {
+            Map<?, ?> entry = playlist.get(i) instanceof Map<?, ?> map ? map : Map.of("game", playlist.get(i));
+            var variant = entry.get("variant");
+            var points = entry.get("points");
+            messages.send(sender, "info.night-playlist-entry", Placeholder.unparsed("n", String.valueOf(i + 1)),
+                    Placeholder.unparsed("game", String.valueOf(entry.get("game"))),
+                    Placeholder.unparsed("variant", variant == null ? "" : " (" + variant + ")"),
+                    Placeholder.unparsed("points", points == null ? "" : " " + show(points)));
+        }
+    }
+
+    private void unknownNight(CommandSender sender, String id) {
+        messages.send(sender, "night.unknown", Placeholder.unparsed("night", id), Placeholder.unparsed("nights", String.join(", ", files.nights().keySet())));
     }
 
     public void listArenas(CommandSender sender) {
