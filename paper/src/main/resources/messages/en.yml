@@ -12,6 +12,11 @@ join:
   unknown-variant: "%prefix%<red>%game%<red> has no variant called <white>%variant%</white>. It has: <white>%variants%</white>"
   # %game%: the game's or variant's name
   no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy or full. Try again later."
+  party-leader-only: "%prefix%<red>You are in a party: only your party leader can join a game, for the whole party."
+  # %size%: players in the party who are online, %max%: most players the game holds
+  party-too-big: "%prefix%<red>Your party of %size% is too big for this game, which holds %max% players."
+  # %size%: players in the party who are online, %team%: most players in a team
+  party-too-big-for-team: "%prefix%<red>Your party of %size% does not fit in one team of this game (%team% players at most)."
   failed: "%prefix%<red>%player% can't join right now: their things from an earlier match still need to be given back. Rejoining the server does that, or staff can with <white>/mg player %player% snapshot restore</white>."
 
 leave:
@@ -363,6 +368,33 @@ kit:
   unknown: "%prefix%<red>There is no saved kit called <white>%name%</white>."
   deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mg reload</white>."
   delete-failed: "%prefix%<red>Could not delete the file of kit <white>%name%</white>; see the server log."
+
+# Parties: %player% and %leader% are names, %count% the size of the party;
+# <accept>…</accept> accepts an invite on click
+party:
+  none: "%prefix%<red>You are not in a party. Start one with <white>/mg party invite [player]</white>."
+  not-leader: "%prefix%<red>Only the leader of the party can do that."
+  self: "%prefix%<red>You can't do that to yourself."
+  invite-in-party: "%prefix%<red><white>%player%</white> is already in a party."
+  leave-first: "%prefix%<red>You are in a party already; leave it first with <white>/mg party leave</white>."
+  no-invite: "%prefix%<red>You have no open invite from <white>%leader%</white>; it may have run out."
+  not-member: "%prefix%<red><white>%player%</white> is not in your party."
+  invited: "%prefix%<green>Invited <white>%player%</white> to your party. The invite runs out in a minute."
+  invite: "%prefix%<white>%leader%</white> <gold>invited you to their party. <accept><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></accept>"
+  invite-expired: "%prefix%<gray>The invite from <white>%leader%</white> to <white>%player%</white> has run out."
+  joined: "%prefix%<green>You joined the party of <white>%leader%</white>."
+  member-joined: "%prefix%<white>%player%</white> <green>joined the party."
+  left: "%prefix%<yellow>You left the party."
+  member-left: "%prefix%<white>%player%</white> <yellow>left the party."
+  kicked: "%prefix%<red>You were kicked from the party by <white>%leader%</white>."
+  member-kicked: "%prefix%<white>%player%</white> <yellow>was kicked from the party."
+  new-leader: "%prefix%<white>%player%</white> <gold>leads the party now."
+  disbanded: "%prefix%<yellow>The party was disbanded."
+  list-header: "%prefix%<gold>Your party <gray>(%count%):"
+  list-leader: "<gray> - <gold>★ <white>%player%</white> %status%"
+  list-member: "<gray> - <white>%player%</white> %status%"
+  online: "<green>online"
+  offline: "<gray>offline"
 
 debug:
   summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"

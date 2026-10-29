@@ -202,17 +202,23 @@ public final class ConfigReader {
 
     /** A list of sections, such as spawn points; problems in an item are reported as {@code key[index].field}. */
     public List<ConfigReader> sections(String key) {
+        return sections(key, null);
+    }
+
+    /** Like {@link #sections(String)}, but an item written as plain text counts as a section holding just that text under {@code shorthandKey}. */
+    public List<ConfigReader> sections(String key, String shorthandKey) {
         var value = value(key);
         if (value == null) {
             return List.of();
         }
-        if (!(value instanceof List<?> list) || list.stream().anyMatch(item -> !(item instanceof Map<?, ?>))) {
-            problem(key, "must be a list of sections");
+        if (!(value instanceof List<?> list) || list.stream().anyMatch(item -> !(item instanceof Map<?, ?>) && (shorthandKey == null || item instanceof List<?>))) {
+            problem(key, shorthandKey == null ? "must be a list of sections" : "must be a list of sections or texts");
             return List.of();
         }
         var readers = new ArrayList<ConfigReader>();
         for (int i = 0; i < list.size(); i++) {
-            var item = new MemoryConfiguration().createSection("item", (Map<?, ?>) list.get(i));
+            var map = list.get(i) instanceof Map<?, ?> given ? given : Map.of(shorthandKey, list.get(i));
+            var item = new MemoryConfiguration().createSection("item", map);
             readers.add(new ConfigReader(shared, childPath(key) + "[" + i + "]", item));
         }
         return readers;

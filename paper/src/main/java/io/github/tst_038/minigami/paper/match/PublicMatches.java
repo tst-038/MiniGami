@@ -4,8 +4,13 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
+import io.github.tst_038.minigami.paper.party.PartyService;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Supplier;
@@ -21,7 +26,7 @@ import org.bukkit.plugin.Plugin;
 /**
  * Public play, through {@code /mg join}: joining a game, or one of its variants, fills its waiting
  * public match first and otherwise opens one in its first free arena. Private matches are never
- * filled from here.
+ * filled from here. A party joins together, through its leader.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -31,13 +36,15 @@ public final class PublicMatches {
     private final Supplier<IdRegistry<Game>> games;
     private final Messages messages;
     private final RunningMatches running;
+    private final PartyService parties;
 
     /** @param games the games currently loaded; config loading replaces the registry */
-    public PublicMatches(Plugin plugin, Supplier<IdRegistry<Game>> games, Messages messages, RunningMatches running) {
+    public PublicMatches(Plugin plugin, Supplier<IdRegistry<Game>> games, Messages messages, RunningMatches running, PartyService parties) {
         this.plugin = plugin;
         this.games = games;
         this.messages = messages;
         this.running = running;
+        this.parties = parties;
     }
 
     public SortedSet<String> gameIds() {
@@ -52,22 +59,45 @@ public final class PublicMatches {
         return variantIds(gameId).contains(variant);
     }
 
-    /** @param variant empty for the game itself */
+    /**
+     * @param variant empty for the game itself
+     * @param player if in a party, must lead it: the party's online members join the same match with them
+     */
     public void join(Player player, String gameId, Optional<String> variant) {
-        join(player, gameId, variant, player);
+        var id = player.getUniqueId();
+        var party = parties.partyOf(id);
+        if (party.isPresent() && !parties.isLeader(id)) {
+            messages.send(player, "join.party-leader-only");
+            return;
+        }
+        var group = new ArrayList<Player>();
+        group.add(player);
+        party.ifPresent(members -> members.stream().filter(member -> !member.equals(id))
+                .map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(group::add));
+        join(group, gameId, variant, player);
     }
 
-    /** An admin puts a player in a match of the game; the admin hears why if that can't be done. */
+    /**
+     * An admin puts a player in a match of the game; the admin hears why if that can't be done. The
+     * player's party is not moved with them: this is an override, like adding past the maximum.
+     */
     public void join(CommandSender sender, Player player, String gameId, Optional<String> variant) {
-        join(player, gameId, variant, sender).ifPresent(match -> messages.send(sender, "match.admin.added",
+        join(List.of(player), gameId, variant, sender).ifPresent(match -> messages.send(sender, "match.admin.added",
                 Placeholder.component("player", player.name()), Placeholder.unparsed("match", match.arena().id())));
     }
 
-    /** @param feedback hears why the player can't join */
-    private Optional<LiveMatch> join(Player player, String gameId, Optional<String> variantId, Audience feedback) {
-        if (running.find(player.getUniqueId()).isPresent()) {
-            messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
-            return Optional.empty();
+    /**
+     * Puts the players in one match, all or none.
+     *
+     * @param group the first is who asked
+     * @param feedback hears why they can't join
+     */
+    private Optional<LiveMatch> join(List<Player> group, String gameId, Optional<String> variantId, Audience feedback) {
+        for (var player : group) {
+            if (running.find(player.getUniqueId()).isPresent()) {
+                messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
+                return Optional.empty();
+            }
         }
         var game = games.get().find(gameId);
         if (game.isEmpty()) {
@@ -81,19 +111,32 @@ public final class PublicMatches {
                     Placeholder.unparsed("variants", String.join(", ", game.get().variants().keySet())));
             return Optional.empty();
         }
-        var match = matchToJoin(variant.get());
+        var teamSize = variant.get().teams().map(setup -> OptionalInt.of(setup.largestTeam(variant.get().maxPlayers()))).orElse(OptionalInt.empty());
+        var fit = PartyJoin.check(group.size(), variant.get().maxPlayers(), teamSize);
+        if (fit != PartyJoin.OK) {
+            messages.send(feedback, fit == PartyJoin.TOO_BIG_FOR_GAME ? "join.party-too-big" : "join.party-too-big-for-team",
+                    Formatter.number("size", group.size()), Formatter.number("max", variant.get().maxPlayers()),
+                    Formatter.number("team", teamSize.orElse(0)));
+            return Optional.empty();
+        }
+        var match = matchToJoin(variant.get(), group.size());
         if (match.isEmpty()) {
             messages.send(feedback, "join.no-free-arena", Placeholder.parsed("game", variant.get().name()));
             return Optional.empty();
         }
-        try {
-            match.get().join(player);
-            return match;
-        } catch (IllegalStateException e) {
-            plugin.getLogger().log(Level.WARNING, player.getName() + " could not join", e);
-            messages.send(feedback, "join.failed", Placeholder.component("player", player.name()));
-            return Optional.empty();
+        var joined = new ArrayList<Player>();
+        for (var player : group) {
+            try {
+                match.get().join(player);
+                joined.add(player);
+            } catch (IllegalStateException e) {
+                plugin.getLogger().log(Level.WARNING, player.getName() + " could not join", e);
+                messages.send(feedback, "join.failed", Placeholder.component("player", player.name()));
+                joined.forEach(match.get()::leave);
+                return Optional.empty();
+            }
         }
+        return match;
     }
 
     /** The games and variants that can be joined, with how many play each; a player can click one to join. */
@@ -118,11 +161,11 @@ public final class PublicMatches {
         }
     }
 
-    /** The variant's public match that is still gathering players and has room, or a new one in a free arena. */
-    private Optional<LiveMatch> matchToJoin(Variant variant) {
+    /** The variant's public match that is still gathering players and has room for this many, or a new one in a free arena. */
+    private Optional<LiveMatch> matchToJoin(Variant variant, int players) {
         return running.running().stream()
-                .filter(match -> match.isPublic() && match.variant().key().equals(variant.key()) && match.isJoinable() && match.hasRoom())
+                .filter(match -> match.isPublic() && match.variant().key().equals(variant.key()) && match.isJoinable() && match.hasRoom(players))
                 .findFirst()
-                .or(() -> running.open(variant, Opening.publicMatch()));
+                .or(() -> running.open(variant, Opening.publicMatch(parties::all)));
     }
 }

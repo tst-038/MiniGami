@@ -233,7 +233,12 @@ public final class LiveMatch {
 
     /** Whether another player fits in before the variant's maximum is reached. */
     public boolean hasRoom() {
-        return match.roster().size() < variant.maxPlayers();
+        return hasRoom(1);
+    }
+
+    /** Whether this many more players fit in before the variant's maximum is reached. */
+    public boolean hasRoom(int more) {
+        return match.roster().size() + more <= variant.maxPlayers();
     }
 
     /**
