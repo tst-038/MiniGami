@@ -43,6 +43,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
  *   hide-and-seek:
  *     hiding: "<prefix><green>Run!"
+ *   hud:
+ *     line:
+ *       discord: "<blue>discord.gg/x" # a sidebar line of its own, shown by naming discord under hud.sidebar
  * roles:                      # optional, instead of teams; handed out in this order
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
  *   hider:                                                         # neither: everyone left over
@@ -185,7 +188,9 @@ public final class GameLoader {
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         var nameTags = config.has("name-tags") ? config.choice("name-tags", NameTags.class) : NameTags.EVERYONE;
         var messages = config.has("messages") ? config.texts("messages") : Map.<String, String>of();
-        messages.keySet().stream().filter(knownMessage.negate()).forEach(key -> config.problem("messages." + key, "unknown message"));
+        // A sidebar line of the game's own is a new key; every other one must exist already.
+        messages.keySet().stream().filter(key -> !key.startsWith("hud.line.") && !knownMessage.test(key))
+                .forEach(key -> config.problem("messages." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
         var roles = roles(config, minPlayers, game);
         var quit = quit(config);
@@ -198,7 +203,8 @@ public final class GameLoader {
         if (changesBlocks) {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
-        var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
+        var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats(),
+                line -> messages.containsKey("hud.line." + line) || knownMessage.test("hud.line." + line));
         return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, roles, quit, playable, features, stats, hud);
     }
 

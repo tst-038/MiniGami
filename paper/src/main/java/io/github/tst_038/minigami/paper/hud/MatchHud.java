@@ -62,6 +62,7 @@ public final class MatchHud {
     /** Puts the match's teams on a member's board, so names keep their colours there. */
     private final Consumer<Scoreboard> mirrorTeams;
     private final BossBar bossBar;
+    private final boolean placeholders;
     private final Map<UUID, Scoreboard> boards = new HashMap<>();
     /** The board each member had before, to give back. */
     private final Map<UUID, Scoreboard> previous = new HashMap<>();
@@ -74,6 +75,7 @@ public final class MatchHud {
         this.match = match;
         this.hud = match.variant().hud();
         this.mirrorTeams = mirrorTeams;
+        this.placeholders = server.getPluginManager().isPluginEnabled("PlaceholderAPI");
         this.bossBar = BossBar.bossBar(Component.empty(), 1, hud.bossBar().orElse(BossBar.Color.WHITE), BossBar.Overlay.PROGRESS);
     }
 
@@ -233,10 +235,12 @@ public final class MatchHud {
                 }
                 case "points" -> participant.ifPresent(ignored -> lines.add(render("hud.line.points", Formatter.number("points", match.match().scores().of(id)))));
                 case "scores" -> lines.addAll(scores());
-                case "footer" -> lines.add(render("hud.line.footer"));
                 default -> {
                     var stat = new Stat(line);
-                    if (participant.isPresent() && match.variant().stats().contains(stat)) {
+                    if (match.messages().has("hud.line." + line)) {
+                        var text = render("hud.line." + line);
+                        lines.add(placeholders ? PlaceholderText.fill(viewer, text) : text);
+                    } else if (participant.isPresent() && match.variant().stats().contains(stat)) {
                         lines.add(render("hud.line.stat", Placeholder.component("stat", render("stats.name." + line)),
                                 Formatter.number("amount", match.match().stats().of(id, stat))));
                     }

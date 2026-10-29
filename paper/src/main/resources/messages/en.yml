@@ -134,6 +134,8 @@ build-battle:
 hud:
   sidebar-title: "<gradient:gold:yellow><bold>MINIGAMI</bold></gradient>"
   # A sidebar line per id. A stat line (kills, deaths, ...) uses stat with the stat's name from stats.name.
+  # Add a key here (or under messages: in a game) for a line of your own, e.g. discord: "<blue>discord.gg/x",
+  # and name it in a sidebar. PlaceholderAPI's %placeholders% are filled in it when that plugin is installed.
   line:
     game: "<gray>Game: <white><game>"
     arena: "<gray>Map: <white><arena>"

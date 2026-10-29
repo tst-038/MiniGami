@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
@@ -26,7 +27,10 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
 
     public static final Hud NONE = new Hud(Map.of(), Optional.empty(), false, false, Map.of());
     public static final String DEFAULT = "default";
-    /** Lines filled by the engine itself; any stat id is a line too, showing the player's own count. */
+    /**
+     * Lines filled by the engine itself; any stat id is a line too, showing the player's own count,
+     * and so is any id with a text under {@code hud.line}, with PlaceholderAPI's placeholders when it is installed.
+     */
     public static final List<String> LINES = List.of("game", "arena", "time", "players", "alive", "team", "lives", "points", "scores", "blank", "footer");
 
     /** When a sound plays. */
@@ -53,8 +57,9 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
      *
      * @param phases the game's phases, which the sidebar may set lines for
      * @param stats every stat a game could keep; one the game doesn't keep is simply not shown, so a shared layout can list it
+     * @param ownLine whether there is a text for a line id of the server's or game's own, such as {@code discord} for {@code hud.line.discord}
      */
-    public static Hud read(ConfigReader game, List<String> phases, Set<String> stats) {
+    public static Hud read(ConfigReader game, List<String> phases, Set<String> stats, Predicate<String> ownLine) {
         if (!game.has("hud") || game.isOff("hud")) {
             return NONE;
         }
@@ -70,8 +75,8 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
                     continue;
                 }
                 var ids = section.strings(phase);
-                ids.stream().filter(id -> !LINES.contains(id) && !stats.contains(id)).forEach(id ->
-                        section.problem(phase, "unknown line '" + id + "'; lines: " + String.join(", ", lines)));
+                ids.stream().filter(id -> !LINES.contains(id) && !stats.contains(id) && !ownLine.test(id)).forEach(id ->
+                        section.problem(phase, "unknown line '" + id + "'; lines: " + String.join(", ", lines) + ", or your own with a text at hud.line." + id));
                 sidebar.put(phase, ids);
             }
         }

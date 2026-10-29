@@ -205,8 +205,9 @@ class GameLoaderTest {
                           own:
                             name: Own
                             hud:
-                              sidebar: { playing: [team, blank, lives] }
+                              sidebar: { playing: [team, blank, lives, discord] }
                               boss-bar: false
+                            messages: { hud: { line: { discord: "discord.gg/x" } } }
                           none: { name: None, hud: false }
                         """,
                 "broken", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo], variants: {odd: {name: Odd, hud: {sidebar: {fighting: [game], playing: [hearts]}, sounds: {jump: x}}}}}"));
@@ -218,11 +219,11 @@ class GameLoaderTest {
         assertEquals(Map.of(Hud.Moment.START, Key.key("entity.player.levelup")), plain.base().hud().sounds());
         var own = plain.variants().get("own").hud();
         assertEquals(List.of("game", "players"), own.sidebar("waiting"));
-        assertEquals(List.of("team", "blank", "lives"), own.sidebar("playing"));
+        assertEquals(List.of("team", "blank", "lives", "discord"), own.sidebar("playing"));
         assertEquals(Optional.empty(), own.bossBar());
         assertEquals(Hud.NONE, plain.variants().get("none").hud());
         assertEquals(List.of("games/broken.yml: variants.odd.hud.sidebar.fighting: unknown phase; the game has: waiting, playing, or default",
-                "games/broken.yml: variants.odd.hud.sidebar.playing: unknown line 'hearts'; lines: alive, arena, blank, footer, game, lives, players, points, scores, team, time",
+                "games/broken.yml: variants.odd.hud.sidebar.playing: unknown line 'hearts'; lines: alive, arena, blank, footer, game, lives, players, points, scores, team, time, or your own with a text at hud.line.hearts",
                 "games/broken.yml: variants.odd.hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, podium, lose"), problems(loaded));
     }
 
