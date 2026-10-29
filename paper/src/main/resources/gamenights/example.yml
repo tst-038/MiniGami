@@ -1,0 +1,13 @@
+# A game night: a playlist of games the host plays one after the other with /mg night start example,
+# with the points of each game adding up to a winner. The file name is the night's id.
+name: "<gold>Example Night"
+# solo: every player scores for themselves; or { size: 2 }, night teams of two that score together.
+# A party stays in one team, so one bigger than the team size can't join.
+teams: solo
+# What a game is worth: points per place (a place not listed is worth nothing) and for taking part.
+points: { places: { 1: 10, 2: 7, 3: 5 }, taking-part: 1 }
+# The games in order. An entry is a game id, or { game: <id>, variant: <id>, points: { … } } whose
+# points replace the ones above, key by key. Games and their variants come from games/.
+playlist:
+  - example
+  - { game: example, variant: lives, points: { places: { 1: 20, 2: 14, 3: 10 } } }

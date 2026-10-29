@@ -25,6 +25,7 @@ import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFact
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.hideandseek.HideAndSeek;
 import io.github.tst_038.minigami.kingofthehill.KingOfTheHill;
+import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
@@ -44,6 +45,7 @@ import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.github.tst_038.minigami.paper.kit.SavedKits;
+import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
@@ -96,6 +98,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
     private IdRegistry<Game> games = new IdRegistry<>(Game::id);
+    private IdRegistry<NightTemplate> nightTemplates = new IdRegistry<>(NightTemplate::id);
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
@@ -196,9 +199,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var messageTexts = readMessages(fileProblems);
             saveExample("arenas", "example/" + ArenaLoader.FILE);
             saveExample("games", "example.yml");
+            saveExample(NightTemplateLoader.FOLDER, "example.yml");
             warnOldModes();
             var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
+            var nightFiles = YamlFiles.read(getDataPath().resolve(NightTemplateLoader.FOLDER));
             var loadedKits = kits.read();
             if (!isEnabled()) {
                 return;
@@ -212,11 +217,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 // Before the games, which check the kit names they use.
                 kits.replace(loadedKits);
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
+                var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedGames.problems());
+                problems.addAll(loadedNights.problems());
                 editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys());
                 info.loaded(settingsText, arenaFiles.files(), gameFiles.files(), problems);
                 var waiting = new ArrayList<Audience>();
@@ -235,11 +242,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
                 games = loadedGames.entries();
+                nightTemplates = loadedNights.entries();
                 fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedGames.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
-                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids());
+                loadedNights.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
+                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids() + ", game nights: " + nightTemplates.ids());
                 if (requester == null) {
                     // A match the server stopped in the middle of left its arena changed.
                     maps.resetAll(arenas.ids().stream().map(id -> arenas.find(id).orElseThrow()).toList());
