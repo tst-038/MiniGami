@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,8 +47,8 @@ import org.bukkit.plugin.Plugin;
  * and plays its playlist game by game, each as a private match, and the points of every game add up
  * to the night's standings. One night at a time.
  *
- * <p>While the night lasts its players wait in the lobby, when one is set, and each game sends them
- * back there; they return to where they were once the night ends or they leave it.
+ * <p>The night's players are sent to the lobby, when one is set: on joining, on leaving and when the
+ * night ends; each game returns them to where they were before it.
  *
  * <p>A night lives in memory only: it is gone after a restart or reload, and only a night that
  * ended with points is saved. Not thread-safe: use it from the server thread only.
@@ -72,9 +71,6 @@ public final class Nights implements Listener {
         final Instant start;
         /** One member of each party that became part of the night teams, to disband them when the night is over. */
         final Set<UUID> parties = new LinkedHashSet<>();
-        /** Where each player was when they joined, to send them back when they are done. */
-        // shortcut: in memory, so a restart mid-night leaves players in the lobby; persist it if that bites.
-        final Map<UUID, Location> origins = new HashMap<>();
         State state = State.SIGN_UP;
         /** The match of the current game while it is played. */
         LiveMatch game;
@@ -446,7 +442,7 @@ public final class Nights implements Listener {
         }
         active.parties.forEach(parties::disband);
         sidebar.hide(online);
-        online.forEach(this::sendBack);
+        online.forEach(this::toLobby);
         active = null;
         values.clear();
     }
@@ -456,18 +452,7 @@ public final class Nights implements Listener {
         if (running.find(player.getUniqueId()).isPresent()) {
             return;
         }
-        lobby.get().ifPresent(spot -> {
-            active.origins.putIfAbsent(player.getUniqueId(), player.getLocation());
-            player.teleport(spot);
-        });
-    }
-
-    // shortcut: a player offline when the night ends stays where they logged out; send them back on join if that bites.
-    private void sendBack(Player player) {
-        var origin = active.origins.remove(player.getUniqueId());
-        if (origin != null) {
-            player.teleport(origin);
-        }
+        lobby.get().ifPresent(player::teleport);
     }
 
     private void announceNext() {
@@ -486,7 +471,7 @@ public final class Nights implements Listener {
         if (active.game != null && active.game.isMember(id)) {
             active.game.leave(player);
         }
-        sendBack(player);
+        toLobby(player);
         messages.send(audience(onlinePlayers(night)), "night.player-left", Placeholder.component("player", player.name()));
         publish();
         return true;
