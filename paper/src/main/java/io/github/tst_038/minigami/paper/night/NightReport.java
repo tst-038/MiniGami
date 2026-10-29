@@ -12,6 +12,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
@@ -75,12 +76,12 @@ public final class NightReport {
             messages.send(audience, "night.standings-none");
         }
         for (Standing standing : top) {
-            messages.send(audience, "night.standings-line", Formatter.number("place", standing.place()),
+            messages.send(audience, "night.standings-line", Formatter.number("place", standing.place()), tied(night, standing),
                     Placeholder.component("name", detail(night, standing.id())), Formatter.number("points", standing.points()));
         }
         for (Player player : players) {
             night.idOf(player.getUniqueId()).map(night.standings()::of).ifPresent(own -> messages.send(player, "night.standings-own",
-                    Formatter.number("points", own.points()), Formatter.number("place", own.place())));
+                    Formatter.number("points", own.points()), Formatter.number("place", own.place()), tied(night, own)));
         }
     }
 
@@ -91,7 +92,12 @@ public final class NightReport {
             lines.add(messages.render("night.sidebar.game", Formatter.number("number", night.gameNumber()), Formatter.number("total", night.template().playlist().size())));
         }
         night.standings().ordered().stream().limit(TOP).forEach(standing -> lines.add(messages.render("night.sidebar.line",
-                Formatter.number("place", standing.place()), Placeholder.component("name", label(night, standing.id())), Formatter.number("points", standing.points()))));
+                Formatter.number("place", standing.place()), tied(night, standing), Placeholder.component("name", label(night, standing.id())),
+                Formatter.number("points", standing.points()))));
         return lines;
+    }
+
+    private TagResolver tied(Night night, Standing standing) {
+        return Placeholder.component("tied", night.standings().isShared(standing) ? messages.render("night.tied") : Component.empty());
     }
 }

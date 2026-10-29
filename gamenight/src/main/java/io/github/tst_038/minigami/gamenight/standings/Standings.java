@@ -29,6 +29,11 @@ public final class Standings {
         return new Standing(id, own, 1 + (int) points.values().stream().filter(other -> other > own).count());
     }
 
+    /** Whether another id has the same points, so they share the place (ex aequo). */
+    public boolean isShared(Standing standing) {
+        return points.entrySet().stream().anyMatch(other -> !other.getKey().equals(standing.id()) && other.getValue() == standing.points());
+    }
+
     /** Most points first; ties keep the order they first scored in. */
     public List<Standing> ordered() {
         var sorted = points.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder())).toList();

@@ -480,9 +480,11 @@ night:
   # %name%: the night's name, %done%, %total%: games played of the playlist
   standings-header: "%prefix%%name% <gray>- standings after game %done% of %total%"
   final-header: "%prefix%%name% <gold>is over! Final standings:"
-  # %place%, %name%: the player or night team, %points%
-  standings-line: "<gray> %place%. <white>%name%</white> <gray>- <white>%points%</white> points"
-  standings-own: "<gray> You: <white>%points%</white> points, place <white>%place%</white>"
+  # %place%, %name%: the player or night team, %points%, %tied%: the tied text when others share the place
+  standings-line: "<gray> %tied%%place%. <white>%name%</white> <gray>- <white>%points%</white> points"
+  standings-own: "<gray> You: <white>%points%</white> points, place <white>%tied%%place%</white>"
+  # shown before a place that more than one player or team shares (ex aequo)
+  tied: "="
   standings-none: "<gray> Nobody has scored yet."
   # %team%: the team's number
   team-name: "Team %team%"
@@ -492,8 +494,8 @@ night:
     title: "%name%"
     # %number%, %total%: the next game's place in the playlist
     game: "<gray>Next: game %number% of %total%"
-    # %place%, %name%, %points%
-    line: "<gray>%place%. <white>%name% <gold>%points%"
+    # %place%, %name%, %points%, %tied%
+    line: "<gray>%tied%%place%. <white>%name% <gold>%points%"
 
 debug:
   summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"

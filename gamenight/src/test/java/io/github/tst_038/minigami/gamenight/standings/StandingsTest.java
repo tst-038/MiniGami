@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.gamenight.standings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.gamenight.standings.Standings.Standing;
 import java.util.LinkedHashMap;
@@ -31,5 +33,15 @@ class StandingsTest {
 
         assertEquals(new Standing("a", 5, 1), standings.of("a"));
         assertEquals(new Standing("z", 0, 4), standings.of("z"));
+    }
+
+    @Test
+    void aPlaceIsSharedOnlyWithEqualPoints() {
+        var standings = new Standings();
+        standings.add(Map.of("a", 5, "b", 5, "c", 3));
+
+        assertTrue(standings.isShared(standings.of("a")));
+        assertFalse(standings.isShared(standings.of("c")));
+        assertFalse(standings.isShared(standings.of("nobody")));
     }
 }
