@@ -15,6 +15,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
+import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
@@ -56,7 +57,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> create(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
-            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, StatsView stats, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, StatsView stats, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
@@ -96,6 +97,7 @@ public final class GamesCommand {
                 .then(ConfigCommands.lobby(editor, lobby, messages, help))
                 .then(ConfigCommands.config(editor, info, help))
                 .then(PlayerCommands.node(snapshots))
+                .then(KitCommands.node(kits, help))
                 .then(Commands.literal("reload").requires(ADMIN).executes(bySender((sender, context) -> reload.accept(sender))))
                 .then(Commands.literal("debug").requires(ADMIN).executes(bySender((sender, context) -> running.debug(sender))))
                 .build();

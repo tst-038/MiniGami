@@ -351,6 +351,19 @@ snapshot:
   restored-last: "%prefix%<green>Put the last state of %player% back. Run it again to undo."
   restore-failed: "%prefix%<red>Could not give %player% their state back; see the server log."
 
+# Saved kits: %name% is the kit's name, %items% how many slots it fills, %count% how many kits there are
+kit:
+  invalid-name: "%prefix%<red><white>%name%</white> can't be a kit name: use lower case letters, digits, dashes and underscores."
+  empty: "%prefix%<red>Your inventory is empty, so there is nothing to save."
+  saved: "%prefix%<green>Saved kit <white>%name%</white> <gray>(%items% slots)</gray>. Use it in a game with <white>kit: %name%</white>."
+  save-failed: "%prefix%<red>Could not write kit <white>%name%</white> to disk; see the server log. It works until the server stops."
+  none: "%prefix%<gray>There are no saved kits. Save your inventory with <white>/mg kit save [name]</white>."
+  header: "%prefix%<gray>Saved kits (%count%):"
+  entry: "<gray> - <white>%name%</white> (%items% slots)"
+  unknown: "%prefix%<red>There is no saved kit called <white>%name%</white>."
+  deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mg reload</white>."
+  delete-failed: "%prefix%<red>Could not delete the file of kit <white>%name%</white>; see the server log."
+
 debug:
   summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"
   match: "%prefix%<gray>%game% on %arena%: phase <white>%phase%</white>, <white>%members%</white> in match, <white>%alive%</white> alive, tick <white>%tick%</white>"

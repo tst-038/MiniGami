@@ -42,6 +42,8 @@ import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
+import io.github.tst_038.minigami.paper.kit.KitAdmin;
+import io.github.tst_038.minigami.paper.kit.SavedKits;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
@@ -88,7 +90,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<GameType> gametypes = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
-    private final GameLoader gameLoader = new GameLoader(gametypes, features, statGroups);
+    private SavedKits kits;
+    private GameLoader gameLoader;
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
     private IdRegistry<Game> games = new IdRegistry<>(Game::id);
@@ -110,6 +113,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
         bundledMessages = loadBundledMessages();
         // Until the first load has read the admin's copy.
         messages = new Messages(bundledMessages, getLogger());
+        kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
+        gameLoader = new GameLoader(gametypes, features, statGroups);
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
@@ -134,7 +139,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         gametypes.register(new HideAndSeek());
         gametypes.register(new KingOfTheHill());
         features.register(new VoidKillsFactory());
-        features.register(new KitFactory());
+        features.register(new KitFactory(kits::find));
         features.register(new DeathItemsFactory());
         features.register(new BreakBlocksFactory());
         features.register(new NoDamageFactory());
@@ -157,7 +162,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin,
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages),
                         new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
@@ -191,6 +196,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
             warnOldModes();
             var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
+            var loadedKits = kits.read();
             if (!isEnabled()) {
                 return;
             }
@@ -200,6 +206,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
+                // Before the games, which check the kit names they use.
+                kits.replace(loadedKits);
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);

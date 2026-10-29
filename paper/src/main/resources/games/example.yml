@@ -15,6 +15,9 @@ features:
   playing:
     # Players below this height die.
     void-kills: { y: 0 }
+    # Items for every player, each with an optional amount, and/or an inventory saved with /mg kit save.
+    # kit: { items: [iron_sword, arrow 16] }
+    # kit: { saved: seeker }
 # Variants are laid over the settings above and counted as this game in the stats; each needs a name.
 # Players join one with /mg join example <variant>.
 variants:
