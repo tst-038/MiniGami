@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** Keeps the game nights that were played in storage. Every call returns at once; the work happens on the storage thread. */
-final class NightStore {
+public final class NightStore {
 
     /**
      * A night as it ended.
@@ -28,7 +28,7 @@ final class NightStore {
     private final Storage storage;
     private final Logger logger;
 
-    NightStore(Storage storage, Logger logger) {
+    public NightStore(Storage storage, Logger logger) {
         this.storage = storage;
         this.logger = logger;
     }

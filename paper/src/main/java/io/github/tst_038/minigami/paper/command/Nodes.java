@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import io.github.tst_038.minigami.paper.night.Nights;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
@@ -21,6 +22,8 @@ final class Nodes {
     static final String ADMIN_PERMISSION = "minigami.admin";
 
     static final Predicate<CommandSourceStack> ADMIN = source -> source.getSender().hasPermission(ADMIN_PERMISSION);
+    /** Who runs game nights; admins can too. */
+    static final Predicate<CommandSourceStack> HOST = source -> source.getSender().hasPermission(Nights.HOST_PERMISSION);
     static final Predicate<CommandSourceStack> PLAYER = source -> source.getExecutor() instanceof Player;
 
     /** What a command does with whoever runs it. */

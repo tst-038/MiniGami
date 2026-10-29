@@ -157,7 +157,7 @@ public final class RunningMatches implements Listener {
     }
 
     /** The match the player is in. */
-    Optional<LiveMatch> find(UUID id) {
+    public Optional<LiveMatch> find(UUID id) {
         return running().stream().filter(match -> match.isMember(id)).findFirst();
     }
 }
