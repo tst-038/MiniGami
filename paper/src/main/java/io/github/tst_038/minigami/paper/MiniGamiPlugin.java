@@ -25,6 +25,7 @@ import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFact
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.hideandseek.HideAndSeek;
 import io.github.tst_038.minigami.kingofthehill.KingOfTheHill;
+import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
@@ -44,6 +45,12 @@ import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.github.tst_038.minigami.paper.kit.SavedKits;
+import io.github.tst_038.minigami.paper.night.NightReport;
+import io.github.tst_038.minigami.paper.night.NightSidebar;
+import io.github.tst_038.minigami.paper.night.NightStore;
+import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
+import io.github.tst_038.minigami.paper.night.NightValues;
+import io.github.tst_038.minigami.paper.night.Nights;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
@@ -74,10 +81,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.event.HandlerList;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -96,9 +105,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
     private IdRegistry<Game> games = new IdRegistry<>(Game::id);
+    private IdRegistry<NightTemplate> nightTemplates = new IdRegistry<>(NightTemplate::id);
     private Settings settings = Settings.DEFAULTS;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
+    private Nights nights;
     private Storage storage;
     private ConfigEditor editor;
     private ConfigInfo info;
@@ -130,8 +141,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var parties = new PartyService(this, storage, messages);
         parties.load();
         var matchValues = new MatchValues();
+        var nightValues = new NightValues();
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues);
+            StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues, nightValues);
         }
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
@@ -160,12 +172,16 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);
         var publicMatches = new PublicMatches(this, () -> games, messages, running, parties);
+        var nightReport = new NightReport(getServer(), messages);
+        nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, parties, new NightStore(storage, getLogger()), nightReport,
+                new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault());
+        getServer().getPluginManager().registerEvents(nights, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> settings, running::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties,
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights,
                         new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
@@ -196,9 +212,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var messageTexts = readMessages(fileProblems);
             saveExample("arenas", "example/" + ArenaLoader.FILE);
             saveExample("games", "example.yml");
+            saveExample(NightTemplateLoader.FOLDER, "example.yml");
             warnOldModes();
             var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
+            var nightFiles = YamlFiles.read(getDataPath().resolve(NightTemplateLoader.FOLDER));
             var loadedKits = kits.read();
             if (!isEnabled()) {
                 return;
@@ -212,11 +230,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 // Before the games, which check the kit names they use.
                 kits.replace(loadedKits);
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
+                var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedGames.problems());
+                problems.addAll(loadedNights.problems());
                 editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys());
                 info.loaded(settingsText, arenaFiles.files(), gameFiles.files(), problems);
                 var waiting = new ArrayList<Audience>();
@@ -235,11 +255,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
                 games = loadedGames.entries();
+                nightTemplates = loadedNights.entries();
                 fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedGames.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
-                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids());
+                loadedNights.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
+                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids() + ", game nights: " + nightTemplates.ids());
                 if (requester == null) {
                     // A match the server stopped in the middle of left its arena changed.
                     maps.resetAll(arenas.ids().stream().map(id -> arenas.find(id).orElseThrow()).toList());
@@ -311,6 +333,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (nights != null) {
+            HandlerList.unregisterAll(nights);
+        }
         if (matches != null) {
             matches.disposeAll();
         }

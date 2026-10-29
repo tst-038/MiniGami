@@ -19,3 +19,8 @@ permissions:
   minigami.admin:
     description: Set up arenas, games and the config, and manage matches and players
     default: op
+    children:
+      minigami.host: true
+  minigami.host:
+    description: Run game nights with /mg night
+    default: op

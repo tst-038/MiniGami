@@ -23,4 +23,13 @@ class StandingsTest {
 
         assertEquals(List.of(new Standing("b", 10, 1), new Standing("a", 5, 2), new Standing("c", 5, 2), new Standing("d", 2, 4)), standings.ordered());
     }
+
+    @Test
+    void anIdThatHasNotScoredIsBehindEveryoneWithPoints() {
+        var standings = new Standings();
+        standings.add(Map.of("a", 5, "b", 5, "c", 1));
+
+        assertEquals(new Standing("a", 5, 1), standings.of("a"));
+        assertEquals(new Standing("z", 0, 4), standings.of("z"));
+    }
 }
