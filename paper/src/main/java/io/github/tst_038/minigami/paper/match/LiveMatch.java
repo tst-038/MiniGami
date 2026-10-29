@@ -18,6 +18,7 @@ import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.hud.MatchHud;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.game.Variant;
+import io.github.tst_038.minigami.paper.game.Quit;
 import io.github.tst_038.minigami.paper.game.Role;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
@@ -291,12 +292,7 @@ public final class LiveMatch {
             return false;
         }
         if (isJoinable()) {
-            match.roster().remove(id);
-            if (startDelay != null && match.roster().size() < variant.minPlayers()) {
-                startDelay.close();
-                startDelay = null;
-                messages.send(audience(), "match.start-cancelled");
-            }
+            unjoin(id);
         } else {
             left.add(id);
             match.eliminate(id);
@@ -310,13 +306,29 @@ public final class LiveMatch {
         return true;
     }
 
+    /** Takes a player out before the start, as if they never joined. */
+    private void unjoin(UUID id) {
+        match.roster().remove(id);
+        if (startDelay != null && match.roster().size() < variant.minPlayers()) {
+            startDelay.close();
+            startDelay = null;
+            messages.send(audience(), "match.start-cancelled");
+        }
+    }
+
     /**
      * The player quit the server. A participant still playing first dies, is made out or stays as
      * the variant sets; with time to come back they are away until it runs out, else they leave.
+     * Before the start they leave, except from a private match with time to come back: nobody else
+     * can take their place there, so it is kept for them.
      */
     public void quit(Player player) {
         var id = player.getUniqueId();
         var quit = variant.quit();
+        if (isJoinable() && !isPublic() && quit.rejoinSeconds() > 0) {
+            goAway(player, quit);
+            return;
+        }
         if (isJoinable() || match.result().isPresent() || !isActive(id)
                 || match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
             leave(player);
@@ -331,11 +343,19 @@ public final class LiveMatch {
             leave(player);
             return;
         }
+        goAway(player, quit);
+    }
+
+    /** Out of the match until they come back or the time runs out; their place, team and plot stay. */
+    private void goAway(Player player, Quit quit) {
+        var id = player.getUniqueId();
         members.remove(id);
         restore(id);
         var expiry = match.clock().schedule(quit.rejoinSeconds() * 20L, () -> {
             away.remove(id);
-            if (match.roster().find(id).filter(Participant::isAlive).isPresent()) {
+            if (isJoinable()) {
+                unjoin(id);
+            } else if (match.roster().find(id).filter(Participant::isAlive).isPresent()) {
                 match.eliminate(id);
                 messages.send(audience(), "match.away-expired", Placeholder.component("player", player.name()));
             }
@@ -355,8 +375,9 @@ public final class LiveMatch {
     }
 
     /**
-     * Brings back a participant who quit: their state is saved again, they are prepared and sent to a
-     * spawn of their team, or spectate if they are out by now. Then the phase's features set them up.
+     * Brings back a participant who quit. Before the start they wait again, as when they joined.
+     * After it their state is saved again, they are prepared and sent to a spawn of their team, or
+     * spectate if they are out by now. Then the phase's features set them up.
      *
      * @throws IllegalStateException if they aren't away from this match or their state can't be saved
      */
@@ -365,17 +386,28 @@ public final class LiveMatch {
         if (!isAway(id)) {
             throw new IllegalStateException(player.getName() + " is not away from this match");
         }
-        saveState(player);
+        var waiting = isJoinable();
+        if (!waiting || waitingSpot.isPresent()) {
+            saveState(player);
+        }
         away.remove(id).close();
         members.add(id);
-        prepare(player);
         hud.show(player);
-        var team = teamOf(id);
-        team.ifPresent(teamId -> scoreboardTeams.putBack(player, teamId));
-        var spawns = arena.spawnsFor(team);
-        player.teleport(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
-        if (match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
-            player.setGameMode(GameMode.SPECTATOR);
+        if (waiting) {
+            waitingSpot.ifPresent(spot -> {
+                prepare(player);
+                player.teleport(spot);
+            });
+        } else {
+            prepare(player);
+            var team = teamOf(id);
+            // Their team may have been formed while they were away, so its scoreboard team may not have been made yet.
+            team.ifPresent(teamId -> toScoreboardTeam(player, teamId));
+            var spawns = arena.spawnsFor(team);
+            player.teleport(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
+            if (match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
+                player.setGameMode(GameMode.SPECTATOR);
+            }
         }
         messages.send(audience(), "match.back", Placeholder.component("player", player.name()));
         plugin.getServer().getPluginManager().callEvent(new MatchRejoinEvent(player));
@@ -594,41 +626,58 @@ public final class LiveMatch {
         }));
     }
 
+    /** Those taking part as play starts: the members, and those away who may still come back. */
+    private List<UUID> takingPart() {
+        var players = new ArrayList<>(members);
+        players.addAll(away.keySet());
+        return players;
+    }
+
     /** Splits everyone still in the match as its opening says, handing out team ids in order, and tells each their team. */
     private void formTeams(TeamSetup setup) {
-        var players = List.copyOf(members);
+        var players = takingPart();
         var teams = opening.teams().form(players, setup.teamsFor(players.size()));
         for (int i = 0; i < teams.size(); i++) {
             if (teams.get(i).isEmpty()) {
                 continue;
             }
             var teamId = TeamSetup.IDS.get(i);
-            putInTeam(teams.get(i), teamId, NamedTextColor.NAMES.valueOrThrow(teamId), "match.your-team");
+            putInTeam(teams.get(i), teamId, "match.your-team");
         }
     }
 
     /** Hands out the roles at random, each a team of its own, and tells each player their role. */
     private void handOutRoles() {
         var roles = variant.roles();
-        var players = new RandomRoles(ThreadLocalRandom.current()).deal(List.copyOf(members), roles.stream().map(Role::share).toList());
+        var players = new RandomRoles(ThreadLocalRandom.current()).deal(takingPart(), roles.stream().map(Role::share).toList());
         for (int i = 0; i < roles.size(); i++) {
             if (!players.get(i).isEmpty()) {
-                putInTeam(players.get(i), roles.get(i).id(), roles.get(i).color(), "match.your-role");
+                putInTeam(players.get(i), roles.get(i).id(), "match.your-role");
             }
         }
     }
 
-    /** @param told the message each player gets, with the team's name as {@code <team>} */
-    private void putInTeam(List<UUID> players, String teamId, NamedTextColor color, String told) {
-        var name = teamName(teamId);
+    /**
+     * Those offline, away from the match, are put on the scoreboard team when they come back.
+     *
+     * @param told the message each player gets, with the team's name as {@code <team>}
+     */
+    private void putInTeam(List<UUID> players, String teamId, String told) {
         for (var id : players) {
             match.roster().assignTeam(id, teamId);
             var player = plugin.getServer().getPlayer(id);
             if (player != null) {
-                scoreboardTeams.put(player, teamId, name, color, variant.role(teamId).flatMap(Role::nameTags).orElse(variant.nameTags()).status());
-                messages.send(player, told, Placeholder.component("team", name));
+                toScoreboardTeam(player, teamId);
+                messages.send(player, told, Placeholder.component("team", teamName(teamId)));
             }
         }
+    }
+
+    /** A role's team has the role's colour, other teams the colour they are named after. */
+    private void toScoreboardTeam(Player player, String teamId) {
+        var role = variant.role(teamId);
+        var color = role.map(Role::color).orElseGet(() -> NamedTextColor.NAMES.valueOrThrow(teamId));
+        scoreboardTeams.put(player, teamId, teamName(teamId), color, role.flatMap(Role::nameTags).orElse(variant.nameTags()).status());
     }
 
     private Optional<String> teamOf(UUID id) {
@@ -692,7 +741,7 @@ public final class LiveMatch {
             lives.reset(id);
             messages.send(audience(), "match.switched-role", Placeholder.component("player", player.name()),
                     Placeholder.component("team", teamName(onOut.get().id())));
-            putInTeam(List.of(id), onOut.get().id(), onOut.get().color(), "match.your-role");
+            putInTeam(List.of(id), onOut.get().id(), "match.your-role");
             match.switchTeam(id, onOut.get().id());
             return true;
         }

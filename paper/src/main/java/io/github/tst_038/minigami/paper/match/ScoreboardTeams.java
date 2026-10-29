@@ -53,11 +53,6 @@ final class ScoreboardTeams {
         join(player, team);
     }
 
-    /** Puts a player who came back in their team again, if the match made it. */
-    void putBack(Player player, String teamId) {
-        Optional.ofNullable(teams.get(teamId)).ifPresent(team -> join(player, team));
-    }
-
     /** Takes the player out of their team and back in the one they were in before, if any. */
     void remove(UUID id) {
         var leave = leaves.remove(id);
