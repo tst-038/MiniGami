@@ -1,6 +1,6 @@
 # Player-facing text, in MiniMessage: https://docs.papermc.io/adventure/minimessage/format
 # %prefix% works in every message. Other placeholders are listed per message; <name>…</name> ones wrap text, e.g. to make it clickable.
-prefix: "<dark_gray>[<gold>Games</gold>]</dark_gray> "
+prefix: "<gray>[<gradient:#00C2FF:#7A5CFF:#FF4FD8>MiniGami</gradient><gray>] "
 
 join:
   # %player%: who tried to join

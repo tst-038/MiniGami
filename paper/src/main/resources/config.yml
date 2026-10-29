@@ -14,7 +14,7 @@ hud:
   # Lines per phase of the game; starting is the countdown before the start, default covers the phases
   # not listed, and [] hides the sidebar. "" is a blank line, %scores% the teams (or the top three) by points.
   sidebar:
-    title: "<gradient:gold:yellow><bold>MINIGAMI</bold></gradient>"
+    title: "<gray>[<gradient:#00C2FF:#7A5CFF:#FF4FD8><bold>MiniGami</bold></gradient><gray>]"
     waiting:
       - ""
       - "<gray>Game: <white>%game%"
