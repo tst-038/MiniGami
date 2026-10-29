@@ -364,6 +364,34 @@ kit:
   deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mg reload</white>."
   delete-failed: "%prefix%<red>Could not delete the file of kit <white>%name%</white>; see the server log."
 
+# Parties: %player% and %leader% are names, %count% and %max% the size of the party and its limit;
+# <accept>…</accept> accepts an invite on click
+party:
+  none: "%prefix%<red>You are not in a party. Start one with <white>/mg party invite [player]</white>."
+  not-leader: "%prefix%<red>Only the leader of the party can do that."
+  self: "%prefix%<red>You can't do that to yourself."
+  full: "%prefix%<red>The party is full."
+  invite-in-party: "%prefix%<red><white>%player%</white> is already in a party."
+  leave-first: "%prefix%<red>You are in a party already; leave it first with <white>/mg party leave</white>."
+  no-invite: "%prefix%<red>You have no open invite from <white>%leader%</white>; it may have run out."
+  not-member: "%prefix%<red><white>%player%</white> is not in your party."
+  invited: "%prefix%<green>Invited <white>%player%</white> to your party. The invite runs out in a minute."
+  invite: "%prefix%<white>%leader%</white> <gold>invited you to their party. <accept><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></accept>"
+  invite-expired: "%prefix%<gray>The invite from <white>%leader%</white> to <white>%player%</white> has run out."
+  joined: "%prefix%<green>You joined the party of <white>%leader%</white>."
+  member-joined: "%prefix%<white>%player%</white> <green>joined the party."
+  left: "%prefix%<yellow>You left the party."
+  member-left: "%prefix%<white>%player%</white> <yellow>left the party."
+  kicked: "%prefix%<red>You were kicked from the party by <white>%leader%</white>."
+  member-kicked: "%prefix%<white>%player%</white> <yellow>was kicked from the party."
+  new-leader: "%prefix%<white>%player%</white> <gold>leads the party now."
+  disbanded: "%prefix%<yellow>The party was disbanded."
+  list-header: "%prefix%<gold>Your party <gray>(%count%/%max%):"
+  list-leader: "<gray> - <gold>★ <white>%player%</white> %status%"
+  list-member: "<gray> - <white>%player%</white> %status%"
+  online: "<green>online"
+  offline: "<gray>offline"
+
 debug:
   summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"
   match: "%prefix%<gray>%game% on %arena%: phase <white>%phase%</white>, <white>%members%</white> in match, <white>%alive%</white> alive, tick <white>%tick%</white>"
