@@ -358,7 +358,8 @@ public final class MatchHud {
      * @param viewer null for a text everyone shares, which then has only the values of the match itself
      */
     private Component render(Player viewer, String key, TagResolver... placeholders) {
-        var text = match.messages().render(key, TagResolver.resolver(TagResolver.resolver(placeholders), values(viewer).resolver()));
+        // The text's own placeholders go last so they win, such as each score line's %team% over the viewer's.
+        var text = match.messages().render(key, TagResolver.resolver(values(viewer).resolver(), TagResolver.resolver(placeholders)));
         return placeholderApi && viewer != null ? PlaceholderText.fill(viewer, text) : text;
     }
 
