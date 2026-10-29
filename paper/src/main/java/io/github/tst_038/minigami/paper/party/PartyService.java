@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.IntSupplier;
 import java.util.logging.Level;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -41,16 +40,14 @@ public final class PartyService {
     private final PartyStore store;
     private final Messages messages;
     private final Parties parties;
-    private final IntSupplier maxSize;
     /** The timer that ends each open invite. */
     private final Map<Invite, ScheduledTask> invites = new HashMap<>();
 
-    public PartyService(Plugin plugin, Storage storage, Messages messages, IntSupplier maxSize) {
+    public PartyService(Plugin plugin, Storage storage, Messages messages) {
         this.plugin = plugin;
         this.store = new PartyStore(storage, plugin.getLogger());
         this.messages = messages;
-        this.maxSize = maxSize;
-        this.parties = new Parties(maxSize);
+        this.parties = new Parties();
     }
 
     /** Brings the saved parties back; they are there a moment after startup. */
@@ -67,6 +64,11 @@ public final class PartyService {
     /** The members of the player's party, in the order they joined; empty if they have none. */
     public Optional<Set<UUID>> partyOf(UUID player) {
         return parties.of(player).map(PartyService::members);
+    }
+
+    /** Whether the player leads the party they are in; false if they have none. */
+    public boolean isLeader(UUID player) {
+        return parties.of(player).filter(party -> party.leader().equals(player)).isPresent();
     }
 
     /** Every party's members. */
@@ -190,8 +192,7 @@ public final class PartyService {
             messages.send(player, "party.none");
             return;
         }
-        messages.send(player, "party.list-header", Formatter.number("count", party.get().members().size()),
-                Formatter.number("max", maxSize.getAsInt()));
+        messages.send(player, "party.list-header", Formatter.number("count", party.get().members().size()));
         for (var member : party.get().members()) {
             var online = plugin.getServer().getPlayer(member) != null;
             messages.send(player, member.equals(party.get().leader()) ? "party.list-leader" : "party.list-member",
@@ -210,7 +211,6 @@ public final class PartyService {
             case NOT_LEADER -> "party.not-leader";
             case IN_PARTY -> "party.invite-in-party";
             case NO_INVITE -> "party.no-invite";
-            case FULL -> "party.full";
             case SELF -> "party.self";
             case OK -> throw new IllegalArgumentException("Nothing to refuse");
         };

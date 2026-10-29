@@ -3,10 +3,6 @@
 # Where players wait for games with "waiting: lobby". Set it in-game with /mg lobby set, or here:
 # lobby: { world: world, x: 0.5, y: 64, z: 0.5, yaw: 0, pitch: 0 }
 
-party:
-  # How many players a party holds at most, its leader included.
-  max-size: 8
-
 # What players see of a match next to chat. Every game gets this; a game file can override any part
 # of it under its own hud: key, or turn it all off with hud: false.
 #

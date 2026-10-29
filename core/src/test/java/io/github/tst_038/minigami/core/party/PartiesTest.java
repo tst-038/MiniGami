@@ -1,6 +1,5 @@
 package io.github.tst_038.minigami.core.party;
 
-import static io.github.tst_038.minigami.core.party.Parties.Result.FULL;
 import static io.github.tst_038.minigami.core.party.Parties.Result.IN_PARTY;
 import static io.github.tst_038.minigami.core.party.Parties.Result.NOT_IN_PARTY;
 import static io.github.tst_038.minigami.core.party.Parties.Result.NOT_LEADER;
@@ -22,7 +21,7 @@ class PartiesTest {
     private final UUID bob = UUID.randomUUID();
     private final UUID cy = UUID.randomUUID();
     private final UUID dee = UUID.randomUUID();
-    private final Parties parties = new Parties(() -> 3);
+    private final Parties parties = new Parties();
 
     private void join(UUID leader, UUID... others) {
         for (var other : others) {
@@ -90,21 +89,11 @@ class PartiesTest {
     }
 
     @Test
-    void thePartyHasAMaximumSize() {
+    void aPartyHasNoSizeLimit() {
         join(ann, bob, cy);
 
-        assertEquals(FULL, parties.invite(ann, dee));
-    }
-
-    @Test
-    void roomThatRanOutBeforeAcceptingStillCounts() {
-        parties.invite(ann, bob);
-        parties.invite(ann, cy);
-        parties.invite(ann, dee);
-        parties.accept(bob, ann);
-        parties.accept(cy, ann);
-
-        assertEquals(FULL, parties.accept(dee, ann));
+        assertEquals(OK, parties.invite(ann, dee));
+        assertEquals(OK, parties.accept(dee, ann));
     }
 
     @Test
@@ -196,17 +185,13 @@ class PartiesTest {
 
     @Test
     void aFormerLeadersInviteIsNoGoodAfterTheHandover() {
-        var roomy = new Parties(() -> 4);
-        roomy.invite(ann, bob);
-        roomy.accept(bob, ann);
-        roomy.invite(ann, cy);
-        roomy.accept(cy, ann);
-        roomy.invite(ann, dee);
+        join(ann, bob, cy);
+        parties.invite(ann, dee);
 
-        roomy.leave(ann);
+        parties.leave(ann);
 
-        assertEquals(NO_INVITE, roomy.accept(dee, ann));
-        assertEquals(NO_INVITE, roomy.accept(dee, bob));
+        assertEquals(NO_INVITE, parties.accept(dee, ann));
+        assertEquals(NO_INVITE, parties.accept(dee, bob));
     }
 
     @Test

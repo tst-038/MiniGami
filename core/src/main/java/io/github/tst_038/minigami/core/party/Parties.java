@@ -8,19 +8,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.IntSupplier;
 
 /**
  * Who is in which party. A player is in at most one party; its leader is the only one who invites,
  * kicks and disbands. A party that drops below two members through someone leaving or being
- * kicked is disbanded, as nobody is left to play with. Invites are only remembered here; making
+ * kicked is disbanded, as nobody is left to play with. A party has no size limit of its own; what it
+ * joins decides how many fit. Invites are only remembered here; making
  * them expire is up to the caller, with {@link #expire}.
  */
 public final class Parties {
 
     /** What happened to a request; {@link #OK} is the only one that changed anything. */
     public enum Result {
-        OK, NOT_IN_PARTY, NOT_LEADER, IN_PARTY, NO_INVITE, FULL, SELF
+        OK, NOT_IN_PARTY, NOT_LEADER, IN_PARTY, NO_INVITE, SELF
     }
 
     /** A snapshot: {@code members} is in the order they joined, the leader among them. */
@@ -49,15 +49,9 @@ public final class Parties {
         }
     }
 
-    /** Asked each time, so a reloaded setting counts at once. */
-    private final IntSupplier maxSize;
     private final Map<UUID, Live> byId = new HashMap<>();
     private final Map<UUID, Live> byPlayer = new HashMap<>();
     private final Set<Invite> invites = new HashSet<>();
-
-    public Parties(IntSupplier maxSize) {
-        this.maxSize = maxSize;
-    }
 
     public Optional<Party> of(UUID player) {
         return Optional.ofNullable(byPlayer.get(player)).map(Live::snapshot);
@@ -92,9 +86,6 @@ public final class Parties {
         if (byPlayer.containsKey(invitee)) {
             return Result.IN_PARTY;
         }
-        if (party != null && party.members.size() >= maxSize.getAsInt()) {
-            return Result.FULL;
-        }
         if (party == null) {
             party = new Live(UUID.randomUUID(), leader);
             party.members.add(leader);
@@ -118,9 +109,6 @@ public final class Parties {
         // The leader may have handed over or disbanded since the invite.
         if (!invites.contains(new Invite(leader, invitee)) || party == null || !party.leader.equals(leader)) {
             return Result.NO_INVITE;
-        }
-        if (party.members.size() >= maxSize.getAsInt()) {
-            return Result.FULL;
         }
         invites.remove(new Invite(leader, invitee));
         party.members.add(invitee);

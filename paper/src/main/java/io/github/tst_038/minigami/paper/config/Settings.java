@@ -8,13 +8,10 @@ import org.bukkit.configuration.ConfigurationSection;
  * The server-wide settings from {@code config.yml}.
  *
  * @param hud the HUD every game has unless it sets its own; read by the game loader, so only its shape is known here
- * @param partyMaxSize how many players a party holds at most
  */
-public record Settings(Optional<Location> lobby, ConfigurationSection hud, int partyMaxSize) {
+public record Settings(Optional<Location> lobby, ConfigurationSection hud) {
 
-    static final int DEFAULT_PARTY_MAX_SIZE = 8;
-
-    public static final Settings DEFAULTS = new Settings(Optional.empty(), SettingsLoader.bundledHud(), DEFAULT_PARTY_MAX_SIZE);
+    public static final Settings DEFAULTS = new Settings(Optional.empty(), SettingsLoader.bundledHud());
 
     public Settings {
         lobby = lobby.map(Location::clone);

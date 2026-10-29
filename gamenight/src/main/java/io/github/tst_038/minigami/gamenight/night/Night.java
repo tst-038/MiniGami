@@ -9,7 +9,6 @@ import io.github.tst_038.minigami.gamenight.template.PlaylistEntry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -50,15 +49,15 @@ public final class Night {
     }
 
     /**
-     * Forms the night teams, to be done when the first game starts.
+     * Forms the night teams, to be done when the first game starts. No party may be bigger than the team size.
      *
      * @throws IllegalStateException if the night is not a team night or the teams are formed already
      */
-    public NightTeams formTeams(List<Set<UUID>> parties, Map<UUID, String> assigned, RandomGenerator random) {
+    public NightTeams formTeams(List<Set<UUID>> parties, RandomGenerator random) {
         if (template.teams().solo() || teams != null) {
             throw new IllegalStateException("No teams to form");
         }
-        teams = NightTeams.form(new ArrayList<>(players), parties, assigned, template.teams().size(), random);
+        teams = NightTeams.form(new ArrayList<>(players), parties, template.teams().size(), random);
         return teams;
     }
 

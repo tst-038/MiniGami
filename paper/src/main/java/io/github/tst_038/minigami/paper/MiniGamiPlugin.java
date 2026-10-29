@@ -127,7 +127,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
-        var parties = new PartyService(this, storage, messages, () -> settings.partyMaxSize());
+        var parties = new PartyService(this, storage, messages);
         parties.load();
         var matchValues = new MatchValues();
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -159,7 +159,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         maps = new ArenaMaps(this, messages);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);
-        var publicMatches = new PublicMatches(this, () -> games, messages, running);
+        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> settings, running::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);

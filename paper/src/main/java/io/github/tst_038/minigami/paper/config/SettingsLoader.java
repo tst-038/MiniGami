@@ -69,12 +69,10 @@ public final class SettingsLoader {
                 YamlFiles.overlay(hud, own);
             }
         }
-        var party = reader.has("party") ? reader.section("party") : null;
-        var partyMaxSize = party != null && party.has("max-size") ? party.integer("max-size", 2, 100) : Settings.DEFAULT_PARTY_MAX_SIZE;
         var keys = YamlFiles.keys(config, reader);
         try {
             reader.check();
-            return new Loaded(new Settings(lobby, hud, partyMaxSize), List.of(), keys);
+            return new Loaded(new Settings(lobby, hud), List.of(), keys);
         } catch (InvalidConfigException e) {
             return new Loaded(Settings.DEFAULTS, e.problems(), keys);
         }

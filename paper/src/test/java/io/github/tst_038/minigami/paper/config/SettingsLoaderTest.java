@@ -58,14 +58,6 @@ class SettingsLoaderTest {
     }
 
     @Test
-    void readsThePartySizeAndDefaultsToEight() {
-        assertEquals(8, load("").settings().partyMaxSize());
-        assertEquals(5, load("party: { max-size: 5 }").settings().partyMaxSize());
-        assertEquals(List.of("config.yml: party.max-size: must be between 2 and 100"),
-                load("party: { max-size: 1 }").problems().stream().map(ConfigProblem::toString).toList());
-    }
-
-    @Test
     void theHudOverlaysTheBundledOne() {
         var hud = load("hud: { titles: false }").settings().hud();
 

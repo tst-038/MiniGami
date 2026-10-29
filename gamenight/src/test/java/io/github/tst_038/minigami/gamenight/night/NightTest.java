@@ -80,7 +80,7 @@ class NightTest {
         night.join(B);
         assertThrows(IllegalStateException.class, () -> night.score(record(A, B)));
 
-        var teams = night.formTeams(List.of(java.util.Set.of(A, B)), Map.of(), new Random(1));
+        var teams = night.formTeams(List.of(java.util.Set.of(A, B)), new Random(1));
         night.join(C);
         night.score(record(A, B, C));
 
@@ -89,11 +89,11 @@ class NightTest {
         assertEquals(11, night.standings().pointsOf(team));
         // the late joiner went into the only team, and the team still scores once
         assertEquals(Optional.of(team), teams.teamOf(C));
-        assertThrows(IllegalStateException.class, () -> night.formTeams(List.of(), Map.of(), new Random(1)));
+        assertThrows(IllegalStateException.class, () -> night.formTeams(List.of(), new Random(1)));
     }
 
     @Test
     void soloNightHasNoTeamsToForm() {
-        assertThrows(IllegalStateException.class, () -> new Night(template(Teams.SOLO)).formTeams(List.of(), Map.of(), new Random(1)));
+        assertThrows(IllegalStateException.class, () -> new Night(template(Teams.SOLO)).formTeams(List.of(), new Random(1)));
     }
 }

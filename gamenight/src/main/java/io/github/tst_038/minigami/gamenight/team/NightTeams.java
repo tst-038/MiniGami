@@ -1,7 +1,6 @@
 package io.github.tst_038.minigami.gamenight.team;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import io.github.tst_038.minigami.core.team.GroupedTeams;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -12,7 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 
-/** The teams of a team night, formed once when the first game starts and kept after. Ids are {@code 1}, {@code 2}, … unless the host named them. */
+/** The teams of a team night, formed once when the first game starts and kept after. Ids are {@code 1}, {@code 2}, … and the host can move players between them. */
 public final class NightTeams {
 
     private final Map<String, Set<UUID>> teams = new LinkedHashMap<>();
@@ -21,34 +20,21 @@ public final class NightTeams {
     }
 
     /**
-     * Host assignments first, then each party together (split in teams of {@code size} if bigger),
-     * then everyone else dealt at random into the teams with room, opening new ones as needed.
+     * Forms {@code ceil(players / size)} teams with the players dealt out evenly, each party kept
+     * whole in one team. The host moves players after this with {@link #move}.
+     *
+     * <p>A party bigger than {@code size} is not split but makes its team bigger, so the caller must
+     * refuse such a party when it joins the night.
      *
      * @param players the night's players, in the order they joined
      * @param parties who play together; members who are not in the night are ignored
-     * @param assigned a team id per player, wherever the host put them
      */
-    public static NightTeams form(List<UUID> players, List<Set<UUID>> parties, Map<UUID, String> assigned, int size, RandomGenerator random) {
+    public static NightTeams form(List<UUID> players, List<Set<UUID>> parties, int size, RandomGenerator random) {
         var formed = new NightTeams();
-        var rest = new ArrayList<>(players);
-        for (UUID player : players) {
-            if (assigned.containsKey(player)) {
-                formed.teams.computeIfAbsent(assigned.get(player), id -> new LinkedHashSet<>()).add(player);
-                rest.remove(player);
-            }
-        }
-        for (Set<UUID> party : parties) {
-            var members = rest.stream().filter(party::contains).toList();
-            for (int from = 0; from < members.size(); from += size) {
-                var team = new LinkedHashSet<>(members.subList(from, Math.min(from + size, members.size())));
-                formed.teams.put(formed.freeId(), team);
-                rest.removeAll(team);
-            }
-        }
-        Collections.shuffle(rest, random);
-        for (UUID player : rest) {
-            var open = formed.teams.values().stream().filter(team -> team.size() < size).min(Comparator.comparingInt(Set::size));
-            open.orElseGet(() -> formed.open()).add(player);
+        var count = Math.max(1, Math.ceilDiv(players.size(), size));
+        var dealt = new GroupedTeams(() -> parties, random).form(players, count);
+        for (var team : dealt) {
+            formed.teams.put(formed.freeId(), new LinkedHashSet<>(team));
         }
         return formed;
     }
@@ -88,12 +74,6 @@ public final class NightTeams {
         }
         teams.values().forEach(team -> team.remove(player));
         teams.get(id).add(player);
-    }
-
-    private Set<UUID> open() {
-        var team = new LinkedHashSet<UUID>();
-        teams.put(freeId(), team);
-        return team;
     }
 
     private String freeId() {
