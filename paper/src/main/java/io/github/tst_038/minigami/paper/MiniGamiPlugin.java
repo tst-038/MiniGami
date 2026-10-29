@@ -211,8 +211,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var settingsText = readSettings(fileProblems);
             var messageTexts = readMessages(fileProblems);
             saveExample("arenas", "example/" + ArenaLoader.FILE);
-            saveExample("games", "example.yml");
-            saveExample(NightTemplateLoader.FOLDER, "example.yml");
+            // The example night plays the example game, so it only makes sense next to it.
+            if (saveExample("games", "example.yml")) {
+                saveExample(NightTemplateLoader.FOLDER, "example.yml");
+            }
             warnOldModes();
             var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
@@ -290,11 +292,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
         }
     }
 
-    /** Blocking IO. On a fresh install, writes the bundled example into the folder so admins have one to copy. */
-    private void saveExample(String folder, String file) {
-        if (!Files.exists(getDataPath().resolve(folder))) {
-            saveResource(folder + "/" + file, false);
+    /** Blocking IO. On a fresh install, writes the bundled example into the folder so admins have one to copy; true if it did. */
+    private boolean saveExample(String folder, String file) {
+        if (Files.exists(getDataPath().resolve(folder))) {
+            return false;
         }
+        saveResource(folder + "/" + file, false);
+        return true;
     }
 
     /** Blocking IO. Writes the bundled file first if the admin has none; an unreadable file counts as empty and is a problem. */
