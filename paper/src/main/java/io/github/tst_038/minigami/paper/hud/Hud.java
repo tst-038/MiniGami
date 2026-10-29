@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.hud;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.title.Title;
 
 /**
  * What a game shows its players next to chat: the sidebar per phase, a boss bar with the time left,
@@ -22,13 +24,14 @@ import net.kyori.adventure.key.Key;
  * @param sidebar lines per phase id, with {@link #STARTING} for the countdown before the start and
  *     {@link #DEFAULT} for the phases not listed
  * @param bossBar empty to show none
+ * @param titles the timing of the event titles, empty to show none; the countdown and paused titles keep their own
  * @param sounds a moment without one is silent
  * @param stats every stat id a text may name; a stat the match doesn't keep counts as empty, so a shared layout can list it
  */
-public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Optional<Bar> bossBar, boolean titles, boolean fireworks,
+public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Optional<Bar> bossBar, Optional<Title.Times> titles, boolean fireworks,
         Map<Moment, Key> sounds, Set<String> stats) {
 
-    public static final Hud NONE = new Hud("", Map.of(), Optional.empty(), false, false, Map.of(), Set.of());
+    public static final Hud NONE = new Hud("", Map.of(), Optional.empty(), Optional.empty(), false, Map.of(), Set.of());
     public static final String DEFAULT = "default";
     /** The countdown before the start, which is still the first phase. */
     public static final String STARTING = "starting";
@@ -123,7 +126,15 @@ public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Option
             }
             bossBar = Optional.of(new Bar(section.choice("color", BossBar.Color.class), texts));
         }
-        var titles = config.has("titles") && config.bool("titles");
+        var titles = Optional.<Title.Times>empty();
+        if (config.has("titles") && config.isSection("titles")) {
+            var section = config.section("titles");
+            var times = Title.DEFAULT_TIMES;
+            titles = Optional.of(Title.Times.times(
+                    ticks(section, "fade-in", times.fadeIn()), ticks(section, "stay", times.stay()), ticks(section, "fade-out", times.fadeOut())));
+        } else if (config.has("titles") && config.bool("titles")) {
+            titles = Optional.of(Title.DEFAULT_TIMES);
+        }
         var fireworks = config.has("fireworks") && config.bool("fireworks");
         var sounds = new EnumMap<Moment, Key>(Moment.class);
         if (config.has("sounds")) {
@@ -146,6 +157,10 @@ public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Option
                             + String.join(", ", Arrays.stream(Moment.values()).map(Moment::configName).toList())));
         }
         return new Hud(sidebarTitle, sidebar, bossBar, titles, fireworks, sounds, stats);
+    }
+
+    private static Duration ticks(ConfigReader section, String key, Duration fallback) {
+        return section.has(key) ? Duration.ofMillis(section.integer(key, 0, Integer.MAX_VALUE) * 50L) : fallback;
     }
 
     private static String unknownPhase(List<String> phases) {

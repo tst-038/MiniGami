@@ -33,6 +33,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import io.github.tst_038.minigami.paper.hud.Hud;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.title.Title;
+import java.time.Duration;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -207,23 +209,31 @@ class GameLoaderTest {
                             hud:
                               sidebar: { playing: ["%team%", "", "%scores%", "<gray>discord.gg/x"] }
                               boss-bar: false
+                              titles: { stay: 60 }
                           none: { name: None, hud: false }
+                          quick: { name: Quick, hud: { titles: { fade-in: 5, stay: 20, fade-out: 5 } } }
+                          quiet: { name: Quiet, hud: { titles: false } }
                         """,
-                "broken", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo], variants: {odd: {name: Odd, hud: {sidebar: {fighting: [game], playing: [lives, \"%scores% left\"]}, sounds: {jump: x}}}}}"));
+                "broken", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo], variants: {odd: {name: Odd, hud: {sidebar: {fighting: [game], playing: [lives, \"%scores% left\"]}, sounds: {jump: x}, titles: {stay: -1}}}}}"));
 
         var plain = loaded.entries().find("plain").orElseThrow();
         assertEquals(List.of("%game%", "%time%"), plain.base().hud().sidebar("playing"));
         assertEquals(Optional.of(BossBar.Color.YELLOW), plain.base().hud().bossBar().map(Hud.Bar::color));
-        assertTrue(plain.base().hud().titles());
+        assertEquals(Optional.of(Title.DEFAULT_TIMES), plain.base().hud().titles());
         assertEquals(Map.of(Hud.Moment.START, Key.key("entity.player.levelup")), plain.base().hud().sounds());
         var own = plain.variants().get("own").hud();
         assertEquals(List.of("%game%", "%players%"), own.sidebar("waiting"));
         assertEquals(List.of("%team%", "", "%scores%", "<gray>discord.gg/x"), own.sidebar("playing"));
         assertEquals(Optional.empty(), own.bossBar());
+        assertEquals(Optional.of(Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofSeconds(1))), own.titles());
         assertEquals(Hud.NONE, plain.variants().get("none").hud());
+        assertEquals(Optional.of(Title.Times.times(Duration.ofMillis(250), Duration.ofSeconds(1), Duration.ofMillis(250))),
+                plain.variants().get("quick").hud().titles());
+        assertEquals(Optional.empty(), plain.variants().get("quiet").hud().titles());
         assertEquals(List.of("games/broken.yml: variants.odd.hud.sidebar.fighting: unknown phase; the game has: waiting, playing, or starting or default",
                 "games/broken.yml: variants.odd.hud.sidebar.playing: 'lives': lines are texts now, such as \"<gray>Alive: <white>%alive%\"",
                 "games/broken.yml: variants.odd.hud.sidebar.playing: %scores% must be a line of its own",
+                "games/broken.yml: variants.odd.hud.titles.stay: must be at least 0",
                 "games/broken.yml: variants.odd.hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, podium, lose"), problems(loaded));
     }
 

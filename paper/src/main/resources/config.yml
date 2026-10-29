@@ -48,7 +48,10 @@ hud:
       starting: "<green>Starting in <white>%time%"
       ending: "<gray>Back in <white>%time%"
       default: "<yellow>Time left: <white>%time%"
-  # The 3-2-1 before the start, GO, being out, and winning or losing.
+  # The 3-2-1 before the start, GO, being out, and winning or losing. true or false, or the timing of all but the
+  # 3-2-1 in ticks, each optional: titles: { fade-in: 10, stay: 70, fade-out: 20 }. A game or variant that sets
+  # only some of them keeps the rest from here (or the defaults above, if this is true), and one that sets true or
+  # false replaces all of it.
   titles: true
   # Fireworks over the winners.
   fireworks: true

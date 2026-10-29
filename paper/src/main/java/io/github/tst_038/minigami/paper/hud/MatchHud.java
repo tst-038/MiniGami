@@ -132,7 +132,7 @@ public final class MatchHud {
     public void started() {
         lastCountdown = -1;
         for (var player : online()) {
-            title(player, "hud.title.start", "hud.title.start-subtitle", Title.DEFAULT_TIMES);
+            title(player, "hud.title.start", "hud.title.start-subtitle", eventTimes());
             play(player, Hud.Moment.START);
         }
     }
@@ -145,7 +145,7 @@ public final class MatchHud {
     }
 
     public void out(Player player) {
-        title(player, "hud.title.out", "hud.title.out-subtitle", Title.DEFAULT_TIMES);
+        title(player, "hud.title.out", "hud.title.out-subtitle", eventTimes());
         play(player, Hud.Moment.OUT);
     }
 
@@ -161,14 +161,14 @@ public final class MatchHud {
             var id = player.getUniqueId();
             var place = result.placements().stream().filter(placement -> placement.participants().contains(id)).findFirst().map(Placement::place);
             if (winners.contains(id)) {
-                title(player, "hud.title.win", "hud.title.win-subtitle", Title.DEFAULT_TIMES);
+                title(player, "hud.title.win", "hud.title.win-subtitle", eventTimes());
                 play(player, Hud.Moment.WIN);
             } else if (place.filter(placed -> placed <= LAST_ON_PODIUM).isPresent()) {
-                title(player, "hud.title.podium", "hud.title.podium-subtitle", Title.DEFAULT_TIMES, Formatter.number("place", place.get()));
+                title(player, "hud.title.podium", "hud.title.podium-subtitle", eventTimes(), Formatter.number("place", place.get()));
                 play(player, Hud.Moment.PODIUM);
             } else {
                 var placed = Formatter.number("place", place.orElse(0));
-                title(player, "hud.title.lose", place.isPresent() ? "hud.title.lose-subtitle" : "hud.title.lose-subtitle-unplaced", Title.DEFAULT_TIMES, placed);
+                title(player, "hud.title.lose", place.isPresent() ? "hud.title.lose-subtitle" : "hud.title.lose-subtitle-unplaced", eventTimes(), placed);
                 play(player, Hud.Moment.LOSE);
             }
         }
@@ -253,7 +253,9 @@ public final class MatchHud {
             return teams.stream()
                     .sorted(Comparator.comparingInt((MatchTeam team) -> team.ids().stream().mapToInt(scores::of).sum()).reversed())
                     .map(team -> render(viewer, "hud.scores.team", Placeholder.component("team", match.teamName(team.id().orElseThrow())),
-                            Formatter.number("points", team.ids().stream().mapToInt(scores::of).sum())))
+                            Formatter.number("points", team.ids().stream().mapToInt(scores::of).sum()),
+                            Formatter.number("size", team.members().size()),
+                            Formatter.number("alive", team.members().stream().filter(Participant::isAlive).count())))
                     .toList();
         }
         var best = roster.teams().stream().flatMap(team -> team.ids().stream())
@@ -316,8 +318,13 @@ public final class MatchHud {
         }
     }
 
+    /** The timing of the event titles; the countdown and paused titles have their own. */
+    private Title.Times eventTimes() {
+        return hud.titles().orElse(Title.DEFAULT_TIMES);
+    }
+
     private void title(Player player, String title, String subtitle, Title.Times times, TagResolver... placeholders) {
-        if (hud.titles()) {
+        if (hud.titles().isPresent()) {
             player.showTitle(Title.title(render(player, title, placeholders), render(player, subtitle, placeholders), times));
         }
     }

@@ -185,6 +185,12 @@ public final class ConfigReader {
         }
     }
 
+    /** Whether the key holds a section of keys, which then counts as read. */
+    public boolean isSection(String key) {
+        read.add(key);
+        return section.isConfigurationSection(key);
+    }
+
     /** Whether the key is set to {@code false}, as a way to turn off something inherited, such as a feature of the game a variant is laid over. */
     public boolean isOff(String key) {
         if (Boolean.FALSE.equals(section.get(key))) {
