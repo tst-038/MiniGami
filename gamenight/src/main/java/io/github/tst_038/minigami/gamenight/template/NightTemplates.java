@@ -21,6 +21,9 @@ public final class NightTemplates {
     public static NightTemplate read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant) {
         var name = root.string("name");
         var teams = teams(root);
+        // Offered even when the file leaves them out, so a command can complete them.
+        Points.DEFAULT.places().keySet().forEach(place -> root.suggest("points.places." + place, List.of()));
+        root.suggest("points.taking-part", List.of());
         var points = root.has("points") ? points(root.section("points"), Points.DEFAULT) : Points.DEFAULT;
         var items = root.sections("playlist", "game");
         if (items.isEmpty() && root.has("playlist")) {

@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.gamenight.template;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
@@ -54,6 +55,15 @@ class NightTemplatesTest {
         assertEquals(Optional.of("duos"), template.playlist().get(1).variant());
         assertEquals(new Points(Map.of(1, 15, 2, 5, 3, 5), 1), template.playlist().get(2).points());
         assertEquals(new Points(Map.of(1, 10, 2, 7, 3, 5), 0), template.playlist().get(3).points());
+    }
+
+    @Test
+    void pointKeysAreOfferedWhenTheFileLeavesThemOut() throws Exception {
+        var root = root("name: Friday\nplaylist: [spleef]");
+
+        read(root);
+
+        assertTrue(root.askedKeys().keySet().containsAll(List.of("points.places.1", "points.places.2", "points.places.3", "points.taking-part")));
     }
 
     @Test
