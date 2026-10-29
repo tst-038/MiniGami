@@ -14,13 +14,28 @@ import org.bukkit.inventory.ItemStack;
 /**
  * Gives every player still in the match the same items when the phase starts, and again when they
  * respawn, come back or switch role: only the ones they lack, so items kept through a death don't pile up.
+ * A saved kit puts each item in its own slot and refills only the empty ones.
  */
 public final class Kit implements Feature {
 
-    private final List<Material> items;
+    /** A plain item with an amount, given wherever it fits. */
+    public record Item(Material material, int amount) {
+    }
 
-    public Kit(List<Material> items) {
+    private final List<Item> items;
+    private final SavedKit saved;
+
+    public Kit(List<Item> items, SavedKit saved) {
         this.items = List.copyOf(items);
+        this.saved = saved;
+    }
+
+    List<Item> items() {
+        return items;
+    }
+
+    SavedKit saved() {
+        return saved;
     }
 
     @Override
@@ -33,12 +48,25 @@ public final class Kit implements Feature {
 
     private void topUp(MatchContext context, Player player) {
         if (context.roster().find(player.getUniqueId()).filter(Participant::isAlive).isPresent()) {
-            player.getInventory().addItem(items.stream().filter(item -> !player.getInventory().contains(item))
-                    .map(ItemStack::of).toArray(ItemStack[]::new));
+            var inventory = player.getInventory();
+            inventory.addItem(items.stream().filter(item -> !inventory.contains(item.material()))
+                    .map(Kit::stack).toArray(ItemStack[]::new));
+            saved.slots().forEach((slot, item) -> {
+                var current = inventory.getItem(slot);
+                if (current == null || current.isEmpty()) {
+                    inventory.setItem(slot, item.clone());
+                }
+            });
         }
     }
 
     private void give(Player player) {
-        player.getInventory().addItem(items.stream().map(ItemStack::of).toArray(ItemStack[]::new));
+        var inventory = player.getInventory();
+        inventory.addItem(items.stream().map(Kit::stack).toArray(ItemStack[]::new));
+        saved.slots().forEach((slot, item) -> inventory.setItem(slot, item.clone()));
+    }
+
+    private static ItemStack stack(Item item) {
+        return ItemStack.of(item.material(), item.amount());
     }
 }
