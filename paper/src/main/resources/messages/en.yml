@@ -277,6 +277,15 @@ info:
     no-arenas: "<yellow>no playable arena: its arenas lack spawns, the game's regions, or a saved map (needed when blocks change)"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"
+  # %count%; per entry %id%, %name%, %games%: how many are in the playlist, and %status%
+  nights: "%prefix%<gold>Game nights</gold> <gray>(%count%):"
+  night-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>%name%<gray>, %games% game(s), %status%"
+  # %name%: the night's display name
+  night: "%prefix%<gold>%id%</gold> <gray>(%name%<gray>), %status%"
+  # %count%
+  night-playlist: "<gray> Playlist (%count%):"
+  # %n%: its position, %game%, %variant% and %points%: empty when the entry has none
+  night-playlist-entry: "<gray>  %n%. <white>%game%</white>%variant%<gray>%points%"
   # %name%: the game's display name
   game: "%prefix%<gold>%id%</gold> <gray>(%name%<gray>) plays <white>%gametype%</white>, %status%"
   # %variants%: each a game-variant
@@ -319,7 +328,7 @@ info:
 
 # %matches%, %listeners%, %snapshots%; per match: %gametype%, %game%, %arena%, %phase%, %members%, %alive%, %tick%
 reload:
-  done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games."
+  done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games, <white>%nights%</white> game nights."
   failed: "%prefix%<red>Config not loaded, the old one stays in use. <white>%problems%</white> problem(s):"
   problem: "<red> - %problem%"
 
@@ -336,6 +345,12 @@ edit:
   unset: "%prefix%<green>Removed <white>%key%</white> from <white>%file%</white>."
   created: "%prefix%<green>Created <white>%file%</white>. Change it with <white>set</white> and <white>unset</white>."
   deleted: "%prefix%<green>Deleted <white>%file%</white>. A copy is kept as <white>%file%.deleted</white> until the next delete of it."
+  night-created: "%prefix%<green>Created <white>%file%</white>. Add games with <white>playlist add</white>, and change the rest with <white>set</white> and <white>unset</white>."
+  # %game%, %n%: the position of the entry, %to%: the position it moved to
+  playlist-added: "%prefix%<green>Added <white>%game%</white> to the playlist of <white>%file%</white>."
+  playlist-removed: "%prefix%<green>Removed game <white>%n%</white> from the playlist of <white>%file%</white>."
+  playlist-moved: "%prefix%<green>Moved game <white>%n%</white> of <white>%file%</white> to position <white>%to%</white>."
+  playlist-points: "%prefix%<green>Changed the points of game <white>%n%</white> in <white>%file%</white>."
   # %variant%: the variant's id, %file%: its game's file
   unknown-variant: "%prefix%<red><white>%file%</white> has no variant <white>%variant%</white>."
   variant-created: "%prefix%<green>Added variant <white>%variant%</white> to <white>%file%</white>. Change it with <white>variant %variant% set</white>."
