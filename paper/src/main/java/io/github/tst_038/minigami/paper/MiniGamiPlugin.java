@@ -173,7 +173,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(running, this);
         var publicMatches = new PublicMatches(this, () -> games, messages, running, parties);
         var nightReport = new NightReport(getServer(), messages);
-        nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, parties, new NightStore(storage, getLogger()), nightReport,
+        nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), parties, new NightStore(storage, getLogger()), nightReport,
                 new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(nights, this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);

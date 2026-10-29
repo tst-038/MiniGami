@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +36,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -45,6 +47,9 @@ import org.bukkit.plugin.Plugin;
  * The game night the server is running, driven by commands: players sign up, the host begins it
  * and plays its playlist game by game, each as a private match, and the points of every game add up
  * to the night's standings. One night at a time.
+ *
+ * <p>While the night lasts its players wait in the lobby, when one is set, and each game sends them
+ * back there; they return to where they were once the night ends or they leave it.
  *
  * <p>A night lives in memory only: it is gone after a restart or reload, and only a night that
  * ended with points is saved. Not thread-safe: use it from the server thread only.
@@ -67,6 +72,9 @@ public final class Nights implements Listener {
         final Instant start;
         /** One member of each party that became part of the night teams, to disband them when the night is over. */
         final Set<UUID> parties = new LinkedHashSet<>();
+        /** Where each player was when they joined, to send them back when they are done. */
+        // shortcut: in memory, so a restart mid-night leaves players in the lobby; persist it if that bites.
+        final Map<UUID, Location> origins = new HashMap<>();
         State state = State.SIGN_UP;
         /** The match of the current game while it is played. */
         LiveMatch game;
@@ -82,6 +90,7 @@ public final class Nights implements Listener {
     private final Supplier<IdRegistry<NightTemplate>> templates;
     private final Supplier<IdRegistry<Game>> games;
     private final RunningMatches running;
+    private final Supplier<Optional<Location>> lobby;
     private final PartyService parties;
     private final NightStore store;
     private final NightReport report;
@@ -94,15 +103,17 @@ public final class Nights implements Listener {
     /**
      * @param templates the templates currently loaded; config loading replaces the registry
      * @param games the games currently loaded
+     * @param lobby the lobby currently set, where the night's players wait
      * @param values where the night publishes its state for placeholders
      */
     public Nights(Plugin plugin, Messages messages, Supplier<IdRegistry<NightTemplate>> templates, Supplier<IdRegistry<Game>> games, RunningMatches running,
-            PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random) {
+            Supplier<Optional<Location>> lobby, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random) {
         this.plugin = plugin;
         this.messages = messages;
         this.templates = templates;
         this.games = games;
         this.running = running;
+        this.lobby = lobby;
         this.parties = parties;
         this.store = store;
         this.report = report;
@@ -170,6 +181,7 @@ public final class Nights implements Listener {
             if (!night.players().contains(joining.getUniqueId())) {
                 messages.send(audience(onlinePlayers(night)), "night.player-joined", Placeholder.component("player", joining.name()));
                 night.join(joining.getUniqueId());
+                toLobby(joining);
                 messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
                 // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
                 night.teams().ifPresent(formed -> tellTeam(night, joining));
@@ -434,8 +446,28 @@ public final class Nights implements Listener {
         }
         active.parties.forEach(parties::disband);
         sidebar.hide(online);
+        online.forEach(this::sendBack);
         active = null;
         values.clear();
+    }
+
+    /** A player still in another match is left there; that match gives them back their spot. */
+    private void toLobby(Player player) {
+        if (running.find(player.getUniqueId()).isPresent()) {
+            return;
+        }
+        lobby.get().ifPresent(spot -> {
+            active.origins.putIfAbsent(player.getUniqueId(), player.getLocation());
+            player.teleport(spot);
+        });
+    }
+
+    // shortcut: a player offline when the night ends stays where they logged out; send them back on join if that bites.
+    private void sendBack(Player player) {
+        var origin = active.origins.remove(player.getUniqueId());
+        if (origin != null) {
+            player.teleport(origin);
+        }
     }
 
     private void announceNext() {
@@ -454,6 +486,7 @@ public final class Nights implements Listener {
         if (active.game != null && active.game.isMember(id)) {
             active.game.leave(player);
         }
+        sendBack(player);
         messages.send(audience(onlinePlayers(night)), "night.player-left", Placeholder.component("player", player.name()));
         publish();
         return true;
