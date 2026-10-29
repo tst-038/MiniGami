@@ -22,8 +22,6 @@ hud:
       - ""
       - "<gray>Players: <white>%players%<gray>/<white>%max%"
       - "<gray>Waiting for players..."
-      - ""
-      - "<yellow>play.example.com"
     starting:
       - ""
       - "<gray>Game: <white>%game%"
@@ -31,8 +29,6 @@ hud:
       - ""
       - "<gray>Players: <white>%players%<gray>/<white>%max%"
       - "<gray>Starting in <green>%time%"
-      - ""
-      - "<yellow>play.example.com"
     default:
       - ""
       - "<gray>Game: <white>%game%"
@@ -44,8 +40,6 @@ hud:
       - "<white>%kills% <gray>Kills"
       - ""
       - "%scores%"
-      - ""
-      - "<yellow>play.example.com"
   # Over the time left of a timed phase and before the start; a text per phase like the sidebar, a phase
   # without one shows no bar, and false hides it. Everyone sees the same bar, so only the match's values work.
   boss-bar:
