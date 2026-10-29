@@ -62,7 +62,7 @@ class SettingsLoaderTest {
         var hud = load("hud: { titles: false }").settings().hud();
 
         assertEquals(false, hud.get("titles"));
-        assertEquals(List.of("blank", "game", "arena", "blank", "players", "time", "blank", "footer"), hud.getStringList("sidebar.waiting"));
+        assertEquals("<gray>Game: <white>%game%", hud.getStringList("sidebar.waiting").get(1));
     }
 
     @Test

@@ -76,6 +76,11 @@ public final class Messages {
             }
             return Component.text(key);
         }
+        return parse(text, placeholders);
+    }
+
+    /** A text that isn't kept by key, such as a sidebar line from a game's file, read the same way as one that is. */
+    public Component parse(String text, TagResolver... placeholders) {
         var prefixText = text("prefix");
         var prefix = Placeholder.parsed("prefix", prefixText == null ? "" : prefixText);
         var resolver = TagResolver.resolver(TagResolver.resolver(placeholders), prefix);

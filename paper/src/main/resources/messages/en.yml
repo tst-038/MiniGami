@@ -130,42 +130,13 @@ build-battle:
   # %player%, %points%: a team's or builder's total, best first
   score: "<gray> - <white>%player%</white>: <gold>%points%</gold> points"
 
-# What players see of a match next to chat; config.yml and the games choose which of it is shown.
+# What players see of a match next to chat; the sidebar and boss bar are set in config.yml and the games.
 hud:
-  sidebar-title: "<gradient:gold:yellow><bold>MINIGAMI</bold></gradient>"
-  # A sidebar line per id. A stat line (kills, deaths, ...) uses stat with the stat's name from stats.name.
-  # Add a key here (or under messages: in a game) for a line of your own, e.g. discord: "<blue>discord.gg/x",
-  # and name it in a sidebar.
-  # Every text under hud can use the match's values: %game%, %arena%, %players%, %max%, %alive%, %time%,
-  # and the viewer's %team%, %lives%, %points% and each stat the game keeps (%kills%, ...). Other plugins
-  # get them as %mg_match_time% and so on. The boss bar is one for everyone, so it has only the match's values. PlaceholderAPI's own placeholders work here too when it is installed.
-  line:
-    game: "<gray>Game: <white>%game%"
-    arena: "<gray>Map: <white>%arena%"
-    players: "<gray>Players: <white>%players%<gray>/<white>%max%"
-    alive: "<gray>Alive: <white>%alive%<gray>/<white>%players%"
-    # The time line, depending on where the match is. %time%: as m:ss
-    waiting: "<gray>Waiting for players..."
-    starting: "<gray>Starting in <green>%time%"
-    time: "<gray>Time left: <yellow>%time%"
-    elapsed: "<gray>Time: <yellow>%time%"
-    team: "<gray>Team: %team%"
-    lives: "<gray>Lives: <red>%lives% ❤"
-    points: "<gray>Points: <yellow>%points%"
-    stat: "<white>%amount% <gray>%stat%"
-    # The scores line: a line per team, or without teams the top three players.
-    team-score: "%team%<gray>: <white>%points%"
-    player-score: "<gray>%place%. <white>%player% <dark_gray>- <yellow>%points%"
-    footer: "<yellow>play.example.com"
-  # Over the time left; per phase id, else default. %time%: as m:ss
-  boss-bar:
-    starting: "<green>Starting in <white>%time%"
-    building: "<aqua>Build! <white>%time% <gray>left"
-    voting: "<light_purple>Vote! <white>%time% <gray>left"
-    hiding: "<green>Hide! <white>%time% <gray>until the hunt starts"
-    seeking: "<red>The hunt is on! <white>%time% <gray>left"
-    ending: "<gray>Back in <white>%time%"
-    default: "<yellow>Time left: <white>%time%"
+  # %scores% in a sidebar: a line per team, or without teams the top three players.
+  scores:
+    team: "%team%<gray>: <white>%points%"
+    player: "<gray>%place%. <white>%player% <dark_gray>- <yellow>%points%"
+  # Every title can use the match's values too, such as %game% or %lives%.
   title:
     countdown: "<gold><bold>%seconds%"
     countdown-subtitle: "<gray>Get ready!"

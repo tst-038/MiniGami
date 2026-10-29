@@ -9,29 +9,33 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
 
 /**
- * What a game shows its players next to chat: the sidebar lines per phase, a boss bar with the
- * time left, titles, celebration fireworks and sounds. The texts themselves are messages under
- * {@code hud}.
+ * What a game shows its players next to chat: the sidebar per phase, a boss bar with the time left,
+ * titles, celebration fireworks and sounds. Sidebar and boss bar texts are written right here, in
+ * MiniMessage with the match's values such as {@code %time%}; titles are messages under {@code hud.title}.
  *
- * @param sidebar line ids per phase id, with {@link #DEFAULT} for the phases not listed
+ * @param sidebarTitle the sidebar's heading
+ * @param sidebar lines per phase id, with {@link #STARTING} for the countdown before the start and
+ *     {@link #DEFAULT} for the phases not listed
  * @param bossBar empty to show none
  * @param sounds a moment without one is silent
+ * @param stats every stat id a text may name; a stat the match doesn't keep counts as empty, so a shared layout can list it
  */
-public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bossBar, boolean titles, boolean fireworks, Map<Moment, Key> sounds) {
+public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Optional<Bar> bossBar, boolean titles, boolean fireworks,
+        Map<Moment, Key> sounds, Set<String> stats) {
 
-    public static final Hud NONE = new Hud(Map.of(), Optional.empty(), false, false, Map.of());
+    public static final Hud NONE = new Hud("", Map.of(), Optional.empty(), false, false, Map.of(), Set.of());
     public static final String DEFAULT = "default";
-    /**
-     * Lines filled by the engine itself; any stat id is a line too, showing the player's own count,
-     * and so is any id with a text under {@code hud.line}, with PlaceholderAPI's placeholders when it is installed.
-     */
-    public static final List<String> LINES = List.of("game", "arena", "time", "players", "alive", "team", "lives", "points", "scores", "blank", "footer");
+    /** The countdown before the start, which is still the first phase. */
+    public static final String STARTING = "starting";
+    /** On a line of its own: a line per team by points, or without teams the top three players. */
+    public static final String SCORES = "%scores%";
+    /** Line names from before lines were texts, to point anyone still using them to the new way. */
+    private static final Set<String> OLD_LINES = Set.of("game", "arena", "time", "players", "alive", "team", "lives", "points", "scores", "blank", "footer");
 
     /** When a sound plays. */
     public enum Moment {
@@ -42,9 +46,22 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
         }
     }
 
+    /** A boss bar's colour and its text per phase id, like the sidebar's; a phase without a text shows no bar. */
+    public record Bar(BossBar.Color color, Map<String, String> texts) {
+
+        public Bar {
+            texts = Map.copyOf(texts);
+        }
+
+        public Optional<String> text(String phase) {
+            return Optional.ofNullable(texts.getOrDefault(phase, texts.get(DEFAULT)));
+        }
+    }
+
     public Hud {
         sidebar = Map.copyOf(sidebar);
         sounds = sounds.isEmpty() ? Map.of() : new EnumMap<>(sounds);
+        stats = Set.copyOf(stats);
     }
 
     /** The lines of the phase; none hides the sidebar. */
@@ -55,34 +72,56 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
     /**
      * Reads the {@code hud} key of a game; {@code hud: false} shows nothing.
      *
-     * @param phases the game's phases, which the sidebar may set lines for
-     * @param stats every stat a game could keep; one the game doesn't keep is simply not shown, so a shared layout can list it
-     * @param ownLine whether there is a text for a line id of the server's or game's own, such as {@code discord} for {@code hud.line.discord}
+     * @param phases the game's phases, which the sidebar and boss bar may set texts for
+     * @param stats every stat a game could keep
      */
-    public static Hud read(ConfigReader game, List<String> phases, Set<String> stats, Predicate<String> ownLine) {
+    public static Hud read(ConfigReader game, List<String> phases, Set<String> stats) {
         if (!game.has("hud") || game.isOff("hud")) {
             return NONE;
         }
         var config = game.section("hud");
+        var keys = Stream.concat(phases.stream(), Stream.of(STARTING, DEFAULT)).toList();
+        var sidebarTitle = "";
         var sidebar = new HashMap<String, List<String>>();
         if (config.has("sidebar")) {
             var section = config.section("sidebar");
-            var lines = Stream.concat(LINES.stream(), stats.stream()).sorted().toList();
-            Stream.concat(phases.stream(), Stream.of(DEFAULT)).forEach(phase -> section.suggest(phase, lines));
+            if (section.has("title")) {
+                sidebarTitle = section.string("title");
+            }
             for (String phase : section.keys()) {
-                if (!phase.equals(DEFAULT) && !phases.contains(phase)) {
-                    section.problem(phase, "unknown phase; the game has: " + String.join(", ", phases) + ", or " + DEFAULT);
+                if (phase.equals("title")) {
                     continue;
                 }
-                var ids = section.strings(phase);
-                ids.stream().filter(id -> !LINES.contains(id) && !stats.contains(id) && !ownLine.test(id)).forEach(id ->
-                        section.problem(phase, "unknown line '" + id + "'; lines: " + String.join(", ", lines) + ", or your own with a text at hud.line." + id));
-                sidebar.put(phase, ids);
+                if (!keys.contains(phase)) {
+                    section.problem(phase, unknownPhase(phases));
+                    continue;
+                }
+                var lines = section.strings(phase);
+                for (String line : lines) {
+                    if (OLD_LINES.contains(line) || stats.contains(line)) {
+                        section.problem(phase, "'" + line + "': lines are texts now, such as \"<gray>Alive: <white>%alive%\"");
+                    } else if (line.contains(SCORES) && !line.equals(SCORES)) {
+                        section.problem(phase, SCORES + " must be a line of its own");
+                    }
+                }
+                sidebar.put(phase, lines);
             }
         }
-        var bossBar = Optional.<BossBar.Color>empty();
+        var bossBar = Optional.<Bar>empty();
         if (config.has("boss-bar") && !config.isOff("boss-bar")) {
-            bossBar = Optional.of(config.section("boss-bar").choice("color", BossBar.Color.class));
+            var section = config.section("boss-bar");
+            var texts = new HashMap<String, String>();
+            if (section.has("text")) {
+                var textSection = section.section("text");
+                for (String phase : textSection.keys()) {
+                    if (keys.contains(phase)) {
+                        texts.put(phase, textSection.string(phase));
+                    } else {
+                        textSection.problem(phase, unknownPhase(phases));
+                    }
+                }
+            }
+            bossBar = Optional.of(new Bar(section.choice("color", BossBar.Color.class), texts));
         }
         var titles = config.has("titles") && config.bool("titles");
         var fireworks = config.has("fireworks") && config.bool("fireworks");
@@ -106,6 +145,10 @@ public record Hud(Map<String, List<String>> sidebar, Optional<BossBar.Color> bos
                     .forEach(key -> section.problem(key, "unknown moment; moments: "
                             + String.join(", ", Arrays.stream(Moment.values()).map(Moment::configName).toList())));
         }
-        return new Hud(sidebar, bossBar, titles, fireworks, sounds);
+        return new Hud(sidebarTitle, sidebar, bossBar, titles, fireworks, sounds, stats);
+    }
+
+    private static String unknownPhase(List<String> phases) {
+        return "unknown phase; the game has: " + String.join(", ", phases) + ", or " + STARTING + " or " + DEFAULT;
     }
 }
