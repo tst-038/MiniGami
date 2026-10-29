@@ -73,7 +73,7 @@ class NightTest {
 
         assertEquals(List.of(), night.players().stream().filter(p -> p.equals(A)).toList());
         assertEquals(List.of(new Standing(B.toString(), 101, 1)), night.standings().ordered().subList(0, 1));
-        assertEquals(11, night.standings().pointsOf(A.toString()));
+        assertEquals(10, night.standings().pointsOf(A.toString()));
     }
 
     @Test
@@ -89,7 +89,7 @@ class NightTest {
 
         var team = teams.teamOf(A).orElseThrow();
         assertEquals(teams.teamOf(B), Optional.of(team));
-        assertEquals(11, night.standings().pointsOf(team));
+        assertEquals(10, night.standings().pointsOf(team));
         // the late joiner went into the only team, and the team still scores once
         assertEquals(Optional.of(team), teams.teamOf(C));
         assertThrows(IllegalStateException.class, () -> night.formTeams(List.of(), new Random(1)));
@@ -106,7 +106,7 @@ class NightTest {
 
         var results = night.results();
 
-        assertEquals(List.of(new Night.Result(A, Optional.empty(), 11, 1), new Night.Result(B, Optional.empty(), 1, 2), new Night.Result(C, Optional.empty(), 0, 3)), results);
+        assertEquals(List.of(new Night.Result(A, Optional.empty(), 10, 1), new Night.Result(B, Optional.empty(), 1, 2), new Night.Result(C, Optional.empty(), 0, 3)), results);
         assertEquals(Optional.empty(), night.idOf(UUID.randomUUID()));
     }
 
@@ -123,7 +123,7 @@ class NightTest {
         var results = night.results();
 
         assertEquals(3, results.size());
-        assertEquals(new Night.Result(A, Optional.of(team), 11, 1), results.stream().filter(r -> r.player().equals(A)).findFirst().orElseThrow());
+        assertEquals(new Night.Result(A, Optional.of(team), 10, 1), results.stream().filter(r -> r.player().equals(A)).findFirst().orElseThrow());
         assertEquals(1, results.stream().filter(r -> r.player().equals(B)).findFirst().orElseThrow().place());
     }
 

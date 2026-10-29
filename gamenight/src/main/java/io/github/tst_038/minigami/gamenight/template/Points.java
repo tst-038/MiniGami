@@ -1,12 +1,13 @@
 package io.github.tst_038.minigami.gamenight.template;
 
 import java.util.Map;
+import java.util.OptionalInt;
 
 /**
  * What a game is worth in a night.
  *
- * @param places points per place number; a place not listed is worth nothing
- * @param takingPart points for being in the game at all, on top of the place
+ * @param places points per place number
+ * @param takingPart points for playing without reaching a listed place, so the places keep their own worth
  */
 public record Points(Map<Integer, Integer> places, int takingPart) {
 
@@ -16,7 +17,8 @@ public record Points(Map<Integer, Integer> places, int takingPart) {
         places = Map.copyOf(places);
     }
 
-    public int forPlace(int place) {
-        return places.getOrDefault(place, 0);
+    /** @param place empty for a player who played but got no place */
+    public int earned(OptionalInt place) {
+        return place.isPresent() && places.containsKey(place.getAsInt()) ? places.get(place.getAsInt()) : takingPart;
     }
 }

@@ -24,7 +24,7 @@ class BundledNightTest {
 
         assertDoesNotThrow(root::check);
         assertEquals(2, night.playlist().size());
-        assertEquals(20, night.playlist().get(1).points().forPlace(1));
+        assertEquals(20, night.playlist().get(1).points().places().get(1));
         assertEquals(1, night.playlist().get(1).points().takingPart());
     }
 }

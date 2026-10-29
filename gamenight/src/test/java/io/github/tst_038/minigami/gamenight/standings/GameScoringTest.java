@@ -32,10 +32,10 @@ class GameScoringTest {
     }
 
     @Test
-    void placesAndTakingPartInSolo() {
+    void placesEarnTheirPointsAndTheRestTakingPart() {
         var scored = solo(record(List.of(new Placement(1, List.of(A)), new Placement(2, List.of(B))), Set.of(), A, B, C));
 
-        assertEquals(Map.of(A.toString(), 11, B.toString(), 8, C.toString(), 1), scored);
+        assertEquals(Map.of(A.toString(), 10, B.toString(), 7, C.toString(), 1), scored);
     }
 
     @Test
@@ -43,21 +43,21 @@ class GameScoringTest {
         // a team of one and a team of two, both placed: nobody is halved
         var scored = solo(record(List.of(new Placement(1, List.of(A)), new Placement(2, List.of(B, C))), Set.of(), A, B, C));
 
-        assertEquals(Map.of(A.toString(), 11, B.toString(), 8, C.toString(), 8), scored);
+        assertEquals(Map.of(A.toString(), 10, B.toString(), 7, C.toString(), 7), scored);
     }
 
     @Test
     void tiesAllGetThePlacesPoints() {
         var scored = solo(record(List.of(new Placement(1, List.of(A, B))), Set.of(), A, B));
 
-        assertEquals(Map.of(A.toString(), 11, B.toString(), 11), scored);
+        assertEquals(Map.of(A.toString(), 10, B.toString(), 10), scored);
     }
 
     @Test
     void leftPlayersGetNothing() {
         var scored = solo(record(List.of(new Placement(1, List.of(A)), new Placement(2, List.of(B))), Set.of(A), A, B));
 
-        assertEquals(Map.of(B.toString(), 8), scored);
+        assertEquals(Map.of(B.toString(), 7), scored);
     }
 
     @Test
@@ -67,7 +67,7 @@ class GameScoringTest {
 
         var scored = GameScoring.score(record, POINTS, teamOf::get);
 
-        assertEquals(Map.of("1", 8, "2", 11), scored);
+        assertEquals(Map.of("1", 7, "2", 10), scored);
     }
 
     @Test

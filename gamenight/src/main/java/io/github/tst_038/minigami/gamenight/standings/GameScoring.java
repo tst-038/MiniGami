@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.core.result.Placement;
 import io.github.tst_038.minigami.gamenight.template.Points;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -15,8 +16,8 @@ public final class GameScoring {
     }
 
     /**
-     * Each id (a player, or a night team) scores once: the points of its best-placed member, plus
-     * taking part if any member played. Members who left score nothing.
+     * Each id (a player, or a night team) scores once: the points of its best member, a listed place
+     * or else taking part. Members who left score nothing.
      *
      * @param idOf the id a player scores under, or null for a player who is not in the night
      */
@@ -31,9 +32,8 @@ public final class GameScoring {
             if (participant.left() || id == null) {
                 continue;
             }
-            int place = placeOf.containsKey(participant.id()) ? points.forPlace(placeOf.get(participant.id())) : 0;
-            // taking part is the same for everyone, so the best member is the one with the best place points
-            scored.merge(id, points.takingPart() + place, Math::max);
+            var place = placeOf.containsKey(participant.id()) ? OptionalInt.of(placeOf.get(participant.id())) : OptionalInt.empty();
+            scored.merge(id, points.earned(place), Math::max);
         }
         return scored;
     }
