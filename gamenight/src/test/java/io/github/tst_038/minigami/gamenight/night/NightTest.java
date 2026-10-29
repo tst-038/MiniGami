@@ -93,6 +93,38 @@ class NightTest {
     }
 
     @Test
+    void resultsListEveryParticipantIncludingThoseWhoLeft() {
+        var night = new Night(template(Teams.SOLO));
+        night.join(A);
+        night.join(B);
+        night.join(C);
+        night.score(record(A, B));
+        night.leave(A);
+
+        var results = night.results();
+
+        assertEquals(List.of(new Night.Result(A, Optional.empty(), 11, 1), new Night.Result(B, Optional.empty(), 1, 2), new Night.Result(C, Optional.empty(), 0, 3)), results);
+        assertEquals(Optional.empty(), night.idOf(UUID.randomUUID()));
+    }
+
+    @Test
+    void teamNightResultsGiveEveryMemberTheirTeamsStanding() {
+        var night = new Night(template(new Teams(2)));
+        night.join(A);
+        night.join(B);
+        night.join(C);
+        var teams = night.formTeams(List.of(java.util.Set.of(A, B)), new Random(1));
+        night.score(record(A, B, C));
+        var team = teams.teamOf(A).orElseThrow();
+
+        var results = night.results();
+
+        assertEquals(3, results.size());
+        assertEquals(new Night.Result(A, Optional.of(team), 11, 1), results.stream().filter(r -> r.player().equals(A)).findFirst().orElseThrow());
+        assertEquals(1, results.stream().filter(r -> r.player().equals(B)).findFirst().orElseThrow().place());
+    }
+
+    @Test
     void soloNightHasNoTeamsToForm() {
         assertThrows(IllegalStateException.class, () -> new Night(template(Teams.SOLO)).formTeams(List.of(), new Random(1)));
     }

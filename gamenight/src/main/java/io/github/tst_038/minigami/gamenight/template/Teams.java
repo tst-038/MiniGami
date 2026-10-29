@@ -14,4 +14,9 @@ public record Teams(int size) {
     public boolean solo() {
         return size == 1;
     }
+
+    /** Whether a party of this many can play together; in a solo night parties join as individuals, so any size does. */
+    public boolean holds(int party) {
+        return solo() || party <= size;
+    }
 }

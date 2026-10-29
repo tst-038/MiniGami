@@ -23,6 +23,12 @@ public final class Standings {
         return points.getOrDefault(id, 0);
     }
 
+    /** The id's standing, also for an id that has not scored yet: no points, and the place after everyone with more. */
+    public Standing of(String id) {
+        int own = pointsOf(id);
+        return new Standing(id, own, 1 + (int) points.values().stream().filter(other -> other > own).count());
+    }
+
     /** Most points first; ties keep the order they first scored in. */
     public List<Standing> ordered() {
         var sorted = points.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder())).toList();

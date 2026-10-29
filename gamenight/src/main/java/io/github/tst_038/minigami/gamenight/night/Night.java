@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.gamenight.team.NightTeams;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.gamenight.template.PlaylistEntry;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,8 @@ public final class Night {
 
     private final NightTemplate template;
     private final Set<UUID> players = new LinkedHashSet<>();
+    /** Everyone who was in the night at any time, also those who left; their points stay. */
+    private final Set<UUID> participants = new LinkedHashSet<>();
     private final Standings standings = new Standings();
     private NightTeams teams;
     private int position;
@@ -38,6 +41,7 @@ public final class Night {
 
     /** Joins, or rejoins; in a team night with teams already formed, a new player goes into the smallest team. */
     public void join(UUID player) {
+        participants.add(player);
         if (players.add(player) && teams != null && teams.teamOf(player).isEmpty()) {
             teams.addToSmallest(player);
         }
@@ -96,7 +100,32 @@ public final class Night {
         if (!template.teams().solo() && teams == null) {
             throw new IllegalStateException("The night teams are not formed yet");
         }
-        standings.add(GameScoring.score(record, entry.points(), player -> teams == null ? player.toString() : teams.teamOf(player).orElse(null)));
+        standings.add(GameScoring.score(record, entry.points(), player -> idOf(player).orElse(null)));
+    }
+
+    /** The id the player's points are kept under: their own in a solo night, their night team's in a team night once the teams are formed; empty for anyone else. */
+    public Optional<String> idOf(UUID player) {
+        if (template.teams().solo()) {
+            return participants.contains(player) ? Optional.of(player.toString()) : Optional.empty();
+        }
+        return teams == null ? Optional.empty() : teams.teamOf(player);
+    }
+
+    /**
+     * A participant's final standing.
+     *
+     * @param team empty in a solo night
+     * @param points the player's own in a solo night, their team's in a team night
+     */
+    public record Result(UUID player, Optional<String> team, int points, int place) {
+    }
+
+    /** Every participant's standing, also those who left, best place first. */
+    public List<Result> results() {
+        return participants.stream().flatMap(player -> idOf(player).stream().map(id -> {
+            var standing = standings.of(id);
+            return new Result(player, template.teams().solo() ? Optional.empty() : Optional.of(id), standing.points(), standing.place());
+        })).sorted(Comparator.comparingInt(Result::place)).toList();
     }
 
     /** Ids are player UUIDs in a solo night and night team ids in a team night. */
