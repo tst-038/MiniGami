@@ -18,6 +18,7 @@ import io.github.tst_038.minigami.features.kit.SavedKit;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
 import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
 import io.github.tst_038.minigami.features.nomobs.NoMobsFactory;
+import io.github.tst_038.minigami.features.plotmobs.PlotMobsFactory;
 import io.github.tst_038.minigami.features.onehit.OneHitFactory;
 import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
@@ -44,7 +45,7 @@ final class BuiltIns {
     static List<FeatureFactory> features(Function<String, Optional<SavedKit>> savedKits) {
         return List.of(new VoidKillsFactory(), new KitFactory(savedKits), new DeathItemsFactory(), new BreakBlocksFactory(), new NoDamageFactory(),
                 new GiveDropsFactory(), new ProjectileBreaksFactory(), new AntiCampingFactory(), new DecayFloorFactory(), new NoHungerFactory(),
-                new OneHitFactory(), new CountdownFactory(), new FreezeFactory(), new EffectsFactory(), new NoMobsFactory());
+                new OneHitFactory(), new CountdownFactory(), new FreezeFactory(), new EffectsFactory(), new NoMobsFactory(), new PlotMobsFactory());
     }
 
     static List<StatGroup> statGroups() {

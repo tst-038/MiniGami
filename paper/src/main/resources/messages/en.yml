@@ -149,6 +149,10 @@ build-battle:
   # %player%, %points%: a team's or builder's total, best first
   score: "<gray> - <white>%player%</white>: <gold>%points%</gold> points"
 
+plot-mobs:
+  # %max%: the most mobs one plot can hold
+  limit: "%prefix%<red>A plot holds at most <white>%max%</white> mobs."
+
 # What players see of a match next to chat; the sidebar and boss bar are set in config.yml and the games.
 hud:
   # %scores% in a sidebar: a line per team, or without teams the top three players. A team's line also has %alive%
