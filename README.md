@@ -139,6 +139,7 @@ features:
 | `void-kills` | Kills players below a height |
 | `no-damage` | Cancels the listed damage causes |
 | `no-hunger` | Keeps hunger full |
+| `no-mobs` | Players can't spawn mobs (eggs, mob buckets, breeding, golems) |
 | `one-hit` | One hit kills |
 | `death-items` | What happens to items and XP on death |
 | `countdown` | A respawn countdown |
