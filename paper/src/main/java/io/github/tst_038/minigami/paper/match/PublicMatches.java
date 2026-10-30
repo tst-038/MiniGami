@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.party.PartyService;
+import io.github.tst_038.minigami.paper.permission.PlayPermissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -12,7 +13,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
@@ -26,7 +26,8 @@ import org.bukkit.plugin.Plugin;
 /**
  * Public play, through {@code /mg join}: joining a game, or one of its variants, fills its waiting
  * public match first and otherwise opens one in its first free arena. Private matches are never
- * filled from here. A party joins together, through its leader.
+ * filled from here. A party joins together, through its leader. Players see and join only the games
+ * they have the permission of.
  *
  * <p>Not thread-safe: use it from the server thread only.
  */
@@ -47,8 +48,9 @@ public final class PublicMatches {
         this.parties = parties;
     }
 
-    public SortedSet<String> gameIds() {
-        return games.get().ids();
+    /** The games the viewer may join. */
+    public List<String> gameIds(CommandSender viewer) {
+        return games.get().ids().stream().filter(id -> viewer.hasPermission(PlayPermissions.of(id))).toList();
     }
 
     public Collection<String> variantIds(String gameId) {
@@ -74,12 +76,18 @@ public final class PublicMatches {
         group.add(player);
         party.ifPresent(members -> members.stream().filter(member -> !member.equals(id))
                 .map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(group::add));
+        var denied = group.stream().filter(member -> !member.hasPermission(PlayPermissions.of(gameId))).findFirst();
+        if (denied.isPresent() && games.get().find(gameId).isPresent()) {
+            messages.send(player, "join.not-allowed", Placeholder.component("player", denied.get().name()));
+            return;
+        }
         join(group, gameId, variant, player);
     }
 
     /**
      * An admin puts a player in a match of the game; the admin hears why if that can't be done. The
-     * player's party is not moved with them: this is an override, like adding past the maximum.
+     * player's party is not moved with them and their permission is not asked: this is an override,
+     * like adding past the maximum.
      */
     public void join(CommandSender sender, Player player, String gameId, Optional<String> variant) {
         join(List.of(player), gameId, variant, sender).ifPresent(match -> messages.send(sender, "match.admin.added",
@@ -139,9 +147,9 @@ public final class PublicMatches {
         return match;
     }
 
-    /** The games and variants that can be joined, with how many play each; a player can click one to join. */
+    /** The games and variants the sender can join, with how many play each; a player can click one to join. */
     public void list(CommandSender sender) {
-        var joinable = games.get().ids().stream().map(id -> games.get().find(id).orElseThrow())
+        var joinable = gameIds(sender).stream().map(id -> games.get().find(id).orElseThrow())
                 .filter(game -> game.all().stream().anyMatch(variant -> !variant.arenas().isEmpty())).toList();
         if (joinable.isEmpty()) {
             messages.send(sender, "list.none");

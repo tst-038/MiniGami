@@ -24,3 +24,9 @@ permissions:
   minigami.host:
     description: Run game nights with /mg night
     default: op
+  minigami.play.*:
+    description: Join every game (each game has its own minigami.play.<game>)
+    default: true
+  minigami.night.join:
+    description: Join game nights and hear when one opens
+    default: true

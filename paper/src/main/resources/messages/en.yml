@@ -10,6 +10,8 @@ join:
   unknown-game: "%prefix%<red>There is no game called <white>%game%</white>."
   # %game%: the game's name, %variant%: as typed, %variants%: the ones it has
   unknown-variant: "%prefix%<red>%game%<red> has no variant called <white>%variant%</white>. It has: <white>%variants%</white>"
+  # %player%: who may not play this game (a permission, minigami.play.<game>)
+  not-allowed: "%prefix%<red>%player% may not play this game."
   # %game%: the game's or variant's name
   no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy or full. Try again later."
   party-leader-only: "%prefix%<red>You are in a party: only your party leader can join a game, for the whole party."
@@ -423,6 +425,8 @@ night:
   # To everyone online. <join>…</join> joins on click
   open: "%prefix%%name% <gold>is open for sign-up! <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
   already-joined: "%prefix%<red>You are in the night already."
+  # %player%: who may not join game nights (a permission, minigami.night.join)
+  not-allowed: "%prefix%<red>%player% may not join game nights."
   not-joined: "%prefix%<red>You are not in the night."
   party-leader-only: "%prefix%<red>You are in a party: only your party leader can join the night, for the whole party."
   # %size%: players in the party who are online, %team%: most players in a night team

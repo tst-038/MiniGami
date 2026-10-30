@@ -15,6 +15,7 @@ import io.github.tst_038.minigami.paper.match.LiveMatch;
 import io.github.tst_038.minigami.paper.match.Opening;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.party.PartyService;
+import io.github.tst_038.minigami.paper.permission.PlayPermissions;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -143,7 +144,8 @@ public final class Nights implements Listener {
         publish();
         var name = Placeholder.parsed("name", template.get().name());
         messages.send(host, "night.opened", name);
-        messages.send(plugin.getServer(), "night.open", name, Placeholder.styling("join", ClickEvent.runCommand("/mg night join")));
+        var mayJoin = plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(PlayPermissions.NIGHTS));
+        messages.send(mayJoin, "night.open", name, Placeholder.styling("join", ClickEvent.runCommand("/mg night join")));
     }
 
     /**
@@ -168,6 +170,11 @@ public final class Nights implements Listener {
         var group = new ArrayList<Player>();
         group.add(player);
         party.ifPresent(members -> members.stream().filter(member -> !member.equals(id)).map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(group::add));
+        var denied = group.stream().filter(member -> !member.hasPermission(PlayPermissions.NIGHTS)).findFirst();
+        if (denied.isPresent()) {
+            messages.send(player, "night.not-allowed", Placeholder.component("player", denied.get().name()));
+            return;
+        }
         var teams = night.template().teams();
         if (!teams.holds(group.size())) {
             messages.send(player, "night.party-too-big", Formatter.number("size", group.size()), Formatter.number("team", teams.size()));

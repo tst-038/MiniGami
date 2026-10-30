@@ -52,6 +52,7 @@ import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
 import io.github.tst_038.minigami.paper.night.NightValues;
 import io.github.tst_038.minigami.paper.night.Nights;
 import io.github.tst_038.minigami.paper.party.PartyService;
+import io.github.tst_038.minigami.paper.permission.PlayPermissions;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
@@ -114,6 +115,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private ConfigEditor editor;
     private ConfigInfo info;
     private Messages messages;
+    private PlayPermissions playPermissions;
     /** Counts config loads, so one that finishes after a newer one doesn't overwrite it. */
     private final AtomicInteger configLoads = new AtomicInteger();
     /** Who asked for a load that hasn't finished; the newest load answers them all, also those of loads it overtook. */
@@ -127,6 +129,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         messages = new Messages(bundledMessages, getLogger());
         kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
         gameLoader = new GameLoader(gametypes, features, statGroups);
+        playPermissions = new PlayPermissions(getServer().getPluginManager());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
@@ -257,6 +260,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 settings = loadedSettings.settings();
                 arenas = loadedArenas.entries();
                 games = loadedGames.entries();
+                playPermissions.sync(games.ids());
                 nightTemplates = loadedNights.entries();
                 fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));

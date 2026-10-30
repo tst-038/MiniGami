@@ -67,7 +67,7 @@ public final class GamesCommand {
                 .then(Commands.literal("join")
                         .requires(PLAYER.or(ADMIN))
                         .then(Commands.argument("game", StringArgumentType.word())
-                                .suggests(suggest(publicMatches::gameIds))
+                                .suggests(suggest(context -> publicMatches.gameIds(context.getSource().getSender())))
                                 .executes(bySender((sender, context) -> joinSelf(messages, publicMatches, context, Optional.empty())))
                                 // A variant of the game, or for admins a player to put in the game itself; a variant wins a tie.
                                 .then(Commands.argument("variant", StringArgumentType.word())
