@@ -54,7 +54,7 @@ class BundledGamesTest {
         var statGroups = new IdRegistry<StatGroup>(StatGroup::id);
         BuiltIns.statGroups().forEach(statGroups::register);
         var arenas = new IdRegistry<Arena>(Arena::id);
-        arenas.register(new Arena("example", null, List.of(), Optional.empty(), Map.of(), Optional.empty()));
+        arenas.register(new Arena("example", null, List.of(), Optional.empty(), Optional.empty(), Map.of(), Optional.empty()));
         var files = new HashMap<String, YamlConfiguration>();
         for (var file : MiniGamiPlugin.EXAMPLE_GAMES) {
             files.put(file.replace(".yml", ""), resource("games/" + file));

@@ -15,6 +15,7 @@ import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.spawn.SpawnPlan;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -50,11 +51,17 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -90,6 +97,10 @@ public final class LiveMatch {
     private final Set<UUID> members = new LinkedHashSet<>();
     /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
+    /** The team each spawn is for, by the spawn's place in the arena's list. */
+    private final List<Optional<String>> spawnTags;
+    /** The spawn each team without spawns of its own was given at the start; its players come back there. */
+    private final Map<String, Integer> teamHomes = new HashMap<>();
     private final Lives lives = new Lives(this::livesOf);
     private final ScoreboardTeams scoreboardTeams;
     private final MatchHud hud;
@@ -120,6 +131,7 @@ public final class LiveMatch {
         this.variant = variant;
         this.arena = arena;
         this.maps = maps;
+        this.spawnTags = arena.spawns().stream().map(Arena.Spawn::team).toList();
         this.opening = opening;
         this.waitingSpot = switch (variant.waiting()) {
             case IN_PLACE -> Optional.empty();
@@ -172,8 +184,31 @@ public final class LiveMatch {
                 event.setCancelled(true);
             }
         });
+        if (arena.spectatorSpot().isPresent()) {
+            protectSpectators(context);
+        }
         hud.start();
         match.start();
+    }
+
+    /** Those who are out and watch from the spectator spot can't touch the match, nor be touched. */
+    private void protectSpectators(PaperMatchContext context) {
+        context.on(EntityDamageEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getEntity())));
+        context.on(EntityDamageByEntityEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getDamager())));
+        context.on(PlayerInteractEvent.class, event -> {
+            if (isWatching(event.getPlayer())) {
+                event.setCancelled(true);
+            }
+        });
+        context.on(BlockBreakEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getPlayer())));
+        context.on(BlockPlaceEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getPlayer())));
+        context.on(EntityPickupItemEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getEntity())));
+        context.on(PlayerDropItemEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getPlayer())));
+    }
+
+    private boolean isWatching(Entity entity) {
+        return entity instanceof Player player && isActive(player.getUniqueId())
+                && match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty();
     }
 
     public Match match() {
@@ -415,10 +450,10 @@ public final class LiveMatch {
             var team = teamOf(id);
             // Their team may have been formed while they were away, so its scoreboard team may not have been made yet.
             team.ifPresent(teamId -> toScoreboardTeam(player, teamId));
-            var spawns = arena.spawnsFor(team);
-            player.teleport(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
-            if (match.roster().find(id).filter(Participant::isAlive).isEmpty()) {
-                player.setGameMode(GameMode.SPECTATOR);
+            var out = match.roster().find(id).filter(Participant::isAlive).isEmpty();
+            player.teleport(out ? arena.spectatorSpot().orElseGet(() -> spawnFor(id)) : spawnFor(id));
+            if (out) {
+                setSpectating(player);
             }
         }
         messages.send(audience(), "match.back", Placeholder.component("player", player.name()));
@@ -611,13 +646,17 @@ public final class LiveMatch {
         if (!variant.roles().isEmpty()) {
             handOutRoles();
         }
-        var next = new HashMap<Optional<String>, Integer>();
-        for (var id : members) {
-            var player = plugin.getServer().getPlayer(id);
+        var everyone = takingPart();
+        var together = variant.teams().isPresent();
+        var spots = SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together);
+        for (int i = 0; i < everyone.size(); i++) {
+            var team = teamOf(everyone.get(i));
+            if (together && team.isPresent() && !SpawnPlan.hasOwn(team.get(), spawnTags)) {
+                teamHomes.putIfAbsent(team.get(), spots.get(i));
+            }
+            var player = plugin.getServer().getPlayer(everyone.get(i));
             if (player != null) {
-                var team = teamOf(id);
-                var spawns = arena.spawnsFor(team);
-                player.teleport(spawns.get(next.merge(team, 1, Integer::sum) % spawns.size()));
+                player.teleport(arena.spawns().get(spots.get(i)).location());
             }
         }
         if (!countDown) {
@@ -743,7 +782,7 @@ public final class LiveMatch {
             player.clearActivePotionEffects();
             plugin.getServer().getPluginManager().callEvent(new RoleSwitchEvent(player));
         } else if (!switches) {
-            player.setGameMode(GameMode.SPECTATOR);
+            spectate(player);
         }
     }
 
@@ -776,19 +815,60 @@ public final class LiveMatch {
         return teamOf(id).flatMap(variant::role).map(role -> role.lives().orElse(variant.lives())).orElse(variant.lives());
     }
 
-    /** Before the start back to where they wait; after it to a random spawn of their team, as a spectator once they are out. */
+    /**
+     * Before the start back to where they wait; after it to a spawn of their team, or to the spectator spot once they
+     * are out, or spectating where they are if the arena has none. Another plugin (a spawn plugin) may move the
+     * player after this, so a tick later they are put back if they are elsewhere.
+     */
     private void onRespawn(PlayerRespawnEvent event) {
         if (isJoinable()) {
             waitingSpot.ifPresent(event::setRespawnLocation);
             return;
         }
         var player = event.getPlayer();
-        var spawns = arena.spawnsFor(teamOf(player.getUniqueId()));
-        event.setRespawnLocation(spawns.get(ThreadLocalRandom.current().nextInt(spawns.size())));
-        if (match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty()) {
+        var id = player.getUniqueId();
+        var out = match.roster().find(id).filter(Participant::isAlive).isEmpty();
+        var where = out ? arena.spectatorSpot().orElseGet(() -> spawnFor(id)) : spawnFor(id);
+        event.setRespawnLocation(where);
+        match.scope().register(match.clock().schedule(1, () -> {
+            if (player.isOnline() && isActive(id) && (!where.getWorld().equals(player.getWorld()) || player.getLocation().distanceSquared(where) > 1)) {
+                player.teleport(where);
+            }
+        }));
+        if (out) {
             // The game variant is reset during the respawn, so it is set right after.
-            player.getScheduler().run(plugin, task -> player.setGameMode(GameMode.SPECTATOR), null);
+            player.getScheduler().run(plugin, task -> setSpectating(player), null);
         }
+    }
+
+    /** Out of the game: watching from the arena's spectator spot, else flying free in spectator mode. */
+    private void spectate(Player player) {
+        arena.spectatorSpot().ifPresent(player::teleport);
+        setSpectating(player);
+    }
+
+    private void setSpectating(Player player) {
+        player.setGameMode(arena.spectatorSpot().isPresent() ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+    }
+
+    /**
+     * A spawn the player may start at: their team's own, else the one their team was given, else the shared
+     * ones, preferring those with ground below so nobody drops into a hole a game made, such as in spleef.
+     */
+    private Location spawnFor(UUID id) {
+        var team = teamOf(id);
+        var home = team.map(teamHomes::get).map(OptionalInt::of).orElse(OptionalInt.empty());
+        var spots = SpawnPlan.respawnChoices(team, spawnTags, home).stream().map(i -> arena.spawns().get(i).location()).toList();
+        var grounded = spots.stream().filter(LiveMatch::hasFloor).toList();
+        if (grounded.isEmpty()) {
+            grounded = arena.spawns().stream().map(Arena.Spawn::location).filter(LiveMatch::hasFloor).toList();
+        }
+        var pool = grounded.isEmpty() ? spots : grounded;
+        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+    }
+
+    private static boolean hasFloor(Location spot) {
+        return spot.clone().subtract(0, 0.1, 0).getBlock().isSolid();
     }
 
     private void saveState(Player player) {
