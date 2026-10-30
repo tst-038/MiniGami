@@ -66,6 +66,7 @@ import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
 import io.github.tst_038.minigami.paper.storage.Storage;
 import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
+import io.github.tst_038.minigami.thewall.TheWall;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -156,6 +157,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         gametypes.register(new TeamDeathmatch());
         gametypes.register(new HideAndSeek());
         gametypes.register(new Domination());
+        gametypes.register(new TheWall());
         features.register(new VoidKillsFactory());
         features.register(new KitFactory(kits::find));
         features.register(new DeathItemsFactory());

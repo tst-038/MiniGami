@@ -121,6 +121,10 @@ domination:
   separator: "<dark_gray>  |  "
   contested: "<red>contested"
   free: "<gray>free"
+the-wall:
+  # When teams are let loose in their part of the arena. %minutes%: until the walls drop
+  preparing: "%prefix%<green>Gather and prepare! <gray>The walls drop in <white>%minutes%</white> minutes; until then dying costs nothing."
+  dropped: "%prefix%<red>The walls are coming down! <gray>Last team standing wins."
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>has <gold>%kills%</gold> kills."
