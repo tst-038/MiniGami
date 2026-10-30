@@ -148,7 +148,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(running, this);
         var publicMatches = new PublicMatches(this, () -> games, messages, running, parties);
         var nightReport = new NightReport(getServer(), messages);
-        nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), parties, new NightStore(storage, getLogger()), nightReport,
+        nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), sessions, parties, new NightStore(storage, getLogger()), nightReport,
                 new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
@@ -335,6 +335,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         }
         if (matches != null) {
             matches.disposeAll();
+        }
+        if (nights != null) {
+            nights.releaseAll();
         }
         // After the matches: disposing them restores players and queues the deletes of their snapshot files.
         if (snapshots != null) {

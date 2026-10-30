@@ -57,6 +57,21 @@ public record PlayerSnapshot(
     }
 
     public record SavedLocation(UUID world, double x, double y, double z, float yaw, float pitch) {
+
+        /** The location, or the main world's spawn if its world no longer exists. */
+        public Location resolve(Server server) {
+            var found = server.getWorld(world);
+            if (found == null) {
+                return server.getWorlds().getFirst().getSpawnLocation();
+            }
+            return new Location(found, x, y, z, yaw, pitch);
+        }
+    }
+
+    /** The same state, but with the player to be put back somewhere else. */
+    public PlayerSnapshot withLocation(SavedLocation moved) {
+        return new PlayerSnapshot(items, moved, gameMode, health, foodLevel, saturation, exhaustion, level, exp, totalExperience,
+                allowFlight, flying, fireTicks, freezeTicks, remainingAir, fallDistance, effects, attributes);
     }
 
     public record SavedEffect(String type, int duration, int amplifier, boolean ambient, boolean particles, boolean icon) {
@@ -114,7 +129,7 @@ public record PlayerSnapshot(
         restoreAttributes(player);
         player.setGameMode(GameMode.valueOf(gameMode));
         player.getInventory().setContents(ItemStack.deserializeItemsFromBytes(Base64.getDecoder().decode(items)));
-        player.teleport(location(player.getServer()));
+        player.teleport(location.resolve(player.getServer()));
         player.setFoodLevel(foodLevel);
         player.setSaturation(saturation);
         player.setExhaustion(exhaustion);
@@ -163,15 +178,6 @@ public record PlayerSnapshot(
                 }
             }
         }
-    }
-
-    /** The saved location, or the main world's spawn if its world no longer exists. */
-    private Location location(Server server) {
-        var world = server.getWorld(location.world());
-        if (world == null) {
-            return server.getWorlds().getFirst().getSpawnLocation();
-        }
-        return new Location(world, location.x(), location.y(), location.z(), location.yaw(), location.pitch());
     }
 
     public String toYaml() {

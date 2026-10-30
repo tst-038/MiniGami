@@ -1,18 +1,24 @@
 package io.github.tst_038.minigami.paper.session;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.GameMode;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -32,6 +38,13 @@ public final class PlayerSessions implements Listener {
     /** Players whose snapshot on disk could not be read or restored; kept out of matches so it isn't overwritten. */
     private final Set<UUID> unrecoverable = ConcurrentHashMap.newKeySet();
 
+    /** Players who are held by a game night: their own state is saved once, and matches only park them. Server thread only. */
+    private final Map<UUID, Consumer<Player>> held = new HashMap<>();
+    /** Where players who quit with their state restored belong; other plugins may move them at their next join. Server thread only. */
+    private final Map<UUID, PlayerSnapshot.SavedLocation> homes = new HashMap<>();
+    /** Players whose quit is being handled: their restore can't be trusted to move them, as the connection is going away. */
+    private final Set<UUID> quitting = new HashSet<>();
+
     public PlayerSessions(Plugin plugin, SnapshotStore store, Logger logger) {
         this.plugin = plugin;
         this.store = store;
@@ -40,12 +53,15 @@ public final class PlayerSessions implements Listener {
 
     /** Whether {@link #take} would succeed: the player has no snapshot left from an earlier match. */
     public boolean canTake(UUID id) {
-        return !active.containsKey(id) && !recovered.containsKey(id) && !unrecoverable.contains(id);
+        return held.containsKey(id) || !active.containsKey(id) && !recovered.containsKey(id) && !unrecoverable.contains(id);
     }
 
     /**
      * Saves the player's state and returns its restore, to be registered in the match scope. If the
      * player is offline when it runs, they get their state back on their next join instead.
+     *
+     * A player held by a game night is not saved again, since what they have now is the night's cleared
+     * state: their restore only parks them again.
      *
      * @throws IllegalStateException if the player already has a snapshot that hasn't been restored
      */
@@ -54,19 +70,93 @@ public final class PlayerSessions implements Listener {
         if (!canTake(id)) {
             throw new IllegalStateException(player.getName() + " still has a snapshot that hasn't been restored");
         }
+        if (held.containsKey(id)) {
+            return () -> {
+                var park = held.get(id);
+                var online = plugin.getServer().getPlayer(id);
+                if (park != null && online != null) {
+                    park.accept(online);
+                }
+            };
+        }
         var snapshot = PlayerSnapshot.capture(player);
-        active.put(id, snapshot);
-        store.save(id, snapshot);
+        // A player who came back after quitting a match may have been moved on joining; where they belong is where they were before the match.
+        var home = homes.remove(id);
+        if (home != null) {
+            snapshot = snapshot.withLocation(home);
+        }
+        var saved = snapshot;
+        active.put(id, saved);
+        store.save(id, saved);
         return () -> {
             // The snapshot may already have been restored at a rejoin; restoring it again would undo what happened since.
-            if (!active.remove(id, snapshot)) {
+            if (!active.remove(id, saved)) {
                 return;
             }
             var online = plugin.getServer().getPlayer(id);
             if (online != null) {
-                restore(online, snapshot);
+                restore(online, saved);
+                if (quitting.contains(id)) {
+                    homes.put(id, saved.location());
+                }
             }
         };
+    }
+
+    /**
+     * Saves the player's state until the returned restore runs, like {@link #take}, and keeps it for
+     * everything in between: matches the player joins only {@code park} them, back where this left
+     * them, and don't save or restore anything of their own. The restore also ends the hold.
+     */
+    public AutoCloseable hold(Player player, Consumer<Player> park) {
+        var id = player.getUniqueId();
+        var restore = take(player);
+        held.put(id, park);
+        return () -> {
+            held.remove(id);
+            restore.close();
+        };
+    }
+
+    /**
+     * Clears what a match or night puts a player through: items, effects, health and the game mode.
+     * Call it before teleporting, and {@link #keepGameMode} after.
+     */
+    public void prepare(Player player) {
+        player.getInventory().clear();
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setAllowFlight(false);
+        player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue());
+        player.setFoodLevel(20);
+        player.setSaturation(5);
+        player.setExhaustion(0);
+        player.setLevel(0);
+        player.setExp(0);
+        player.clearActivePotionEffects();
+        player.setFireTicks(0);
+        player.setFreezeTicks(0);
+        player.setFallDistance(0);
+    }
+
+    /**
+     * Sets the player's game mode again a moment from now if another plugin changed it, as world
+     * managers do when a player changes world or joins. Use it after teleporting and setting the mode.
+     */
+    public void keepGameMode(Player player) {
+        var mode = player.getGameMode();
+        player.getScheduler().runDelayed(plugin, task -> {
+            if (player.getGameMode() != mode) {
+                player.setGameMode(mode);
+            }
+        }, null, 2);
+    }
+
+    /** Sends a player who quit mid-match back to where they were before it, if nothing took them back in. Call a few ticks after they joined. */
+    public void goHome(Player player) {
+        var home = homes.remove(player.getUniqueId());
+        if (home != null && !active.containsKey(player.getUniqueId())) {
+            player.teleport(home.resolve(plugin.getServer()));
+        }
     }
 
     /** Whether the player is in a match with their state saved; it comes back when they leave, so staff mustn't put any back. */
@@ -110,6 +200,17 @@ public final class PlayerSessions implements Listener {
         }
     }
 
+    // Around the matches' own handler (normal priority), so their restore knows the player is quitting.
+    @EventHandler(priority = EventPriority.LOW)
+    public void onQuitStart(PlayerQuitEvent event) {
+        quitting.add(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuitEnd(PlayerQuitEvent event) {
+        quitting.remove(event.getPlayer().getUniqueId());
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
@@ -118,8 +219,10 @@ public final class PlayerSessions implements Listener {
             return;
         }
         active.remove(player.getUniqueId());
+        held.remove(player.getUniqueId());
         try {
             restore(player, snapshot);
+            homes.put(player.getUniqueId(), snapshot.location());
         } catch (RuntimeException e) {
             unrecoverable.add(player.getUniqueId());
             logger.log(Level.SEVERE, "Could not restore the saved state of " + player.getName() + "; its file is kept", e);

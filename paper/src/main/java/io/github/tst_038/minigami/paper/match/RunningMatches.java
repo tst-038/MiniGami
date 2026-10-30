@@ -136,18 +136,22 @@ public final class RunningMatches implements Listener {
         find(event.getPlayer().getUniqueId()).ifPresent(match -> match.quit(event.getPlayer()));
     }
 
-    /** A participant who quit with time to come back is put back in their match. */
+    /**
+     * A participant who quit with time to come back is put back in their match; anyone else who quit
+     * mid-match is sent back to where they were before it. A moment after joining, because world
+     * managers and spawn plugins move players and set their game mode as they join.
+     */
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
-        running().stream().filter(match -> match.isAway(player.getUniqueId())).findFirst().ifPresent(match -> {
+        player.getScheduler().runDelayed(plugin, task -> running().stream().filter(match -> match.isAway(player.getUniqueId())).findFirst().ifPresentOrElse(match -> {
             try {
                 match.rejoin(player);
             } catch (IllegalStateException e) {
                 plugin.getLogger().log(Level.WARNING, player.getName() + " could not be brought back into their match", e);
                 messages.send(player, "join.failed", Placeholder.component("player", player.name()));
             }
-        });
+        }, () -> sessions.goHome(player)), null, 2);
     }
 
     /** The matches that haven't finished, oldest first. */
