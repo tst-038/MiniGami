@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.paper.session;
 
 import io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent;
+import io.github.tst_038.minigami.core.presence.Presence;
+import io.github.tst_038.minigami.paper.presence.PlayerPresence;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,6 +34,7 @@ public final class PlayerSessions implements Listener {
     private final Plugin plugin;
     private final SnapshotStore store;
     private final Logger logger;
+    private final PlayerPresence presence;
     /** Snapshots of players in a match. Server thread only. */
     private final Map<UUID, PlayerSnapshot> active = new HashMap<>();
     /** Snapshots found on disk at login, restored at join. */
@@ -41,15 +44,18 @@ public final class PlayerSessions implements Listener {
 
     /** Players who are held by a game night: their own state is saved once, and matches only park them. Server thread only. */
     private final Map<UUID, Consumer<Player>> held = new HashMap<>();
+    /** Holds on players whose snapshot hasn't been given back yet, released once it has, so also across a restore that waits for the next login. Server thread only. */
+    private final Map<UUID, Presence.Claim> stateClaims = new HashMap<>();
     /** Where players who quit with their state restored belong; read off the server thread at their next login. */
     private final Map<UUID, PlayerSnapshot.SavedLocation> homes = new ConcurrentHashMap<>();
     /** Players whose quit is being handled: their restore can't be trusted to move them, as the connection is going away. */
     private final Set<UUID> quitting = new HashSet<>();
 
-    public PlayerSessions(Plugin plugin, SnapshotStore store, Logger logger) {
+    public PlayerSessions(Plugin plugin, SnapshotStore store, Logger logger, PlayerPresence presence) {
         this.plugin = plugin;
         this.store = store;
         this.logger = logger;
+        this.presence = presence;
     }
 
     /** Whether {@link #take} would succeed: the player has no snapshot left from an earlier match. */
@@ -89,6 +95,7 @@ public final class PlayerSessions implements Listener {
         var saved = snapshot;
         active.put(id, saved);
         store.save(id, saved);
+        stateClaims.put(id, presence.claim(id));
         return () -> {
             // The snapshot may already have been restored at a rejoin; restoring it again would undo what happened since.
             if (!active.remove(id, saved)) {
@@ -100,6 +107,7 @@ public final class PlayerSessions implements Listener {
                 if (quitting.contains(id)) {
                     homes.put(id, saved.location());
                 }
+                releaseState(id);
             }
         };
     }
@@ -117,6 +125,18 @@ public final class PlayerSessions implements Listener {
             held.remove(id);
             restore.close();
         };
+    }
+
+    /** Counts the player as in a match without saving anything: they wait in place, and their state is saved when play starts. */
+    public Presence.Claim claimPlace(UUID id) {
+        return presence.claim(id);
+    }
+
+    private void releaseState(UUID id) {
+        var claim = stateClaims.remove(id);
+        if (claim != null) {
+            claim.close();
+        }
     }
 
     /**
@@ -149,6 +169,7 @@ public final class PlayerSessions implements Listener {
         recovered.remove(player.getUniqueId());
         restore(player, snapshot);
         unrecoverable.remove(player.getUniqueId());
+        releaseState(player.getUniqueId());
     }
 
     /**
@@ -226,6 +247,7 @@ public final class PlayerSessions implements Listener {
         held.remove(player.getUniqueId());
         try {
             restore(player, snapshot);
+            releaseState(player.getUniqueId());
         } catch (RuntimeException e) {
             unrecoverable.add(player.getUniqueId());
             logger.log(Level.SEVERE, "Could not restore the saved state of " + player.getName() + "; its file is kept", e);

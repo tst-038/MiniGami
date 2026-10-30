@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
@@ -38,6 +39,7 @@ import io.github.tst_038.minigami.paper.schedule.ScheduleRewards;
 import io.github.tst_038.minigami.paper.schedule.Schedules;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
+import io.github.tst_038.minigami.paper.presence.PlayerPresence;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
@@ -73,6 +75,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.event.HandlerList;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MiniGamiPlugin extends JavaPlugin {
@@ -137,7 +140,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues, nightValues);
         }
-        var sessions = new PlayerSessions(this, snapshots, getLogger());
+        var presence = new PlayerPresence(getServer());
+        getServer().getServicesManager().register(MiniGamiPlayers.class, presence, this, ServicePriority.Normal);
+        var sessions = new PlayerSessions(this, snapshots, getLogger(), presence);
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
         BuiltIns.gametypes().forEach(gametypes::register);
@@ -339,6 +344,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
         if (nights != null) {
             nights.releaseAll();
         }
+        // After the matches, so the leave events of players they restore still fire to those who listen.
+        getServer().getServicesManager().unregisterAll(this);
         // After the matches: disposing them restores players and queues the deletes of their snapshot files.
         if (snapshots != null) {
             snapshots.close();

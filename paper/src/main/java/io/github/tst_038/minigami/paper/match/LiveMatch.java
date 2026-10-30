@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.presence.Presence;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.scope.Scope;
@@ -99,6 +100,8 @@ public final class LiveMatch {
     private final Set<UUID> members = new LinkedHashSet<>();
     /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
+    /** Holds on players who wait in place: nothing of theirs is saved, but they count as in a match. */
+    private final Map<UUID, Presence.Claim> placeClaims = new HashMap<>();
     /** The team each spawn is for, by the spawn's place in the arena's list. */
     private final List<Optional<String>> spawnTags;
     /** The spawn each team without spawns of its own was given at the start; its players come back there. */
@@ -314,6 +317,8 @@ public final class LiveMatch {
             saveState(player);
             prepare(player);
             player.teleport(waitingSpot.get());
+        } else {
+            claimPlace(id);
         }
         match.roster().add(id);
         members.add(id);
@@ -437,6 +442,8 @@ public final class LiveMatch {
         var waiting = isJoinable();
         if (!waiting || waitingSpot.isPresent()) {
             saveState(player);
+        } else {
+            claimPlace(id);
         }
         away.remove(id).close();
         members.add(id);
@@ -631,6 +638,7 @@ public final class LiveMatch {
                     messages.send(player, "join.failed", Placeholder.component("player", player.name()));
                     members.remove(id);
                     match.roster().remove(id);
+                    releasePlace(id);
                     hud.hide(id);
                     continue;
                 }
@@ -870,10 +878,22 @@ public final class LiveMatch {
         restores.put(player.getUniqueId(), restore);
     }
 
+    private void claimPlace(UUID id) {
+        placeClaims.put(id, match.scope().register(sessions.claimPlace(id)));
+    }
+
+    private void releasePlace(UUID id) {
+        var claim = placeClaims.remove(id);
+        if (claim != null) {
+            claim.close();
+        }
+    }
+
     /** Players who waited in place had nothing changed, so there is nothing to give back. */
     private void restore(UUID id) {
         scoreboardTeams.remove(id);
         hud.hide(id);
+        releasePlace(id);
         var restore = restores.remove(id);
         if (restore == null) {
             return;
