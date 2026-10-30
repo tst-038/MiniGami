@@ -36,6 +36,16 @@ features:
     no-hunger: {}
 # Only what differs from the HUD in config.yml.
 hud:
+  sidebar:
+    default:
+      - ""
+      - "<gray>Game: <white>%game%"
+      - "<gray>Time: <yellow>%time%"
+      - ""
+      - "<gray>Role: %team%"
+      - "<green>Hiders left: <white>%hider%"
+      - "<gray>Caught: <white>%hider-out%"
+      - "<red>Seekers: <white>%seeker%"
   boss-bar:
     text:
       hiding: "<green>Hide! <white>%time% <gray>until the hunt starts"

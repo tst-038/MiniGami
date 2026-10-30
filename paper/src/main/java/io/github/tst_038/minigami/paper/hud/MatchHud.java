@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -386,6 +387,7 @@ public final class MatchHud {
                 Formatter.number("players", roster.size()),
                 Formatter.number("max", match.variant().maxPlayers()),
                 Formatter.number("alive", roster.alive().size())));
+        roleCounts().forEach((name, count) -> resolvers.add(Formatter.number(name, count)));
         var empty = new HashSet<String>();
         var time = timeShown();
         if (time.isPresent()) {
@@ -416,9 +418,20 @@ public final class MatchHud {
         return new Values(TagResolver.resolver(resolvers), Set.copyOf(empty));
     }
 
+    /** Per role of the game, such as {@code hider}: the members alive, and under {@code hider-out} those who are out. */
+    private Map<String, Integer> roleCounts() {
+        var counts = new LinkedHashMap<String, Integer>();
+        for (var role : match.variant().roles()) {
+            var members = match.match().roster().teams().stream().filter(team -> team.id().equals(Optional.of(role.id()))).flatMap(team -> team.members().stream()).toList();
+            counts.put(role.id(), (int) members.stream().filter(Participant::isAlive).count());
+            counts.put(role.id() + "-out", (int) members.stream().filter(member -> !member.isAlive()).count());
+        }
+        return counts;
+    }
+
     private void publish(Player viewer) {
         var values = values(viewer).resolver();
-        var names = Stream.concat(VALUES.stream(), match.variant().stats().stream().map(Stat::id)).distinct();
+        var names = Stream.of(VALUES.stream(), match.variant().stats().stream().map(Stat::id), roleCounts().keySet().stream()).flatMap(stream -> stream).distinct();
         published.put(viewer.getUniqueId(), names.collect(Collectors.toMap(name -> name,
                 name -> LegacyComponentSerializer.legacySection().serialize(MiniMessage.miniMessage().deserialize("<" + name + ">", values)))));
     }

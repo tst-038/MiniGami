@@ -269,6 +269,7 @@ With PlaceholderAPI installed:
 | `%mg_stat_<game>[_<variant>]_<stat>%` | The viewer's own amount |
 | `%mg_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard |
 | `%mg_match_<value>%` | A value of the viewer's match, such as `%mg_match_time%` |
+| `%mg_match_<role>%` / `%mg_match_<role>-out%` | Members of a role of the game who are alive / out, such as `%mg_match_hider%` and `%mg_match_hider-out%` |
 | `%mg_night_<value>%` | A value of the running game night, such as `%mg_night_place%` |
 
 Without a variant, all of a game's variants are added up.
