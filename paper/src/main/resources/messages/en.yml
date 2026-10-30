@@ -117,14 +117,17 @@ hide-and-seek:
   seeking: "%prefix%<red>The hunt is on! <gray>Last <white>%seconds%</white> seconds to win."
 domination:
   # A team, or a player without teams, took a capture point. %team%: its name, %point%: the point's name
-  taken: "%prefix%%team% <gray>took %point%<gray>!"
-  # Action bar every second: one of these per point, between separators. %point%: its name, %holder%: who owns it, or one of the three below
-  point: "%point% %holder%"
+  taken: "%prefix%%team% <gray>now controls %point%<gray>!"
+  # Action bar every second: one text per point, between separators; which one depends on the point's state. %point%: its name
+  # Owned and nobody is taking it. %team%: who owns it
+  holding: "%team% <gray>currently controls %point%<gray>!"
   separator: "<dark_gray>  |  "
   # A team stands on it alone to take it. %team%: its name, %seconds% of %needed%
-  capturing: "%team% <gray>%seconds%/%needed%s"
-  contested: "<red>contested"
-  free: "<gray>free"
+  capturing: "%team% <gray>is capturing %point% <white>%seconds%/%needed%s"
+  # Teams on it at the same time
+  contested: "%point% <red>is contested!"
+  # Nobody owns it
+  free: "<gray>Nobody controls %point%<gray>."
 the-wall:
   # When teams are let loose in their part of the arena. %minutes%: until the walls drop
   preparing: "%prefix%<green>Gather and prepare! <gray>The walls drop in <white>%minutes%</white> minutes; until then dying costs nothing."
