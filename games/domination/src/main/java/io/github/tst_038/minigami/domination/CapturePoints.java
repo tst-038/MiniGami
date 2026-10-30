@@ -27,19 +27,22 @@ final class CapturePoints implements Feature {
 
     private final Map<String, String> names;
     private final int captureSeconds;
+    private final boolean keepCaptured;
 
     /**
      * @param names the display name, in MiniMessage, of each point by its region
      * @param captureSeconds how long a team must stand on a point alone to take it
+     * @param keepCaptured whether a point stays its owner's once it steps off, until another team takes it
      */
-    CapturePoints(Map<String, String> names, int captureSeconds) {
+    CapturePoints(Map<String, String> names, int captureSeconds, boolean keepCaptured) {
         this.names = names;
         this.captureSeconds = captureSeconds;
+        this.keepCaptured = keepCaptured;
     }
 
     @Override
     public void enable(MatchContext context) {
-        var points = names.entrySet().stream().map(entry -> new Point(context.region(entry.getKey()).orElseThrow(), entry.getValue(), new Capture<>(captureSeconds))).toList();
+        var points = names.entrySet().stream().map(entry -> new Point(context.region(entry.getKey()).orElseThrow(), entry.getValue(), new Capture<>(captureSeconds, keepCaptured))).toList();
         context.scope().register(context.clock().repeat(20, () -> {
             var teams = context.roster().teams();
             var bar = new ArrayList<Component>();

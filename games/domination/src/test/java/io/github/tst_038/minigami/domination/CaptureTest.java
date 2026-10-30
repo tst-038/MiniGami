@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class CaptureTest {
 
     private static Capture<String> ownedByBlue() {
-        var capture = new Capture<String>(3);
+        var capture = new Capture<String>(3, true);
         capture.tick(List.of("blue"));
         capture.tick(List.of("blue"));
         capture.tick(List.of("blue"));
@@ -20,7 +20,7 @@ class CaptureTest {
 
     @Test
     void aTeamAloneForTheCaptureTimeTakesIt() {
-        var capture = new Capture<String>(3);
+        var capture = new Capture<String>(3, true);
 
         assertFalse(capture.tick(List.of("red")));
         assertFalse(capture.tick(List.of("red")));
@@ -32,7 +32,7 @@ class CaptureTest {
 
     @Test
     void oneSecondTakesItAtOnce() {
-        var capture = new Capture<String>(1);
+        var capture = new Capture<String>(1, true);
 
         assertTrue(capture.tick(List.of("red")));
     }
@@ -72,7 +72,7 @@ class CaptureTest {
 
     @Test
     void anotherTeamStartsItsOwnTaking() {
-        var capture = new Capture<String>(3);
+        var capture = new Capture<String>(3, true);
         capture.tick(List.of("red"));
         capture.tick(List.of("red"));
 
@@ -80,5 +80,18 @@ class CaptureTest {
 
         assertEquals(Optional.of("green"), capture.taker());
         assertEquals(1, capture.progress());
+    }
+
+    @Test
+    void aPointNotKeptIsOwnedOnlyWhileItsOwnerStandsOnItAlone() {
+        var capture = new Capture<String>(1, false);
+        capture.tick(List.of("blue"));
+
+        capture.tick(List.of("blue", "red"));
+        assertEquals(Optional.empty(), capture.owner());
+
+        capture.tick(List.of("blue"));
+        capture.tick(List.of());
+        assertEquals(Optional.empty(), capture.owner());
     }
 }

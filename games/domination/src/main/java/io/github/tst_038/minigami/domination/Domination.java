@@ -20,23 +20,26 @@ import java.util.Set;
  *
  * <p>Game settings: {@code capture-points}, the regions to capture with the name of each, such as
  * {@code { a: "<red>A", b: "<red>B" }}; optional are {@code capture-seconds} (5), how long a team must
- * stand on a point alone to take it; {@code play-seconds} (300); and
+ * stand on a point alone to take it; {@code keep-captured} (true), whether a point stays its owner's
+ * once it steps off, until another team takes it; {@code play-seconds} (300); and
  * {@code points-to-win}, which ends the match as soon as a team has that many points (none).
  */
 public final class Domination implements GameType {
 
     private final Map<String, String> points;
     private final int captureSeconds;
+    private final boolean keepCaptured;
     private final int playSeconds;
     private final int pointsToWin;
 
     public Domination() {
-        this(Map.of(), 5, 300, 0);
+        this(Map.of(), 5, true, 300, 0);
     }
 
-    private Domination(Map<String, String> points, int captureSeconds, int playSeconds, int pointsToWin) {
+    private Domination(Map<String, String> points, int captureSeconds, boolean keepCaptured, int playSeconds, int pointsToWin) {
         this.points = points;
         this.captureSeconds = captureSeconds;
+        this.keepCaptured = keepCaptured;
         this.playSeconds = playSeconds;
         this.pointsToWin = pointsToWin;
     }
@@ -58,7 +61,7 @@ public final class Domination implements GameType {
 
     @Override
     public Map<String, List<Feature>> features() {
-        return Map.of("playing", List.of(new CapturePoints(points, captureSeconds)), "ending", List.of(new AnnounceWinner()));
+        return Map.of("playing", List.of(new CapturePoints(points, captureSeconds, keepCaptured)), "ending", List.of(new AnnounceWinner()));
     }
 
     @Override
@@ -79,6 +82,7 @@ public final class Domination implements GameType {
         }
         return new Domination(named,
                 config.has("capture-seconds") ? config.integer("capture-seconds", 1, 600) : captureSeconds,
+                config.has("keep-captured") ? config.bool("keep-captured") : keepCaptured,
                 config.has("play-seconds") ? config.integer("play-seconds", 10, 3600) : playSeconds,
                 config.has("points-to-win") ? config.integer("points-to-win", 1, 10000) : pointsToWin);
     }
