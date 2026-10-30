@@ -23,6 +23,7 @@ all without writing code.
 - [Game nights](#game-nights)
 - [Schedules and rewards](#schedules-and-rewards)
 - [Stats and placeholders](#stats-and-placeholders)
+- [For plugin developers](#for-plugin-developers)
 - [Building from source](#building-from-source)
 
 ## Features
@@ -274,6 +275,41 @@ With PlaceholderAPI installed:
 | `%mg_night_<value>%` | A value of the running game night, such as `%mg_night_place%` |
 
 Without a variant, all of a game's variants are added up.
+
+## For plugin developers
+
+MiniGami saves a player's own state (inventory, health, location) when it takes them over and gives it back
+afterwards. A player is **in a match** from the moment MiniGami takes them over, until their own state is back: waiting
+for a match (also in place), playing, eliminated, spectating, and the whole of a game night including the breaks
+between games. Anything you give a player in that span is lost, so check first or wait for the leave event.
+
+Depend on the plugin jar (`compileOnly`, for example `compileOnly(files("libs/MiniGami-<version>.jar"))`) and list
+it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false }` (or
+`softdepend: [MiniGami]` in `plugin.yml`), and guard your code for it being absent. The types are in
+`io.github.tst_038.minigami.api.presence`:
+
+- `MiniGamiPlayers`, a Bukkit service: `isInMatch(UUID)`
+- `MiniGamiPlayerJoinEvent`: MiniGami took the player over (once, even when a game night moves them between games)
+- `MiniGamiPlayerLeaveEvent`: the player has their own state back, so it is safe to give items here; fired exactly
+  once per join, also when a match is stopped, a player is kicked, or the plugin is disabled. Players who quit get it
+  during their quit; a player who quit with time to rejoin counts as out, and rejoining is a new join.
+
+```java
+var players = getServer().getServicesManager().load(MiniGamiPlayers.class); // null without MiniGami
+
+// Don't pick players who are in a match
+var candidates = getServer().getOnlinePlayers().stream()
+        .filter(p -> players == null || !players.isInMatch(p.getUniqueId())).toList();
+
+// Hold a reward until the player is out
+@EventHandler
+public void onLeave(MiniGamiPlayerLeaveEvent event) {
+    event.getPlayer().ifPresent(player -> giveHeldReward(player));
+}
+```
+
+Both events run synchronously on the server thread. After a server crash, the saved state is given back at the
+player's next login without a leave event, since no join was seen since the restart.
 
 ## Building from source
 
