@@ -124,6 +124,11 @@ public final class Nights implements Listener {
         return templates.get().ids();
     }
 
+    /** Whether a night is on, from its sign-up until it ends. */
+    public boolean isRunning() {
+        return active != null;
+    }
+
     /** The ids of the night teams, once formed. */
     public Collection<String> teamIds() {
         return active == null ? List.of() : active.night.teams().map(NightTeams::ids).orElse(List.of());

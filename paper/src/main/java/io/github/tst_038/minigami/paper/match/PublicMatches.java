@@ -66,22 +66,44 @@ public final class PublicMatches {
      * @param player if in a party, must lead it: the party's online members join the same match with them
      */
     public void join(Player player, String gameId, Optional<String> variant) {
+        var group = group(player);
+        if (group.isEmpty()) {
+            return;
+        }
+        var denied = group.get().stream().filter(member -> !member.hasPermission(PlayPermissions.of(gameId))).findFirst();
+        if (denied.isPresent() && games.get().find(gameId).isPresent()) {
+            messages.send(player, "join.not-allowed", Placeholder.component("player", denied.get().name()));
+            return;
+        }
+        join(group.get(), gameId, variant, player);
+    }
+
+    /**
+     * Puts the player in this match, with their party if they lead one, such as the match a schedule
+     * opened for whoever answers its call. Their play permission is not asked: being let in is up to
+     * whoever offers the match.
+     *
+     * @return whether they joined; if not, they heard why
+     */
+    public boolean join(Player player, LiveMatch match) {
+        var group = group(player);
+        return group.isPresent() && join(group.get(), match.variant(), player, "join.match-full",
+                () -> Optional.of(match).filter(candidate -> candidate.isJoinable() && candidate.hasRoom(group.get().size()))).isPresent();
+    }
+
+    /** The player and the online members of their party; empty, and they are told, if they are in a party they don't lead. */
+    private Optional<List<Player>> group(Player player) {
         var id = player.getUniqueId();
         var party = parties.partyOf(id);
         if (party.isPresent() && !parties.isLeader(id)) {
             messages.send(player, "join.party-leader-only");
-            return;
+            return Optional.empty();
         }
         var group = new ArrayList<Player>();
         group.add(player);
         party.ifPresent(members -> members.stream().filter(member -> !member.equals(id))
                 .map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(group::add));
-        var denied = group.stream().filter(member -> !member.hasPermission(PlayPermissions.of(gameId))).findFirst();
-        if (denied.isPresent() && games.get().find(gameId).isPresent()) {
-            messages.send(player, "join.not-allowed", Placeholder.component("player", denied.get().name()));
-            return;
-        }
-        join(group, gameId, variant, player);
+        return Optional.of(group);
     }
 
     /**
@@ -101,12 +123,6 @@ public final class PublicMatches {
      * @param feedback hears why they can't join
      */
     private Optional<LiveMatch> join(List<Player> group, String gameId, Optional<String> variantId, Audience feedback) {
-        for (var player : group) {
-            if (running.find(player.getUniqueId()).isPresent()) {
-                messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
-                return Optional.empty();
-            }
-        }
         var game = games.get().find(gameId);
         if (game.isEmpty()) {
             messages.send(feedback, "join.unknown-game", Placeholder.unparsed("game", gameId));
@@ -119,32 +135,48 @@ public final class PublicMatches {
                     Placeholder.unparsed("variants", String.join(", ", game.get().variants().keySet())));
             return Optional.empty();
         }
-        var teamSize = variant.get().teams().map(setup -> OptionalInt.of(setup.largestTeam(variant.get().maxPlayers()))).orElse(OptionalInt.empty());
-        var fit = PartyJoin.check(group.size(), variant.get().maxPlayers(), teamSize);
+        return join(group, variant.get(), feedback, "join.no-free-arena", () -> matchToJoin(variant.get(), group.size()));
+    }
+
+    /**
+     * Puts the players in one match of the variant, all or none.
+     *
+     * @param noMatch the message key for when {@code match} finds none to join
+     * @param match the match to join, asked only once the players may join one
+     */
+    private Optional<LiveMatch> join(List<Player> group, Variant variant, Audience feedback, String noMatch, Supplier<Optional<LiveMatch>> match) {
+        for (var player : group) {
+            if (running.find(player.getUniqueId()).isPresent()) {
+                messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
+                return Optional.empty();
+            }
+        }
+        var teamSize = variant.teams().map(setup -> OptionalInt.of(setup.largestTeam(variant.maxPlayers()))).orElse(OptionalInt.empty());
+        var fit = PartyJoin.check(group.size(), variant.maxPlayers(), teamSize);
         if (fit != PartyJoin.OK) {
             messages.send(feedback, fit == PartyJoin.TOO_BIG_FOR_GAME ? "join.party-too-big" : "join.party-too-big-for-team",
-                    Formatter.number("size", group.size()), Formatter.number("max", variant.get().maxPlayers()),
+                    Formatter.number("size", group.size()), Formatter.number("max", variant.maxPlayers()),
                     Formatter.number("team", teamSize.orElse(0)));
             return Optional.empty();
         }
-        var match = matchToJoin(variant.get(), group.size());
-        if (match.isEmpty()) {
-            messages.send(feedback, "join.no-free-arena", Placeholder.parsed("game", variant.get().name()));
+        var target = match.get();
+        if (target.isEmpty()) {
+            messages.send(feedback, noMatch, Placeholder.parsed("game", variant.name()));
             return Optional.empty();
         }
         var joined = new ArrayList<Player>();
         for (var player : group) {
             try {
-                match.get().join(player);
+                target.get().join(player);
                 joined.add(player);
             } catch (IllegalStateException e) {
                 plugin.getLogger().log(Level.WARNING, player.getName() + " could not join", e);
                 messages.send(feedback, "join.failed", Placeholder.component("player", player.name()));
-                joined.forEach(match.get()::leave);
+                joined.forEach(target.get()::leave);
                 return Optional.empty();
             }
         }
-        return match;
+        return target;
     }
 
     /** The games and variants the sender can join, with how many play each; a player can click one to join. */
@@ -167,6 +199,11 @@ public final class PublicMatches {
                         Formatter.number("players", players), Placeholder.styling("join", ClickEvent.runCommand("/mg join " + variant.key())));
             }
         }
+    }
+
+    /** A new public match of the variant in a free arena, rather than one already gathering players; empty if no arena is free. */
+    public Optional<LiveMatch> open(Variant variant) {
+        return running.open(variant, Opening.publicMatch(parties::all));
     }
 
     /** The variant's public match that is still gathering players and has room for this many, or a new one in a free arena. */

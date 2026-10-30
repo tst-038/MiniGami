@@ -14,6 +14,8 @@ join:
   not-allowed: "%prefix%<red>%player% may not play this game."
   # %game%: the game's or variant's name
   no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy or full. Try again later."
+  # The match a schedule opened is full or has started. %game%: its name
+  match-full: "%prefix%<red>%game%<red> is full or has started already."
   party-leader-only: "%prefix%<red>You are in a party: only your party leader can join a game, for the whole party."
   # %size%: players in the party who are online, %max%: most players the game holds
   party-too-big: "%prefix%<red>Your party of %size% is too big for this game, which holds %max% players."
@@ -511,6 +513,34 @@ night:
     game: "<gray>Next: game %number% of %total%"
     # %place%, %name%, %points%, %tied%
     line: "<gray>%tied%%place%. <white>%name% <gold>%points%"
+
+# Games that schedules open on their own. %name%: the schedule's name
+schedule:
+  # To everyone who could join. %game%: the game, %seconds%: left to join, %needed%: players it needs. <join>…</join> joins on click
+  call: "%prefix%%name%<gold>: %game%<gold> is open! Needs %needed% players, %seconds%s to join. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
+  reminder: "%prefix%%name%<gold>: still %seconds%s to join %game%<gold>. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
+  # To the players in the match when the call closed before enough joined. %game%
+  not-enough-players: "%prefix%<red>Not enough players joined %game%<red> in time."
+  no-call: "%prefix%<red>No scheduled game is open to join right now."
+  # To hosts when a time came and no game fits. %players%: how many could join
+  skipped: "%prefix%<gray>%name%<gray> skipped its game: none fits %players% players who could join."
+  opened: "%prefix%<green>%name%<green> opened its next game."
+  night-running: "%prefix%<red>%name%<red> doesn't open games during a game night."
+  call-open: "%prefix%<red>%name%<red> still has a game open to join."
+  open-failed: "%prefix%<red>%name%<red> could not open its game; see the server log."
+  paused: "%prefix%<yellow>%name%<yellow> is paused until resumed, or until the server restarts."
+  already-paused: "%prefix%<red>%name%<red> is paused already."
+  resumed: "%prefix%<green>%name%<green> runs again."
+  not-paused: "%prefix%<red>%name%<red> isn't paused."
+  # %schedule%: as typed, %schedules%: the ones there are
+  unknown: "%prefix%<red>There is no schedule called <white>%schedule%</white>. There are: <white>%schedules%</white>"
+  none: "%prefix%<gray>There are no schedules. Add one in schedules/<id>.yml."
+  list-header: "%prefix%<gold>Schedules:"
+  # %id%, %next%: when it opens a game next, %state%: one of the states below, or nothing
+  list-entry: "<gray> - </gray>%name% <dark_gray>(%id%)</dark_gray> <gray>next %next%</gray>%state%"
+  state:
+    paused: " <yellow>paused"
+    calling: " <green>open to join"
 
 debug:
   summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"

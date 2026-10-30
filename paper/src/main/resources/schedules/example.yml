@@ -1,0 +1,23 @@
+# A schedule: at set times a game opens on its own and everyone online who isn't playing gets a
+# clickable call to join it. The file name is the schedule's id; delete the file to stop it.
+# Staff: /mg schedule list, and /mg schedule <id> now|pause|resume. Players join with /mg schedule join,
+# which needs minigami.schedule.join (everyone has it) but not the game's own minigami.play.<game>.
+name: "<gold>Example schedule"
+# When, in server time, as a cron line: minute hour day-of-month month day-of-week (0 or 7 is Sunday).
+# Fields take *, a number, a range 1-5, a step */30 or 10-20/5, and lists 1,15. Some examples:
+#   "*/30 * * * *"   every half hour
+#   "0 * * * *"      every hour, on the hour
+#   "0 20 * * 5"     Fridays at 20:00
+#   "0 18-22/2 * * 6,0"   weekends at 18:00, 20:00 and 22:00
+# A time is skipped during a game night, and while the schedule's last game is still open to join.
+when: "0 20 * * 5"
+# rotate: the games take turns in the order below; random: any of them.
+# Either way, only a game that enough players could join, with a free arena, is picked; if none is,
+# the time is skipped and only hosts (minigami.host) hear about it.
+pick: rotate
+# A game id, or { game: <id>, variant: <id> }. Games and their variants come from games/.
+games:
+  - example
+  - { game: example, variant: lives }
+# How long players have to join. A game that hasn't started by then is called off.
+join-seconds: 120

@@ -39,3 +39,6 @@ permissions:
   minigami.night.join:
     description: Join game nights and hear when one opens
     default: true
+  minigami.schedule.join:
+    description: Hear when a schedule opens a game and join it with /mg schedule join, whatever games one may play otherwise
+    default: true
