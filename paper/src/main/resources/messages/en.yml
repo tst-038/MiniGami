@@ -113,13 +113,14 @@ hide-and-seek:
   hiding: "%prefix%<green>Hide! <gray>The hunt starts in <white>%seconds%</white> seconds."
   # When the hunters are let go. %seconds%: how long the hunted must last
   seeking: "%prefix%<red>The hunt is on! <gray>Last <white>%seconds%</white> seconds to win."
-king-of-the-hill:
-  # A team, or a player without teams, now has the hill to itself. %team%: its name
-  taken: "%prefix%%team% <gray>took the hill!"
-  # Action bar every second while one team holds it. %points%: that team's points so far
-  holding: "%team% <gray>holds the hill: <gold>%points%</gold> points"
-  # Action bar while several teams stand on it
-  contested: "<red>The hill is contested!"
+domination:
+  # A team, or a player without teams, took a capture point. %team%: its name, %point%: the point's name
+  taken: "%prefix%%team% <gray>took %point%<gray>!"
+  # Action bar every second: one of these per point, between separators. %point%: its name, %holder%: who owns it, or one of the two below
+  point: "%point% %holder%"
+  separator: "<dark_gray>  |  "
+  contested: "<red>contested"
+  free: "<gray>free"
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>has <gold>%kills%</gold> kills."
@@ -202,7 +203,7 @@ stats:
     points: "points"
     kills: "kills"
     deaths: "deaths"
-    hill-seconds: "seconds on the hill"
+    point-seconds: "seconds on a capture point"
 
 lobby:
   none: "%prefix%<red>No lobby is set; set one with <white>/mg lobby set</white>."

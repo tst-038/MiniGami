@@ -12,7 +12,7 @@ dependencies {
     implementation(project(":games:build-battle"))
     implementation(project(":games:team-deathmatch"))
     implementation(project(":games:hide-and-seek"))
-    implementation(project(":games:king-of-the-hill"))
+    implementation(project(":games:domination"))
     // Optional at runtime: arenas are reset from schematics only when WorldEdit or FAWE is installed.
     compileOnly(libs.worldedit.bukkit) { isTransitive = false }
     compileOnly(libs.worldedit.core) { isTransitive = false }
