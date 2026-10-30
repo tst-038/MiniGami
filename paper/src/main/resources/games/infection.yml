@@ -1,0 +1,49 @@
+# Hide and seek where a caught hider becomes a seeker: the last survivors win.
+gametype: hide-and-seek
+name: "<dark_green>Infection"
+min-players: 2
+max-players: 12
+# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+waiting: arena
+name-tags: teammates
+hide-seconds: 20
+seek-seconds: 120
+roles:
+  seeker:
+    name: Infected
+    color: dark_green
+    per: 4
+    lives: 0
+    name-tags: everyone
+    features:
+      hiding:
+        freeze: {}
+        effects: { blindness: 1 }
+      seeking:
+        kit: { items: [iron_sword] }
+  hider:
+    name: Survivor
+    color: green
+    lives: 1
+    # Caught survivors join the infected instead of going out.
+    on-out: seeker
+    features:
+      seeking:
+        # One hit from the infected infects.
+        one-hit: {}
+arenas: [example]
+features:
+  seeking:
+    death-items: { items: vanish, xp: vanish }
+    no-hunger: {}
+# This game's own wording; any key from messages/en.yml can go here.
+messages:
+  hide-and-seek:
+    hiding: "%prefix%<green>Scatter! <gray>The infection spreads in <white>%seconds%</white> seconds."
+    seeking: "%prefix%<red>The infection is spreading! <gray>Survive <white>%seconds%</white> more seconds."
+hud:
+  boss-bar:
+    color: red
+    text:
+      hiding: "<green>Scatter! <white>%time% <gray>until the infection spreads"
+      seeking: "<red>Infection spreading! <white>%time% <gray>left"

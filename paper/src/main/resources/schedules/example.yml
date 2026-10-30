@@ -17,8 +17,9 @@ when: "0 20 * * 5"
 pick: rotate
 # A game id, or { game: <id>, variant: <id> }. Games and their variants come from games/.
 games:
-  - example
-  - { game: example, variant: lives }
+  - spleef
+  - king-of-the-hill
+  - { game: spleef, variant: decay }
 # How long players have to join. A game that hasn't started by then is called off.
 join-seconds: 120
 # What the players may win, given once the game is over. Each list holds rewards with their chance in

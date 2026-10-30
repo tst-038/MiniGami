@@ -1,0 +1,22 @@
+# Up to 4 teams prepare walled off in their own quarter, then the walls drop and a border closes in; the last team standing wins.
+# The arena needs: a saved map (/mg arena example map save), a spawn per team (team: red, blue, green, yellow),
+# a region called border, and its walls: regions named wall or wall-<anything> (wall-north, ...). A wall drops to air,
+# or with WorldEdit installed, to a broken version saved by /mg arena example region <name> schematic.
+gametype: the-wall
+name: "<dark_red>The Wall"
+min-players: 4
+max-players: 16
+# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+waiting: arena
+teams: { count: 4 }
+prepare-seconds: 900
+# Closes the border region in to 20 blocks over 5 minutes; half a heart a second outside it.
+border: { end-size: 20, shrink-seconds: 300, damage: 1 }
+arenas: [example]
+stats: [combat]
+quit: { then: die, rejoin-seconds: 120 }
+hud:
+  boss-bar:
+    text:
+      preparing: "<green>Prepare! <white>%time% <gray>until the walls drop"
+      fighting: "<red>Fight! <gray>Last team standing wins"

@@ -1,0 +1,42 @@
+# One seeker per four players hunts the rest; a caught hider is out.
+gametype: hide-and-seek
+name: "<green>Hide and Seek"
+min-players: 2
+max-players: 12
+# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+waiting: arena
+# Only teammates see a hider's name tag, so nobody is found by their tag through a wall; seekers set their own below.
+name-tags: teammates
+hide-seconds: 20
+seek-seconds: 120
+roles:
+  seeker:
+    name: Seeker
+    color: red
+    per: 4
+    # Seekers always respawn.
+    lives: 0
+    # Everyone sees the seekers coming.
+    name-tags: everyone
+    features:
+      hiding:
+        freeze: {}
+        effects: { blindness: 1 }
+      seeking:
+        # Or an inventory saved with /mg kit save seeker: { saved: seeker }
+        kit: { items: [stone_sword] }
+  hider:
+    name: Hider
+    color: green
+    lives: 1
+arenas: [example]
+features:
+  seeking:
+    death-items: { items: vanish, xp: vanish }
+    no-hunger: {}
+# Only what differs from the HUD in config.yml.
+hud:
+  boss-bar:
+    text:
+      hiding: "<green>Hide! <white>%time% <gray>until the hunt starts"
+      seeking: "<red>The hunt is on! <white>%time% <gray>left"

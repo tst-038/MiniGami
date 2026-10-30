@@ -1,0 +1,20 @@
+# Two teams fight for kills; first to 10, or most kills after 3 minutes.
+gametype: team-deathmatch
+name: "<red>Team Deathmatch"
+min-players: 2
+max-players: 8
+# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+waiting: arena
+fight-seconds: 180
+kills-to-win: 10
+teams: { count: 2 }
+arenas: [example]
+stats: [combat]
+features:
+  fighting:
+    # Nothing drops on death; without this items and XP drop as in vanilla.
+    death-items: { items: vanish, xp: vanish }
+    kit: { items: [iron_sword] }
+    no-hunger: {}
+    # Respawning takes 10 seconds.
+    countdown: { seconds: 10 }

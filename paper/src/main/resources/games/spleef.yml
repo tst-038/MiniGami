@@ -1,0 +1,42 @@
+# Dig the snow from under the others; whoever falls through is out, the last one standing wins.
+# The arena needs a snow_block floor to stand on, and a saved map (/mg arena example map save) to put it back after each match.
+gametype: last-standing
+name: "<aqua>Spleef"
+min-players: 2
+max-players: 8
+# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+waiting: arena
+arenas: [example]
+features:
+  playing:
+    # Nothing drops on death; without this items and XP drop as in vanilla.
+    death-items: { items: vanish, xp: vanish }
+    kit: { items: [diamond_shovel] }
+    break-blocks: { blocks: [snow_block], instant: true }
+    give-drops: { snow_block: [snowball] }
+    projectile-breaks: { blocks: [snow_block] }
+    # Standing on one block too long breaks it.
+    anti-camping: { seconds: 3, blocks: [snow_block] }
+    no-damage: { causes: [fall, entity-attack, entity-sweep-attack] }
+    # Just below the lowest spawn when y is left out; for a floor of several layers, set it below the bottom one: { y: 40 }
+    void-kills: {}
+# Variants are laid over the settings above and count as spleef in the stats.
+variants:
+  duos:
+    # In pairs: the last team with anyone still standing wins.
+    name: "<aqua>Spleef Duos"
+    min-players: 4
+    teams: { size: 2 }
+  lives:
+    # A fall sends you back to a spawn until your last life is gone.
+    name: "<aqua>Spleef <gray>(3 lives)"
+    lives: 3
+  decay:
+    # The snow also crumbles shortly after you step on it: keep moving.
+    name: "<aqua>Decay Spleef"
+    features:
+      playing:
+        # 20 ticks is a second.
+        decay-floor: { delay-ticks: 8, blocks: [snow_block] }
+        # Pointless with a floor that crumbles anyway.
+        anti-camping: false

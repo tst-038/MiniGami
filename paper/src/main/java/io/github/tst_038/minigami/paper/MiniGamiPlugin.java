@@ -7,26 +7,7 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
-import io.github.tst_038.minigami.buildbattle.BuildBattle;
-import io.github.tst_038.minigami.domination.Domination;
-import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
-import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
-import io.github.tst_038.minigami.stats.combat.CombatStats;
-import io.github.tst_038.minigami.features.countdown.CountdownFactory;
-import io.github.tst_038.minigami.features.deathitems.DeathItemsFactory;
-import io.github.tst_038.minigami.features.decayfloor.DecayFloorFactory;
-import io.github.tst_038.minigami.features.effects.EffectsFactory;
-import io.github.tst_038.minigami.features.freeze.FreezeFactory;
-import io.github.tst_038.minigami.features.givedrops.GiveDropsFactory;
-import io.github.tst_038.minigami.features.kit.KitFactory;
-import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
-import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
-import io.github.tst_038.minigami.features.onehit.OneHitFactory;
-import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFactory;
-import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
-import io.github.tst_038.minigami.hideandseek.HideAndSeek;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
-import io.github.tst_038.minigami.laststanding.LastStanding;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -69,8 +50,6 @@ import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
 import io.github.tst_038.minigami.paper.storage.Storage;
-import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
-import io.github.tst_038.minigami.thewall.TheWall;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -157,27 +136,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var sessions = new PlayerSessions(this, snapshots, getLogger());
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
-        gametypes.register(new LastStanding());
-        gametypes.register(new BuildBattle());
-        gametypes.register(new TeamDeathmatch());
-        gametypes.register(new HideAndSeek());
-        gametypes.register(new Domination());
-        gametypes.register(new TheWall());
-        features.register(new VoidKillsFactory());
-        features.register(new KitFactory(kits::find));
-        features.register(new DeathItemsFactory());
-        features.register(new BreakBlocksFactory());
-        features.register(new NoDamageFactory());
-        features.register(new GiveDropsFactory());
-        features.register(new ProjectileBreaksFactory());
-        features.register(new AntiCampingFactory());
-        features.register(new DecayFloorFactory());
-        features.register(new NoHungerFactory());
-        features.register(new OneHitFactory());
-        features.register(new CountdownFactory());
-        features.register(new FreezeFactory());
-        features.register(new EffectsFactory());
-        statGroups.register(new CombatStats());
+        BuiltIns.gametypes().forEach(gametypes::register);
+        BuiltIns.features(kits::find).forEach(features::register);
+        BuiltIns.statGroups().forEach(statGroups::register);
         maps = new ArenaMaps(this, messages);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);
@@ -227,8 +188,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var settingsText = readSettings(fileProblems);
             var messageTexts = readMessages(fileProblems);
             saveExample("arenas", "example/" + ArenaLoader.FILE);
-            // The example night plays the example game, so it only makes sense next to it.
-            if (saveExample("games", "example.yml")) {
+            // The example night and schedule play the bundled games, so they only make sense next to them.
+            if (saveExamples("games", BuiltIns.GAME_FILES)) {
                 saveExample(NightTemplateLoader.FOLDER, "example.yml");
                 saveExample(ScheduleLoader.FOLDER, "example.yml");
             }
@@ -315,12 +276,17 @@ public final class MiniGamiPlugin extends JavaPlugin {
         }
     }
 
-    /** Blocking IO. On a fresh install, writes the bundled example into the folder so admins have one to copy; true if it did. */
+    /** Blocking IO. See {@link #saveExamples}. */
     private boolean saveExample(String folder, String file) {
+        return saveExamples(folder, List.of(file));
+    }
+
+    /** Blocking IO. On a fresh install, writes the bundled files into the folder so admins have examples to copy; true if it did. */
+    private boolean saveExamples(String folder, List<String> files) {
         if (Files.exists(getDataPath().resolve(folder))) {
             return false;
         }
-        saveResource(folder + "/" + file, false);
+        files.forEach(file -> saveResource(folder + "/" + file, false));
         return true;
     }
 

@@ -1,4 +1,7 @@
-# A game: what players join, with /mg join example, and see their stats of. The game type is the code it runs.
+# A game: what players join, with /mg join void-fall, and see their stats of. The game type is the code it runs.
+# Every bundled game plays in the example arena; give it spawns first (/mg arena example spawn add).
+# What a game type or feature can be set to: /mg gametype <id> info and /mg feature <id> info.
+# Change a game by command with /mg game <id> set <key> <value>, or edit the file and /mg reload.
 gametype: last-standing
 name: "<gold>Void Fall"
 min-players: 2
@@ -19,7 +22,7 @@ features:
     # kit: { items: [iron_sword, arrow 16] }
     # kit: { saved: seeker }
 # Variants are laid over the settings above and counted as this game in the stats; each needs a name.
-# Players join one with /mg join example <variant>.
+# Players join one with /mg join void-fall <variant>.
 variants:
   lives:
     name: "<gold>Void Fall <gray>(3 lives)"

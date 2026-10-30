@@ -11,5 +11,7 @@ points: { places: { 1: 10, 2: 7, 3: 5 }, taking-part: 1 }
 # The games in order. An entry is a game id, or { game: <id>, variant: <id>, points: { … } } whose
 # points replace the ones above, key by key. Games and their variants come from games/.
 playlist:
-  - example
-  - { game: example, variant: lives, points: { places: { 1: 20, 2: 14, 3: 10 } } }
+  - spleef
+  - king-of-the-hill
+  - hide-and-seek
+  - { game: spleef, variant: lives, points: { places: { 1: 20, 2: 14, 3: 10 } } }

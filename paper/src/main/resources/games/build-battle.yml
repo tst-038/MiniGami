@@ -1,0 +1,27 @@
+# Build on a theme in your own plot, then score each other's builds; the highest total wins.
+# The arena needs a region per player, plot-1 up to plot-6 (/mg arena example region plot-1 set), and a saved map
+# (/mg arena example map save) to clear the plots after each match.
+gametype: build-battle
+name: "<light_purple>Build Battle"
+min-players: 2
+max-players: 6
+# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+waiting: arena
+arenas: [example]
+build-seconds: 300
+vote-seconds: 20
+# One is picked at random each match.
+themes: [Rocket, Tree, Car, House, Castle, Dragon, Ship, Robot]
+# Builders who quit keep their plot for 5 minutes.
+quit: { then: stay, rejoin-seconds: 300 }
+hud:
+  boss-bar:
+    text:
+      building: "<aqua>Build! <white>%time% <gray>left"
+      voting: "<light_purple>Vote! <white>%time% <gray>left"
+variants:
+  duos:
+    # Teammates share a plot; 6 players need plot-1 up to plot-3.
+    name: "<light_purple>Build Battle Duos"
+    min-players: 4
+    teams: { size: 2 }
