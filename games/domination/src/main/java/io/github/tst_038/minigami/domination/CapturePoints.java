@@ -62,21 +62,23 @@ final class CapturePoints implements Feature {
                 if (point.capture.owner().isPresent()) {
                     context.addPoints(point.scorer, 1);
                 }
-                bar.add(context.messages().render("domination.point", Placeholder.parsed("point", point.name), Placeholder.component("holder", state(context, point, teams, alone, present.size()))));
+                bar.add(state(context, point, teams, alone, present.size()));
             }
             context.audience().sendActionBar(Component.join(JoinConfiguration.separator(context.messages().render("domination.separator")), bar));
         }));
     }
 
     private static Component state(MatchContext context, Point point, List<MatchTeam> teams, Player alone, int present) {
+        var name = Placeholder.parsed("point", point.name);
         if (present > 1) {
-            return context.messages().render("domination.contested");
+            return context.messages().render("domination.contested", name);
         }
         if (point.capture.taker().isPresent() && alone != null) {
-            return context.messages().render("domination.capturing", Placeholder.component("team", name(context, teamOf(teams, alone), alone)),
+            return context.messages().render("domination.capturing", name, Placeholder.component("team", name(context, teamOf(teams, alone), alone)),
                     Formatter.number("seconds", point.capture.progress()), Formatter.number("needed", point.capture.seconds()));
         }
-        return point.capture.owner().isPresent() ? point.ownerName : context.messages().render("domination.free");
+        return point.capture.owner().isPresent() ? context.messages().render("domination.holding", name, Placeholder.component("team", point.ownerName))
+                : context.messages().render("domination.free", name);
     }
 
     /** Every player in the match is in one of its teams, if only a team of one. */

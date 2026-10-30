@@ -7,7 +7,8 @@
 # of it under its own hud: key, or turn it all off with hud: false.
 #
 # Texts are MiniMessage with the match's values: %game%, %arena%, %players%, %max%, %alive%, %time% (m:ss),
-# and the viewer's %team%, %lives%, %points% and any stat such as %kills%. A line naming a value with
+# and the viewer's %team%, %lives%, %points% and any stat such as %kills%. A game with roles also has %<role>% (members alive)
+# and %<role>-out% (members out), such as %hider% and %hider-out%. A line naming a value with
 # nothing to show is left out, such as %lives% when lives are unlimited, %time% while waiting for players,
 # or a stat the game doesn't keep. PlaceholderAPI's placeholders work too when it is installed.
 hud:

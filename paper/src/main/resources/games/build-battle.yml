@@ -14,6 +14,10 @@ vote-seconds: 20
 themes: [Rocket, Tree, Car, House, Castle, Dragon, Ship, Robot]
 # Builders who quit keep their plot for 5 minutes.
 quit: { then: stay, rejoin-seconds: 300 }
+# Creative builders can't spawn mobs with eggs or buckets.
+features:
+  building:
+    no-mobs: {}
 hud:
   boss-bar:
     text:

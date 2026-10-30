@@ -42,6 +42,15 @@ messages:
     hiding: "%prefix%<green>Scatter! <gray>The infection spreads in <white>%seconds%</white> seconds."
     seeking: "%prefix%<red>The infection is spreading! <gray>Survive <white>%seconds%</white> more seconds."
 hud:
+  sidebar:
+    default:
+      - ""
+      - "<gray>Game: <white>%game%"
+      - "<gray>Time: <yellow>%time%"
+      - ""
+      - "<gray>Role: %team%"
+      - "<green>Survivors: <white>%hider%"
+      - "<dark_green>Infected: <white>%seeker%"
   boss-bar:
     color: red
     text:

@@ -3,9 +3,9 @@
 gametype: domination
 name: "<aqua>Domination"
 capture-points:
-  point-a: "<white>A"
-  point-b: "<white>B"
-  point-c: "<white>C"
+  point-a: "<white>point A"
+  point-b: "<white>point B"
+  point-c: "<white>point C"
 min-players: 4
 max-players: 8
 # Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.

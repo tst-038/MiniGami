@@ -139,6 +139,7 @@ features:
 | `void-kills` | Kills players below a height |
 | `no-damage` | Cancels the listed damage causes |
 | `no-hunger` | Keeps hunger full |
+| `no-mobs` | Players can't spawn mobs (eggs, mob buckets, breeding, golems) |
 | `one-hit` | One hit kills |
 | `death-items` | What happens to items and XP on death |
 | `countdown` | Counts down the last seconds of a timed phase above the hotbar |
@@ -268,6 +269,7 @@ With PlaceholderAPI installed:
 | `%mg_stat_<game>[_<variant>]_<stat>%` | The viewer's own amount |
 | `%mg_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard |
 | `%mg_match_<value>%` | A value of the viewer's match, such as `%mg_match_time%` |
+| `%mg_match_<role>%` / `%mg_match_<role>-out%` | Members of a role of the game who are alive / out, such as `%mg_match_hider%` and `%mg_match_hider-out%` |
 | `%mg_night_<value>%` | A value of the running game night, such as `%mg_night_place%` |
 
 Without a variant, all of a game's variants are added up.
