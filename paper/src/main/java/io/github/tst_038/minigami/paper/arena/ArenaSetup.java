@@ -203,6 +203,9 @@ public final class ArenaSetup {
             arena.waitingSpot().ifPresentOrElse(
                     spot -> messages.send(sender, "arena.info-waiting-spot", point(spot)),
                     () -> messages.send(sender, "arena.info-no-waiting-spot"));
+            arena.spectatorSpot().ifPresentOrElse(
+                    spot -> messages.send(sender, "arena.info-spectator-spot", point(spot)),
+                    () -> messages.send(sender, "arena.info-no-spectator-spot"));
             arena.map().filter(box -> maps.hasMap(arena)).ifPresentOrElse(
                     box -> messages.send(sender, "arena.info-map", corners(box)),
                     () -> messages.send(sender, "arena.info-no-map", Placeholder.unparsed("arena", id)));

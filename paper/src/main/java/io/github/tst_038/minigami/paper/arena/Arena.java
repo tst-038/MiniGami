@@ -15,8 +15,8 @@ import org.bukkit.World;
  * start, named regions that games use, in the order of the file, and the box its saved map covers. Locations are handed out as copies, since
  * Bukkit's are mutable.
  */
-public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Map<String, Region> regions,
-        Optional<Region> map) {
+public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Optional<Location> spectatorSpot,
+        Map<String, Region> regions, Optional<Region> map) {
 
     /** @param team the team that starts here, or empty for a spawn anyone may use */
     public record Spawn(Location location, Optional<String> team) {
@@ -34,12 +34,19 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
     public Arena {
         spawns = List.copyOf(spawns);
         waitingSpot = waitingSpot.map(Location::clone);
+        spectatorSpot = spectatorSpot.map(Location::clone);
         regions = Collections.unmodifiableMap(new LinkedHashMap<>(regions));
     }
 
     @Override
     public Optional<Location> waitingSpot() {
         return waitingSpot.map(Location::clone);
+    }
+
+    /** Where players who are out watch from; without it they spectate where they fell. */
+    @Override
+    public Optional<Location> spectatorSpot() {
+        return spectatorSpot.map(Location::clone);
     }
 
     /**

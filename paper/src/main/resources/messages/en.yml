@@ -237,6 +237,8 @@ arena:
   unknown-team: "%prefix%<red><white>%team%</white> is neither a team (<white>%teams%</white>) nor a role id in lower case letters, digits and dashes."
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: %x%, %y%, %z%</hover></teleport>"
   no-spawns: "%prefix%<gray><white>%arena%</white> has no spawns yet; add one with <white>/mg arena %arena% spawn add</white>."
+  info-spectator-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>spectator spot</white>: %x%, %y%, %z%</hover></teleport>"
+  info-no-spectator-spot: "<gray> - no spectator spot; players who are out spectate where they fell"
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
   # %region%: its name; %from%, %to%: its lowest and highest corner block
   info-region: "<gray> - <white>region %region%</white>: %from% to %to%"

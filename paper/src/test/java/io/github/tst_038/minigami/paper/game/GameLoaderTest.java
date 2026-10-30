@@ -129,13 +129,13 @@ class GameLoaderTest {
         games.register(GAME);
         games.register(HIDE);
         games.register(HILL);
-        arenas.register(new Arena("hills", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(),
+        arenas.register(new Arena("hills", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Optional.empty(),
                 Map.of("hill", new Region("hill", null, 0, 64, 0, 4, 64, 4), "plot-1", new Region("plot-1", null, 0, 64, 0, 4, 64, 4),
                         "plot-2", new Region("plot-2", null, 0, 64, 0, 4, 64, 4), "plot-3", new Region("plot-3", null, 0, 64, 0, 4, 64, 4)),
                 Optional.of(new Region("map", null, 0, 64, 0, 4, 64, 4))));
         features.register(new VoidKillsFactory());
-        arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Map.of(), Optional.empty()));
-        arenas.register(new Arena("empty", null, List.of(), Optional.empty(), Map.of(), Optional.empty()));
+        arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Optional.empty(), Map.of(), Optional.empty()));
+        arenas.register(new Arena("empty", null, List.of(), Optional.empty(), Optional.empty(), Map.of(), Optional.empty()));
     }
 
     private YamlFiles.Loaded<Game> load(String yaml) throws Exception {
@@ -553,7 +553,7 @@ class GameLoaderTest {
     void aGameThatChangesBlocksOnlyPlaysInArenasWithASavedMap() throws Exception {
         games.register(new BuildBattle());
         var hills = arenas.find("hills").orElseThrow();
-        arenas.register(new Arena("unmapped", null, hills.spawns(), Optional.empty(), hills.regions(), Optional.empty()));
+        arenas.register(new Arena("unmapped", null, hills.spawns(), Optional.empty(), Optional.empty(), hills.regions(), Optional.empty()));
 
         var loaded = load("{gametype: build-battle, min-players: 1, max-players: 3, waiting: arena, arenas: [hills, unmapped]}");
 

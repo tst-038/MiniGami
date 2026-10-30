@@ -24,7 +24,7 @@ import java.util.Optional;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn list|add [team]|remove <n>}, {@code waiting set}, {@code region list|<name> set|remove|show|schematic}. Points are where the
+ * {@code spawn list|add [team]|remove <n>}, {@code waiting set}, {@code spectate set|remove}, {@code region list|<name> set|remove|show|schematic}. Points are where the
  * admin stands; regions and maps come from their WorldEdit selection.
  */
 final class ArenaCommands {
@@ -88,7 +88,16 @@ final class ArenaCommands {
                                 .then(Commands.literal("set")
                                         .requires(PLAYER)
                                         .executes(byPlayer((player, context) ->
-                                                editor.set(player, Kind.ARENA, arena(context), "waiting-spot", ConfigLocations.HERE))))));
+                                                editor.set(player, Kind.ARENA, arena(context), "waiting-spot", ConfigLocations.HERE)))))
+                        .then(Commands.literal("spectate")
+                                .executes(help)
+                                .then(Commands.literal("set")
+                                        .requires(PLAYER)
+                                        .executes(byPlayer((player, context) ->
+                                                editor.set(player, Kind.ARENA, arena(context), "spectator-spot", ConfigLocations.HERE))))
+                                .then(Commands.literal("remove")
+                                        .executes(bySender((sender, context) ->
+                                                editor.unset(sender, Kind.ARENA, arena(context), "spectator-spot"))))));
     }
 
     private static String arena(CommandContext<CommandSourceStack> context) {
