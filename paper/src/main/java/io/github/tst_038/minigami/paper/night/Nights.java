@@ -16,13 +16,16 @@ import io.github.tst_038.minigami.paper.match.Opening;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
+import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,8 +51,9 @@ import org.bukkit.plugin.Plugin;
  * and plays its playlist game by game, each as a private match, and the points of every game add up
  * to the night's standings. One night at a time.
  *
- * <p>The night's players are sent to the lobby, when one is set: on joining, on leaving and when the
- * night ends; each game returns them to where they were before it.
+ * <p>A player's own state (items, place, game mode) is saved and cleared when they join the night,
+ * and only given back when they leave it or it ends; between games they wait cleared in the lobby,
+ * when one is set, and each game returns them there.
  *
  * <p>A night lives in memory only: it is gone after a restart or reload, and only a night that
  * ended with points is saved. Not thread-safe: use it from the server thread only.
@@ -88,6 +92,9 @@ public final class Nights implements Listener {
     private final Supplier<IdRegistry<Game>> games;
     private final RunningMatches running;
     private final Supplier<Optional<Location>> lobby;
+    private final PlayerSessions sessions;
+    /** Each joined player's own state, saved when they joined and given back when they leave or the night ends. */
+    private final Map<UUID, AutoCloseable> holds = new LinkedHashMap<>();
     private final PartyService parties;
     private final NightStore store;
     private final NightReport report;
@@ -104,13 +111,14 @@ public final class Nights implements Listener {
      * @param values where the night publishes its state for placeholders
      */
     public Nights(Plugin plugin, Messages messages, Supplier<IdRegistry<NightTemplate>> templates, Supplier<IdRegistry<Game>> games, RunningMatches running,
-            Supplier<Optional<Location>> lobby, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random) {
+            Supplier<Optional<Location>> lobby, PlayerSessions sessions, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random) {
         this.plugin = plugin;
         this.messages = messages;
         this.templates = templates;
         this.games = games;
         this.running = running;
         this.lobby = lobby;
+        this.sessions = sessions;
         this.parties = parties;
         this.store = store;
         this.report = report;
@@ -189,7 +197,7 @@ public final class Nights implements Listener {
             if (!night.players().contains(joining.getUniqueId())) {
                 messages.send(audience(onlinePlayers(night)), "night.player-joined", Placeholder.component("player", joining.name()));
                 night.join(joining.getUniqueId());
-                toLobby(joining);
+                enter(joining);
                 messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
                 // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
                 night.teams().ifPresent(formed -> tellTeam(night, joining));
@@ -454,7 +462,8 @@ public final class Nights implements Listener {
         }
         active.parties.forEach(parties::disband);
         sidebar.hide(online);
-        online.forEach(this::toLobby);
+        online.forEach(this::exit);
+        releaseAll();
         active = null;
         values.clear();
     }
@@ -465,6 +474,49 @@ public final class Nights implements Listener {
             return;
         }
         lobby.get().ifPresent(player::teleport);
+    }
+
+    /** Saves the player's own state and parks them; one who can't be saved (in a match of their own) is just sent to the lobby. */
+    private void enter(Player player) {
+        var id = player.getUniqueId();
+        if (running.find(id).isPresent() || !sessions.canTake(id)) {
+            toLobby(player);
+            return;
+        }
+        holds.put(id, sessions.hold(player, this::park));
+        park(player);
+    }
+
+    /** Cleared, in the lobby when there is one; where players wait between games. */
+    private void park(Player player) {
+        sessions.prepare(player);
+        lobby.get().ifPresent(player::teleport);
+        sessions.keepGameMode(player);
+    }
+
+    /** Gives the player their own state back; one that was never saved is sent to the lobby as before. */
+    private void exit(Player player) {
+        var hold = holds.remove(player.getUniqueId());
+        if (hold == null) {
+            toLobby(player);
+            return;
+        }
+        release(player.getUniqueId(), hold);
+    }
+
+    /** Gives back the state of everyone still held, for the night's end and the plugin's shutdown; players offline get theirs when they join. */
+    public void releaseAll() {
+        List.copyOf(holds.entrySet()).forEach(entry -> release(entry.getKey(), entry.getValue()));
+        holds.clear();
+    }
+
+    private void release(UUID id, AutoCloseable hold) {
+        try {
+            hold.close();
+        } catch (Exception e) {
+            // The snapshot stays on disk, so the player gets their state back on their next join.
+            plugin.getLogger().log(Level.SEVERE, "Could not restore the state of " + id, e);
+        }
     }
 
     private void announceNext() {
@@ -483,7 +535,7 @@ public final class Nights implements Listener {
         if (active.game != null && active.game.isMember(id)) {
             active.game.leave(player);
         }
-        toLobby(player);
+        exit(player);
         messages.send(audience(onlinePlayers(night)), "night.player-left", Placeholder.component("player", player.name()));
         publish();
         return true;
