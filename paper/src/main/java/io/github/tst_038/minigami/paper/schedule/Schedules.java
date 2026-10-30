@@ -76,15 +76,21 @@ public final class Schedules {
         }
     }
 
+    /**
+     * A schedule's game open to join. Its match is let go when everyone in it leaves before it
+     * starts, and opened again by whoever answers the call next, so the call lasts its full time.
+     */
     private static final class Call {
         final Schedule schedule;
-        final LiveMatch match;
+        final Variant variant;
+        LiveMatch match;
         final Instant remindAt;
         final Instant closesAt;
         boolean reminded;
 
         Call(Schedule schedule, LiveMatch match, Instant opened) {
             this.schedule = schedule;
+            this.variant = match.variant();
             this.match = match;
             this.remindAt = opened.plusSeconds(schedule.joinSeconds() / 2);
             this.closesAt = opened.plusSeconds(schedule.joinSeconds());
@@ -201,8 +207,8 @@ public final class Schedules {
 
     private void announce(Call call, String key) {
         long seconds = Math.max(0, Duration.between(clock.instant(), call.closesAt).toSeconds());
-        messages.send(Audience.audience(couldJoin()), key, Placeholder.parsed("name", call.schedule.name()), Placeholder.parsed("game", call.match.variant().name()),
-                Formatter.number("seconds", seconds), Formatter.number("needed", call.match.variant().minPlayers()),
+        messages.send(Audience.audience(couldJoin()), key, Placeholder.parsed("name", call.schedule.name()), Placeholder.parsed("game", call.variant.name()),
+                Formatter.number("seconds", seconds), Formatter.number("needed", call.variant.minPlayers()),
                 Placeholder.styling("join", ClickEvent.runCommand("/mg schedule join")));
     }
 
@@ -210,12 +216,16 @@ public final class Schedules {
         var now = clock.instant();
         for (var iterator = calls.iterator(); iterator.hasNext(); ) {
             var call = iterator.next();
-            if (call.match.match().isFinished() || !call.match.isJoinable()) {
+            if (call.match != null && call.match.match().isFinished()) {
+                // Ended before it started, so its players all left or staff stopped it.
+                call.match = null;
+            }
+            if (call.match != null && !call.match.isJoinable()) {
                 iterator.remove();
             } else if (!now.isBefore(call.closesAt)) {
                 iterator.remove();
                 // A match whose start is counting down is let to start; its players are enough.
-                if (call.match.startsIn().isEmpty()) {
+                if (call.match != null && call.match.startsIn().isEmpty()) {
                     messages.send(call.match.audience(), "schedule.not-enough-players", Placeholder.parsed("game", call.match.variant().name()));
                     call.match.stop();
                 }
@@ -226,14 +236,23 @@ public final class Schedules {
         }
     }
 
-    /** {@code /mg schedule join}: joins the newest call that is open. */
+    /** {@code /mg schedule join}: joins the newest call that is open, opening its match again if everyone had left it. */
     public void join(Player player) {
-        var call = calls.reversed().stream().filter(open -> !open.match.match().isFinished() && open.match.isJoinable()).findFirst();
-        if (call.isEmpty()) {
+        var open = calls.reversed().stream().filter(call -> call.match == null || call.match.match().isFinished() || call.match.isJoinable()).findFirst();
+        if (open.isEmpty()) {
             messages.send(player, "schedule.no-call");
             return;
         }
-        publicMatches.join(player, call.get().match);
+        var call = open.get();
+        if (call.match == null || call.match.match().isFinished()) {
+            var match = publicMatches.open(call.variant);
+            if (match.isEmpty()) {
+                messages.send(player, "schedule.no-arena", Placeholder.parsed("game", call.variant.name()));
+                return;
+            }
+            call.match = match.get();
+        }
+        publicMatches.join(player, call.match);
     }
 
     public void list(CommandSender sender) {

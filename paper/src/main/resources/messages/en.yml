@@ -522,6 +522,8 @@ schedule:
   # To the players in the match when the call closed before enough joined. %game%
   not-enough-players: "%prefix%<red>Not enough players joined %game%<red> in time."
   no-call: "%prefix%<red>No scheduled game is open to join right now."
+  # When the call's match emptied and no arena is free to open it again. %game%
+  no-arena: "%prefix%<red>No arena is free for %game%<red> right now; try again in a moment."
   # To hosts when a time came and no game fits. %players%: how many could join
   skipped: "%prefix%<gray>%name%<gray> skipped its game: none fits %players% players who could join."
   opened: "%prefix%<green>%name%<green> opened its next game."
