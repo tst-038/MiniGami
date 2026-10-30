@@ -17,10 +17,19 @@ dependencies:
       join-classpath: true
 permissions:
   minigami.admin:
-    description: Set up arenas, games and the config, and manage matches and players
+    description: Staff rank. Set up arenas, games, kits and the config, reload, and restore players; plus everything a mod can
     default: op
     children:
+      minigami.mod: true
+  minigami.mod:
+    description: Staff rank. Start, stop, pause and change matches, and run game nights; plus everything a helper can
+    default: op
+    children:
+      minigami.helper: true
       minigami.host: true
+  minigami.helper:
+    description: Staff rank. List and look at matches, and kick players from matches and game nights
+    default: op
   minigami.host:
     description: Run game nights with /mg night
     default: op

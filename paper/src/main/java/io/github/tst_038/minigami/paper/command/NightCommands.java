@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.command;
 
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
+import static io.github.tst_038.minigami.paper.command.Nodes.HELPER;
 import static io.github.tst_038.minigami.paper.command.Nodes.HOST;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
@@ -58,7 +59,7 @@ final class NightCommands {
                 .then(Commands.literal("pause").requires(HOST).executes(bySender((sender, context) -> nights.pause(sender))))
                 .then(Commands.literal("resume").requires(HOST).executes(bySender((sender, context) -> nights.resume(sender))))
                 .then(Commands.literal("end").requires(HOST).executes(bySender((sender, context) -> nights.end(sender))))
-                .then(Commands.literal("kick").requires(HOST)
+                .then(Commands.literal("kick").requires(HOST.or(HELPER))
                         .then(Commands.argument("player", ArgumentTypes.player())
                                 .executes(bySender((sender, context) -> nights.kick(sender, player(context))))))
                 .then(Commands.literal("list").requires(ADMIN).executes(bySender((sender, context) -> info.listNights(sender))))

@@ -19,9 +19,12 @@ import org.bukkit.entity.Player;
 /** Small building blocks shared by the command classes. */
 final class Nodes {
 
-    static final String ADMIN_PERMISSION = "minigami.admin";
-
-    static final Predicate<CommandSourceStack> ADMIN = source -> source.getSender().hasPermission(ADMIN_PERMISSION);
+    // Staff ranks, each granting the ones below it: admin > mod > helper.
+    static final Predicate<CommandSourceStack> ADMIN = source -> source.getSender().hasPermission("minigami.admin");
+    /** Runs matches and game nights. */
+    static final Predicate<CommandSourceStack> MOD = source -> source.getSender().hasPermission("minigami.mod");
+    /** Looks at matches and takes players out of them. */
+    static final Predicate<CommandSourceStack> HELPER = source -> source.getSender().hasPermission("minigami.helper");
     /** Who runs game nights; admins can too. */
     static final Predicate<CommandSourceStack> HOST = source -> source.getSender().hasPermission(Nights.HOST_PERMISSION);
     static final Predicate<CommandSourceStack> PLAYER = source -> source.getExecutor() instanceof Player;

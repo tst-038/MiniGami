@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.command;
 
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
+import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
@@ -37,7 +38,7 @@ import org.bukkit.entity.Player;
 /**
  * The {@code /mg} command. Every part follows one pattern: {@code /mg <thing> create …} and
  * {@code /mg <thing> <id> <action>}; typing a part without the rest lists what can follow.
- * Admin parts are hidden from players without {@code minigami.admin}.
+ * Staff parts are hidden from players without the rank they need: {@code minigami.helper}, {@code .mod} or {@code .admin}.
  */
 public final class GamesCommand {
 
@@ -90,7 +91,7 @@ public final class GamesCommand {
                 .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> running.leave(player))))
                 .then(StatsCommands.stats(stats, messages))
                 .then(StatsCommands.top(stats))
-                .then(Commands.literal("start").requires(ADMIN).executes(bySender((sender, context) -> running.forceStart(sender))))
+                .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
                 .then(GameCommands.node(editor, info, help))
                 .then(ArenaCommands.node(editor, arenas, info, help))
