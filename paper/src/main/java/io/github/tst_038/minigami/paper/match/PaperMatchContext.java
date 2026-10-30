@@ -107,6 +107,11 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public boolean endsMatch() {
+        return match.match().laterPhases().isEmpty() || match.match().scope().isClosed();
+    }
+
+    @Override
     public void eliminate(Player player) {
         match.eliminate(player);
     }

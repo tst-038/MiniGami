@@ -69,6 +69,14 @@ public interface MatchContext {
     Scope scope();
 
     /**
+     * Whether the match is over when this phase ends: it is the last phase, or the match is being
+     * stopped. For cleanup that must outlast the earlier phases, such as removing what players made.
+     */
+    default boolean endsMatch() {
+        return false;
+    }
+
+    /**
      * Puts a participant out at once, without dying, as losing their last life would: they join the
      * role their role sends them to on the spot (see {@link RoleSwitchEvent}), else they spectate.
      * Ignored for one already out, and before the start or after the result.
