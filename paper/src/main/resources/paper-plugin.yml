@@ -2,6 +2,7 @@ name: MiniGami
 version: '${version}'
 main: io.github.tst_038.minigami.paper.MiniGamiPlugin
 description: Multi-game minigame engine
+authors: [tst-038]
 api-version: '26.3'
 dependencies:
   server:
