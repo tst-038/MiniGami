@@ -128,6 +128,8 @@ public record PlayerSnapshot(
         player.setRemainingAir(remainingAir);
         player.setFallDistance(fallDistance);
         player.clearActivePotionEffects();
+        // A match may have shown its own border; the world's is back.
+        player.setWorldBorder(null);
         for (SavedEffect effect : effects) {
             var type = Registry.EFFECT.get(Objects.requireNonNull(NamespacedKey.fromString(effect.type())));
             if (type != null) {

@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
+import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.scope.Scope;
@@ -698,7 +699,7 @@ public final class LiveMatch {
         }
         var id = player.getUniqueId();
         var playing = !isJoinable() && match.result().isEmpty();
-        if (playing && match.roster().find(id).filter(Participant::isAlive).isPresent() && lives.die(id)) {
+        if (playing && livesCount() && match.roster().find(id).filter(Participant::isAlive).isPresent() && lives.die(id)) {
             // Dying clears their items and effects; respawning puts them at their spawns with the new role's kit, or spectating.
             goOut(player);
         }
@@ -749,6 +750,12 @@ public final class LiveMatch {
         match.eliminate(id);
         hud.out(player);
         return false;
+    }
+
+    /** Whether the match is in or past the phase from which deaths cost a life. */
+    private boolean livesCount() {
+        var phases = variant.gametype().phases().stream().map(Phase::id).toList();
+        return variant.gametype().livesFrom().map(from -> match.currentPhase().map(phase -> phases.indexOf(phase.id()) >= phases.indexOf(from)).orElse(false)).orElse(true);
     }
 
     /** The lives of the player's role if it sets its own, else the variant's. */

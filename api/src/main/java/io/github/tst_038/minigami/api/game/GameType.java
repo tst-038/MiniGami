@@ -74,4 +74,12 @@ public interface GameType {
     default int lives() {
         return 0;
     }
+
+    /**
+     * The phase from which a death costs a life, such as the fight after a phase to prepare in; deaths
+     * before it are free. Empty when every death after the start counts.
+     */
+    default Optional<String> livesFrom() {
+        return Optional.empty();
+    }
 }
