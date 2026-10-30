@@ -53,4 +53,17 @@ class PlayerSnapshotTest {
     void rejectsTextWithoutItems() {
         assertThrows(IllegalArgumentException.class, () -> PlayerSnapshot.fromYaml("version: 1\n"));
     }
+
+    @Test
+    void movedOnlyChangesWhereThePlayerIsPutBack() {
+        var snapshot = sample();
+        var home = new SavedLocation(UUID.randomUUID(), 1, 2, 3, 4f, 5f);
+
+        var moved = snapshot.withLocation(home);
+
+        assertEquals(home, moved.location());
+        assertEquals(snapshot.withLocation(snapshot.location()), snapshot);
+        assertEquals(snapshot.items(), moved.items());
+        assertEquals(snapshot.effects(), moved.effects());
+    }
 }

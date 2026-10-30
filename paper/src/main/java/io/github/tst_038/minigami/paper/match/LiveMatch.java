@@ -48,7 +48,6 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.ExperienceOrb;
@@ -277,6 +276,7 @@ public final class LiveMatch {
             saveState(player);
             prepare(player);
             player.teleport(waitingSpot.get());
+            sessions.keepGameMode(player);
         }
         match.roster().add(id);
         members.add(id);
@@ -408,6 +408,7 @@ public final class LiveMatch {
             waitingSpot.ifPresent(spot -> {
                 prepare(player);
                 player.teleport(spot);
+                sessions.keepGameMode(player);
             });
         } else {
             prepare(player);
@@ -422,6 +423,8 @@ public final class LiveMatch {
         }
         messages.send(audience(), "match.back", Placeholder.component("player", player.name()));
         plugin.getServer().getPluginManager().callEvent(new MatchRejoinEvent(player));
+        // The features set the game mode they want in the event, after the teleport; a world manager may still change it.
+        sessions.keepGameMode(player);
     }
 
     /**
@@ -811,18 +814,6 @@ public final class LiveMatch {
     }
 
     private void prepare(Player player) {
-        player.getInventory().clear();
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setAllowFlight(false);
-        player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue());
-        player.setFoodLevel(20);
-        player.setSaturation(5);
-        player.setExhaustion(0);
-        player.setLevel(0);
-        player.setExp(0);
-        player.clearActivePotionEffects();
-        player.setFireTicks(0);
-        player.setFreezeTicks(0);
-        player.setFallDistance(0);
+        sessions.prepare(player);
     }
 }
