@@ -491,7 +491,6 @@ public final class Nights implements Listener {
     private void park(Player player) {
         sessions.prepare(player);
         lobby.get().ifPresent(player::teleport);
-        sessions.keepGameMode(player);
     }
 
     /** Gives the player their own state back; one that was never saved is sent to the lobby as before. */

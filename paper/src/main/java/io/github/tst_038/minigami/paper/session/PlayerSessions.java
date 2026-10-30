@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.session;
 
+import io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,8 +41,8 @@ public final class PlayerSessions implements Listener {
 
     /** Players who are held by a game night: their own state is saved once, and matches only park them. Server thread only. */
     private final Map<UUID, Consumer<Player>> held = new HashMap<>();
-    /** Where players who quit with their state restored belong; other plugins may move them at their next join. Server thread only. */
-    private final Map<UUID, PlayerSnapshot.SavedLocation> homes = new HashMap<>();
+    /** Where players who quit with their state restored belong; read off the server thread at their next login. */
+    private final Map<UUID, PlayerSnapshot.SavedLocation> homes = new ConcurrentHashMap<>();
     /** Players whose quit is being handled: their restore can't be trusted to move them, as the connection is going away. */
     private final Set<UUID> quitting = new HashSet<>();
 
@@ -120,7 +121,7 @@ public final class PlayerSessions implements Listener {
 
     /**
      * Clears what a match or night puts a player through: items, effects, health and the game mode.
-     * Call it before teleporting, and {@link #keepGameMode} after.
+     * Call it before teleporting.
      */
     public void prepare(Player player) {
         player.getInventory().clear();
@@ -136,27 +137,6 @@ public final class PlayerSessions implements Listener {
         player.setFireTicks(0);
         player.setFreezeTicks(0);
         player.setFallDistance(0);
-    }
-
-    /**
-     * Sets the player's game mode again a moment from now if another plugin changed it, as world
-     * managers do when a player changes world or joins. Use it after teleporting and setting the mode.
-     */
-    public void keepGameMode(Player player) {
-        var mode = player.getGameMode();
-        player.getScheduler().runDelayed(plugin, task -> {
-            if (player.getGameMode() != mode) {
-                player.setGameMode(mode);
-            }
-        }, null, 2);
-    }
-
-    /** Sends a player who quit mid-match back to where they were before it, if nothing took them back in. Call a few ticks after they joined. */
-    public void goHome(Player player) {
-        var home = homes.remove(player.getUniqueId());
-        if (home != null && !active.containsKey(player.getUniqueId())) {
-            player.teleport(home.resolve(plugin.getServer()));
-        }
     }
 
     /** Whether the player is in a match with their state saved; it comes back when they leave, so staff mustn't put any back. */
@@ -203,12 +183,36 @@ public final class PlayerSessions implements Listener {
     // Around the matches' own handler (normal priority), so their restore knows the player is quitting.
     @EventHandler(priority = EventPriority.LOW)
     public void onQuitStart(PlayerQuitEvent event) {
+        homes.remove(event.getPlayer().getUniqueId());
         quitting.add(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuitEnd(PlayerQuitEvent event) {
         quitting.remove(event.getPlayer().getUniqueId());
+    }
+
+    /** Players who quit, or whose state is waiting on disk, log in where they belong. */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSpawnLocation(AsyncPlayerSpawnLocationEvent event) {
+        var id = event.getConnection().getProfile().getId();
+        if (id == null) {
+            return;
+        }
+        var home = homes.get(id);
+        if (home == null) {
+            var snapshot = recovered.get(id);
+            home = snapshot == null ? null : snapshot.location();
+        }
+        if (home != null) {
+            event.setSpawnLocation(home.resolve(plugin.getServer()));
+        }
+    }
+
+    // Once a rejoin has had its say, where they belong is no longer needed.
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoinEnd(PlayerJoinEvent event) {
+        homes.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -222,7 +226,6 @@ public final class PlayerSessions implements Listener {
         held.remove(player.getUniqueId());
         try {
             restore(player, snapshot);
-            homes.put(player.getUniqueId(), snapshot.location());
         } catch (RuntimeException e) {
             unrecoverable.add(player.getUniqueId());
             logger.log(Level.SEVERE, "Could not restore the saved state of " + player.getName() + "; its file is kept", e);

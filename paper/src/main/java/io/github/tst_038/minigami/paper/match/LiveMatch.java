@@ -311,7 +311,6 @@ public final class LiveMatch {
             saveState(player);
             prepare(player);
             player.teleport(waitingSpot.get());
-            sessions.keepGameMode(player);
         }
         match.roster().add(id);
         members.add(id);
@@ -443,7 +442,6 @@ public final class LiveMatch {
             waitingSpot.ifPresent(spot -> {
                 prepare(player);
                 player.teleport(spot);
-                sessions.keepGameMode(player);
             });
         } else {
             prepare(player);
@@ -458,8 +456,6 @@ public final class LiveMatch {
         }
         messages.send(audience(), "match.back", Placeholder.component("player", player.name()));
         plugin.getServer().getPluginManager().callEvent(new MatchRejoinEvent(player));
-        // The features set the game mode they want in the event, after the teleport; a world manager may still change it.
-        sessions.keepGameMode(player);
     }
 
     /**
