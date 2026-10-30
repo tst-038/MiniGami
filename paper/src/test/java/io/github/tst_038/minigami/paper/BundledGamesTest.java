@@ -31,7 +31,7 @@ class BundledGamesTest {
     }
 
     @Test
-    void everyBundledGameLoadsOnAFreshInstall() throws Exception {
+    void everyExampleGameLoadsOnTheFirstStart() throws Exception {
         var gametypes = new IdRegistry<GameType>(GameType::id);
         BuiltIns.gametypes().forEach(gametypes::register);
         var features = new IdRegistry<FeatureFactory>(FeatureFactory::id);
@@ -56,7 +56,7 @@ class BundledGamesTest {
         var arenas = new IdRegistry<Arena>(Arena::id);
         arenas.register(new Arena("example", null, List.of(), Optional.empty(), Map.of(), Optional.empty()));
         var files = new HashMap<String, YamlConfiguration>();
-        for (var file : BuiltIns.GAME_FILES) {
+        for (var file : MiniGamiPlugin.EXAMPLE_GAMES) {
             files.put(file.replace(".yml", ""), resource("games/" + file));
         }
         var messages = resource("messages/en.yml");
@@ -65,6 +65,6 @@ class BundledGamesTest {
                 .load(new YamlFiles("games", files, List.of()), arenas, false, resource("config.yml").getConfigurationSection("hud"), messages::isString);
 
         assertEquals(List.of(), loaded.problems());
-        assertEquals(BuiltIns.GAME_FILES.size(), loaded.entries().ids().size());
+        assertEquals(MiniGamiPlugin.EXAMPLE_GAMES.size(), loaded.entries().ids().size());
     }
 }

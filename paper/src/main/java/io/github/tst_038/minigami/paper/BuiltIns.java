@@ -29,12 +29,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-/** The game types, features, stat groups and example games that ship with the plugin. */
+/** The game types, features and stat groups that ship with the plugin. */
 final class BuiltIns {
-
-    /** The games written to {@code games/} on a fresh install; the game night and schedule examples play some of them. */
-    static final List<String> GAME_FILES = List.of("void-fall.yml", "spleef.yml", "king-of-the-hill.yml", "domination.yml", "team-deathmatch.yml",
-            "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml");
 
     private BuiltIns() {
     }
