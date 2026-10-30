@@ -169,6 +169,11 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
+    public List<Region> regions(String group) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Messages messages() {
         return new Messages(texts, Logger.getAnonymousLogger());
     }

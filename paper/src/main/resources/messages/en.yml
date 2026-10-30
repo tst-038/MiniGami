@@ -323,6 +323,8 @@ info:
   gametype-regions: "<gray> Its arenas need the regions <white>%regions%</white>."
   # %region%: the name every team's region starts with
   gametype-region-per-team: "<gray> Its arenas need a region per team: <white>%region%-1</white>, <white>%region%-2</white>, and so on."
+  # %group%: the name the regions start with
+  gametype-region-group: "<gray> Its arenas need one or more <white>%group%</white> regions, each named <white>%group%</white> or <white>%group%-</white>anything, such as <white>%group%-north</white>."
   phase-timed: "<gray> - <white>%phase%</white> for %seconds% s"
   phase-untimed: "<gray> - <white>%phase%</white> until it ends"
   feature: "%prefix%<gold>%id%</gold><gray>, set per phase under <white>features.%phase%.%id%</white>:"

@@ -50,4 +50,12 @@ class RegionTest {
     void theMinimumCornerMustComeFirst() {
         assertThrows(IllegalArgumentException.class, () -> new Region("hill", world, 1, 0, 0, 0, 0, 0));
     }
+
+    @Test
+    void aGroupHasItsOwnNameAndThoseStartingWithItAndADash() {
+        assertTrue(new Region("wall", world, 0, 0, 0, 0, 0, 0).isIn("wall"));
+        assertTrue(new Region("wall-north", world, 0, 0, 0, 0, 0, 0).isIn("wall"));
+        assertFalse(new Region("walls", world, 0, 0, 0, 0, 0, 0).isIn("wall"));
+        assertFalse(new Region("hill", world, 0, 0, 0, 0, 0, 0).isIn("wall"));
+    }
 }

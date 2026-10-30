@@ -21,6 +21,14 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
                 Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2));
     }
 
+    /**
+     * Whether the region belongs to a group of regions that an arena can have any number of: its name
+     * is the group's, or starts with it and a dash, as {@code wall}, {@code wall-north} and {@code wall-2} do for {@code wall}.
+     */
+    public boolean isIn(String group) {
+        return id.equals(group) || id.startsWith(group + "-");
+    }
+
     /** Whether the block at this location is part of the region. */
     public boolean contains(Location location) {
         int x = location.getBlockX();

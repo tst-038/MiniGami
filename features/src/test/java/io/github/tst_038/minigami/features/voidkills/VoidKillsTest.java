@@ -181,5 +181,10 @@ class VoidKillsTest {
         public void replace(Region region) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public List<Region> regions(String group) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

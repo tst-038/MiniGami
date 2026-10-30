@@ -347,7 +347,7 @@ public final class GameLoader {
     }
 
     /**
-     * @param game checks its arenas have the regions it needs; may be null when unknown
+     * @param game checks its arenas have the regions and region groups it needs; may be null when unknown
      * @param mostTeams how many teams a match can have, for the game's region per team
      */
     private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry, GameType game, int mostTeams) {
@@ -362,13 +362,17 @@ public final class GameLoader {
             var arena = registry.find(id);
             if (arena.isEmpty()) {
                 config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids()));
-            } else if (arena.get().isPlayable() && arena.get().regions().keySet().containsAll(needed)) {
+            } else if (arena.get().isPlayable() && arena.get().regions().keySet().containsAll(needed) && hasGroups(arena.get(), game)) {
                 arenas.add(arena.get());
             }
             // Left out without a problem: an arena without spawns or the game's regions is still being set up,
             // and a problem would fail the reload it needs to get them.
         }
         return arenas;
+    }
+
+    private static boolean hasGroups(Arena arena, GameType game) {
+        return game == null || game.regionGroups().stream().allMatch(group -> arena.regions().values().stream().anyMatch(region -> region.isIn(group)));
     }
 
     private Map<String, List<Feature>> features(ConfigReader config, GameType game) {

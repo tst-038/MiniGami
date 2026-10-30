@@ -51,6 +51,9 @@ public interface MatchContext {
      */
     Optional<Region> region(String name);
 
+    /** The arena's regions of a group the game asks for, such as every {@code wall-…}; see {@link Region#isIn}. */
+    List<Region> regions(String group);
+
     /**
      * Replaces all blocks of one of the arena's regions in one go, through WorldEdit so a big region
      * doesn't lag the server: with the schematic the arena keeps for that region, or with air if it has

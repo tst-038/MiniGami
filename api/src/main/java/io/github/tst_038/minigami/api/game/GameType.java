@@ -63,6 +63,15 @@ public interface GameType {
     }
 
     /**
+     * Groups of regions of which each arena has as many as it likes, at least one: {@code wall} means
+     * {@code wall}, {@code wall-north}, {@code wall-2} and so on (see {@link io.github.tst_038.minigami.api.region.Region#isIn}).
+     * The arena decides how many there are and where. Empty when the game needs none.
+     */
+    default List<String> regionGroups() {
+        return List.of();
+    }
+
+    /**
      * The stats the game's own code counts with {@link io.github.tst_038.minigami.api.feature.MatchContext#count},
      * such as the time a player held the hill. Every game of this type keeps them, next to its stat groups.
      */

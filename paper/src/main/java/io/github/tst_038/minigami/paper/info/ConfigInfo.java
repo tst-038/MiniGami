@@ -250,6 +250,7 @@ public final class ConfigInfo {
             messages.send(sender, "info.gametype-regions", Placeholder.unparsed("regions", String.join(", ", game.regions())));
         }
         game.regionPerTeam().ifPresent(region -> messages.send(sender, "info.gametype-region-per-team", Placeholder.unparsed("region", region)));
+        game.regionGroups().forEach(group -> messages.send(sender, "info.gametype-region-group", Placeholder.unparsed("group", group)));
         settings(sender, settingsRead(game::configure));
         usedBy(sender, gamesOfType(id));
     }

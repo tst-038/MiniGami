@@ -118,6 +118,11 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public List<Region> regions(String group) {
+        return match.arena().regions().values().stream().filter(region -> region.isIn(group)).toList();
+    }
+
+    @Override
     public void replace(Region region) {
         match.replace(region);
     }
