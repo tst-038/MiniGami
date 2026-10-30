@@ -24,6 +24,7 @@ import java.util.stream.Stream;
  * @param lives how many deaths put a player out; 0 means they always respawn
  * @param messages its own wording by full message key, over the shared messages
  * @param teams empty when everyone plays on their own or it has roles
+ * @param teamSpawns whether a team starts and respawns at one spawn or spread over all; spawns tagged for a team always go to it
  * @param roles in the order they are handed out; empty when it has none
  * @param quit what quitting a running match does to a player still in it
  * @param features feature instances are shared by every match of it, so they keep no match state themselves
@@ -31,7 +32,7 @@ import java.util.stream.Stream;
  * @param hud what players see of a match next to chat
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
 
     public Variant {
         id.ifPresent(variant -> {

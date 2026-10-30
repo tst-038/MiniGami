@@ -9,6 +9,8 @@ max-players: 16
 # Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 teams: { count: 4 }
+# Teammates start and respawn together in their quarter (together is the default; spread: every player takes the next spawn).
+team-spawns: together
 prepare-seconds: 900
 # Closes the border region in to 20 blocks over 5 minutes; half a heart a second outside it.
 border: { end-size: 20, shrink-seconds: 300, damage: 1 }

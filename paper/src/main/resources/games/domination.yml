@@ -11,6 +11,8 @@ max-players: 8
 # Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 teams: { count: 2 }
+# Players spread over all spawns instead of a team sharing one (the default is together).
+team-spawns: spread
 play-seconds: 300
 points-to-win: 600
 arenas: [example]

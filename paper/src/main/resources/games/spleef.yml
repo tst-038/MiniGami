@@ -39,6 +39,7 @@ variants:
     name: "<aqua>Spleef Duos"
     min-players: 4
     teams: { size: 2 }
+    team-spawns: spread   # players spread over all spawns instead of a team sharing one
   lives:
     # A fall sends you back to a spawn until your last life is gone.
     name: "<aqua>Spleef <gray>(3 lives)"
