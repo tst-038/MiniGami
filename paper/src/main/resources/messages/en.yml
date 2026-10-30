@@ -116,9 +116,11 @@ hide-and-seek:
 domination:
   # A team, or a player without teams, took a capture point. %team%: its name, %point%: the point's name
   taken: "%prefix%%team% <gray>took %point%<gray>!"
-  # Action bar every second: one of these per point, between separators. %point%: its name, %holder%: who owns it, or one of the two below
+  # Action bar every second: one of these per point, between separators. %point%: its name, %holder%: who owns it, or one of the three below
   point: "%point% %holder%"
   separator: "<dark_gray>  |  "
+  # A team stands on it alone to take it. %team%: its name, %seconds% of %needed%
+  capturing: "%team% <gray>%seconds%/%needed%s"
   contested: "<red>contested"
   free: "<gray>free"
 the-wall:

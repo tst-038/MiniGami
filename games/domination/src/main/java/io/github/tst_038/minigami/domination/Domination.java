@@ -16,27 +16,27 @@ import java.util.Set;
  * Hold the capture points: each is an arena region, taken by a team that stands on it alone, and
  * scores its owner a point every second. Most points when time is up wins. Players always respawn.
  * Without teams in the game, everyone plays for themselves. King of the hill is this game with one
- * point that is only owned while stood on.
+ * point.
  *
  * <p>Game settings: {@code capture-points}, the regions to capture with the name of each, such as
- * {@code { a: "<red>A", b: "<red>B" }}; optional are {@code keep-captured} (true), whether a point stays
- * its owner's once they step off, until another team takes it; {@code play-seconds} (300); and
+ * {@code { a: "<red>A", b: "<red>B" }}; optional are {@code capture-seconds} (5), how long a team must
+ * stand on a point alone to take it; {@code play-seconds} (300); and
  * {@code points-to-win}, which ends the match as soon as a team has that many points (none).
  */
 public final class Domination implements GameType {
 
     private final Map<String, String> points;
-    private final boolean keepCaptured;
+    private final int captureSeconds;
     private final int playSeconds;
     private final int pointsToWin;
 
     public Domination() {
-        this(Map.of(), true, 300, 0);
+        this(Map.of(), 5, 300, 0);
     }
 
-    private Domination(Map<String, String> points, boolean keepCaptured, int playSeconds, int pointsToWin) {
+    private Domination(Map<String, String> points, int captureSeconds, int playSeconds, int pointsToWin) {
         this.points = points;
-        this.keepCaptured = keepCaptured;
+        this.captureSeconds = captureSeconds;
         this.playSeconds = playSeconds;
         this.pointsToWin = pointsToWin;
     }
@@ -58,7 +58,7 @@ public final class Domination implements GameType {
 
     @Override
     public Map<String, List<Feature>> features() {
-        return Map.of("playing", List.of(new CapturePoints(points, keepCaptured)), "ending", List.of(new AnnounceWinner()));
+        return Map.of("playing", List.of(new CapturePoints(points, captureSeconds)), "ending", List.of(new AnnounceWinner()));
     }
 
     @Override
@@ -78,7 +78,7 @@ public final class Domination implements GameType {
             config.problem("capture-points", "needs at least one region, with its name");
         }
         return new Domination(named,
-                config.has("keep-captured") ? config.bool("keep-captured") : keepCaptured,
+                config.has("capture-seconds") ? config.integer("capture-seconds", 1, 600) : captureSeconds,
                 config.has("play-seconds") ? config.integer("play-seconds", 10, 3600) : playSeconds,
                 config.has("points-to-win") ? config.integer("points-to-win", 1, 10000) : pointsToWin);
     }
