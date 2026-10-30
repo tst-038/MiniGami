@@ -69,7 +69,7 @@ public final class RunningMatches implements Listener {
     }
 
     private LiveMatch open(Variant variant, Arena arena, Opening opening) {
-        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values);
+        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values, maps);
         // Registered first so it runs last, once the match has let go of the arena.
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {

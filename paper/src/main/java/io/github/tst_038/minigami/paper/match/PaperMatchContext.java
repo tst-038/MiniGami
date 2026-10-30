@@ -118,6 +118,11 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public void replace(Region region) {
+        match.replace(region);
+    }
+
+    @Override
     public Phase phase() {
         return match.match().currentPhase().orElseThrow(() -> new IllegalStateException("The match is not in a phase"));
     }

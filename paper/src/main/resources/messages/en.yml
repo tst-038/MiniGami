@@ -251,6 +251,8 @@ arena:
     unknown: "%prefix%<red><white>%arena%</white> has no region <white>%region%</white>."
     none: "%prefix%<gray><white>%arena%</white> has no regions yet; select one with WorldEdit and save it with <white>/mg arena %arena% region %name% set</white>."
     showing: "%prefix%<gray>Showing region <white>%region%</white> for %seconds% seconds."
+    # What a game may turn the region into, such as a crumbled wall; pasted with its lowest corner on the region's
+    schematic-saved: "%prefix%<green>Saved what region <white>%region%</white> turns into. Make it the region's size."
   # The arena's map: a WorldEdit schematic pasted back after each match and at startup
   map:
     no-worldedit: "%prefix%<red>This needs WorldEdit or FastAsyncWorldEdit."

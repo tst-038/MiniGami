@@ -176,5 +176,10 @@ class VoidKillsTest {
         public void endPhase() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void replace(Region region) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

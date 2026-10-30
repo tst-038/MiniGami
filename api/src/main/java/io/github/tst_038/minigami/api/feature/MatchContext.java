@@ -51,6 +51,14 @@ public interface MatchContext {
      */
     Optional<Region> region(String name);
 
+    /**
+     * Replaces all blocks of one of the arena's regions in one go, through WorldEdit so a big region
+     * doesn't lag the server: with the schematic the arena keeps for that region, or with air if it has
+     * none. Only for a feature that {@linkplain Feature#changesBlocks() changes blocks}, so the arena's
+     * map puts them back after the match.
+     */
+    void replace(Region region);
+
     /** The phase the match is in, which for a feature is the phase it runs in. */
     Phase phase();
 

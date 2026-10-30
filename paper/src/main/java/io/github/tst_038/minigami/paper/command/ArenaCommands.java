@@ -24,7 +24,7 @@ import java.util.Optional;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn list|add [team]|remove <n>}, {@code waiting set}, {@code region list|<name> set|remove|show}. Points are where the
+ * {@code spawn list|add [team]|remove <n>}, {@code waiting set}, {@code region list|<name> set|remove|show|schematic}. Points are where the
  * admin stands; regions and maps come from their WorldEdit selection.
  */
 final class ArenaCommands {
@@ -74,7 +74,9 @@ final class ArenaCommands {
                                         .then(Commands.literal("remove")
                                                 .executes(bySender((sender, context) -> arenas.removeRegion(sender, arena(context), string(context, "name")))))
                                         .then(Commands.literal("show").requires(PLAYER)
-                                                .executes(byPlayer((player, context) -> arenas.showRegion(player, arena(context), string(context, "name")))))))
+                                                .executes(byPlayer((player, context) -> arenas.showRegion(player, arena(context), string(context, "name")))))
+                                        .then(Commands.literal("schematic").requires(PLAYER)
+                                                .executes(byPlayer((player, context) -> arenas.saveRegionSchematic(player, arena(context), string(context, "name")))))))
                         .then(Commands.literal("map")
                                 .executes(help)
                                 .then(Commands.literal("save").requires(PLAYER)

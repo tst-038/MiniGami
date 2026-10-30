@@ -164,6 +164,11 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
+    public void replace(Region region) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Messages messages() {
         return new Messages(texts, Logger.getAnonymousLogger());
     }

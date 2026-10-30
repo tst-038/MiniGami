@@ -11,7 +11,9 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import io.github.tst_038.minigami.api.region.Region;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -108,6 +110,24 @@ final class WorldEditMaps {
     CompletableFuture<Void> paste(Region box, Path file) {
         return CompletableFuture.supplyAsync(() -> read(file), offThread)
                 .thenAcceptAsync(clipboard -> paste(box, clipboard), serverThread);
+    }
+
+    /**
+     * Pastes the file as {@link #paste(Region, Path)} does if it exists, else fills the box with air.
+     */
+    CompletableFuture<Void> replace(Region box, Path file) {
+        return CompletableFuture.supplyAsync(() -> Files.exists(file) ? Optional.of(read(file)) : Optional.<Clipboard>empty(), offThread)
+                .thenAcceptAsync(clipboard -> clipboard.ifPresentOrElse(found -> paste(box, found), () -> clear(box)), serverThread);
+    }
+
+    private static void clear(Region box) {
+        var world = BukkitAdapter.adapt(box.world());
+        try (var edit = WorldEdit.getInstance().newEditSession(world)) {
+            edit.setBlocks(new CuboidRegion(world, BlockVector3.at(box.minX(), box.minY(), box.minZ()),
+                    BlockVector3.at(box.maxX(), box.maxY(), box.maxZ())), BlockTypes.AIR.getDefaultState());
+        } catch (WorldEditException e) {
+            throw new CompletionException(e);
+        }
     }
 
     private static void paste(Region box, Clipboard clipboard) {

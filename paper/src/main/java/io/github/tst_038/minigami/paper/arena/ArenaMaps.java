@@ -21,6 +21,9 @@ import org.bukkit.plugin.Plugin;
  * arena's map box to undo what a match changed, also when the server stopped mid-match. An arena takes no new match while its map
  * is being pasted. Without WorldEdit (or FastAsyncWorldEdit) or a saved map, nothing is pasted.
  *
+ * <p>A region can have a schematic of its own in {@code arenas/<id>/regions/<name>.schem}, what a
+ * game turns it into during a match, such as a wall that crumbles.
+ *
  * <p>Call the public methods from the server thread.
  */
 public final class ArenaMaps {
@@ -63,6 +66,41 @@ public final class ArenaMaps {
                     }
                 }),
                 () -> messages.send(player, "arena.map.no-selection"));
+    }
+
+    /**
+     * Saves the player's WorldEdit selection as what the arena's region turns into when a game
+     * replaces it. It is pasted with its lowest corner on the region's, so it should be the region's size.
+     */
+    void saveRegionSchematic(Player player, Arena arena, String region) {
+        if (!canSelect(player, arena)) {
+            return;
+        }
+        worldEdit.get().save(player, regionFile(arena, region)).ifPresentOrElse(
+                saving -> onServerThread(saving.written(), problem -> {
+                    if (problem == null) {
+                        messages.send(player, "arena.region.schematic-saved", Placeholder.unparsed("region", region));
+                    } else {
+                        plugin.getLogger().log(Level.WARNING, "Could not save the schematic of " + arena.id() + "'s region " + region, problem);
+                        messages.send(player, "arena.map.save-failed", Placeholder.unparsed("arena", arena.id()));
+                    }
+                }),
+                () -> messages.send(player, "arena.map.no-selection"));
+    }
+
+    /**
+     * Replaces the region's blocks with its schematic, or with air if it has none, for a match. The
+     * map reset after the match puts them back.
+     *
+     * @throws IllegalStateException without WorldEdit, which a game that changes blocks can't be played without
+     */
+    public void replace(Arena arena, Region region) {
+        var maps = worldEdit.orElseThrow(() -> new IllegalStateException("Replacing a region needs WorldEdit"));
+        onServerThread(maps.replace(region, regionFile(arena, region.id())), problem -> {
+            if (problem != null) {
+                plugin.getLogger().log(Level.WARNING, "Could not replace " + arena.id() + "'s region " + region.id(), problem);
+            }
+        });
     }
 
     /**
@@ -138,6 +176,10 @@ public final class ArenaMaps {
 
     private Path file(Arena arena) {
         return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("map.schem");
+    }
+
+    private Path regionFile(Arena arena, String region) {
+        return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("regions").resolve(region + ".schem");
     }
 
     /** @param done gets the failure, or {@code null} on success */

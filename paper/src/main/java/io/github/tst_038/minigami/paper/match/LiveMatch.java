@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.api.feature.RoleSwitchEvent;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
@@ -16,6 +17,7 @@ import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.hud.MatchHud;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.game.Variant;
@@ -77,6 +79,8 @@ public final class LiveMatch {
     private final Plugin plugin;
     private final Variant variant;
     private final Arena arena;
+    /** Changes the arena's blocks in bulk, and puts them back after the match. */
+    private final ArenaMaps maps;
     private final Opening opening;
     /** Where joining players are sent; empty when they wait in place. */
     private final Optional<Location> waitingSpot;
@@ -112,10 +116,11 @@ public final class LiveMatch {
      * @throws IllegalArgumentException if the variant waits in the lobby and there is none
      */
     public LiveMatch(Plugin plugin, Variant variant, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages,
-            MatchValues values) {
+            MatchValues values, ArenaMaps maps) {
         this.plugin = plugin;
         this.variant = variant;
         this.arena = arena;
+        this.maps = maps;
         this.opening = opening;
         this.waitingSpot = switch (variant.waiting()) {
             case IN_PLACE -> Optional.empty();
@@ -182,6 +187,11 @@ public final class LiveMatch {
 
     public Arena arena() {
         return arena;
+    }
+
+    /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#replace}. */
+    void replace(Region region) {
+        maps.replace(arena, region);
     }
 
     /** Whether anyone may join it through public play; a private match only gets the players its opener puts in. */

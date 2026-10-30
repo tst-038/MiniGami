@@ -90,6 +90,11 @@ public final class ArenaSetup {
                 "arena.region.removed", Placeholder.unparsed("arena", id), Placeholder.unparsed("region", name)));
     }
 
+    /** Saves the player's WorldEdit selection as what the region turns into when a game replaces it. */
+    public void saveRegionSchematic(Player player, String id, String name) {
+        region(player, id, name).ifPresent(region -> maps.saveRegionSchematic(player, arenas.get().find(id).orElseThrow(), name));
+    }
+
     public void regions(CommandSender sender, String id) {
         find(sender, id).ifPresent(arena -> {
             if (arena.regions().isEmpty()) {
