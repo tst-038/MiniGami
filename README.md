@@ -141,7 +141,7 @@ features:
 | `no-hunger` | Keeps hunger full |
 | `one-hit` | One hit kills |
 | `death-items` | What happens to items and XP on death |
-| `countdown` | A respawn countdown |
+| `countdown` | Counts down the last seconds of a timed phase above the hotbar |
 | `freeze` | Players can't move |
 | `effects` | Potion effects |
 

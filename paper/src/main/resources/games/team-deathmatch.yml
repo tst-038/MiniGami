@@ -16,5 +16,5 @@ features:
     death-items: { items: vanish, xp: vanish }
     kit: { items: [iron_sword] }
     no-hunger: {}
-    # Respawning takes 10 seconds.
+    # The last 10 seconds of the fight count down above the hotbar.
     countdown: { seconds: 10 }
