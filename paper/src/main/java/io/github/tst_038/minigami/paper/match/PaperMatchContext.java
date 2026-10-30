@@ -66,11 +66,16 @@ public final class PaperMatchContext implements MatchContext {
      */
     @Override
     public <E extends Event> void on(Class<E> type, Consumer<? super E> handler) {
+        on(type, EventPriority.NORMAL, handler);
+    }
+
+    /** As {@link #on(Class, Consumer)}, at the given priority; the match's own handling uses it to have the last word over other plugins. */
+    public <E extends Event> void on(Class<E> type, EventPriority priority, Consumer<? super E> handler) {
         if (!EventOwnership.isSupported(type)) {
             throw new IllegalArgumentException(type.getName() + " can't be traced to a match; use a player, entity or block event");
         }
         var listener = new Listener() {};
-        plugin.getServer().getPluginManager().registerEvent(type, listener, EventPriority.NORMAL, (ignored, event) -> {
+        plugin.getServer().getPluginManager().registerEvent(type, listener, priority, (ignored, event) -> {
             // Bukkit also calls the executor for subclasses of type; isInstance keeps the cast safe.
             if (type.isInstance(event) && EventOwnership.belongsTo(event, this::covers, this::inArena)) {
                 handler.accept(type.cast(event));

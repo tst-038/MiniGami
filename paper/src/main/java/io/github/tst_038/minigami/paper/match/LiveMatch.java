@@ -55,6 +55,7 @@ import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -179,7 +180,8 @@ public final class LiveMatch {
     public void start() {
         var context = new PaperMatchContext(plugin, this, match.scope());
         context.on(PlayerDeathEvent.class, this::onDeath);
-        context.on(PlayerRespawnEvent.class, this::onRespawn);
+        // Last word on where they come back, over spawn plugins that set it at a lower priority.
+        context.on(PlayerRespawnEvent.class, EventPriority.HIGHEST, this::onRespawn);
         context.on(EntityDamageByEntityEvent.class, event -> {
             if (event.getDamager().getScoreboardTags().contains(MatchHud.CELEBRATION)) {
                 event.setCancelled(true);
@@ -818,8 +820,7 @@ public final class LiveMatch {
 
     /**
      * Before the start back to where they wait; after it to a spawn of their team, or to the spectator spot once they
-     * are out, or spectating where they are if the arena has none. Another plugin (a spawn plugin) may move the
-     * player after this, so a tick later they are put back if they are elsewhere.
+     * are out, or spectating where they are if the arena has none.
      */
     private void onRespawn(PlayerRespawnEvent event) {
         if (isJoinable()) {
@@ -831,11 +832,6 @@ public final class LiveMatch {
         var out = match.roster().find(id).filter(Participant::isAlive).isEmpty();
         var where = out ? arena.spectatorSpot().orElseGet(() -> spawnFor(id)) : spawnFor(id);
         event.setRespawnLocation(where);
-        match.scope().register(match.clock().schedule(1, () -> {
-            if (player.isOnline() && isActive(id) && (!where.getWorld().equals(player.getWorld()) || player.getLocation().distanceSquared(where) > 1)) {
-                player.teleport(where);
-            }
-        }));
         if (out) {
             // The game variant is reset during the respawn, so it is set right after.
             player.getScheduler().run(plugin, task -> setSpectating(player), null);
