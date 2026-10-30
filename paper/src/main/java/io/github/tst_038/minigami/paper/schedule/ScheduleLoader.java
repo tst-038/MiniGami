@@ -3,8 +3,11 @@ package io.github.tst_038.minigami.paper.schedule;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.core.reward.Rewards;
 import io.github.tst_038.minigami.core.schedule.Cron;
 import io.github.tst_038.minigami.paper.game.Game;
+import io.github.tst_038.minigami.paper.reward.Reward;
+import io.github.tst_038.minigami.paper.reward.RewardReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -62,7 +65,8 @@ public final class ScheduleLoader {
             games.add(new Schedule.Entry(game, variant.isEmpty() ? Optional.empty() : Optional.of(variant)));
         }
         var joinSeconds = root.has("join-seconds") ? root.integer("join-seconds", 10, 3600) : 120;
+        var rewards = root.has("rewards") ? RewardReader.read(root.section("rewards")) : Rewards.<Reward>none();
         // Only kept when the reader has no problems, so a missing cron line never reaches a schedule.
-        return new Schedule(id, name, when == null ? Cron.parse("* * * * *") : when, pick, games, joinSeconds);
+        return new Schedule(id, name, when == null ? Cron.parse("* * * * *") : when, pick, games, joinSeconds, rewards);
     }
 }

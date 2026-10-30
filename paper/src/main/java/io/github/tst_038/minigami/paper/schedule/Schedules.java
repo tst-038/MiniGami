@@ -41,7 +41,8 @@ import org.bukkit.plugin.Plugin;
  * Plays the schedules. At each of a schedule's times it opens a public match of its next game that
  * the players who could join are enough for, and calls them to it with a click, once more halfway.
  * Whoever answers the call joins without the game's play permission; that is what calls are for.
- * If the match hasn't started when the call closes, it is stopped.
+ * If the match hasn't started when the call closes, it is stopped. Once it has, its players may win
+ * the schedule's rewards.
  *
  * <p>A schedule skips its time during a game night, while its last call is still open, and while it
  * is paused. When no game fits, players see nothing; hosts hear about it.
@@ -104,6 +105,7 @@ public final class Schedules {
     private final PublicMatches publicMatches;
     private final RunningMatches running;
     private final BooleanSupplier nightRunning;
+    private final ScheduleRewards rewards;
     private final Clock clock;
     private final RandomGenerator random;
     private final Map<String, Turn> turns = new HashMap<>();
@@ -119,7 +121,7 @@ public final class Schedules {
      * @param clock tells the time schedules are written in, the server's
      */
     public Schedules(Plugin plugin, Messages messages, Supplier<IdRegistry<Schedule>> schedules, Supplier<IdRegistry<Game>> games, PublicMatches publicMatches,
-            RunningMatches running, BooleanSupplier nightRunning, Clock clock, RandomGenerator random) {
+            RunningMatches running, BooleanSupplier nightRunning, ScheduleRewards rewards, Clock clock, RandomGenerator random) {
         this.plugin = plugin;
         this.messages = messages;
         this.schedules = schedules;
@@ -127,6 +129,7 @@ public final class Schedules {
         this.publicMatches = publicMatches;
         this.running = running;
         this.nightRunning = nightRunning;
+        this.rewards = rewards;
         this.clock = clock;
         this.random = random;
     }
@@ -150,6 +153,7 @@ public final class Schedules {
             }
         }
         tickCalls();
+        rewards.tick();
     }
 
     private Turn turn(Schedule schedule, LocalDateTime now) {
@@ -222,12 +226,15 @@ public final class Schedules {
             }
             if (call.match != null && !call.match.isJoinable()) {
                 iterator.remove();
+                rewards.watch(call.schedule, call.match);
             } else if (!now.isBefore(call.closesAt)) {
                 iterator.remove();
                 // A match whose start is counting down is let to start; its players are enough.
                 if (call.match != null && call.match.startsIn().isEmpty()) {
                     messages.send(call.match.audience(), "schedule.not-enough-players", Placeholder.parsed("game", call.match.variant().name()));
                     call.match.stop();
+                } else if (call.match != null) {
+                    rewards.watch(call.schedule, call.match);
                 }
             } else if (!call.reminded && !now.isBefore(call.remindAt)) {
                 call.reminded = true;

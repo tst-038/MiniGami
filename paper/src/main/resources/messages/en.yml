@@ -527,6 +527,8 @@ schedule:
   # To the players in the match when the call closed before enough joined. %game%
   not-enough-players: "%prefix%<red>Not enough players joined %game%<red> in time."
   no-call: "%prefix%<red>No scheduled game is open to join right now."
+  # To a winner once the game is over. %reward%: its name, %game%
+  reward: "%prefix%<gold>You won <white>%reward%</white><gold> in %game%<gold>!"
   # When the call's match emptied and no arena is free to open it again. %game%
   no-arena: "%prefix%<red>No arena is free for %game%<red> right now; try again in a moment."
   # To hosts when a time came and no game fits. %players%: how many could join

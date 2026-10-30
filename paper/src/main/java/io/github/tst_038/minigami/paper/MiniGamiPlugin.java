@@ -53,6 +53,7 @@ import io.github.tst_038.minigami.paper.night.NightValues;
 import io.github.tst_038.minigami.paper.night.Nights;
 import io.github.tst_038.minigami.paper.schedule.Schedule;
 import io.github.tst_038.minigami.paper.schedule.ScheduleLoader;
+import io.github.tst_038.minigami.paper.schedule.ScheduleRewards;
 import io.github.tst_038.minigami.paper.schedule.Schedules;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
@@ -186,7 +187,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
-        var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, Clock.systemDefaultZone(), RandomGenerator.getDefault());
+        var scheduleRewards = new ScheduleRewards(this, messages, RandomGenerator.getDefault());
+        getServer().getPluginManager().registerEvents(scheduleRewards, this);
+        var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, scheduleRewards,
+                Clock.systemDefaultZone(), RandomGenerator.getDefault());
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadConfig);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);

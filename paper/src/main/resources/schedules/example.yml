@@ -21,3 +21,20 @@ games:
   - { game: example, variant: lives }
 # How long players have to join. A game that hasn't started by then is called off.
 join-seconds: 120
+# What the players may win, given once the game is over. Each list holds rewards with their chance in
+# percent; a player wins at most one of them, and the chance left over to 100 wins nothing.
+# places: a list per place (1 wins); everyone else who played to the end draws from taking-part.
+# Who left the game wins nothing. Leave rewards out for none.
+# A reward is one of:
+#   item: <item>, with amount (1 if left out) and name (the amount and item if left out)
+#   command: run from the console, %player% being the winner, with a name telling players what they won
+rewards:
+  places:
+    1:
+      - { chance: 50, item: diamond, amount: 3 }
+      - { chance: 50, item: emerald, amount: 8 }
+    2:
+      - { chance: 100, item: gold_ingot, amount: 4 }
+  taking-part:
+    - { chance: 25, item: cookie, amount: 4 }
+    # - { chance: 10, command: "eco give %player% 100", name: "<gold>100 coins" }

@@ -23,5 +23,6 @@ class BundledScheduleTest {
 
         assertDoesNotThrow(root::check);
         assertEquals(2, schedule.games().size());
+        assertEquals(2, schedule.rewards().places().size());
     }
 }
