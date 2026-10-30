@@ -8,6 +8,8 @@ waiting: arena
 fight-seconds: 180
 kills-to-win: 10
 teams: { count: 2 }
+# Players spread over all spawns instead of a team sharing one (the default is together).
+team-spawns: spread
 arenas: [example]
 stats: [combat]
 features:

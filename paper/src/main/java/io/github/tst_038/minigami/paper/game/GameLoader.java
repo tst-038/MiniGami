@@ -39,6 +39,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
+ * team-spawns: spread        # optional; together (the default): a team shares one spawn, or spread: every player takes the next one
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
  *   hide-and-seek:
@@ -188,6 +189,7 @@ public final class GameLoader {
         messages.keySet().stream().filter(knownMessage.negate())
                 .forEach(key -> config.problem("messages." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
+        var teamSpawns = config.has("team-spawns") ? config.choice("team-spawns", TeamSpawns.class) : TeamSpawns.TOGETHER;
         var roles = roles(config, minPlayers, game);
         var quit = quit(config);
         var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
@@ -200,7 +202,7 @@ public final class GameLoader {
             playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, roles, quit, playable, features, stats, hud);
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, roles, quit, playable, features, stats, hud);
     }
 
     /** Every stat a game or stat group keeps. */

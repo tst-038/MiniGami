@@ -25,6 +25,7 @@ import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.game.Quit;
 import io.github.tst_038.minigami.paper.game.Role;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
+import io.github.tst_038.minigami.paper.game.TeamSpawns;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -647,7 +648,7 @@ public final class LiveMatch {
             handOutRoles();
         }
         var everyone = takingPart();
-        var together = variant.teams().isPresent();
+        var together = variant.teams().isPresent() && variant.teamSpawns() == TeamSpawns.TOGETHER;
         var spots = SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together);
         for (int i = 0; i < everyone.size(); i++) {
             var team = teamOf(everyone.get(i));

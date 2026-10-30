@@ -46,6 +46,12 @@ class SpawnPlanTest {
     }
 
     @Test
+    void spreadingStillSendsATeamToItsOwnSpawns() {
+        var tags = List.of(RED, NONE, NONE);
+        assertEquals(List.of(0, 0, 1, 2), SpawnPlan.assign(List.of(RED, RED, BLUE, BLUE), tags, false));
+    }
+
+    @Test
     void aTeamUsesItsOwnSpawnsAndTheRestTheSharedOnes() {
         var tags = List.of(RED, NONE, NONE);
         var teams = List.of(RED, RED, BLUE, NONE);
