@@ -17,6 +17,7 @@ import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.game.Role;
+import io.github.tst_038.minigami.paper.schedule.Schedule;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +52,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 public final class ConfigInfo {
 
     private record Files(YamlConfiguration config, SortedMap<String, YamlConfiguration> arenas,
-            SortedMap<String, YamlConfiguration> games, SortedMap<String, YamlConfiguration> nights, List<ConfigProblem> problems) {
+            SortedMap<String, YamlConfiguration> games, SortedMap<String, YamlConfiguration> nights,
+            SortedMap<String, YamlConfiguration> schedules, List<ConfigProblem> problems) {
     }
 
     /** A setting a game or feature reads; required ones have no default. */
@@ -65,18 +67,20 @@ public final class ConfigInfo {
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Supplier<IdRegistry<Game>> games;
     private final Supplier<IdRegistry<NightTemplate>> nights;
+    private final Supplier<IdRegistry<Schedule>> schedules;
     private final Predicate<String> arenaInUse;
-    private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), List.of());
+    private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), List.of());
 
     /**
      * @param arenas the arenas currently loaded
      * @param games the games currently loaded
      * @param nights the game night templates currently loaded
+     * @param schedules the schedules currently loaded
      * @param arenaInUse whether a running match uses the arena with this id
      */
     public ConfigInfo(Messages messages, ConfigEditor editor, IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features,
             Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games,
-            Supplier<IdRegistry<NightTemplate>> nights, Predicate<String> arenaInUse) {
+            Supplier<IdRegistry<NightTemplate>> nights, Supplier<IdRegistry<Schedule>> schedules, Predicate<String> arenaInUse) {
         this.messages = messages;
         this.editor = editor;
         this.gametypes = gametypes;
@@ -84,19 +88,20 @@ public final class ConfigInfo {
         this.arenas = arenas;
         this.games = games;
         this.nights = nights;
+        this.schedules = schedules;
         this.arenaInUse = arenaInUse;
     }
 
     /** Takes the files a config load read, valid or not, and every problem it found. */
     public void loaded(String settings, Map<String, YamlConfiguration> arenaFiles, Map<String, YamlConfiguration> gameFiles,
-            Map<String, YamlConfiguration> nightFiles, List<ConfigProblem> problems) {
+            Map<String, YamlConfiguration> nightFiles, Map<String, YamlConfiguration> scheduleFiles, List<ConfigProblem> problems) {
         var config = new YamlConfiguration();
         try {
             config.loadFromString(settings);
         } catch (InvalidConfigurationException e) {
             // Already one of the problems.
         }
-        files = new Files(config, new TreeMap<>(arenaFiles), new TreeMap<>(gameFiles), new TreeMap<>(nightFiles), List.copyOf(problems));
+        files = new Files(config, new TreeMap<>(arenaFiles), new TreeMap<>(gameFiles), new TreeMap<>(nightFiles), new TreeMap<>(scheduleFiles), List.copyOf(problems));
     }
 
     public void listGames(CommandSender sender) {
@@ -165,6 +170,31 @@ public final class ConfigInfo {
 
     private void unknownNight(CommandSender sender, String id) {
         messages.send(sender, "night.unknown", Placeholder.unparsed("night", id), Placeholder.unparsed("nights", String.join(", ", files.nights().keySet())));
+    }
+
+    public void listSchedules(CommandSender sender) {
+        var current = files;
+        messages.send(sender, "info.schedules", Formatter.number("count", current.schedules().size()));
+        current.schedules().forEach((id, config) -> messages.send(sender, "info.schedule-entry", Placeholder.unparsed("id", id),
+                Placeholder.parsed("name", config.getString("name", id)), Placeholder.unparsed("when", config.getString("when", "?")),
+                Formatter.number("games", config.getList("games", List.of()).size()),
+                Placeholder.component("status", status(Kind.SCHEDULE, id, schedules.get().find(id).isPresent(), null)),
+                infoClick("/mg schedule info " + id)));
+    }
+
+    /** The schedule's settings, games and rewards included, then what else can be set and any problems. */
+    public void schedule(CommandSender sender, String id) {
+        var config = files.schedules().get(id);
+        if (config == null) {
+            messages.send(sender, "schedule.unknown", Placeholder.unparsed("schedule", id), Placeholder.unparsed("schedules", String.join(", ", files.schedules().keySet())));
+            return;
+        }
+        messages.send(sender, "info.schedule", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
+                Placeholder.component("status", status(Kind.SCHEDULE, id, schedules.get().find(id).isPresent(), null)));
+        var set = "/mg schedule edit " + id + " set ";
+        values(sender, config, config, set);
+        unset(sender, editor.keys(Kind.SCHEDULE, id), config, set);
+        problems(sender, Kind.SCHEDULE, id);
     }
 
     public void listArenas(CommandSender sender) {

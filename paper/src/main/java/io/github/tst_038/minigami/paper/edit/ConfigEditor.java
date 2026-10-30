@@ -15,6 +15,7 @@ import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
+import io.github.tst_038.minigami.paper.schedule.ScheduleLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
@@ -45,7 +46,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Edits any setting of a game, an arena, a game night or {@code config.yml} by command. The edited file is checked
+ * Edits any setting of a game, an arena, a game night, a schedule or {@code config.yml} by command. The edited file is checked
  * by the loader that loads it and only written when it has no problems, after which the config is
  * loaded again. Keys complete from what the loaders asked for, so new settings need no code here.
  *
@@ -55,7 +56,7 @@ public final class ConfigEditor {
 
     /** The files that can be edited. */
     public enum Kind {
-        CONFIG, ARENA, GAME, NIGHT;
+        CONFIG, ARENA, GAME, NIGHT, SCHEDULE;
 
         /** The file, relative to the plugin folder, such as {@code games/spleef.yml}; the id is ignored for {@link #CONFIG}. */
         public String file(String id) {
@@ -64,6 +65,7 @@ public final class ConfigEditor {
                 case ARENA -> "arenas/" + ArenaLoader.LAYOUT.formatted(id);
                 case GAME -> "games/" + id + ".yml";
                 case NIGHT -> NightTemplateLoader.FOLDER + "/" + id + ".yml";
+                case SCHEDULE -> ScheduleLoader.FOLDER + "/" + id + ".yml";
             };
         }
     }
@@ -81,10 +83,11 @@ public final class ConfigEditor {
     private final Supplier<Settings> settings;
     private final Predicate<String> arenaInUse;
     private final Consumer<Audience> reload;
-    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of(), Map.of());
+    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of(), Map.of(), Map.of());
 
     private record Keys(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights) {
+            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights,
+            Map<String, SortedMap<String, List<String>>> schedules) {
     }
 
     /**
@@ -109,8 +112,9 @@ public final class ConfigEditor {
 
     /** Takes the keys of every file from a config load, valid files or not, for completion. Any thread. */
     public void keysLoaded(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights) {
-        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(games), Map.copyOf(nights));
+            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights,
+            Map<String, SortedMap<String, List<String>>> schedules) {
+        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(games), Map.copyOf(nights), Map.copyOf(schedules));
     }
 
     /** Ids of the files in the folder, including those that failed to load. Any thread. */
@@ -120,6 +124,7 @@ public final class ConfigEditor {
             case ARENA -> keys.arenas().keySet().stream().sorted().toList();
             case GAME -> keys.games().keySet().stream().sorted().toList();
             case NIGHT -> keys.nights().keySet().stream().sorted().toList();
+            case SCHEDULE -> keys.schedules().keySet().stream().sorted().toList();
         };
     }
 
@@ -140,6 +145,7 @@ public final class ConfigEditor {
             case ARENA -> current.arenas().getOrDefault(id, Collections.emptySortedMap());
             case GAME -> current.games().getOrDefault(id, Collections.emptySortedMap());
             case NIGHT -> current.nights().getOrDefault(id, Collections.emptySortedMap());
+            case SCHEDULE -> current.schedules().getOrDefault(id, Collections.emptySortedMap());
         };
     }
 
@@ -294,7 +300,15 @@ public final class ConfigEditor {
         }, "edit.night-created");
     }
 
-    /** Arenas, games and game nights; the file is kept as {@code <file>.deleted}. */
+    /** A schedule opening one game; change the rest, the games included, with {@link #set}. */
+    public void createSchedule(CommandSender sender, String id, String game, String when) {
+        edit(sender, Kind.SCHEDULE, id, true, config -> {
+            config.set("when", when);
+            config.set("games", List.of(game));
+        }, "edit.schedule-created");
+    }
+
+    /** Arenas, games, game nights and schedules; the file is kept as {@code <file>.deleted}. */
     public void delete(CommandSender sender, Kind kind, String id) {
         var file = kind.file(id);
         if (!editable(sender, kind, id)) {
@@ -381,6 +395,7 @@ public final class ConfigEditor {
             case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud(), messages::has)
                     .problems();
             case NIGHT -> NightTemplateLoader.load(new YamlFiles(NightTemplateLoader.FOLDER, Map.of(id, config), List.of()), games.get()).problems();
+            case SCHEDULE -> ScheduleLoader.load(new YamlFiles(ScheduleLoader.FOLDER, Map.of(id, config), List.of()), games.get()).problems();
         };
     }
 

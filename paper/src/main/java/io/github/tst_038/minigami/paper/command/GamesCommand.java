@@ -104,7 +104,7 @@ public final class GamesCommand {
                 .then(KitCommands.node(kits, help))
                 .then(PartyCommands.node(parties, help))
                 .then(NightCommands.node(nights, editor, info, help))
-                .then(ScheduleCommands.node(schedules, help))
+                .then(ScheduleCommands.node(schedules, editor, info, help))
                 .then(Commands.literal("reload").requires(ADMIN).executes(bySender((sender, context) -> reload.accept(sender))))
                 .then(Commands.literal("debug").requires(ADMIN).executes(bySender((sender, context) -> running.debug(sender))))
                 .build();

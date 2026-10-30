@@ -295,6 +295,10 @@ info:
   night-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>%name%<gray>, %games% game(s), %status%"
   # %name%: the night's display name
   night: "%prefix%<gold>%id%</gold> <gray>(%name%<gray>), %status%"
+  schedules: "%prefix%<gold>Schedules</gold> <gray>(%count%):"
+  # %when%: its cron line, %games%: how many games it picks from
+  schedule-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>%name%<gray>, <white>%when%</white>, %games% game(s), %status%"
+  schedule: "%prefix%<gold>%id%</gold> <gray>(%name%<gray>), %status%"
   # %count%
   night-playlist: "<gray> Playlist (%count%):"
   # %n%: its position, %game%, %variant% and %points%: empty when the entry has none
@@ -360,6 +364,7 @@ edit:
   unset: "%prefix%<green>Removed <white>%key%</white> from <white>%file%</white>."
   created: "%prefix%<green>Created <white>%file%</white>. Change it with <white>set</white> and <white>unset</white>."
   deleted: "%prefix%<green>Deleted <white>%file%</white>. A copy is kept as <white>%file%.deleted</white> until the next delete of it."
+  schedule-created: "%prefix%<green>Created <white>%file%</white>. Change its games, times and rewards with <white>set</white> and <white>unset</white>."
   night-created: "%prefix%<green>Created <white>%file%</white>. Add games with <white>playlist add</white>, and change the rest with <white>set</white> and <white>unset</white>."
   # %game%, %n%: the position of the entry, %to%: the position it moved to
   playlist-added: "%prefix%<green>Added <white>%game%</white> to the playlist of <white>%file%</white>."
