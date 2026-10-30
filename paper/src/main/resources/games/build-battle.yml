@@ -14,10 +14,15 @@ vote-seconds: 20
 themes: [Rocket, Tree, Car, House, Castle, Dragon, Ship, Robot]
 # Builders who quit keep their plot for 5 minutes.
 quit: { then: stay, rejoin-seconds: 300 }
-# Creative builders can't spawn mobs with eggs or buckets.
+# Mobs are part of a build: at most 10 per plot (max, the default), and they stay in their plot. Enabled in every
+# phase they should live; they are removed after the last one.
 features:
   building:
-    no-mobs: {}
+    plot-mobs: { max: 10 }
+  voting:
+    plot-mobs: { max: 10 }
+  ending:
+    plot-mobs: { max: 10 }
 hud:
   boss-bar:
     text:
