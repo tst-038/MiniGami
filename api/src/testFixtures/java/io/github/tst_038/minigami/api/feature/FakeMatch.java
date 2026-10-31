@@ -80,9 +80,9 @@ public final class FakeMatch implements MatchContext {
         players.put(player.getUniqueId(), player);
     }
 
-    /** Hands the event to the handler registered for its exact class. */
+    /** Hands the event to the handler registered for its exact class; an event nobody listens for passes untouched. */
     public <E extends Event> E fire(E event) {
-        handlers.get(event.getClass()).accept(event);
+        handlers.getOrDefault(event.getClass(), ignored -> { }).accept(event);
         return event;
     }
 

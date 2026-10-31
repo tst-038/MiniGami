@@ -39,7 +39,7 @@ class BreakBlocksTest {
     }
 
     private void enable(boolean instant, boolean drops) {
-        new BreakBlocks(Set.of(Material.SNOW_BLOCK), instant, drops).enable(match);
+        new BreakBlocks(Breakable.only(Set.of(Material.SNOW_BLOCK)), instant, drops, false).enable(match);
     }
 
     @Test
@@ -81,5 +81,21 @@ class BreakBlocksTest {
         assertFalse(match.fire(new BlockDamageEvent(player, stone, BlockFace.UP, null, false)).getInstaBreak());
         assertTrue(match.fire(new BlockBreakEvent(stone, player)).isCancelled());
         assertTrue(match.fire(new BlockPlaceEvent(snow, null, stone, null, player, true, null)).isCancelled());
+    }
+
+    @Test
+    void placingIsAllowedWhenSwitchedOnAndTheListsDontRestrictIt() {
+        new BreakBlocks(Breakable.only(Set.of(Material.SNOW_BLOCK)), false, true, true).enable(match);
+
+        assertFalse(match.fire(new BlockPlaceEvent(stone, null, snow, null, player, true, null)).isCancelled());
+        assertTrue(match.fire(new BlockBreakEvent(stone, player)).isCancelled());
+    }
+
+    @Test
+    void anExceptListBreaksEverythingButThoseBlocks() {
+        new BreakBlocks(Breakable.except(Set.of(Material.STONE)), false, true, false).enable(match);
+
+        assertFalse(match.fire(new BlockBreakEvent(snow, player)).isCancelled());
+        assertTrue(match.fire(new BlockBreakEvent(stone, player)).isCancelled());
     }
 }
