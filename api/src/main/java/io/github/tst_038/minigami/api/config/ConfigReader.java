@@ -48,14 +48,6 @@ public final class ConfigReader {
         return section.contains(key);
     }
 
-    /** Tells an admin whose file still has the old name of a key that it is now called {@code current}. */
-    public void renamed(String old, String current) {
-        if (section.contains(old)) {
-            read.add(old);
-            problem(old, "was renamed to " + current);
-        }
-    }
-
     /** All keys of this section, which then count as read. */
     public Set<String> keys() {
         var keys = section.getKeys(false);

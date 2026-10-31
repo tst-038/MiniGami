@@ -24,8 +24,6 @@ public final class BreakBlocksFactory implements FeatureFactory {
 
     @Override
     public Feature create(ConfigReader config) {
-        config.renamed("blocks", "whitelist");
-        config.renamed("except", "blacklist");
         var whitelist = config.has("whitelist") ? Optional.of(blocks(config, "whitelist")) : Optional.<Set<Material>>empty();
         var blacklist = config.has("blacklist") ? blocks(config, "blacklist") : Set.<Material>of();
         var breakable = new Breakable(whitelist, blacklist);
