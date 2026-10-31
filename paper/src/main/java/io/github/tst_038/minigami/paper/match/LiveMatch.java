@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.phase.PhaseListener;
 import io.github.tst_038.minigami.core.presence.Presence;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
@@ -151,13 +152,36 @@ public final class LiveMatch {
         this.sessions = sessions;
         this.messages = messages.over(variant.messages());
         var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
-        this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), features);
+        this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), new PhaseListener() {
+            @Override
+            public void onEnter(Phase phase, Scope scope) {
+                setGameModes(phase);
+                features.onEnter(phase, scope);
+            }
+        });
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
         this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror, values);
         match.onResult(result -> {
             recordEnd();
             hud.decided(result);
         });
+    }
+
+    /**
+     * Puts those still in the match in the game mode the game wants in the phase, and only that: nothing else
+     * about them changes between phases. The first phase is left alone, as players may be waiting in place.
+     */
+    private void setGameModes(Phase phase) {
+        if (phase.equals(variant.gametype().phases().getFirst())) {
+            return;
+        }
+        takingPart().stream().map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(this::setGameMode);
+    }
+
+    private void setGameMode(Player player) {
+        if (match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isPresent()) {
+            match.currentPhase().ifPresent(phase -> player.setGameMode(variant.gametype().gameMode(phase.id())));
+        }
     }
 
     /** Tells whoever keeps track of matches how this one went. Those still away when it is decided count as having left. */
@@ -192,6 +216,12 @@ public final class LiveMatch {
         context.on(PlayerRespawnEvent.class, EventPriority.HIGHEST, this::onRespawn);
         context.on(EntityDamageByEntityEvent.class, event -> {
             if (event.getDamager().getScoreboardTags().contains(MatchHud.CELEBRATION)) {
+                event.setCancelled(true);
+            }
+        });
+        // Players gathering for the start don't fight.
+        context.on(EntityDamageByEntityEvent.class, event -> {
+            if (isJoinable() && event.getEntity() instanceof Player && event.getDamager() instanceof Player damager && isMember(damager.getUniqueId())) {
                 event.setCancelled(true);
             }
         });
@@ -477,6 +507,8 @@ public final class LiveMatch {
             player.teleport(out ? arena.spectatorSpot().orElseGet(() -> spawnFor(id)) : spawnFor(id));
             if (out) {
                 setSpectating(player);
+            } else {
+                setGameMode(player);
             }
         }
         messages.send(audience(), "match.back", Placeholder.component("player", player.name()));

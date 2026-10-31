@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.bukkit.GameMode;
 
 /**
  * What a game is: its phases, the features active in each, and how a winner is decided. The first
@@ -77,6 +78,16 @@ public interface GameType {
      */
     default Set<Stat> stats() {
         return Set.of();
+    }
+
+    /**
+     * The game mode players still in the match are put in when the phase starts, and when they come back to it.
+     * Adventure keeps blocks as they are, so a game that lets players dig or build asks for survival or creative
+     * here, and the features of the phase say what they may break. Not applied to the first phase, where players
+     * waiting in place keep their own mode; those who are out are never touched.
+     */
+    default GameMode gameMode(String phase) {
+        return GameMode.ADVENTURE;
     }
 
     /** How many deaths put a player out, unless the game sets its own; 0 means they always respawn. */

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.GameMode;
 import org.bukkit.event.player.PlayerDropItemEvent;
 
 /**
@@ -43,23 +42,14 @@ final class Building implements Feature {
         }
         for (TeamRegion plot : context.teamRegions()) {
             var start = plot.region().standingSpot();
-            plot.members().forEach(id -> context.player(id).ifPresent(player -> {
-                player.teleport(start);
-                player.setGameMode(GameMode.CREATIVE);
-            }));
+            plot.members().forEach(id -> context.player(id).ifPresent(player -> player.teleport(start)));
         }
         context.scope().register(() -> context.teamRegions().stream().flatMap(plot -> plot.members().stream())
-                .forEach(id -> context.player(id).ifPresent(player -> {
-                    player.getInventory().clear();
-                    player.setGameMode(GameMode.ADVENTURE);
-                })));
+                .forEach(id -> context.player(id).ifPresent(player -> player.getInventory().clear())));
 
         context.on(PlayerDropItemEvent.class, event -> event.setCancelled(true));
         context.on(MatchRejoinEvent.class, event -> context.teamRegion(event.getPlayer().getUniqueId())
                 .filter(plot -> context.roster().find(event.getPlayer().getUniqueId()).filter(Participant::isAlive).isPresent())
-                .ifPresent(plot -> {
-                    event.getPlayer().teleport(plot.region().standingSpot());
-                    event.getPlayer().setGameMode(GameMode.CREATIVE);
-                }));
+                .ifPresent(plot -> event.getPlayer().teleport(plot.region().standingSpot())));
     }
 }

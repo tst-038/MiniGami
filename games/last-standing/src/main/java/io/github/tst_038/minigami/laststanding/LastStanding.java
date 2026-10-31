@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import org.bukkit.GameMode;
 
 /** Last one standing wins. By default a single death puts a player out; games can give more lives. */
 public final class LastStanding implements GameType {
@@ -20,6 +21,11 @@ public final class LastStanding implements GameType {
     @Override
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.untimed("playing"), Phase.timed("ending", 5 * 20));
+    }
+
+    @Override
+    public GameMode gameMode(String phase) {
+        return phase.equals("playing") ? GameMode.SURVIVAL : GameMode.ADVENTURE;
     }
 
     @Override

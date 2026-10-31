@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.bukkit.GameMode;
 
 /**
  * Every team builds on a theme in its own plot, then everyone scores the other teams' builds; the
@@ -48,6 +49,11 @@ public final class BuildBattle implements GameType {
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed("building", buildSeconds * 20L), Phase.untimed("voting"),
                 Phase.timed("ending", 10 * 20));
+    }
+
+    @Override
+    public GameMode gameMode(String phase) {
+        return phase.equals("building") ? GameMode.CREATIVE : GameMode.ADVENTURE;
     }
 
     @Override

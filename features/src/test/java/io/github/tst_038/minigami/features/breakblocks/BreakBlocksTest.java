@@ -10,9 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -25,12 +22,7 @@ import org.junit.jupiter.api.Test;
 class BreakBlocksTest {
 
     private final FakeMatch match = new FakeMatch();
-    private final AtomicReference<GameMode> gameMode = new AtomicReference<>(GameMode.ADVENTURE);
-    private final Player player = proxy(Player.class, Map.of(
-            "getUniqueId", UUID.randomUUID(),
-            "getGameMode", (Supplier<GameMode>) gameMode::get,
-            // Only ever switched between these two, so a toggle stands in for the argument.
-            "setGameMode", (Runnable) () -> gameMode.set(gameMode.get() == GameMode.ADVENTURE ? GameMode.SURVIVAL : GameMode.ADVENTURE)));
+    private final Player player = proxy(Player.class, Map.of("getUniqueId", UUID.randomUUID()));
     private final Block snow = proxy(Block.class, Map.of("getType", Material.SNOW_BLOCK));
     private final Block stone = proxy(Block.class, Map.of("getType", Material.STONE));
 
@@ -40,16 +32,6 @@ class BreakBlocksTest {
 
     private void enable(boolean instant, boolean drops) {
         new BreakBlocks(Breakable.whitelist(Set.of(Material.SNOW_BLOCK)), instant, drops, false).enable(match);
-    }
-
-    @Test
-    void playersCanBreakDuringThePhaseOnly() {
-        enable(false, true);
-        assertEquals(GameMode.SURVIVAL, gameMode.get());
-
-        match.scope.close();
-
-        assertEquals(GameMode.ADVENTURE, gameMode.get());
     }
 
     @Test

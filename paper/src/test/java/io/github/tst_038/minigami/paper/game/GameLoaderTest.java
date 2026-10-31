@@ -20,6 +20,7 @@ import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
+import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.diagnosis.Hosting;
@@ -36,6 +37,7 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.title.Title;
 import java.time.Duration;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -135,6 +137,7 @@ class GameLoaderTest {
                         "plot-2", new Region("plot-2", null, 0, 64, 0, 4, 64, 4), "plot-3", new Region("plot-3", null, 0, 64, 0, 4, 64, 4)),
                 Optional.of(new Region("map", null, 0, 64, 0, 4, 64, 4))));
         features.register(new VoidKillsFactory());
+        features.register(new BreakBlocksFactory());
         arenas.register(new Arena("demo", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Optional.empty(), Map.of(), Optional.empty()));
         arenas.register(new Arena("empty", null, List.of(), Optional.empty(), Optional.empty(), Map.of(), Optional.empty()));
     }
@@ -377,7 +380,42 @@ class GameLoaderTest {
 
         assertEquals(List.of(
                 "games/fall.yml: features.ending: unknown phase; test has: waiting, playing",
-                "games/fall.yml: features.playing.void-kils: unknown feature; known: void-kills"), problems(loaded));
+                "games/fall.yml: features.playing.void-kils: unknown feature; known: break-blocks, void-kills"), problems(loaded));
+    }
+
+    @Test
+    void blocksCanOnlyChangeInPhasesWhereTheGameLetsPlayersDoIt() throws Exception {
+        games.register(new GameType() {
+            @Override
+            public String id() {
+                return "dig";
+            }
+
+            @Override
+            public List<Phase> phases() {
+                return GAME.phases();
+            }
+
+            @Override
+            public Map<String, List<Feature>> features() {
+                return Map.of();
+            }
+
+            @Override
+            public WinCondition winCondition() {
+                return new LastManStanding();
+            }
+
+            @Override
+            public GameMode gameMode(String phase) {
+                return phase.equals("playing") ? GameMode.SURVIVAL : GameMode.ADVENTURE;
+            }
+        });
+        var header = "min-players: 1\nmax-players: 2\nwaiting: arena\narenas: [demo]\nfeatures:\n  playing:\n    break-blocks: {}\n";
+
+        assertEquals(List.of(), problems(load("gametype: dig\n" + header)));
+        assertEquals(List.of("games/fall.yml: features.playing.break-blocks: changes blocks, but test keeps players in adventure mode in playing, where they can't"),
+                problems(load("gametype: test\n" + header)));
     }
 
     @Test

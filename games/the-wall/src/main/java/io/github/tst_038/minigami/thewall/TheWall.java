@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.bukkit.GameMode;
 import java.util.Optional;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 
@@ -56,6 +57,12 @@ public final class TheWall implements GameType {
     @Override
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed(PREPARING, prepareSeconds * 20L), Phase.untimed(FIGHTING), Phase.timed("ending", 5 * 20));
+    }
+
+    /** Players dig and build from the preparation on. */
+    @Override
+    public GameMode gameMode(String phase) {
+        return phase.equals(PREPARING) || phase.equals(FIGHTING) ? GameMode.SURVIVAL : GameMode.ADVENTURE;
     }
 
     @Override

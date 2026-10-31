@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -396,7 +397,11 @@ public final class GameLoader {
                 if (factory.isEmpty()) {
                     phaseConfig.problem(featureId, "unknown feature; known: " + String.join(", ", features.ids()));
                 } else {
-                    phaseFeatures.add(factory.get().create(phaseConfig.section(featureId)));
+                    var feature = factory.get().create(phaseConfig.section(featureId));
+                    if (feature.changesBlocks() && game != null && game.gameMode(phase) == GameMode.ADVENTURE) {
+                        phaseConfig.problem(featureId, "changes blocks, but " + game.id() + " keeps players in adventure mode in " + phase + ", where they can't");
+                    }
+                    phaseFeatures.add(feature);
                 }
             }
             byPhase.put(phase, List.copyOf(phaseFeatures));
