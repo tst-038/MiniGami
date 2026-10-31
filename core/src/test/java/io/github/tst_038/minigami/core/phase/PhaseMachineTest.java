@@ -65,6 +65,27 @@ class PhaseMachineTest {
     }
 
     @Test
+    void thePreviousPhaseScopeIsClosedBeforeTheNextIsEntered() {
+        var closedOnEnter = new java.util.ArrayList<Boolean>();
+        var scopes = new java.util.ArrayList<Scope>();
+        var machine = new PhaseMachine(List.of(Phase.untimed("a"), Phase.untimed("b")), clock, new Scope(),
+                new PhaseListener() {
+                    @Override
+                    public void onEnter(Phase phase, Scope scope) {
+                        if (!scopes.isEmpty()) {
+                            closedOnEnter.add(scopes.getLast().isClosed());
+                        }
+                        scopes.add(scope);
+                    }
+                });
+        machine.start();
+
+        machine.advance();
+
+        assertEquals(List.of(true), closedOnEnter);
+    }
+
+    @Test
     void timedPhaseAdvancesOnItsOwn() {
         var machine = machine(Phase.timed("countdown", 3), Phase.untimed("playing"));
         machine.start();
