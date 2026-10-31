@@ -3,27 +3,28 @@ package io.github.tst_038.minigami.features.breakblocks;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
-import java.util.Set;
 import org.bukkit.GameMode;
-import org.bukkit.Material;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 
 /**
- * Lets players break the listed blocks and nothing else; the match puts them back when it ends.
+ * Lets players break the blocks {@link Breakable} allows; the match puts them back when it ends.
  * {@code instant} breaks them in one hit, and without {@code drops} they drop nothing.
+ * With {@code place} players may also place any block, otherwise placing stays off.
  */
 public final class BreakBlocks implements Feature {
 
-    private final Set<Material> blocks;
+    private final Breakable breakable;
     private final boolean instant;
     private final boolean drops;
+    private final boolean place;
 
-    public BreakBlocks(Set<Material> blocks, boolean instant, boolean drops) {
-        this.blocks = Set.copyOf(blocks);
+    BreakBlocks(Breakable breakable, boolean instant, boolean drops, boolean place) {
+        this.breakable = breakable;
         this.instant = instant;
         this.drops = drops;
+        this.place = place;
     }
 
     @Override
@@ -43,13 +44,13 @@ public final class BreakBlocks implements Feature {
         });
 
         context.on(BlockDamageEvent.class, event -> {
-            if (instant && blocks.contains(event.getBlock().getType())) {
+            if (instant && breakable.allows(event.getBlock().getType())) {
                 event.setInstaBreak(true);
             }
         });
         context.on(BlockBreakEvent.class, event -> {
             var block = event.getBlock();
-            if (!blocks.contains(block.getType())) {
+            if (!breakable.allows(block.getType())) {
                 event.setCancelled(true);
                 return;
             }
@@ -58,8 +59,10 @@ public final class BreakBlocks implements Feature {
                 event.setExpToDrop(0);
             }
         });
-        // Survival is only for breaking; placing stays off, as it was in adventure mode.
-        context.on(BlockPlaceEvent.class, event -> event.setCancelled(true));
+        // Survival is only for breaking; unless placing is on, it stays off as it was in adventure mode.
+        if (!place) {
+            context.on(BlockPlaceEvent.class, event -> event.setCancelled(true));
+        }
     }
 
     /** Only players still in, and only from the expected mode, so spectators stay spectators. */

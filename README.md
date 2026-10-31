@@ -132,7 +132,7 @@ features:
 | Feature | Does |
 |---|---|
 | `kit` | Gives items, or an inventory saved with `/mg kit save <name>` |
-| `break-blocks` | Lets players break the listed blocks (optionally instantly) |
+| `break-blocks` | Lets players break blocks: `blocks` lists the only breakable ones or `except` the only unbreakable ones (neither = all), optionally `instant`, `drops: false`, and `place: true` to allow placing any block |
 | `give-drops` | Replaces what broken blocks drop |
 | `projectile-breaks` | Projectiles break the listed blocks |
 | `decay-floor` | Blocks crumble shortly after being stepped on |
