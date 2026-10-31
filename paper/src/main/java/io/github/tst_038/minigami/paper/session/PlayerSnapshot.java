@@ -12,6 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -64,7 +65,11 @@ public record PlayerSnapshot(
             if (found == null) {
                 return server.getWorlds().getFirst().getSpawnLocation();
             }
-            return new Location(found, x, y, z, yaw, pitch);
+            return at(found);
+        }
+
+        public Location at(World world) {
+            return new Location(world, x, y, z, yaw, pitch);
         }
     }
 

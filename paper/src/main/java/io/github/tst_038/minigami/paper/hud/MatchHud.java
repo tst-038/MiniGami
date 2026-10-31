@@ -449,7 +449,7 @@ public final class MatchHud {
     }
 
     /** {@code m:ss}, rounding up so it never shows 0:00 while time is left. */
-    private static TagResolver clock(long ticks) {
+    static TagResolver clock(long ticks) {
         var seconds = (ticks + 19) / 20;
         return Placeholder.unparsed("time", "%d:%02d".formatted(seconds / 60, seconds % 60));
     }

@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.GameMode;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,6 +23,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.WorldLoadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -51,7 +54,11 @@ public final class PlayerSessions implements Listener {
     /** Players whose quit is being handled: their restore can't be trusted to move them, as the connection is going away. */
     private final Set<UUID> quitting = new HashSet<>();
 
+    /** The loaded worlds, for the login, which runs off the server thread and mustn't ask the server. */
+    private final Map<UUID, World> worlds = new ConcurrentHashMap<>();
+
     public PlayerSessions(Plugin plugin, SnapshotStore store, Logger logger, PlayerPresence presence) {
+        plugin.getServer().getWorlds().forEach(world -> worlds.put(world.getUID(), world));
         this.plugin = plugin;
         this.store = store;
         this.logger = logger;
@@ -225,9 +232,21 @@ public final class PlayerSessions implements Listener {
             var snapshot = recovered.get(id);
             home = snapshot == null ? null : snapshot.location();
         }
-        if (home != null) {
-            event.setSpawnLocation(home.resolve(plugin.getServer()));
+        // A world that is gone leaves the server's own choice of spawn.
+        var world = home == null ? null : worlds.get(home.world());
+        if (world != null) {
+            event.setSpawnLocation(home.at(world));
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldLoad(WorldLoadEvent event) {
+        worlds.put(event.getWorld().getUID(), event.getWorld());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldUnload(WorldUnloadEvent event) {
+        worlds.remove(event.getWorld().getUID());
     }
 
     // Once a rejoin has had its say, where they belong is no longer needed.
