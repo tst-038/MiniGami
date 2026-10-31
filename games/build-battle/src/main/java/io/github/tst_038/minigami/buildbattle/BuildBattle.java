@@ -15,7 +15,8 @@ import java.util.Optional;
  * Every team builds on a theme in its own plot, then everyone scores the other teams' builds; the
  * highest total wins. Without teams in the game, everyone builds alone; with {@code teams: { size: 2 }}
  * it is duos. A plot is an arena region {@code plot-1}, {@code plot-2} and so on, one for every team a
- * match can have.
+ * match can have. The {@code team-region} feature, set for the building phase in the game's file, keeps
+ * builders on their plot.
  *
  * <p>Game settings, all optional: {@code build-seconds} (300), {@code vote-seconds} per build (15) and
  * {@code themes}, one picked at random (none: free build).
@@ -51,10 +52,9 @@ public final class BuildBattle implements GameType {
 
     @Override
     public Map<String, List<Feature>> features() {
-        var plots = new Plots();
         return Map.of(
-                "building", List.of(new Building(plots, themes, buildSeconds * 20L)),
-                "voting", List.of(new Voting(plots, voteSeconds * 20L)),
+                "building", List.of(new Building(themes, buildSeconds * 20L)),
+                "voting", List.of(new Voting(voteSeconds * 20L)),
                 "ending", List.of(new AnnounceWinner()));
     }
 

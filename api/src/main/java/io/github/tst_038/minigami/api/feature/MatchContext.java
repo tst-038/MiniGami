@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.api.feature;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.result.MatchResult;
@@ -53,6 +54,18 @@ public interface MatchContext {
 
     /** The arena's regions of a group the game asks for, such as every {@code wall-…}; see {@link Region#isIn}. */
     List<Region> regions(String group);
+
+    /**
+     * The region each team plays in, handed out once when play starts in the order the teams are
+     * formed (see {@link io.github.tst_038.minigami.api.game.GameType#regionPerTeam}). Empty if the game
+     * has none, and before play starts.
+     */
+    List<TeamRegion> teamRegions();
+
+    /** The region of the team this participant is in. */
+    default Optional<TeamRegion> teamRegion(UUID id) {
+        return teamRegions().stream().filter(region -> region.members().contains(id)).findFirst();
+    }
 
     /**
      * Replaces all blocks of one of the arena's regions in one go, through WorldEdit so a big region
