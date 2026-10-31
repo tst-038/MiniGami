@@ -193,6 +193,11 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public Component playerName(Player player) {
+        return match.playerName(player);
+    }
+
+    @Override
     public Component teamName(String team) {
         return match.teamName(team);
     }

@@ -45,7 +45,7 @@ public final class MatchAdmin {
         messages.send(sender, "match.admin.list", Formatter.number("count", running.size()));
         for (var live : running) {
             messages.send(sender, "match.admin.entry", Placeholder.unparsed("match", live.arena().id()),
-                    Placeholder.unparsed("game", live.variant().key()), phase(live), Formatter.number("players", live.members().size()),
+                    Placeholder.parsed("game", live.variant().name()), phase(live), Formatter.number("players", live.members().size()),
                     Placeholder.styling("info", ClickEvent.runCommand("/mg match " + live.arena().id() + " info")));
         }
     }

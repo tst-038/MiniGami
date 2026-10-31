@@ -38,7 +38,7 @@ start:
 match:
   joined: "%prefix%<yellow>%player%</yellow> joined <gray>(%players%/%needed%)"
   # A player ran out of lives.
-  eliminated: "%prefix%<red>%player%</red> is out!"
+  eliminated: "%prefix%%player% <red>is out!"
   # Instead of going out, joins the role the game names in on-out. %team%: that role's name
   switched-role: "%prefix%<white>%player%</white> <gray>is now one of the %team%<gray>."
   # %seconds%: delay before the start
@@ -52,15 +52,15 @@ match:
   # %player%: who came back in time
   back: "%prefix%<yellow>%player%</yellow> <gray>is back."
   # %player%: who didn't come back in time
-  away-expired: "%prefix%<red>%player%</red> didn't come back in time and is out!"
+  away-expired: "%prefix%%player% <red>didn't come back in time and is out!"
   # The death message of a participant whose game kills them for quitting. %player%
   died-quitting: "<red>%player%</red> <gray>died by quitting the match"
   # %player%: the winner
   winner: "%prefix%<gold>%player%</gold> wins the match!"
   # Above the hotbar in the last seconds of a phase with the countdown feature. %seconds%: seconds left
   countdown: "<yellow>Ending in <gold>%seconds%</gold>"
-  # %team%: the winning team's name, in its colour
-  winner-team: "%prefix%%team% <gold>wins the match!"
+  # %players%: the winning team's players, each in the team's colour. %team%: the team's name, in its colour
+  winner-team: "%prefix%%players% <gold>won the match!"
   no-winner: "%prefix%<gray>The match ended without a winner."
   # %team%: the player's team, in its colour
   your-team: "%prefix%<gray>You are in team %team%<gray>."

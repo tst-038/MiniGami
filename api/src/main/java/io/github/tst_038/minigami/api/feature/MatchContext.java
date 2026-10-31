@@ -102,6 +102,11 @@ public interface MatchContext {
      */
     Optional<Player> player(UUID id);
 
+    /** A player's name as the match shows it: in their team's colour when they have one. */
+    default Component playerName(Player player) {
+        return player.name();
+    }
+
     /** Empty until the match is decided. */
     Optional<MatchResult> result();
 

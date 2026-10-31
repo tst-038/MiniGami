@@ -301,6 +301,14 @@ public final class LiveMatch {
         return variant.role(teamId).map(Role::displayName).orElseGet(() -> messages.render("team." + teamId));
     }
 
+    public Component playerName(Player player) {
+        return teamOf(player.getUniqueId()).map(teamId -> player.name().colorIfAbsent(teamColor(teamId))).orElse(player.name());
+    }
+
+    private NamedTextColor teamColor(String teamId) {
+        return variant.role(teamId).map(Role::color).orElseGet(() -> NamedTextColor.NAMES.valueOrThrow(teamId));
+    }
+
     public Audience audience() {
         var server = plugin.getServer();
         return Audience.audience(members.stream().map(server::getPlayer).filter(Objects::nonNull).toList());
@@ -453,7 +461,7 @@ public final class LiveMatch {
                 unjoin(id);
             } else if (match.roster().find(id).filter(Participant::isAlive).isPresent()) {
                 match.eliminate(id);
-                messages.send(audience(), "match.away-expired", Placeholder.component("player", player.name()));
+                messages.send(audience(), "match.away-expired", Placeholder.component("player", playerName(player)));
             }
         });
         match.scope().register(expiry);
@@ -786,8 +794,7 @@ public final class LiveMatch {
     /** A role's team has the role's colour, other teams the colour they are named after. */
     private void toScoreboardTeam(Player player, String teamId) {
         var role = variant.role(teamId);
-        var color = role.map(Role::color).orElseGet(() -> NamedTextColor.NAMES.valueOrThrow(teamId));
-        scoreboardTeams.put(player, teamId, teamName(teamId), color, role.flatMap(Role::nameTags).orElse(variant.nameTags()).status());
+        scoreboardTeams.put(player, teamId, teamName(teamId), teamColor(teamId), role.flatMap(Role::nameTags).orElse(variant.nameTags()).status());
     }
 
     private Optional<String> teamOf(UUID id) {
@@ -849,13 +856,13 @@ public final class LiveMatch {
         var onOut = teamOf(id).flatMap(variant::role).flatMap(Role::onOut).flatMap(variant::role);
         if (onOut.isPresent()) {
             lives.reset(id);
-            messages.send(audience(), "match.switched-role", Placeholder.component("player", player.name()),
+            messages.send(audience(), "match.switched-role", Placeholder.component("player", playerName(player)),
                     Placeholder.component("team", teamName(onOut.get().id())));
             putInTeam(List.of(id), onOut.get().id(), "match.your-role");
             match.switchTeam(id, onOut.get().id());
             return true;
         }
-        messages.send(audience(), "match.eliminated", Placeholder.component("player", player.name()));
+        messages.send(audience(), "match.eliminated", Placeholder.component("player", playerName(player)));
         match.eliminate(id);
         hud.out(player);
         return false;
