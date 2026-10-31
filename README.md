@@ -164,7 +164,7 @@ way through. The tables below give an overview.
 | `/mg join <game> [variant]` | Join a game |
 | `/mg leave` | Leave your match or queue |
 | `/mg stats [player] [game]` | Stats |
-| `/mg top <game> <stat> [variant]` | Leaderboard |
+| `/mg leaderboard <game> <stat> [variant]` | Leaderboard |
 | `/mg party invite\|accept\|leave\|kick\|disband\|list` | Parties |
 | `/mg night join\|leave\|standings` | Game nights |
 | `/mg schedule join` | Join the game a schedule just opened |
@@ -288,7 +288,7 @@ who leave early win nothing.
 ## Stats and placeholders
 
 MiniGami keeps `wins`, `played`, `kills` and `deaths` per game and per variant. Check them with `/mg stats` and
-`/mg top`.
+`/mg leaderboard`.
 
 With PlaceholderAPI installed:
 

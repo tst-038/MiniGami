@@ -92,7 +92,7 @@ public final class GamesCommand {
                                                         string(context, "game"), Optional.of(string(context, "variant")))))))))
                 .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> running.leave(player))))
                 .then(StatsCommands.stats(stats, messages))
-                .then(StatsCommands.top(stats))
+                .then(StatsCommands.leaderboard(stats))
                 .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
                 .then(GameCommands.node(editor, info, help))

@@ -192,7 +192,7 @@ list:
   variant: "<gray>    - <join><hover:show_text:'Click to join'>%game%</hover></join> <gray>(<white>%players%</white> playing)"
   none: "%prefix%<gray>No games to join right now."
 
-# /mg stats and /mg top. %player%: a player's name, %game%: a game's name or the id typed, %gametype%: a game type's id,
+# /mg stats and /mg leaderboard. %player%: a player's name, %game%: a game's name or the id typed, %gametype%: a game type's id,
 # %stat%: a stat's name from below; totals: %played%, %wins%, %place%: average place or -, %left%: matches left early, %minutes% played
 stats:
   name-a-player: "%prefix%<red>Usage: <white>/mg stats [player]</white>"
