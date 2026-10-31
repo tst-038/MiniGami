@@ -44,6 +44,7 @@ final class Voting implements Feature {
             context.endPhase();
             return;
         }
+        context.expectPhaseToTake(shownPlots.size() * ticksPerBuild);
         var votes = new Votes();
         var shown = new int[1];
         voters(context).forEach(player -> giveVoteItems(context, player));

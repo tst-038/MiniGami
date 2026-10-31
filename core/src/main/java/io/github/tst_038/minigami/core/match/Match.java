@@ -36,6 +36,7 @@ public final class Match {
     private final WinCondition winCondition;
     private final List<Consumer<MatchResult>> resultListeners = new ArrayList<>();
     private MatchResult result;
+    private long expectedPhaseTicks;
     private long phaseStart;
 
     /** @param phaseListener told when each phase starts, e.g. to enable that phase's features */
@@ -44,6 +45,7 @@ public final class Match {
             @Override
             public void onEnter(Phase phase, Scope phaseScope) {
                 phaseStart = clock.elapsedTicks();
+                expectedPhaseTicks = 0;
                 // A single phase is also the first one; that match is only decided when it runs out.
                 if (phases.size() > 1 && phase.equals(phases.getLast())) {
                     decideAsThingsStand();
@@ -153,6 +155,19 @@ public final class Match {
 
     public Optional<Phase> currentPhase() {
         return phases.current();
+    }
+
+    /**
+     * Says how long an untimed phase is going to last, for displays that count down; the phase still ends
+     * when something advances it. Forgotten when the phase ends.
+     */
+    public void expectPhaseToTake(long ticks) {
+        expectedPhaseTicks = ticks;
+    }
+
+    /** The ticks the current phase lasts or is expected to last; 0 when open-ended. */
+    public long phaseLengthTicks() {
+        return currentPhase().map(phase -> phase.isTimed() ? phase.durationTicks() : expectedPhaseTicks).orElse(0L);
     }
 
     /** How long the current phase has run, in match ticks, so a pause doesn't count. */

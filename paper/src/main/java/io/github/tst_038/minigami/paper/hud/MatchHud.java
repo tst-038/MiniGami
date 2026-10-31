@@ -271,9 +271,8 @@ public final class MatchHud {
     }
 
     private OptionalLong phaseLeft() {
-        return match.match().currentPhase().filter(phase -> phase.isTimed())
-                .map(phase -> OptionalLong.of(Math.max(0, phase.durationTicks() - match.match().phaseElapsedTicks())))
-                .orElse(OptionalLong.empty());
+        var length = match.match().phaseLengthTicks();
+        return length > 0 ? OptionalLong.of(Math.max(0, length - match.match().phaseElapsedTicks())) : OptionalLong.empty();
     }
 
     /** Before the start the time to it, else the time left of a timed phase; nothing in an untimed phase or one without a text. */
@@ -290,7 +289,7 @@ public final class MatchHud {
             online().forEach(player -> player.hideBossBar(bossBar));
             return;
         }
-        var total = startsIn.isPresent() ? LiveMatch.START_DELAY_TICKS + LiveMatch.COUNTDOWN_TICKS : phase.get().durationTicks();
+        var total = startsIn.isPresent() ? LiveMatch.START_DELAY_TICKS + LiveMatch.COUNTDOWN_TICKS : match.match().phaseLengthTicks();
         bossBar.name(text(null, text.get(), values(null)));
         bossBar.progress(Math.clamp((float) left.getAsLong() / total, 0f, 1f));
         online().forEach(player -> player.showBossBar(bossBar));

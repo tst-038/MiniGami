@@ -48,6 +48,19 @@ class MatchTest {
     }
 
     @Test
+    void anUntimedPhaseCanSayHowLongItTakesUntilItEnds() {
+        var match = match(Phase.untimed("voting"), Phase.untimed("ending"));
+        match.start();
+        assertEquals(0, match.phaseLengthTicks());
+
+        match.expectPhaseToTake(100);
+        assertEquals(100, match.phaseLengthTicks());
+
+        match.advancePhase();
+        assertEquals(0, match.phaseLengthTicks());
+    }
+
+    @Test
     void startEntersTheFirstPhaseAndAdvancePhaseMovesOn() {
         var match = match(Phase.untimed("waiting"), Phase.untimed("playing"));
 

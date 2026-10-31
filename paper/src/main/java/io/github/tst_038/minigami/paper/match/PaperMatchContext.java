@@ -181,6 +181,13 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public void expectPhaseToTake(long ticks) {
+        if (!scope.isClosed()) {
+            match.match().expectPhaseToTake(ticks);
+        }
+    }
+
+    @Override
     public void endPhase() {
         if (!scope.isClosed()) {
             match.match().advancePhase();

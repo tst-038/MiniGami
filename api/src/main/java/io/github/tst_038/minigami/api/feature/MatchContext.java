@@ -138,6 +138,10 @@ public interface MatchContext {
      */
     void endPhase();
 
+    /** Says how long this untimed phase will take, so the HUD can count down; nothing is ended by it. */
+    default void expectPhaseToTake(long ticks) {
+    }
+
     Messages messages();
 
     /** The name of a team or role of this match, in its colour, as players see it. */
