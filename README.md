@@ -147,6 +147,7 @@ features:
 | `countdown` | Counts down the last seconds of a timed phase above the hotbar |
 | `freeze` | Players can't move |
 | `team-region` | Keeps each team inside its own region (`plot-N`, `quarter-N`): no building, moving, spreading or explosions across the edge |
+| `play-area` | Keeps everyone inside one arena region (`region: border`): no building, breaking or walking out of it, and explosions leave the outside alone |
 | `effects` | Potion effects |
 
 `/mg feature list` and `/mg feature <id> info` show every feature with all its settings.
