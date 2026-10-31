@@ -5,7 +5,7 @@ domination, team deathmatch, hide and seek, infection, build battle and the wall
 change and combine. Add game nights with standings, scheduled games with rewards, parties, persistent stats and a HUD,
 all without writing code.
 
-> **Status: beta (0.1.0).** Things work, but expect rough edges. Back up your server before installing, and please
+> **Status: beta (0.2.0).** Things work, but expect rough edges. Back up your server before installing, and please
 > report what you run into.
 
 ## Contents
@@ -163,8 +163,8 @@ way through. The tables below give an overview.
 | `/mg list` | Games you can join |
 | `/mg join <game> [variant]` | Join a game |
 | `/mg leave` | Leave your match or queue |
-| `/mg stats [player] [game]` | Stats |
-| `/mg leaderboard <game> <stat> [variant]` | Leaderboard |
+| `/mg stats [player] [game] [stat]` | Stats |
+| `/mg leaderboard <game> [stat] [variant]` | Leaderboard |
 | `/mg party invite\|accept\|leave\|kick\|disband\|list` | Parties |
 | `/mg night join\|leave\|standings` | Game nights |
 | `/mg schedule join` | Join the game a schedule just opened |
@@ -178,7 +178,7 @@ way through. The tables below give an overview.
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
 | `/mg schedule list` · `/mg schedule now\|pause\|resume <schedule>` | helper · mod |
 | `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `team`, `kick` | host |
-| `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map\|waiting` | admin |
+| `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
 | `/mg gametype list\|<id> info` · `/mg feature list\|<id> info` | admin |
 | `/mg kit list\|save <name>\|delete <name>` | admin |
