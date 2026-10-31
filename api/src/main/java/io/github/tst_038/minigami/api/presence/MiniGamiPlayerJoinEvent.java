@@ -9,8 +9,8 @@ import org.bukkit.event.HandlerList;
 /**
  * MiniGami took a player over: from now on {@link MiniGamiPlayers#isInMatch} is true for them, and
  * their own state (inventory and so on) is saved until the matching {@link MiniGamiPlayerLeaveEvent}.
- * Fired once per take-over, so not again when a player moves between the games of a game night, but
- * again if they quit and rejoin a match. Synchronous, on the server thread. Not cancellable.
+ * Fired once per take-over, so not again when a player moves between the games of a game night, nor
+ * when they quit and rejoin the same match in time. Synchronous, on the server thread. Not cancellable.
  */
 public final class MiniGamiPlayerJoinEvent extends Event {
 

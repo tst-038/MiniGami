@@ -111,6 +111,8 @@ public final class LiveMatch {
     private final MatchHud hud;
     /** Participants who quit with a way back, each with the timer that puts them out. */
     private final Map<UUID, MatchClock.Task> away = new HashMap<>();
+    /** Keeps those away counted as in the match until they come back, run out of time, or it ends. */
+    private final Map<UUID, Presence.Claim> awayClaims = new HashMap<>();
     /** Participants who left after the start; the roster still has them. */
     private final Set<UUID> left = new HashSet<>();
     /** When play started, for the record; null until then. */
@@ -403,9 +405,12 @@ public final class LiveMatch {
     private void goAway(Player player, Quit quit) {
         var id = player.getUniqueId();
         members.remove(id);
+        // Taken before the restore releases their state, so they stay in the match while away.
+        awayClaims.put(id, match.scope().register(sessions.claimPlace(id)));
         restore(id);
         var expiry = match.clock().schedule(quit.rejoinSeconds() * 20L, () -> {
             away.remove(id);
+            releaseAway(id);
             if (isJoinable()) {
                 unjoin(id);
             } else if (match.roster().find(id).filter(Participant::isAlive).isPresent()) {
@@ -446,6 +451,8 @@ public final class LiveMatch {
             claimPlace(id);
         }
         away.remove(id).close();
+        // Only now, so the new claim above has already kept them in the match: no leave and join in between.
+        releaseAway(id);
         members.add(id);
         hud.show(player);
         if (waiting) {
@@ -880,6 +887,13 @@ public final class LiveMatch {
 
     private void claimPlace(UUID id) {
         placeClaims.put(id, match.scope().register(sessions.claimPlace(id)));
+    }
+
+    private void releaseAway(UUID id) {
+        var claim = awayClaims.remove(id);
+        if (claim != null) {
+            claim.close();
+        }
     }
 
     private void releasePlace(UUID id) {

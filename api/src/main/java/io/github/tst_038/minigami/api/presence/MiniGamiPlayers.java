@@ -18,9 +18,13 @@ import java.util.UUID;
  * <li>Playing, eliminated, or spectating: in a match.</li>
  * <li>In a game night, in a game or waiting in between: in a match, throughout. The night holds the
  *     player's own state from its start to its end, so there is one join and one leave for the whole night.</li>
- * <li>Quit while in a match (even if they may still rejoin it): their own state is given back as they
- *     quit, so from then on not in a match, with a leave event during their quit. Rejoining takes them
- *     over again, which is a new join.</li>
+ * <li>Quit while in a match that they may still rejoin: still in a match while the rejoin time runs.
+ *     Their own state is given back as they quit, but their place is kept, so there is no leave
+ *     event yet and rejoining is not a new join. The leave event fires when the time runs out or
+ *     the match ends, and then the player is usually offline ({@link MiniGamiPlayerLeaveEvent#getPlayer()}
+ *     is empty).</li>
+ * <li>Quit while in a match they cannot rejoin: their own state is given back as they quit, so from
+ *     then on not in a match, with a leave event during their quit.</li>
  * <li>Offline, but their state couldn't be given back (it failed): in a match until it is given back
  *     at their next login, which fires the leave event then. After a server crash their state is
  *     also given back at login, but silently: no join was seen since the restart, so no leave

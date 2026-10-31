@@ -12,11 +12,12 @@ import org.bukkit.event.HandlerList;
  * {@link MiniGamiPlayerJoinEvent}, whether the match ended, they left or were kicked, they quit, or
  * the plugin is disabled. Synchronous, on the server thread. Not cancellable.
  *
- * <p>The player is online: their state is only given back to an online player, and one whose
- * restore had to wait for their next login fires this at that login. When they quit, it fires
- * during their quit, while they are still online; what they are given is saved with them.
- * {@link #getPlayer()} is empty only if they went offline anyway, so use {@link #getPlayerId()}
- * to find them.
+ * <p>The player is usually online: a restore that had to wait fires this at their next login, and
+ * a player who quits for good gets it during their quit, while still online; what they are given
+ * is saved with them. A player who quit but may rejoin stays in the match, so this fires when their
+ * time runs out or the match ends, and they are then offline: {@link #getPlayer()} is empty.
+ * Always use {@link #getPlayerId()} to find them, and handle the offline case, for example by
+ * keeping the reward until their next login.
  */
 public final class MiniGamiPlayerLeaveEvent extends Event {
 

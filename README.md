@@ -291,8 +291,10 @@ it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEF
 - `MiniGamiPlayers`, a Bukkit service: `isInMatch(UUID)`
 - `MiniGamiPlayerJoinEvent`: MiniGami took the player over (once, even when a game night moves them between games)
 - `MiniGamiPlayerLeaveEvent`: the player has their own state back, so it is safe to give items here; fired exactly
-  once per join, also when a match is stopped, a player is kicked, or the plugin is disabled. Players who quit get it
-  during their quit; a player who quit with time to rejoin counts as out, and rejoining is a new join.
+  once per join, also when a match is stopped, a player is kicked, or the plugin is disabled. Players who quit for good get it
+  during their quit. A player who quit with time to rejoin still counts as in the match (rejoining is not a new
+  join); the event fires when their time runs out or the match ends, usually while they are offline, so
+  `getPlayer()` is empty and you should use `getPlayerId()`.
 
 ```java
 var players = getServer().getServicesManager().load(MiniGamiPlayers.class); // null without MiniGami
