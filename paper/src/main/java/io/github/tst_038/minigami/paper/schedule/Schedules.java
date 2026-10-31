@@ -210,7 +210,7 @@ public final class Schedules {
     }
 
     private void announce(Call call, String key) {
-        long seconds = Math.max(0, Duration.between(clock.instant(), call.closesAt).toSeconds());
+        long seconds = Math.max(0, (Duration.between(clock.instant(), call.closesAt).toMillis() + 999) / 1000);
         messages.send(Audience.audience(couldJoin()), key, Placeholder.parsed("name", call.schedule.name()), Placeholder.parsed("game", call.variant.name()),
                 Formatter.number("seconds", seconds), Formatter.number("needed", call.variant.minPlayers()),
                 Placeholder.styling("join", ClickEvent.runCommand("/mg schedule join")));
@@ -231,10 +231,19 @@ public final class Schedules {
                 iterator.remove();
                 // A match whose start is counting down is let to start; its players are enough.
                 if (call.match != null && call.match.startsIn().isEmpty()) {
-                    messages.send(call.match.audience(), "schedule.not-enough-players", Placeholder.parsed("game", call.match.variant().name()));
+                    var game = Placeholder.parsed("game", call.match.variant().name());
+                    if (call.match.members().isEmpty()) {
+                        messages.send(Audience.audience(couldJoin()), "schedule.nobody-joined", Placeholder.parsed("name", call.schedule.name()), game);
+                    } else {
+                        messages.send(call.match.audience(), "schedule.not-enough-players", game);
+                    }
                     call.match.stop();
                 } else if (call.match != null) {
                     rewards.watch(call.schedule, call.match);
+                } else {
+                    // Its match ended before the call closed because everyone who joined left again.
+                    messages.send(Audience.audience(couldJoin()), "schedule.nobody-joined", Placeholder.parsed("name", call.schedule.name()),
+                            Placeholder.parsed("game", call.variant.name()));
                 }
             } else if (!call.reminded && !now.isBefore(call.remindAt)) {
                 call.reminded = true;

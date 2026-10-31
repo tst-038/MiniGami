@@ -545,6 +545,8 @@ schedule:
   reminder: "%prefix%%name%<gold>: still %seconds%s to join %game%<gold>. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
   # To the players in the match when the call closed before enough joined. %game%
   not-enough-players: "%prefix%<red>Not enough players joined %game%<red> in time."
+  # To everyone who could join when the call closed and nobody had. %name%, %game%
+  nobody-joined: "%prefix%%name%<gray>: nobody joined %game%<gray>, so it was called off."
   no-call: "%prefix%<red>No scheduled game is open to join right now."
   # To a winner once the game is over. %reward%: its name, %game%
   reward: "%prefix%<gold>You won <white>%reward%</white><gold> in %game%<gold>!"
