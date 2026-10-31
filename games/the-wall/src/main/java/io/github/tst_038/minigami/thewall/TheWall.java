@@ -18,6 +18,10 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
  * dying then costs nothing. Then the walls sink into the ground, and the last team standing wins. A
  * border can close in during the fight, so it doesn't drag on.
  *
+ * <p>Every team has a quarter of the arena, the regions {@code quarter-1}, {@code quarter-2} and so on in
+ * team order; the {@code team-region} feature, set for the preparing phase in the game's file, keeps a
+ * team in its own until the walls drop.
+ *
  * <p>The arena decides which walls there are: every region named {@code wall} or {@code wall-…}, such
  * as {@code wall-north} or a {@code wall-tower} in the middle, drops.
  *
@@ -30,6 +34,7 @@ public final class TheWall implements GameType {
     static final String PREPARING = "preparing";
     static final String FIGHTING = "fighting";
     static final String WALLS = "wall";
+    static final String QUARTER = "quarter";
 
     private final int prepareSeconds;
     private final Optional<ClosingBorder.Settings> border;
@@ -65,6 +70,11 @@ public final class TheWall implements GameType {
     @Override
     public List<String> regions() {
         return border.stream().map(settings -> ClosingBorder.REGION).toList();
+    }
+
+    @Override
+    public Optional<String> regionPerTeam() {
+        return Optional.of(QUARTER);
     }
 
     @Override
