@@ -92,6 +92,18 @@ class ConfigReaderTest {
     }
 
     @Test
+    void anOldKeyNameIsReportedOnceWithItsNewName() throws Exception {
+        var reader = read("""
+                blocks: [snow_block]
+                """);
+
+        reader.renamed("blocks", "whitelist");
+        reader.renamed("except", "blacklist");
+
+        assertEquals(List.of("modes/test.yml: blocks: was renamed to whitelist"), problems(reader));
+    }
+
+    @Test
     void reportsKeysNobodyReadAsUnknown() throws Exception {
         var reader = read("""
                 name: Spleef

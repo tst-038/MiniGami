@@ -363,6 +363,7 @@ reload:
   done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games, <white>%nights%</white> game nights."
   failed: "%prefix%<red>Config not loaded, the old one stays in use. <white>%problems%</white> problem(s):"
   problem: "<red> - %problem%"
+  skipped: "%prefix%<yellow><white>%problems%</white> file(s) have problems and were left out. <white>/mg reload</white> shows them again:"
   # %findings%: how many arena problems leave an arena out of a game
   findings: "%prefix%<yellow><white>%findings%</white> arena problem(s) keep games out of arenas; <click:run_command:'/mg doctor'><hover:show_text:'Click to see them'><white>/mg doctor</white></hover></click> lists them."
 

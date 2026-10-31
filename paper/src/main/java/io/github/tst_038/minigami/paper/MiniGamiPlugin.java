@@ -69,6 +69,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
@@ -115,6 +116,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final AtomicInteger configLoads = new AtomicInteger();
     /** Who asked for a load that hasn't finished; the newest load answers them all, also those of loads it overtook. */
     private final Queue<Audience> requesters = new ConcurrentLinkedQueue<>();
+    /** Whether anyone waiting asked for a reload that any problem stops. */
+    private final AtomicBoolean strictRequested = new AtomicBoolean();
     private YamlConfiguration bundledMessages;
 
     @Override
@@ -166,13 +169,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, scheduleRewards,
                 Clock.systemDefaultZone(), RandomGenerator.getDefault());
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadConfig);
+        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadAfterEdit);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights, scheduled,
-                        new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
-        loadConfig(null);
+                        new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadStrict), "Join, leave and manage minigames"));
+        loadConfig(null, false);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> scheduled.tick(), 20, 20);
@@ -191,7 +194,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
      *
      * @param requester who asked for the load and hears how it went; {@code null} at startup
      */
-    private void loadConfig(Audience requester) {
+    private void loadConfig(Audience requester, boolean strict) {
+        if (strict) {
+            strictRequested.set(true);
+        }
         if (requester != null) {
             requesters.add(requester);
         }
@@ -239,7 +245,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 for (Audience next; (next = requesters.poll()) != null; ) {
                     waiting.add(next);
                 }
-                if (!waiting.isEmpty() && !problems.isEmpty()) {
+                if (!waiting.isEmpty() && strictRequested.getAndSet(false) && !problems.isEmpty()) {
                     problems.forEach(problem -> getLogger().warning("Not reloaded: " + problem));
                     for (Audience audience : waiting) {
                         messages.send(audience, "reload.failed", Formatter.number("problems", problems.size()));
@@ -272,9 +278,26 @@ public final class MiniGamiPlugin extends JavaPlugin {
                     if (blocking > 0) {
                         messages.send(audience, "reload.findings", Formatter.number("findings", blocking));
                     }
+                    if (!problems.isEmpty()) {
+                        messages.send(audience, "reload.skipped", Formatter.number("problems", problems.size()));
+                        problems.forEach(problem -> messages.send(audience, "reload.problem", Placeholder.unparsed("problem", problem.toString())));
+                    }
                 }
             });
         });
+    }
+
+    /** {@code /mg reload}: any problem in any file keeps the old config in use. */
+    private void loadStrict(Audience requester) {
+        loadConfig(requester, true);
+    }
+
+    /**
+     * After a setup or edit command, which already checked the file it wrote: loads everything that is valid,
+     * so a problem in another file doesn't keep the new one out.
+     */
+    private void loadAfterEdit(Audience requester) {
+        loadConfig(requester, false);
     }
 
     /** Blocking IO. Games used to be called modes; their old files load no more until moved to games/ and converted. */
