@@ -42,6 +42,11 @@ public final class ArenaMaps {
                 : Optional.of(new WorldEditMaps(plugin));
     }
 
+    /** Whether WorldEdit or FastAsyncWorldEdit is there, which saving and pasting maps need. */
+    public boolean hasWorldEdit() {
+        return worldEdit.isPresent();
+    }
+
     /** Whether the arena's map is being pasted, so it can't host a match yet. */
     public boolean isResetting(String arenaId) {
         return resetting.contains(arenaId);

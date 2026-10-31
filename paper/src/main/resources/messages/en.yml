@@ -14,6 +14,10 @@ join:
   not-allowed: "%prefix%<red>%player% may not play this game."
   # %game%: the game's or variant's name
   no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy or full. Try again later."
+  # None of its arenas is set up for it yet; staff also hear why. %game%: the game's or variant's name
+  not-ready: "%prefix%<red>%game%<red> isn't ready to be played yet."
+  # Its file is there but did not load; staff also hear why. %game%: the game as typed
+  unavailable: "%prefix%<red><white>%game%</white> can't be played right now."
   # The match a schedule opened is full or has started. %game%: its name
   match-full: "%prefix%<red>%game%<red> is full or has started already."
   party-leader-only: "%prefix%<red>You are in a party: only your party leader can join a game, for the whole party."
@@ -296,7 +300,7 @@ info:
     # %problems%: how many
     problems: "<red>%problems% problem(s)"
     not-loaded: "<yellow>not loaded; /mg reload"
-    no-arenas: "<yellow>no playable arena: its arenas lack spawns, the game's regions, or a saved map (needed when blocks change)"
+    no-arenas: "<yellow>no playable arena; /mg doctor %id% says why"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"
   # %count%; per entry %id%, %name%, %games%: how many are in the playlist, and %status%
@@ -359,6 +363,8 @@ reload:
   done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games, <white>%nights%</white> game nights."
   failed: "%prefix%<red>Config not loaded, the old one stays in use. <white>%problems%</white> problem(s):"
   problem: "<red> - %problem%"
+  # %findings%: how many arena problems leave an arena out of a game
+  findings: "%prefix%<yellow><white>%findings%</white> arena problem(s) keep games out of arenas; <click:run_command:'/mg doctor'><hover:show_text:'Click to see them'><white>/mg doctor</white></hover></click> lists them."
 
 edit:
   invalid-id: "%prefix%<red><white>%id%</white> can't be an id: use lower case letters, digits and dashes."
@@ -484,6 +490,8 @@ night:
   busy: "%prefix%<red>These players are in another match: <white>%players%</white>. Retry with <white>/mg night next</white>."
   # %game%: the game's name
   no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy. Retry with <white>/mg night next</white> when one is free."
+  # None of its arenas is set up for it. %game%: the game's name
+  not-ready: "%prefix%<red>No arena is set up for %game%<red> yet. Fix it, then retry with <white>/mg night next</white>, or skip it."
   # %player%
   join-failed: "%prefix%<red>%player% can't join right now: their things from an earlier match still need to be given back. Retry with <white>/mg night next</white>."
   open-failed: "%prefix%<red>The game could not be opened; see the server log. Retry with <white>/mg night next</white> or skip it."
@@ -563,3 +571,43 @@ schedule:
 debug:
   summary: "%prefix%<gray>Matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"
   match: "%prefix%<gray>%game% on %arena%: phase <white>%phase%</white>, <white>%members%</white> in match, <white>%alive%</white> alive, tick <white>%tick%</white>"
+
+# /mg doctor: why games can't be played where. Also shown to staff when a join fails, and logged at each load.
+doctor:
+  header: "%prefix%<gold>Doctor</gold> <gray>what keeps games out of arenas:"
+  no-games: "<gray> No games are set up."
+  # %target%: as typed
+  unknown: "%prefix%<red>There is no game or arena called <white>%target%</white>."
+  # %game%: the game's id, %name%: its name
+  game-ready: "<green> ✔ <white>%game%</white> is ready in all its arenas."
+  game-partly: "<yellow> ● <white>%game%</white> plays, but not in every arena:"
+  game-not-ready: "<red> ✖ <white>%game%</white> has no arena that can host it:"
+  game-not-loaded: "<red> ✖ <white>%game%</white> didn't load:"
+  # %arena%
+  arena: "<yellow> ● Arena <white>%arena%</white>:"
+  arena-ready: "<green> ✔ Arena <white>%arena%</white> can host every game that lists it."
+  arena-not-loaded: "<red> ✖ Arena <white>%arena%</white> didn't load, so no game plays in it:"
+  # %problem%: a problem in a file
+  problem: "<red>   - %problem%"
+  reload: "<gray>   Its file changed since the last load; <white>/mg reload</white> to load it."
+  # One finding. %arena%, %game%: the game's id and variant, %reason%: one of the diagnosis texts, %fix%: the fix line or nothing
+  blocking: "<red>   ✖ <white>%arena%</white> can't host <white>%game%</white>: %reason%%fix%"
+  warning: "<yellow>   ● <white>%arena%</white> hosts <white>%game%</white>, but %reason%%fix%"
+  # %command%: what fixes it; <suggest>…</suggest> fills it in on click
+  fix: " <suggest><hover:show_text:'Click to fill in'><gray>(<white>%command%</white>)</gray></hover></suggest>"
+  # After the reasons a join failed. %command%: the doctor command for the game
+  more: "<gray>   More: <suggest><white>%command%</white></suggest>"
+
+# Why an arena can't host a game, for the doctor lines above. Placeholders per reason.
+diagnosis:
+  no-spawns: "<red>it has no spawns"
+  # %region%
+  missing-region: "<red>missing region <white>%region%</white>"
+  # %group%: such as wall, met by wall, wall-1 or wall-north
+  missing-region-group: "<red>no region of group <white>%group%</white>"
+  # %region%, %teams%: the most teams a match can have
+  missing-team-region: "<red>missing region <white>%region%</white>, one per team for up to %teams% teams"
+  no-map: "<red>it changes blocks but the arena has no saved map to put them back"
+  no-worldedit: "<red>it changes blocks, and putting them back needs WorldEdit or FastAsyncWorldEdit"
+  # %spawns%, %teams%
+  few-team-spawns: "<yellow>it has %spawns% spawn(s) for up to %teams% teams, so some teams share a spawn"

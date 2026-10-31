@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.diagnosis.Hosting;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -61,7 +62,7 @@ class BundledGamesTest {
         }
         var messages = resource("messages/en.yml");
 
-        var loaded = new GameLoader(gametypes, features, statGroups)
+        var loaded = new GameLoader(gametypes, features, statGroups, Hosting.checks(true))
                 .load(new YamlFiles("games", files, List.of()), arenas, false, resource("config.yml").getConfigurationSection("hud"), messages::isString);
 
         assertEquals(List.of(), loaded.problems());

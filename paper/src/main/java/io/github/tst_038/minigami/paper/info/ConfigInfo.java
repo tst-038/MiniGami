@@ -109,7 +109,7 @@ public final class ConfigInfo {
         messages.send(sender, "info.games", Formatter.number("count", current.games().size()));
         current.games().forEach((id, config) -> {
             var loaded = games.get().find(id);
-            var status = loaded.isPresent() && loaded.get().base().arenas().isEmpty() ? status("info.status.no-arenas") : null;
+            var status = loaded.isPresent() && loaded.get().base().arenas().isEmpty() ? status("info.status.no-arenas", Placeholder.unparsed("id", id)) : null;
             messages.send(sender, "info.game-entry", Placeholder.unparsed("id", id),
                     Placeholder.unparsed("gametype", config.getString("gametype", "?")),
                     Formatter.number("variants", loaded.map(game -> game.variants().size()).orElse(0)),
@@ -409,8 +409,8 @@ public final class ConfigInfo {
         return status != null ? status : status("info.status.ok");
     }
 
-    private Component status(String key) {
-        return messages.render(key);
+    private Component status(String key, TagResolver... placeholders) {
+        return messages.render(key, placeholders);
     }
 
     private static TagResolver infoClick(String command) {

@@ -186,7 +186,32 @@ way through. The tables below give an overview.
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |
 | `/mg lobby set\|tp` · `/mg config info` | admin |
 | `/mg player <player> snapshot\|restore` | admin |
-| `/mg join <game> [variant] <player>` · `/mg reload` · `/mg debug` | admin |
+| `/mg join <game> [variant] <player>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
+
+## Troubleshooting: `/mg doctor`
+
+A game only plays in the arenas listed by it that are set up for it. An arena that isn't is left out (no error, since it
+may still be being set up), and `/mg doctor` says why:
+
+- `/mg doctor`: every game, whether it is ready, and what keeps it out of its arenas; also files that didn't load.
+- `/mg doctor <game>`: one game and its variants. `/mg doctor <arena>`: one arena, for every game that lists it.
+
+Each line names the arena, the game, the reason and, when a command fixes it, that command (click to fill it in), e.g.
+`example can't host the-wall: missing region quarter-3 (/mg arena example region quarter-3 set)`.
+
+| Reason | Fix |
+|---|---|
+| no spawns | `/mg arena <arena> spawn add` |
+| missing region the game needs | `/mg arena <arena> region <region> set` |
+| no region of a group (e.g. `wall`, met by `wall-1` or `wall-north`) | `/mg arena <arena> region <group>-1 set` |
+| missing region per team (e.g. `quarter-1` up to `quarter-4`) | `/mg arena <arena> region <region> set` |
+| changes blocks but no saved map | `/mg arena <arena> map save` |
+| changes blocks but WorldEdit isn't installed | install WorldEdit or FastAsyncWorldEdit |
+| fewer spawns than teams (a warning: teams share spawns) | `/mg arena <arena> spawn add` |
+
+When a join fails, players hear whether the game is busy (all its arenas are in use), not ready (no arena is set up for
+it) or can't be played (its file didn't load); staff with `minigami.admin` also get the reasons. Startup and
+`/mg reload` log the findings to the console, each only once until it changes.
 
 ## Permissions
 

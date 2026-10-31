@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.game;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.stat.StatGroup;
+import io.github.tst_038.minigami.core.diagnosis.Finding;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.hud.Hud;
@@ -27,12 +28,15 @@ import java.util.stream.Stream;
  * @param teamSpawns whether a team starts and respawns at one spawn or spread over all; spawns tagged for a team always go to it
  * @param roles in the order they are handed out; empty when it has none
  * @param quit what quitting a running match does to a player still in it
+ * @param arenas the arenas it lists that can host it
+ * @param findings what is wrong with the arenas it lists, also those left out of {@code arenas} for it
  * @param features feature instances are shared by every match of it, so they keep no match state themselves
  * @param statGroups the stat groups it keeps, next to the stats of the game type itself
  * @param hud what players see of a match next to chat
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, List<Role> roles, Quit quit, List<Arena> arenas, Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, List<Role> roles, Quit quit, List<Arena> arenas, List<Finding> findings,
+        Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
 
     public Variant {
         id.ifPresent(variant -> {
@@ -43,6 +47,7 @@ public record Variant(String game, Optional<String> id, GameType gametype, Strin
         messages = Map.copyOf(messages);
         roles = List.copyOf(roles);
         arenas = List.copyOf(arenas);
+        findings = List.copyOf(findings);
         features = Map.copyOf(features);
         statGroups = List.copyOf(statGroups);
     }
@@ -54,7 +59,12 @@ public record Variant(String game, Optional<String> id, GameType gametype, Strin
 
     /** For logs and admins: the game's id, then the variant's if it is one, such as {@code spleef duos}. */
     public String key() {
-        return id.map(variant -> game + " " + variant).orElse(game);
+        return key(game, id);
+    }
+
+    /** @param variant empty for the game itself */
+    static String key(String game, Optional<String> variant) {
+        return variant.map(id -> game + " " + id).orElse(game);
     }
 
     /** The stats a match of it keeps: the game type's own and those of its stat groups. */

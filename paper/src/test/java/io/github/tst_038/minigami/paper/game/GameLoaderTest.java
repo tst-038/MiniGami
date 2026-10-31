@@ -22,6 +22,7 @@ import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.diagnosis.Hosting;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -145,7 +146,7 @@ class GameLoaderTest {
     private YamlFiles.Loaded<Game> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new GameLoader(games, features, statGroups).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true)).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private YamlFiles.Loaded<Game> loadAll(Map<String, String> yamlById) throws Exception {
@@ -155,7 +156,7 @@ class GameLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new GameLoader(games, features, statGroups).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true)).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Game> loaded) {
@@ -570,6 +571,9 @@ class GameLoaderTest {
         // An arena lacking them is still being set up: left out, but no problem, so saving its regions can reload.
         assertEquals(List.of(), problems(loaded));
         assertEquals(List.of("hills"), arenaIds(loaded));
+        // The findings say why the others are left out.
+        assertEquals(List.of("demo missing-region", "empty no-spawns", "empty missing-region"), loaded.entries().find("fall").orElseThrow().base().findings().stream()
+                .map(finding -> finding.arena() + " " + finding.code()).toList());
     }
 
     private static List<String> arenaIds(YamlFiles.Loaded<Game> loaded) {

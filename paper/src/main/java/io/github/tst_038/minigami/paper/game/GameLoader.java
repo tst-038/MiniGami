@@ -8,10 +8,14 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
+import io.github.tst_038.minigami.core.diagnosis.Check;
+import io.github.tst_038.minigami.core.diagnosis.Diagnosis;
+import io.github.tst_038.minigami.core.diagnosis.Finding;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.paper.arena.Arena;
+import io.github.tst_038.minigami.paper.diagnosis.Hosting;
 import io.github.tst_038.minigami.paper.hud.Hud;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +27,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.configuration.ConfigurationSection;
@@ -77,11 +80,15 @@ public final class GameLoader {
     private final IdRegistry<GameType> gametypes;
     private final IdRegistry<FeatureFactory> features;
     private final IdRegistry<StatGroup> statGroups;
+    private final List<Check<Hosting>> checks;
 
-    public GameLoader(IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups) {
+    /** @param checks what every arena a game lists goes through; it plays only in those with nothing blocking */
+    public GameLoader(IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups,
+            List<Check<Hosting>> checks) {
         this.gametypes = gametypes;
         this.features = features;
         this.statGroups = statGroups;
+        this.checks = List.copyOf(checks);
     }
 
     /**
@@ -193,16 +200,25 @@ public final class GameLoader {
         var roles = roles(config, minPlayers, game);
         var quit = quit(config);
         var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
-        var playable = arenas(config, arenas, game, mostTeams);
+        var listed = arenas(config, arenas);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         var stats = statGroups(config);
         var changesBlocks = Variant.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
-        // Only the arena's saved map puts changed blocks back; an arena without one is still being set up.
-        if (changesBlocks) {
-            playable = playable.stream().filter(arena -> arena.map().isPresent()).toList();
+        // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
+        // the reload it needs to get ready. It is left out, and the findings say why.
+        var playable = new ArrayList<Arena>();
+        var findings = new ArrayList<Finding>();
+        // With an unknown game type the file has a problem already, and nothing to check against.
+        for (var arena : game == null ? List.<Arena>of() : listed) {
+            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks), checks);
+            if (diagnosis.isReady()) {
+                playable.add(arena);
+            }
+            findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, roles, quit, playable, features, stats, hud);
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, roles, quit, playable, findings,
+                features, stats, hud);
     }
 
     /** Every stat a game or stat group keeps. */
@@ -348,33 +364,18 @@ public final class GameLoader {
         return roles;
     }
 
-    /**
-     * @param game checks its arenas have the regions and region groups it needs; may be null when unknown
-     * @param mostTeams how many teams a match can have, for the game's region per team
-     */
-    private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry, GameType game, int mostTeams) {
+    /** The listed arenas that loaded, ready or not. */
+    private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {
         var ids = config.strings("arenas");
         if (ids.isEmpty() && config.has("arenas")) {
             config.problem("arenas", "needs at least one arena");
         }
-        var needed = game == null ? List.<String>of() : Stream.concat(game.regions().stream(), game.regionPerTeam().stream()
-                .flatMap(prefix -> IntStream.rangeClosed(1, mostTeams).mapToObj(number -> prefix + "-" + number))).toList();
         var arenas = new ArrayList<Arena>();
         for (String id : ids) {
-            var arena = registry.find(id);
-            if (arena.isEmpty()) {
-                config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids()));
-            } else if (arena.get().isPlayable() && arena.get().regions().keySet().containsAll(needed) && hasGroups(arena.get(), game)) {
-                arenas.add(arena.get());
-            }
-            // Left out without a problem: an arena without spawns or the game's regions is still being set up,
-            // and a problem would fail the reload it needs to get them.
+            registry.find(id).ifPresentOrElse(arenas::add,
+                    () -> config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids())));
         }
         return arenas;
-    }
-
-    private static boolean hasGroups(Arena arena, GameType game) {
-        return game == null || game.regionGroups().stream().allMatch(group -> arena.regions().values().stream().anyMatch(region -> region.isIn(group)));
     }
 
     private Map<String, List<Feature>> features(ConfigReader config, GameType game) {

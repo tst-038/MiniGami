@@ -16,6 +16,8 @@ import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
+import io.github.tst_038.minigami.paper.diagnosis.Doctor;
+import io.github.tst_038.minigami.paper.diagnosis.Hosting;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
@@ -106,6 +108,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private Storage storage;
     private ConfigEditor editor;
     private ConfigInfo info;
+    private Doctor doctor;
     private Messages messages;
     private PlayPermissions playPermissions;
     /** Counts config loads, so one that finishes after a newer one doesn't overwrite it. */
@@ -120,7 +123,6 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // Until the first load has read the admin's copy.
         messages = new Messages(bundledMessages, getLogger());
         kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
-        gameLoader = new GameLoader(gametypes, features, statGroups);
         playPermissions = new PlayPermissions(getServer().getPluginManager());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
@@ -149,12 +151,14 @@ public final class MiniGamiPlugin extends JavaPlugin {
         BuiltIns.features(kits::find).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
         maps = new ArenaMaps(this, messages);
+        gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit()));
+        doctor = new Doctor(messages, getLogger(), () -> games);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);
-        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties);
+        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, doctor);
         var nightReport = new NightReport(getServer(), messages);
         nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), sessions, parties, new NightStore(storage, getLogger()), nightReport,
-                new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault());
+                new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
         var scheduleRewards = new ScheduleRewards(this, messages, RandomGenerator.getDefault());
@@ -167,7 +171,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights, scheduled,
-                        new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
+                        new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadConfig), "Join, leave and manage minigames"));
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
@@ -257,6 +261,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 loadedNights.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedSchedules.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids() + ", game nights: " + nightTemplates.ids() + ", schedules: " + schedules.ids());
+                var blocking = doctor.loaded(problems, gameFiles.files().keySet(), arenaFiles.files().keySet());
                 if (requester == null) {
                     // A match the server stopped in the middle of left its arena changed.
                     maps.resetAll(arenas.ids().stream().map(id -> arenas.find(id).orElseThrow()).toList());
@@ -264,6 +269,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 for (Audience audience : waiting) {
                     messages.send(audience, "reload.done", Formatter.number("arenas", arenas.ids().size()),
                             Formatter.number("games", games.ids().size()), Formatter.number("nights", nightTemplates.ids().size()));
+                    if (blocking > 0) {
+                        messages.send(audience, "reload.findings", Formatter.number("findings", blocking));
+                    }
                 }
             });
         });

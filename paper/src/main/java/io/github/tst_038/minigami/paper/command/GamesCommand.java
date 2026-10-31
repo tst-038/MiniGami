@@ -14,6 +14,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
+import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.kit.KitAdmin;
@@ -61,7 +62,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> create(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
-            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, PartyService parties, Nights nights, Schedules schedules, StatsView stats, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, PartyService parties, Nights nights, Schedules schedules, StatsView stats, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
@@ -106,6 +107,9 @@ public final class GamesCommand {
                 .then(NightCommands.node(nights, editor, info, help))
                 .then(ScheduleCommands.node(schedules, editor, info, help))
                 .then(Commands.literal("reload").requires(ADMIN).executes(bySender((sender, context) -> reload.accept(sender))))
+                .then(Commands.literal("doctor").requires(ADMIN).executes(bySender((sender, context) -> doctor.show(sender)))
+                        .then(Commands.argument("target", StringArgumentType.word()).suggests(suggest(doctor::targets))
+                                .executes(bySender((sender, context) -> doctor.show(sender, string(context, "target"))))))
                 .then(Commands.literal("debug").requires(ADMIN).executes(bySender((sender, context) -> running.debug(sender))))
                 .build();
     }

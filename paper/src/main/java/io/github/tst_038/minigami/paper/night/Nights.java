@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.gamenight.night.Night;
 import io.github.tst_038.minigami.gamenight.team.NightTeams;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.gamenight.template.PlaylistEntry;
+import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.match.LiveMatch;
@@ -102,6 +103,7 @@ public final class Nights implements Listener {
     private final NightValues values;
     private final Clock clock;
     private final RandomGenerator random;
+    private final Doctor doctor;
     private Active active;
 
     /**
@@ -111,7 +113,7 @@ public final class Nights implements Listener {
      * @param values where the night publishes its state for placeholders
      */
     public Nights(Plugin plugin, Messages messages, Supplier<IdRegistry<NightTemplate>> templates, Supplier<IdRegistry<Game>> games, RunningMatches running,
-            Supplier<Optional<Location>> lobby, PlayerSessions sessions, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random) {
+            Supplier<Optional<Location>> lobby, PlayerSessions sessions, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random, Doctor doctor) {
         this.plugin = plugin;
         this.messages = messages;
         this.templates = templates;
@@ -126,6 +128,7 @@ public final class Nights implements Listener {
         this.values = values;
         this.clock = clock;
         this.random = random;
+        this.doctor = doctor;
     }
 
     public Collection<String> templateIds() {
@@ -413,7 +416,8 @@ public final class Nights implements Listener {
             return;
         }
         if (opened.isEmpty()) {
-            messages.send(host, "night.no-free-arena", Placeholder.parsed("game", variant.get().name()));
+            messages.send(host, variant.get().arenas().isEmpty() ? "night.not-ready" : "night.no-free-arena", Placeholder.parsed("game", variant.get().name()));
+            doctor.explain(host, variant.get());
             return;
         }
         var game = opened.get();
