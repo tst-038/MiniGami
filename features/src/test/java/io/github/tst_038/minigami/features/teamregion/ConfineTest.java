@@ -57,6 +57,15 @@ class ConfineTest {
     }
 
     @Test
+    void anEliminatedPlayerIsNotConfined() {
+        match.roster.eliminate(id);
+
+        assertTrue(breaks(at(25)));
+        assertFalse(match.fire(new PlayerMoveEvent(player, at(9.5), at(10.5))).isCancelled());
+        assertFalse(match.fire(new PlayerMoveEvent(player, at(15), at(16))).isCancelled());
+    }
+
+    @Test
     void needsAGameWithRegionsPerTeam() {
         match.teamRegions.clear();
 

@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
+import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,7 +28,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 
 /**
- * Every team stays in its own region, the one the game hands out per team: its players can't place,
+ * Every team stays in its own region, the one the game hands out per team: its players still in can't place,
  * break or walk past it, and nothing they set going reaches past it. Inside there are no limits. For
  * a game whose teams each have a region, such as the plots of a build battle or the quarters of a
  * base to prepare in.
@@ -83,7 +84,11 @@ final class Confine implements Feature {
         context.on(BlockExplodeEvent.class, event -> event.blockList().removeIf(block -> !samePlace(context, event.getBlock().getLocation(), block.getLocation())));
     }
 
+    /** Whether the player may be at this location: always for anyone out of play, such as a spectator. */
     private static boolean contains(MatchContext context, UUID id, Location location) {
+        if (context.roster().find(id).filter(Participant::isAlive).isEmpty()) {
+            return true;
+        }
         return context.teamRegion(id).filter(own -> own.region().contains(location)).isPresent();
     }
 
