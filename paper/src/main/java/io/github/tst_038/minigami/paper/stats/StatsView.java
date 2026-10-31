@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -167,9 +168,17 @@ public final class StatsView {
         if (profile.games().isEmpty()) {
             messages.send(sender, "stats.none");
         }
-        profile.games().forEach(id -> messages.send(sender, "stats.game",
-                games.get().find(id).map(played -> Placeholder.parsed("game", played.name())).orElseGet(() -> Placeholder.unparsed("game", id)),
-                totals(profile.game(id))));
+        profile.games().forEach(id -> {
+            var totals = profile.game(id);
+            messages.send(sender, "stats.game",
+                    games.get().find(id).map(played -> Placeholder.parsed("game", played.name())).orElseGet(() -> Placeholder.unparsed("game", id)),
+                    totals(totals));
+            var kept = totals.stats().keySet().stream().map(Stat::id).sorted().map(stat -> messages.render("stats.stat-inline",
+                    Placeholder.component("stat", statName(stat)), Formatter.number("amount", totals.stat(new Stat(stat))))).toList();
+            if (!kept.isEmpty()) {
+                messages.send(sender, "stats.game-stats", Placeholder.component("stats", Component.join(JoinConfiguration.separator(messages.render("stats.separator")), kept)));
+            }
+        });
     }
 
     private static TagResolver totals(Totals totals) {

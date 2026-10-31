@@ -209,6 +209,11 @@ stats:
   game-totals: "<gray> %played% played, %wins% won, average place %place%, left %left%, %minutes% min"
   # A line per variant played, under the game's totals and stats
   variant: "<gray> - %variant%<gray>: %played% played, %wins% won, average place %place%, %minutes% min"
+  # A game's kept stats on a line under it in /mg stats: %stats% is each stat-inline, between separators
+  game-stats: "<gray>    %stats%"
+  # %stat%, %amount%
+  stat-inline: "<gray>%stat% <white>%amount%"
+  separator: "<dark_gray> | "
   # %amount%
   stat: "<gray> - %stat%: <white>%amount%"
   top-header: "%prefix%<gold>Top %stat%</gold> <gray>in %game%<gray>:"
