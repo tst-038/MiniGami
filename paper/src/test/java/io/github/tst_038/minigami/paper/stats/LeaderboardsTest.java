@@ -91,7 +91,10 @@ class LeaderboardsTest {
                 leaderboards.top("tdm", Optional.empty(), Leaderboards.WINS));
         assertEquals(List.of(new Entry(carol, Optional.empty(), 9)), leaderboards.top("tdm", Optional.of("big"), KILLS.id()));
         assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 1)), leaderboards.top("tdm", Optional.of("big"), Leaderboards.WINS));
-        assertEquals(Set.of(Leaderboards.WINS, KILLS.id()), leaderboards.stats("tdm"));
+        assertEquals(List.of(3L, 3L), leaderboards.top("tdm", Optional.empty(), Leaderboards.PLAYED).stream().map(Entry::amount).toList(),
+                "everyone played all three matches, variants added up");
+        assertEquals(List.of(1L, 1L), leaderboards.top("tdm", Optional.of("big"), Leaderboards.PLAYED).stream().map(Entry::amount).toList());
+        assertEquals(Set.of(Leaderboards.WINS, Leaderboards.PLAYED, KILLS.id()), leaderboards.stats("tdm"));
 
         play(Optional.empty(), bob, Map.of(alice, 10L));
         settle();

@@ -225,6 +225,7 @@ stats:
   # A stat's display name by its id; a game's own stats need one here too.
   name:
     wins: "wins"
+    played: "games played"
     points: "points"
     kills: "kills"
     deaths: "deaths"

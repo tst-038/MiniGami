@@ -59,6 +59,7 @@ public final class StatsView {
         var stats = new TreeSet<String>();
         games.get().find(gameId).ifPresent(game -> {
             stats.add(Leaderboards.WINS);
+            stats.add(Leaderboards.PLAYED);
             stats.addAll(statIds(game));
             stats.addAll(leaderboards.stats(game.id()));
         });
@@ -173,7 +174,7 @@ public final class StatsView {
                 stats.add(stat);
             });
             stats.forEach(stat -> messages.send(sender, "stats.stat",
-                    Placeholder.component("stat", statName(stat)), Formatter.number("amount", totals.stat(new Stat(stat)))));
+                    Placeholder.component("stat", statName(stat)), Formatter.number("amount", amount(totals, stat))));
             if (only.isEmpty() && !game.get().variants().isEmpty()) {
                 // shortcut: a variant since removed from the game's file isn't listed, though it still counts in the totals above.
                 game.get().all().forEach(variant -> {
@@ -200,6 +201,14 @@ public final class StatsView {
                 messages.send(sender, "stats.game-stats", Placeholder.component("stats", Component.join(JoinConfiguration.separator(messages.render("stats.separator")), kept)));
             }
         });
+    }
+
+    private static long amount(Totals totals, String stat) {
+        return switch (stat) {
+            case Leaderboards.WINS -> totals.wins();
+            case Leaderboards.PLAYED -> totals.played();
+            default -> totals.stat(new Stat(stat));
+        };
     }
 
     private static TagResolver totals(Totals totals) {

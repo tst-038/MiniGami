@@ -27,8 +27,11 @@ import org.bukkit.event.Listener;
  */
 public final class Leaderboards implements Listener {
 
-    /** The board of matches won; every other board is a stat. */
+    /** The board of matches won; besides {@link #PLAYED}, every other board is a stat. */
     public static final String WINS = "wins";
+
+    /** The board of matches played, which every game has without keeping it as a stat. */
+    public static final String PLAYED = "played";
 
     /** @param name the name they last joined with; empty if nobody knows it, e.g. they haven't joined since names were kept */
     public record Entry(UUID id, Optional<String> name, long amount) {
@@ -66,7 +69,7 @@ public final class Leaderboards implements Listener {
         return boards.getOrDefault(new Board(game, variant, stat), List.of());
     }
 
-    /** The stats the game has a board for, wins included once anyone won. */
+    /** The stats the game has a board for, wins and played included once anyone has them. */
     public Set<String> stats(String game) {
         var stats = new TreeSet<String>();
         boards.keySet().stream().filter(board -> board.game().equals(game)).forEach(board -> stats.add(board.stat()));
@@ -108,6 +111,11 @@ public final class Leaderboards implements Listener {
                         UNION ALL
                         SELECT player, game, variant, ?, wins FROM player_totals WHERE wins > 0 AND variant <> ''
                         UNION ALL
+                        SELECT player, game, NULL, ?, SUM(played) FROM player_totals
+                            GROUP BY player, game HAVING SUM(played) > 0
+                        UNION ALL
+                        SELECT player, game, variant, ?, played FROM player_totals WHERE played > 0 AND variant <> ''
+                        UNION ALL
                         SELECT player, game, NULL, stat, SUM(amount) FROM player_stat_totals
                             GROUP BY player, game, stat HAVING SUM(amount) > 0
                         UNION ALL
@@ -119,7 +127,9 @@ public final class Leaderboards implements Listener {
                 ORDER BY ranked.game, ranked.variant, ranked.stat, ranked.position""")) {
             select.setString(1, WINS);
             select.setString(2, WINS);
-            select.setInt(3, size);
+            select.setString(3, PLAYED);
+            select.setString(4, PLAYED);
+            select.setInt(5, size);
             try (var rows = select.executeQuery()) {
                 while (rows.next()) {
                     read.computeIfAbsent(new Board(rows.getString(1), Optional.ofNullable(rows.getString(2)), rows.getString(3)), board -> new ArrayList<>())
