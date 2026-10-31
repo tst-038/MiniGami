@@ -14,7 +14,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;
 import org.bukkit.entity.Player;
 
-/** {@code /mg stats [player] [game]} and {@code /mg top <game> [stat] [variant]}, for everyone. */
+/** {@code /mg stats [player] [game] [stat]} and {@code /mg top <game> [stat] [variant]}, for everyone. */
 final class StatsCommands {
 
     private StatsCommands() {
@@ -35,7 +35,11 @@ final class StatsCommands {
                         .then(Commands.argument("game", StringArgumentType.word())
                                 .suggests(suggest(view::gameIds))
                                 .executes(bySender((sender, context) ->
-                                        view.show(sender, string(context, "player"), Optional.of(string(context, "game")))))));
+                                        view.show(sender, string(context, "player"), Optional.of(string(context, "game")))))
+                                .then(Commands.argument("stat", StringArgumentType.word())
+                                        .suggests(suggest(context -> view.boardStats(string(context, "game"))))
+                                        .executes(bySender((sender, context) -> view.show(sender, string(context, "player"),
+                                                Optional.of(string(context, "game")), Optional.of(string(context, "stat"))))))));
     }
 
     static ArgumentBuilder<CommandSourceStack, ?> top(StatsView view) {

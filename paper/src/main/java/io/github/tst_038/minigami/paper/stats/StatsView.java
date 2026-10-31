@@ -79,19 +79,34 @@ public final class StatsView {
 
     /** @param gameId empty for the totals of every game they played */
     public void show(CommandSender sender, Player target, Optional<String> gameId) {
+        show(sender, target, gameId, Optional.empty());
+    }
+
+    /** @param stat empty for all of them; only with a game */
+    public void show(CommandSender sender, Player target, Optional<String> gameId, Optional<String> stat) {
         profiles.of(target.getUniqueId()).ifPresentOrElse(
-                profile -> show(sender, target.getName(), profile, gameId),
+                profile -> show(sender, target.getName(), profile, gameId, stat),
                 () -> messages.send(sender, "stats.loading", Placeholder.unparsed("player", target.getName())));
     }
 
     /** @param name of a player online or not, in any case */
     public void show(CommandSender sender, String name, Optional<String> gameId) {
+        show(sender, name, gameId, Optional.empty());
+    }
+
+    /** @param stat empty for all of them; only with a game */
+    public void show(CommandSender sender, String name, Optional<String> gameId, Optional<String> stat) {
         if (gameId.isPresent() && findGame(sender, gameId.get()).isEmpty()) {
+            return;
+        }
+        if (stat.isPresent() && !boardStats(gameId.orElseThrow()).contains(stat.get())) {
+            messages.send(sender, "stats.unknown-stat", Placeholder.parsed("game", findGame(sender, gameId.get()).orElseThrow().name()),
+                    Placeholder.unparsed("stat", stat.get()));
             return;
         }
         var online = server.getPlayerExact(name);
         if (online != null && profiles.of(online.getUniqueId()).isPresent()) {
-            show(sender, online, gameId);
+            show(sender, online, gameId, stat);
             return;
         }
         profiles.find(name).whenComplete((found, failure) -> {
@@ -101,7 +116,7 @@ public final class StatsView {
             } else if (found.isEmpty()) {
                 messages.send(sender, "stats.unknown-player", Placeholder.unparsed("player", name));
             } else {
-                show(sender, found.get().name(), found.get().profile(), gameId);
+                show(sender, found.get().name(), found.get().profile(), gameId, stat);
             }
         });
     }
@@ -138,7 +153,7 @@ public final class StatsView {
         }
     }
 
-    private void show(CommandSender sender, String name, Profile profile, Optional<String> gameId) {
+    private void show(CommandSender sender, String name, Profile profile, Optional<String> gameId, Optional<String> only) {
         var player = Placeholder.unparsed("player", name);
         // Checked here, after a lookup, since a reload may have removed the game in the meantime.
         var game = gameId.flatMap(id -> findGame(sender, id));
@@ -148,12 +163,18 @@ public final class StatsView {
         if (game.isPresent()) {
             var totals = profile.game(game.get().id());
             messages.send(sender, "stats.game-header", player, Placeholder.parsed("game", game.get().name()));
-            messages.send(sender, "stats.game-totals", totals(totals));
+            if (only.isEmpty()) {
+                messages.send(sender, "stats.game-totals", totals(totals));
+            }
             var stats = statIds(game.get());
             totals.stats().keySet().forEach(stat -> stats.add(stat.id()));
+            only.ifPresent(stat -> {
+                stats.clear();
+                stats.add(stat);
+            });
             stats.forEach(stat -> messages.send(sender, "stats.stat",
                     Placeholder.component("stat", statName(stat)), Formatter.number("amount", totals.stat(new Stat(stat)))));
-            if (!game.get().variants().isEmpty()) {
+            if (only.isEmpty() && !game.get().variants().isEmpty()) {
                 // shortcut: a variant since removed from the game's file isn't listed, though it still counts in the totals above.
                 game.get().all().forEach(variant -> {
                     var played = profile.variant(variant.game(), variant.id());
