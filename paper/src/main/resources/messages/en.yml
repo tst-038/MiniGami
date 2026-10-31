@@ -66,7 +66,8 @@ match:
   your-team: "%prefix%<gray>You are in team %team%<gray>."
   # %team%: the player's role, in its colour
   your-role: "%prefix%<gray>You are one of the %team%<gray>."
-  stopped: "%prefix%<red>An admin stopped the match; you get your own things back."
+  # Only when an admin stops it with the command.
+  stopped: "%prefix%<red>An admin stopped the match."
   paused: "%prefix%<yellow>An admin paused the match; nobody can move or get hurt."
   resumed: "%prefix%<green>The match goes on!"
   # For admins. %match%: a match's id, its arena; %game%: the game and any variant, %phase%, %players%: how many are in it

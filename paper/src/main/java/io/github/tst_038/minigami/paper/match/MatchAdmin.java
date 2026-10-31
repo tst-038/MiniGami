@@ -147,6 +147,7 @@ public final class MatchAdmin {
 
     public void stop(CommandSender sender, String id) {
         find(sender, id).ifPresent(live -> {
+            messages.send(live.audience(), "match.stopped");
             live.stop();
             messages.send(sender, "match.admin.stopped", Placeholder.unparsed("match", id));
         });

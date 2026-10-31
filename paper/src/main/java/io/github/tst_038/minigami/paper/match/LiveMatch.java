@@ -666,7 +666,6 @@ public final class LiveMatch {
 
     /** Ends the match at once without a result; everyone gets their own state back. */
     public void stop() {
-        messages.send(audience(), "match.stopped");
         match.dispose();
     }
 
