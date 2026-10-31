@@ -316,6 +316,7 @@ public final class Schedules {
     }
 
     private Audience hosts() {
-        return plugin.getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission(Nights.HOST_PERMISSION));
+        return plugin.getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission(Nights.HOST_PERMISSION)
+                && !(sender instanceof Player player && running.find(player.getUniqueId()).isPresent()));
     }
 }
