@@ -186,5 +186,10 @@ class VoidKillsTest {
         public List<Region> regions(String group) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public List<io.github.tst_038.minigami.api.region.TeamRegion> teamRegions() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

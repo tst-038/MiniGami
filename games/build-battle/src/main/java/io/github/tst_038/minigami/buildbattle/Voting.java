@@ -3,7 +3,7 @@ package io.github.tst_038.minigami.buildbattle;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
-import io.github.tst_038.minigami.buildbattle.Plots.Plot;
+import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.Comparator;
 import java.util.List;
@@ -28,19 +28,17 @@ final class Voting implements Feature {
     private static final List<Material> SCORES = List.of(Material.RED_TERRACOTTA, Material.ORANGE_TERRACOTTA,
             Material.YELLOW_TERRACOTTA, Material.LIME_TERRACOTTA, Material.GREEN_TERRACOTTA);
 
-    private final Plots plots;
     private final long ticksPerBuild;
 
-    Voting(Plots plots, long ticksPerBuild) {
-        this.plots = plots;
+    Voting(long ticksPerBuild) {
         this.ticksPerBuild = ticksPerBuild;
     }
 
     @Override
     public void enable(MatchContext context) {
         // Builds whose builders all left are skipped.
-        var shownPlots = plots.all().stream()
-                .filter(plot -> plot.builders().stream().anyMatch(id -> context.roster().find(id).filter(Participant::isAlive).isPresent()))
+        var shownPlots = context.teamRegions().stream()
+                .filter(plot -> plot.members().stream().anyMatch(id -> context.roster().find(id).filter(Participant::isAlive).isPresent()))
                 .toList();
         if (shownPlots.isEmpty()) {
             context.endPhase();
@@ -71,12 +69,12 @@ final class Voting implements Feature {
             event.setCancelled(true);
             var voter = event.getPlayer();
             var plot = shownPlots.get(shown[0]);
-            if (plot.builders().contains(voter.getUniqueId())) {
+            if (plot.members().contains(voter.getUniqueId())) {
                 context.messages().send(voter, "build-battle.own-build");
                 return;
             }
             // A team scores as one: the win condition adds up its members' points.
-            var builder = plot.builders().getFirst();
+            var builder = plot.members().getFirst();
             context.addPoints(builder, votes.vote(builder, voter.getUniqueId(), score));
             context.messages().send(voter, "build-battle.voted", Formatter.number("score", score));
         });
@@ -84,7 +82,7 @@ final class Voting implements Feature {
         context.on(MatchRejoinEvent.class, event -> {
             if (context.roster().find(event.getPlayer().getUniqueId()).filter(Participant::isAlive).isPresent()) {
                 giveVoteItems(context, event.getPlayer());
-                event.getPlayer().teleport(shownPlots.get(shown[0]).start());
+                event.getPlayer().teleport(shownPlots.get(shown[0]).region().standingSpot());
             }
         });
     }
@@ -103,25 +101,25 @@ final class Voting implements Feature {
         return context.players();
     }
 
-    private void show(MatchContext context, Plot plot) {
-        var start = plot.start();
+    private void show(MatchContext context, TeamRegion plot) {
+        var start = plot.region().standingSpot();
         voters(context).forEach(player -> player.teleport(start));
         context.messages().send(context.audience(), "build-battle.showing", Placeholder.component("player", name(context, plot)));
     }
 
-    private static void announceTotals(MatchContext context, List<Plot> shown) {
-        shown.stream().sorted(Comparator.comparingInt((Plot plot) -> points(context, plot)).reversed())
+    private static void announceTotals(MatchContext context, List<TeamRegion> shown) {
+        shown.stream().sorted(Comparator.comparingInt((TeamRegion plot) -> points(context, plot)).reversed())
                 .forEach(plot -> context.messages().send(context.audience(), "build-battle.score",
                         Placeholder.component("player", name(context, plot)), Formatter.number("points", points(context, plot))));
     }
 
-    private static int points(MatchContext context, Plot plot) {
-        return plot.builders().stream().mapToInt(context.scores()::of).sum();
+    private static int points(MatchContext context, TeamRegion plot) {
+        return plot.members().stream().mapToInt(context.scores()::of).sum();
     }
 
     /** The team's name, or for a player without a team their own. */
-    private static Component name(MatchContext context, Plot plot) {
+    private static Component name(MatchContext context, TeamRegion plot) {
         return plot.team().map(context::teamName)
-                .orElseGet(() -> context.player(plot.builders().getFirst()).map(Player::name).orElse(Component.text("?")));
+                .orElseGet(() -> context.player(plot.members().getFirst()).map(Player::name).orElse(Component.text("?")));
     }
 }

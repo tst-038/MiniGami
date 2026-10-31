@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
 import io.github.tst_038.minigami.core.life.Lives;
 import io.github.tst_038.minigami.core.match.Match;
@@ -98,6 +99,8 @@ public final class LiveMatch {
     private final Map<UUID, MatchClock.Task> away = new HashMap<>();
     /** Participants who left after the start; the roster still has them. */
     private final Set<UUID> left = new HashSet<>();
+    /** The region of every team, handed out when play starts. */
+    private List<TeamRegion> teamRegions = List.of();
     /** When play started, for the record; null until then. */
     private Instant start;
     private MatchClock.Task startDelay;
@@ -187,6 +190,11 @@ public final class LiveMatch {
 
     public Arena arena() {
         return arena;
+    }
+
+    /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#teamRegions}. */
+    List<TeamRegion> teamRegions() {
+        return teamRegions;
     }
 
     /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#replace}. */
@@ -608,6 +616,9 @@ public final class LiveMatch {
         if (!variant.roles().isEmpty()) {
             handOutRoles();
         }
+        teamRegions = variant.gametype().regionPerTeam()
+                .map(prefix -> TeamRegion.assign(prefix, match.roster().teams(), name -> Optional.ofNullable(arena.regions().get(name))))
+                .orElse(List.of());
         var next = new HashMap<Optional<String>, Integer>();
         for (var id : members) {
             var player = plugin.getServer().getPlayer(id);

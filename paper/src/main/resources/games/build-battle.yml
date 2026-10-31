@@ -12,6 +12,10 @@ build-seconds: 300
 vote-seconds: 20
 # One is picked at random each match.
 themes: [Rocket, Tree, Car, House, Castle, Dragon, Ship, Robot]
+# Teams build only inside their own plot, and nothing they set going (water, fire, pistons, explosions) reaches past it.
+features:
+  building:
+    team-region: {}
 # Builders who quit keep their plot for 5 minutes.
 quit: { then: stay, rejoin-seconds: 300 }
 hud:

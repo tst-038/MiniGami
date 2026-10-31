@@ -36,4 +36,19 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
         int z = location.getBlockZ();
         return world.equals(location.getWorld()) && x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
     }
+
+    /**
+     * Where a player can be put down: above the middle of the region, on the first free block over the
+     * floor, or at the top if the middle is built full.
+     */
+    public Location standingSpot() {
+        int x = Math.floorDiv(minX + maxX, 2);
+        int z = Math.floorDiv(minZ + maxZ, 2);
+        for (int y = minY + 1; y < maxY; y++) {
+            if (world.getBlockAt(x, y - 1, z).isSolid() && world.getBlockAt(x, y, z).isPassable() && world.getBlockAt(x, y + 1, z).isPassable()) {
+                return new Location(world, x + 0.5, y, z + 0.5);
+            }
+        }
+        return new Location(world, x + 0.5, maxY, z + 0.5);
+    }
 }
