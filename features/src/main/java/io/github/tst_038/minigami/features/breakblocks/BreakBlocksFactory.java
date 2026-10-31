@@ -4,13 +4,15 @@ import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.bukkit.Material;
 
 /**
- * {@code break-blocks: { blocks: [snow_block], instant: true, drops: false, place: true }}.
- * {@code blocks} lists the only breakable blocks, {@code except} lists the only unbreakable ones; give at most one,
- * and with neither every block is breakable. {@code instant} is off, {@code drops} on and {@code place} off unless set.
+ * {@code break-blocks: { whitelist: [snow_block], blacklist: [bedrock], instant: true, drops: false, place: true }}.
+ * A block may be broken if there is no {@code whitelist} or it is on it, and it is not on the {@code blacklist};
+ * with neither list every block is breakable, and an empty {@code whitelist} breaks nothing.
+ * {@code instant} is off, {@code drops} on and {@code place} off unless set.
  * {@code place} lets players place any block; the lists never restrict placing.
  */
 public final class BreakBlocksFactory implements FeatureFactory {
@@ -22,11 +24,9 @@ public final class BreakBlocksFactory implements FeatureFactory {
 
     @Override
     public Feature create(ConfigReader config) {
-        if (config.has("blocks") && config.has("except")) {
-            config.problem("except", "can't be combined with 'blocks'; list the breakable blocks or the unbreakable ones");
-        }
-        var breakable = config.has("blocks") ? Breakable.only(blocks(config, "blocks"))
-                : config.has("except") ? Breakable.except(blocks(config, "except")) : Breakable.any();
+        var whitelist = config.has("whitelist") ? Optional.of(blocks(config, "whitelist")) : Optional.<Set<Material>>empty();
+        var blacklist = config.has("blacklist") ? blocks(config, "blacklist") : Set.<Material>of();
+        var breakable = new Breakable(whitelist, blacklist);
         var instant = config.has("instant") && config.bool("instant");
         var drops = !config.has("drops") || config.bool("drops");
         var place = config.has("place") && config.bool("place");

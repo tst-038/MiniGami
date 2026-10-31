@@ -125,14 +125,14 @@ Features are set per phase under `features.<phase>` in a game file:
 features:
   playing:
     kit: { items: [diamond_shovel] }
-    break-blocks: { blocks: [snow_block], instant: true }
+    break-blocks: { whitelist: [snow_block], instant: true }
     void-kills: {}
 ```
 
 | Feature | Does |
 |---|---|
 | `kit` | Gives items, or an inventory saved with `/mg kit save <name>` |
-| `break-blocks` | Lets players break blocks: `blocks` lists the only breakable ones or `except` the only unbreakable ones (neither = all), optionally `instant`, `drops: false`, and `place: true` to allow placing any block |
+| `break-blocks` | Lets players break blocks: a block breaks if it is on the `whitelist` (when given) and not on the `blacklist` (neither = all, `whitelist: []` = none), optionally `instant`, `drops: false`, and `place: true` to allow placing any block |
 | `give-drops` | Replaces what broken blocks drop |
 | `projectile-breaks` | Projectiles break the listed blocks |
 | `decay-floor` | Blocks crumble shortly after being stepped on |

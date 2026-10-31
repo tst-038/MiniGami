@@ -1,28 +1,30 @@
 package io.github.tst_038.minigami.features.breakblocks;
 
+import java.util.Optional;
 import java.util.Set;
 import org.bukkit.Material;
 
-/** Which blocks may be broken: only the listed ones, everything but the listed ones, or everything. */
-record Breakable(Set<Material> listed, boolean allowList) {
+/** Which blocks may be broken: those on the whitelist, if there is one, and not on the blacklist. */
+record Breakable(Optional<Set<Material>> whitelist, Set<Material> blacklist) {
 
     Breakable {
-        listed = Set.copyOf(listed);
+        whitelist = whitelist.map(Set::copyOf);
+        blacklist = Set.copyOf(blacklist);
     }
 
-    static Breakable only(Set<Material> blocks) {
-        return new Breakable(blocks, true);
+    static Breakable whitelist(Set<Material> blocks) {
+        return new Breakable(Optional.of(blocks), Set.of());
     }
 
-    static Breakable except(Set<Material> blocks) {
-        return new Breakable(blocks, false);
+    static Breakable blacklist(Set<Material> blocks) {
+        return new Breakable(Optional.empty(), blocks);
     }
 
     static Breakable any() {
-        return except(Set.of());
+        return blacklist(Set.of());
     }
 
     boolean allows(Material material) {
-        return listed.contains(material) == allowList;
+        return whitelist.map(allowed -> allowed.contains(material)).orElse(true) && !blacklist.contains(material);
     }
 }

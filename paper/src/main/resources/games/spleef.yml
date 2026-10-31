@@ -23,9 +23,9 @@ features:
     death-items: { items: vanish, xp: vanish }
     # Items for every player, each with an optional amount ([iron_sword, arrow 16]), or an inventory saved with /mg kit save: { saved: <name> }
     kit: { items: [diamond_shovel] }
-    break-blocks: { blocks: [snow_block], instant: true }
+    break-blocks: { whitelist: [snow_block], instant: true }
     give-drops: { snow_block: [snowball] }
-    projectile-breaks: { blocks: [snow_block] }
+    projectile-breaks: { whitelist: [snow_block] }
     # Standing on one block too long breaks it.
     anti-camping: { seconds: 3, blocks: [snow_block] }
     no-damage: { causes: [fall, entity-attack, entity-sweep-attack] }

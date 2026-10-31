@@ -20,9 +20,9 @@ arenas: [example]
 features:
   preparing:
     team-region: {}
-    break-blocks: { except: [bedrock, barrier], place: true }
+    break-blocks: { blacklist: [bedrock, barrier], place: true }
   fighting:
-    break-blocks: { except: [bedrock, barrier], place: true }
+    break-blocks: { blacklist: [bedrock, barrier], place: true }
 stats: [combat]
 quit: { then: die, rejoin-seconds: 120 }
 hud:
