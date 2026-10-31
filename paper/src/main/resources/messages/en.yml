@@ -4,35 +4,35 @@ prefix: "<gray>「<gradient:#FFB7C5:#FF5F9E:#FFB7C5>MiniGami</gradient><gray>」
 
 join:
   # %player%: who tried to join
-  already-in-match: "%prefix%<red>%player% is already in a match. Use <white>/mg leave</white> to leave it first."
+  already-in-match: "%prefix%<red>%player% is already in a match."
   name-a-player: "%prefix%<red>Who should join? <white>/mg join %game% [variant] %player%</white>"
   # %game%: the game as typed
-  unknown-game: "%prefix%<red>Unknown game <white>%game%</white>. Use <white>/mg list</white> to see what you can play."
+  unknown-game: "%prefix%<red>Unknown game <white>%game%</white>. See <white>/mg list</white>."
   # %game%: the game's name, %variant%: as typed, %variants%: the ones it has
   unknown-variant: "%prefix%%game%<red> has no variant <white>%variant%</white>. Try: <white>%variants%</white>"
   # %player%: who may not play this game (a permission, minigami.play.<game>)
-  not-allowed: "%prefix%<red>%player% doesn't have permission to play this game."
+  not-allowed: "%prefix%<red>%player% can't play this game."
   # %game%: the game's or variant's name
-  no-free-arena: "%prefix%<red>Every arena for %game%<red> is busy right now. Try again in a moment!"
+  no-free-arena: "%prefix%<red>All arenas for %game%<red> are busy. Try again soon."
   # None of its arenas is set up for it yet; staff also hear why. %game%: the game's or variant's name
   not-ready: "%prefix%%game%<red> isn't ready to play yet."
   # Its file is there but did not load; staff also hear why. %game%: the game as typed
   unavailable: "%prefix%<white>%game%</white> <red>is unavailable right now."
   # The match a schedule opened is full or has started. %game%: its name
   match-full: "%prefix%%game%<red> is full or has already started."
-  party-leader-only: "%prefix%<red>Only your party leader can join a game, and the whole party goes along."
+  party-leader-only: "%prefix%<red>Only the party leader can join a game."
   # %size%: players in the party who are online, %max%: most players the game holds
-  party-too-big: "%prefix%<red>Your party of <white>%size%</white> is too big for this game (max <white>%max%</white> players)."
+  party-too-big: "%prefix%<red>Your party is too big (<white>%size%</white>/%max%)."
   # %size%: players in the party who are online, %team%: most players in a team
-  party-too-big-for-team: "%prefix%<red>Your party of <white>%size%</white> doesn't fit in one team (max <white>%team%</white> per team)."
-  failed: "%prefix%<red>%player% can't join yet: their items from a previous match haven't been returned. Relogging fixes it, or staff can use <white>/mg player %player% snapshot restore</white>."
+  party-too-big-for-team: "%prefix%<red>Your party doesn't fit in one team (<white>%size%</white>/%team%)."
+  failed: "%prefix%<red>%player% can't join: items from a previous match weren't returned. Relog, or staff: <white>/mg player %player% snapshot restore</white>"
 
 leave:
   not-in-match: "%prefix%<red>You're not in a match."
 
 start:
   nothing-to-start: "%prefix%<red>No match is waiting to start."
-  started: "%prefix%<green>The match is starting!"
+  started: "%prefix%<green>Match started."
 
 # %player%: the player, %players%: how many joined, %needed%: how many are needed to start
 match:
@@ -42,34 +42,34 @@ match:
   # Instead of going out, joins the role the game names in on-out. %team%: that role's name
   switched-role: "%prefix%<white>%player%</white> <gray>has joined the %team%<gray>!"
   # %seconds%: delay before the start
-  starting: "%prefix%<green>We have enough players! <gray>Starting in <white>%seconds%</white> seconds."
-  start-cancelled: "%prefix%<red>Someone left, so the countdown was cancelled. <gray>Waiting for more players..."
+  starting: "%prefix%<green>Starting in <white>%seconds%</white> seconds."
+  start-cancelled: "%prefix%<red>Start cancelled: not enough players."
   # %player%: the player who left
   left: "%prefix%<white>%player%</white> <gray>left the match."
   you-left: "%prefix%<gray>You left the match."
   # A participant quit the server but may still come back. %player%, %seconds%: how long they have
-  away: "%prefix%<white>%player%</white> <gray>disconnected. They have <white>%seconds%</white> seconds to come back."
+  away: "%prefix%<white>%player%</white> <gray>disconnected (<white>%seconds%</white>s to return)."
   # %player%: who came back in time
-  back: "%prefix%<white>%player%</white> <green>is back in the game!"
+  back: "%prefix%<white>%player%</white> <green>is back."
   # %player%: who didn't come back in time
-  away-expired: "%prefix%%player% <red>didn't make it back in time and is out!"
+  away-expired: "%prefix%%player% <red>didn't return and is out!"
   # The death message of a participant whose game kills them for quitting. %player%
   died-quitting: "<red>%player%</red> <gray>rage quit the match"
   # %player%: the winner
-  winner: "%prefix%<gold>%player%</gold> <gray>wins the match! <gold>GG!"
+  winner: "%prefix%<gold>%player%</gold> <gray>won the match!"
   # Above the hotbar in the last seconds of a phase with the countdown feature. %seconds%: seconds left
   countdown: "<gray>Ending in <gold>%seconds%</gold>"
   # %players%: the winning team's players, each in the team's colour. %team%: the team's name, in its colour
-  winner-team: "%prefix%%players% <gray>won the match! <gold>GG!"
-  no-winner: "%prefix%<gray>The match is over, and nobody won."
+  winner-team: "%prefix%%players% <gray>won the match!"
+  no-winner: "%prefix%<gray>Nobody won."
   # %team%: the player's team, in its colour
   your-team: "%prefix%<gray>You're on team %team%<gray>!"
   # %team%: the player's role, in its colour
   your-role: "%prefix%<gray>You're playing as %team%<gray>!"
   # Only when an admin stops it with the command.
   stopped: "%prefix%<red>An admin stopped the match."
-  paused: "%prefix%<yellow>An admin paused the match. <gray>Hold tight, nobody can move or get hurt."
-  resumed: "%prefix%<green>The match continues!"
+  paused: "%prefix%<yellow>An admin paused the match."
+  resumed: "%prefix%<green>The match continues."
   # For admins. %match%: a match's id, its arena; %game%: the game and any variant, %phase%, %players%: how many are in it
   admin:
     none: "%prefix%<gray>No matches are running."
@@ -117,9 +117,9 @@ team:
 
 hide-and-seek:
   # When the hunted get their head start; worded for any roles, such as infection's. %seconds%: how long it lasts
-  hiding: "%prefix%<green>Time to hide! <gray>The hunt begins in <white>%seconds%</white> seconds."
+  hiding: "%prefix%<green>Hide! <gray>The hunt starts in <white>%seconds%</white>s."
   # When the hunters are let go. %seconds%: how long the hunted must last
-  seeking: "%prefix%<red>The hunt is on! <gray>Survive <white>%seconds%</white> seconds to win."
+  seeking: "%prefix%<red>The hunt is on! <gray>Survive <white>%seconds%</white>s."
 domination:
   # A team, or a player without teams, took a capture point. %team%: its name, %point%: the point's name
   taken: "%prefix%%team% <gray>captured %point%<gray>!"
@@ -135,28 +135,28 @@ domination:
   free: "%point% <gray>is up for grabs"
 the-wall:
   # When teams are let loose in their part of the arena. %minutes%: until the walls drop
-  preparing: "%prefix%<green>Prepare your defences! <gray>The walls fall in <white>%minutes%</white> minutes. Until then, dying costs nothing."
-  dropped: "%prefix%<red>The walls have fallen! <gray>The last team standing wins."
+  preparing: "%prefix%<green>Prepare! <gray>The walls fall in <white>%minutes%</white> min."
+  dropped: "%prefix%<red>The walls have fallen! <gray>Last team standing wins."
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>is on <gold>%kills%</gold> kills!"
 
 build-battle:
   # %theme%: the theme, %seconds%: build time
-  theme: "%prefix%<gray>Today's theme: <gold>%theme%</gold><gray>! You have <white>%seconds%</white> seconds, so stay on your plot."
-  free-build: "%prefix%<gold>Free build!</gold> <gray>Build whatever you like. You have <white>%seconds%</white> seconds, so stay on your plot."
+  theme: "%prefix%<gray>Theme: <gold>%theme%</gold> <dark_gray>- <white>%seconds%</white>s to build."
+  free-build: "%prefix%<gold>Free build! <white>%seconds%</white><gray>s to build."
   # %player%: whose build everyone is looking at: the team's name, or the builder's without teams
-  showing: "%prefix%<gray>Now judging the build of <white>%player%</white><gray>. Pick an item in your hotbar to vote!"
+  showing: "%prefix%<gray>Judging the build of <white>%player%</white><gray>. Vote with your hotbar."
   # %score%: 1 to 5
   vote-item: "<yellow>Vote %score%"
-  voted: "%prefix%<green>You gave this build <white>%score%</white> <green>out of 5."
-  own-build: "%prefix%<red>You can't vote for your own build!"
+  voted: "%prefix%<green>Voted <white>%score%</white>."
+  own-build: "%prefix%<red>You can't vote for your own build."
   # %player%, %points%: a team's or builder's total, best first
   score: "<gray> - <white>%player%</white><gray>: <gold>%points%</gold> points"
 
 plot-mobs:
   # %max%: the most mobs one plot can hold
-  limit: "%prefix%<red>Your plot is full! It fits at most <white>%max%</white> mobs."
+  limit: "%prefix%<red>Plot mob limit reached (<white>%max%</white>)."
 
 # What players see of a match next to chat; the sidebar and boss bar are set in config.yml and the games.
 hud:
@@ -171,14 +171,14 @@ hud:
     countdown: "<gold><bold>%seconds%"
     countdown-subtitle: "<gray>Get ready!"
     start: "<green><bold>GO!"
-    start-subtitle: "<gray>Good luck, have fun!"
+    start-subtitle: "<gray>Good luck!"
     out: "<red><bold>ELIMINATED"
     out-subtitle: "<gray>You're spectating now"
     win: "<gold><bold>VICTORY!"
-    win-subtitle: "<yellow>You won the match, GG!"
+    win-subtitle: "<yellow>You won the match"
     # 2nd and 3rd place. %place%
     podium: "<aqua><bold>#%place% PLACE"
-    podium-subtitle: "<gray>You made the podium, well played!"
+    podium-subtitle: "<gray>Well played!"
     lose: "<red><bold>MATCH OVER"
     lose-subtitle: "<gray>You finished <white>#%place%"
     lose-subtitle-unplaced: "<gray>Better luck next time!"
@@ -187,17 +187,17 @@ hud:
 
 # /mg list. %game%: a game's or variant's name, %players%: how many are in its matches; <join>…</join> joins on click
 list:
-  header: "%prefix%<gold>Games you can join <gray>(click to join)<gold>:"
+  header: "%prefix%<gold>Games you can join:"
   game: "<gray> - <join><hover:show_text:'Click to join'>%game%</hover></join> <gray>(<white>%players%</white> playing)"
   variant: "<gray>    - <join><hover:show_text:'Click to join'>%game%</hover></join> <gray>(<white>%players%</white> playing)"
-  none: "%prefix%<gray>No games are open right now. Check back soon!"
+  none: "%prefix%<gray>No games to join right now."
 
 # /mg stats and /mg top. %player%: a player's name, %game%: a game's name or the id typed, %gametype%: a game type's id,
 # %stat%: a stat's name from below; totals: %played%, %wins%, %place%: average place or -, %left%: matches left early, %minutes% played
 stats:
-  name-a-player: "%prefix%<red>Whose stats? <white>/mg stats [player]</white>"
-  loading: "%prefix%<gray>Still loading the stats of <white>%player%</white><gray>. Try again in a moment."
-  failed: "%prefix%<red>Couldn't load the stats. Please tell an admin."
+  name-a-player: "%prefix%<red>Usage: <white>/mg stats [player]</white>"
+  loading: "%prefix%<gray>Loading stats of <white>%player%</white><gray>, try again."
+  failed: "%prefix%<red>Couldn't load the stats."
   unknown-player: "%prefix%<white>%player%</white> <red>hasn't played here yet."
   unknown-game: "%prefix%<red>There is no game called <white>%game%</white>."
   unknown-variant: "%prefix%<red>%game% <red>has no variant called <white>%variant%</white>; it has: <white>%variants%</white>."
@@ -214,7 +214,7 @@ stats:
   top-header: "%prefix%<gold>Top %stat%</gold> <gray>in %game%<gray>:"
   # %position%, %amount%
   top-entry: "<gray> %position%. <white>%player%</white>: <gold>%amount%"
-  top-none: "<gray> Nobody on the board yet. Be the first!"
+  top-none: "<gray> Nobody yet."
   # On a board, for a player whose name isn't known
   unknown-name: "<dark_gray>unknown player"
   # A stat's display name by its id; a game's own stats need one here too.
@@ -226,7 +226,7 @@ stats:
     point-seconds: "seconds on a capture point"
 
 lobby:
-  none: "%prefix%<red>No lobby has been set. Set one with <white>/mg lobby set</white>."
+  none: "%prefix%<red>No lobby set. Use <white>/mg lobby set</white>."
 
 # Arena setup. %arena%: the arena id, %world%: its world, %number%: a spawn's number as listed by info
 arena:
@@ -424,24 +424,24 @@ kit:
 # Parties: %player% and %leader% are names, %count% the size of the party;
 # <accept>…</accept> accepts an invite on click
 party:
-  none: "%prefix%<red>You're not in a party. Start one with <white>/mg party invite [player]</white>."
+  none: "%prefix%<red>You're not in a party."
   not-leader: "%prefix%<red>Only the party leader can do that."
   self: "%prefix%<red>You can't do that to yourself!"
   invite-in-party: "%prefix%<white>%player%</white> <red>is already in a party."
-  leave-first: "%prefix%<red>You're already in a party. Leave it first with <white>/mg party leave</white>."
-  no-invite: "%prefix%<red>You have no invite from <white>%leader%</white><red>. It may have expired."
+  leave-first: "%prefix%<red>You're already in a party. Use <white>/mg party leave</white>."
+  no-invite: "%prefix%<red>No invite from <white>%leader%</white><red> (it may have expired)."
   not-member: "%prefix%<white>%player%</white> <red>isn't in your party."
-  invited: "%prefix%<green>You invited <white>%player%</white> <green>to your party. <gray>The invite expires in a minute."
+  invited: "%prefix%<green>Invited <white>%player%</white><green>. <gray>The invite expires in a minute."
   invite: "%prefix%<white>%leader%</white> <gold>invited you to their party! <accept><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></accept>"
   invite-expired: "%prefix%<gray>The invite from <white>%leader%</white> <gray>to <white>%player%</white> <gray>expired."
-  joined: "%prefix%<green>You joined the party of <white>%leader%</white><green>!"
-  member-joined: "%prefix%<white>%player%</white> <green>joined the party!"
+  joined: "%prefix%<green>You joined <white>%leader%</white><green>'s party."
+  member-joined: "%prefix%<white>%player%</white> <green>joined the party."
   left: "%prefix%<yellow>You left the party."
   member-left: "%prefix%<white>%player%</white> <yellow>left the party."
-  kicked: "%prefix%<red>You were removed from the party by <white>%leader%</white><red>."
-  member-kicked: "%prefix%<white>%player%</white> <yellow>was removed from the party."
+  kicked: "%prefix%<red>You were kicked from the party."
+  member-kicked: "%prefix%<white>%player%</white> <yellow>was kicked from the party."
   new-leader: "%prefix%<white>%player%</white> <gold>is the new party leader."
-  disbanded: "%prefix%<yellow>The party has been disbanded."
+  disbanded: "%prefix%<yellow>The party was disbanded."
   list-header: "%prefix%<gold>Your party <gray>(%count%):"
   list-leader: "<gray> - <gold>★ <white>%player%</white> %status%"
   list-member: "<gray> - <white>%player%</white> %status%"
@@ -452,32 +452,32 @@ party:
 night:
   # %night%: as typed, %nights%: the ones there are
   unknown: "%prefix%<red>Unknown game night <white>%night%</white><red>. Try: <white>%nights%</white>"
-  none: "%prefix%<red>No game night is running right now."
+  none: "%prefix%<red>No game night is running."
   # %name%: the night that is running
-  already-running: "%prefix%%name%<red> is already running. End it first with <white>/mg night end</white>."
+  already-running: "%prefix%%name%<red> is already running."
   # Told to the hosts when they start a night
-  opened: "%prefix%<green>Sign-up for %name%<green> is open! <gray>Once everyone has joined, start the first game with <white>/mg night begin</white>."
+  opened: "%prefix%<green>Sign-up for %name%<green> is open. Start with <white>/mg night begin</white>."
   # To everyone online. <join>…</join> joins on click
-  open: "%prefix%%name% <gold>is starting soon! Sign up now: <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
+  open: "%prefix%%name% <gold>is open for sign-up! <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
   already-joined: "%prefix%<red>You're already in the night."
   # %player%: who may not join game nights (a permission, minigami.night.join)
-  not-allowed: "%prefix%<red>%player% doesn't have permission to join game nights."
+  not-allowed: "%prefix%<red>%player% can't join game nights."
   not-joined: "%prefix%<red>You're not in the night."
-  party-leader-only: "%prefix%<red>Only your party leader can join the night, and the whole party goes along."
+  party-leader-only: "%prefix%<red>Only the party leader can join the night."
   # %size%: players in the party who are online, %team%: most players in a night team
-  party-too-big: "%prefix%<red>Your party of <white>%size%</white> is too big for this night (max <white>%team%</white> per team)."
+  party-too-big: "%prefix%<red>Your party is too big (<white>%size%</white>/%team% per team)."
   # %count%: how many are in the night now
-  joined: "%prefix%<green>You joined %name%<green>! <gray>(<white>%count%</white> players)"
+  joined: "%prefix%<green>You joined %name%<green>. <gray>(<white>%count%</white> players)"
   # %player%
-  player-joined: "%prefix%<white>%player%</white> <green>joined the night!"
+  player-joined: "%prefix%<white>%player%</white> <green>joined the night."
   left: "%prefix%<yellow>You left the night. <gray>Your points are kept."
   player-left: "%prefix%<white>%player%</white> <yellow>left the night."
   # %player%: who the host kicked
-  kicked: "%prefix%<green>Removed <white>%player%</white> <green>from the night."
-  you-were-kicked: "%prefix%<red>You were removed from the night."
+  kicked: "%prefix%<green>Kicked <white>%player%</white> from the night."
+  you-were-kicked: "%prefix%<red>You were kicked from the night."
   # begin
-  already-begun: "%prefix%<red>The night has already begun. Start the next game with <white>/mg night next</white>."
-  nobody: "%prefix%<red>Nobody has joined the night yet."
+  already-begun: "%prefix%<red>The night has begun. Use <white>/mg night next</white>."
+  nobody: "%prefix%<red>Nobody has joined yet."
   # %team%: the night team's name, %members%: who is in it
   your-team: "%prefix%<gray>You're in <white>%team%</white> <gray>with <white>%members%</white><gray>."
   # next
@@ -520,7 +520,7 @@ night:
   player-not-in-night: "%prefix%<red><white>%player%</white> is not in the night."
   # %name%: the night's name, %done%, %total%: games played of the playlist
   standings-header: "%prefix%%name% <gray>- standings after game %done% of %total%"
-  final-header: "%prefix%%name% <gold>is over, thanks for playing! Final standings:"
+  final-header: "%prefix%%name% <gold>is over! Final standings:"
   # %place%, %name%: the player or night team, %points%, %tied%: the tied text when others share the place
   standings-line: "<gray> %tied%%place%. <white>%name%</white> <gray>- <white>%points%</white> points"
   standings-own: "<gray> You: <white>%points%</white> points, place <white>%tied%%place%</white>"
@@ -541,17 +541,17 @@ night:
 # Games that schedules open on their own. %name%: the schedule's name
 schedule:
   # To everyone who could join. %game%: the game, %seconds%: left to join, %needed%: players it needs. <join>…</join> joins on click
-  call: "%prefix%%name%<gray>: %game%<gold> is starting soon! <gray>Needs <white>%needed%</white> players, <white>%seconds%</white> seconds left to join. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
-  reminder: "%prefix%%name%<gray>: last chance to join %game%<gray>! <white>%seconds%</white> seconds left. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
+  call: "%prefix%%name%<gray>: %game%<gold> is open! <gray>Needs <white>%needed%</white> players, <white>%seconds%</white>s to join. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
+  reminder: "%prefix%%name%<gray>: <white>%seconds%</white>s left to join %game%<gray>. <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
   # To the players in the match when the call closed before enough joined. %game%
-  not-enough-players: "%prefix%%game%<red> was called off: not enough players joined."
+  not-enough-players: "%prefix%%game%<red> called off: not enough players."
   # To everyone who could join when the call closed and nobody had. %name%, %game%
-  nobody-joined: "%prefix%%name%<gray>: nobody joined %game%<gray>, so it was called off. Next time!"
-  no-call: "%prefix%<red>No scheduled game is open right now."
+  nobody-joined: "%prefix%%name%<gray>: nobody joined %game%<gray>, called off."
+  no-call: "%prefix%<red>No scheduled game is open."
   # To a winner once the game is over. %reward%: its name, %game%
-  reward: "%prefix%<gold>Congratulations! You won <white>%reward%</white> <gold>in %game%<gold>!"
+  reward: "%prefix%<gold>You won <white>%reward%</white> <gold>in %game%<gold>!"
   # When the call's match emptied and no arena is free to open it again. %game%
-  no-arena: "%prefix%<red>Every arena for %game%<red> is busy right now. Try again in a moment!"
+  no-arena: "%prefix%<red>All arenas for %game%<red> are busy. Try again soon."
   # To hosts when a time came and no game fits. %players%: how many could join
   skipped: "%prefix%<gray>%name%<gray> skipped its game: none fits %players% players who could join."
   opened: "%prefix%<green>%name%<green> opened its next game."
