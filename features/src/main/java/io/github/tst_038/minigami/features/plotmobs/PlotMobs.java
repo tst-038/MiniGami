@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.features.plotmobs;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.api.region.TeamRegion;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -18,7 +19,7 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 /**
- * Lets mobs be part of a build: each may only appear inside a region of the group (a plot), at most
+ * Lets mobs be part of a build: each may only appear inside a team's region (a plot), at most
  * {@code max} per plot, and stays there. Spawns outside every plot or over the limit are cancelled and
  * the nearest player is told. A mob that gets out anyway, pushed, knocked back or teleporting like an
  * enderman, is put back at the plot's edge within half a second.
@@ -35,11 +36,9 @@ public final class PlotMobs implements Feature {
     private static final double TELL_RANGE = 12;
     private static final String TAG = "minigami-plot:";
 
-    private final String group;
     private final int max;
 
-    public PlotMobs(String group, int max) {
-        this.group = group;
+    public PlotMobs(int max) {
         this.max = max;
     }
 
@@ -67,7 +66,10 @@ public final class PlotMobs implements Feature {
 
     @Override
     public void enable(MatchContext context) {
-        var plots = context.regions(group);
+        if (context.teamRegions().isEmpty()) {
+            throw new IllegalStateException("plot-mobs needs a game that gives every team a region");
+        }
+        var plots = context.teamRegions().stream().map(TeamRegion::region).toList();
         context.on(CreatureSpawnEvent.class, event -> {
             if (event.getEntity() instanceof ArmorStand) {
                 return;

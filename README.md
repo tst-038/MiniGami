@@ -141,7 +141,7 @@ features:
 | `no-damage` | Cancels the listed damage causes |
 | `no-hunger` | Keeps hunger full |
 | `no-mobs` | Players can't spawn mobs (eggs, mob buckets, breeding, golems) |
-| `plot-mobs` | Players' mobs stay inside their plot (a region of a group) and are limited per plot (`max`, default 10); removed when the match ends |
+| `plot-mobs` | Players' mobs stay inside their team's region (plot) and are limited per plot (`max`, default 10); removed when the match ends |
 | `one-hit` | One hit kills |
 | `death-items` | What happens to items and XP on death |
 | `countdown` | Counts down the last seconds of a timed phase above the hotbar |

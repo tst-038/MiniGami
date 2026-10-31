@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.features.plotmobs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.feature.FakeMatch;
@@ -48,5 +49,10 @@ class PlotMobsTest {
         assertEquals(4.2, back.getZ());
         assertEquals(90, back.getYaw());
         assertTrue(one.contains(PlotMobs.nearestInside(one, new Location(world, -40, 10, 99))));
+    }
+
+    @Test
+    void needsAGameWithRegionsPerTeam() {
+        assertThrows(IllegalStateException.class, () -> new PlotMobs(10).enable(new FakeMatch()));
     }
 }
