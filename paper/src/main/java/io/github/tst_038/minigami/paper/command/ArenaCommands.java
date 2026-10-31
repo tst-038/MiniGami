@@ -24,7 +24,7 @@ import java.util.Optional;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn list|add [team]|remove <n>}, {@code waiting set}, {@code spectate set|remove}, {@code region list|<name> set|remove|show|schematic}. Points are where the
+ * {@code spawn list|add [team]|remove <n>|waiting set|remove|spectator set|remove} (also {@code waiting} and {@code spectate} on the arena itself), {@code region list|<name> set|remove|show|schematic}. Points are where the
  * admin stands; regions and maps come from their WorldEdit selection.
  */
 final class ArenaCommands {
@@ -62,7 +62,9 @@ final class ArenaCommands {
                                 .then(Commands.literal("remove")
                                         .then(Commands.argument("number", IntegerArgumentType.integer(1))
                                                 .executes(bySender((sender, context) -> arenas.removeSpawn(sender, arena(context),
-                                                        IntegerArgumentType.getInteger(context, "number")))))))
+                                                        IntegerArgumentType.getInteger(context, "number"))))))
+                                .then(spot(editor, help, "waiting", "waiting-spot"))
+                                .then(spot(editor, help, "spectator", "spectator-spot")))
                         .then(Commands.literal("region")
                                 .executes(help)
                                 .then(Commands.literal("list").executes(bySender((sender, context) -> arenas.regions(sender, arena(context)))))
@@ -83,21 +85,19 @@ final class ArenaCommands {
                                         .executes(byPlayer((player, context) -> arenas.saveMap(player, arena(context)))))
                                 .then(Commands.literal("reset")
                                         .executes(bySender((sender, context) -> arenas.resetMap(sender, arena(context))))))
-                        .then(Commands.literal("waiting")
-                                .executes(help)
-                                .then(Commands.literal("set")
-                                        .requires(PLAYER)
-                                        .executes(byPlayer((player, context) ->
-                                                editor.set(player, Kind.ARENA, arena(context), "waiting-spot", ConfigLocations.HERE)))))
-                        .then(Commands.literal("spectate")
-                                .executes(help)
-                                .then(Commands.literal("set")
-                                        .requires(PLAYER)
-                                        .executes(byPlayer((player, context) ->
-                                                editor.set(player, Kind.ARENA, arena(context), "spectator-spot", ConfigLocations.HERE))))
-                                .then(Commands.literal("remove")
-                                        .executes(bySender((sender, context) ->
-                                                editor.unset(sender, Kind.ARENA, arena(context), "spectator-spot"))))));
+                        .then(spot(editor, help, "waiting", "waiting-spot"))
+                        .then(spot(editor, help, "spectate", "spectator-spot")));
+    }
+
+    /** {@code <literal> set|remove}: a single point of the arena, where the admin stands. */
+    private static ArgumentBuilder<CommandSourceStack, ?> spot(ConfigEditor editor, Command<CommandSourceStack> help, String literal, String key) {
+        return Commands.literal(literal)
+                .executes(help)
+                .then(Commands.literal("set")
+                        .requires(PLAYER)
+                        .executes(byPlayer((player, context) -> editor.set(player, Kind.ARENA, arena(context), key, ConfigLocations.HERE))))
+                .then(Commands.literal("remove")
+                        .executes(bySender((sender, context) -> editor.unset(sender, Kind.ARENA, arena(context), key))));
     }
 
     private static String arena(CommandContext<CommandSourceStack> context) {
