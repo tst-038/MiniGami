@@ -31,7 +31,10 @@ roles:
     lives: 1
 arenas: [example]
 features:
+  hiding:
+    break-blocks: { whitelist: [] }
   seeking:
+    break-blocks: { whitelist: [] }
     death-items: { items: vanish, xp: vanish }
     no-hunger: {}
 # Only what differs from the HUD in config.yml.

@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.hideandseek;
 
+import org.bukkit.GameMode;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
@@ -44,6 +45,12 @@ public final class HideAndSeek implements GameType {
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed("hiding", hideSeconds * 20L), Phase.timed("seeking", seekSeconds * 20L),
                 Phase.timed("ending", 5 * 20));
+    }
+
+    /** Players may fight and, where the variant allows it, dig and build. */
+    @Override
+    public GameMode gameMode(String phase) {
+        return phase.equals("hiding") || phase.equals("seeking") ? GameMode.SURVIVAL : GameMode.ADVENTURE;
     }
 
     @Override

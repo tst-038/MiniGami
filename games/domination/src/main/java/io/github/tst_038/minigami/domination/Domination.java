@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.domination;
 
+import org.bukkit.GameMode;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
@@ -52,6 +53,12 @@ public final class Domination implements GameType {
     @Override
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed("playing", playSeconds * 20L), Phase.timed("ending", 5 * 20));
+    }
+
+    /** Players may fight and, where the variant allows it, dig and build. */
+    @Override
+    public GameMode gameMode(String phase) {
+        return phase.equals("playing") ? GameMode.SURVIVAL : GameMode.ADVENTURE;
     }
 
     @Override

@@ -14,6 +14,8 @@ arenas: [example]
 stats: [combat]
 features:
   fighting:
+    # Players are in survival here, so nothing breaks unless a variant lists blocks.
+    break-blocks: { whitelist: [] }
     # Nothing drops on death; without this items and XP drop as in vanilla.
     death-items: { items: vanish, xp: vanish }
     kit: { items: [iron_sword] }

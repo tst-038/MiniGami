@@ -28,7 +28,7 @@ public final class BreakBlocks implements Feature {
 
     @Override
     public boolean changesBlocks() {
-        return true;
+        return place || breakable.whitelist().map(allowed -> !allowed.isEmpty()).orElse(true);
     }
 
     @Override

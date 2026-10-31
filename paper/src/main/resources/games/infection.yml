@@ -33,7 +33,10 @@ roles:
         one-hit: {}
 arenas: [example]
 features:
+  hiding:
+    break-blocks: { whitelist: [] }
   seeking:
+    break-blocks: { whitelist: [] }
     death-items: { items: vanish, xp: vanish }
     no-hunger: {}
 # This game's own wording; any key from messages/en.yml can go here.

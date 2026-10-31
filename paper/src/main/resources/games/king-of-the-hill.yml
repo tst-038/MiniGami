@@ -17,6 +17,7 @@ arenas: [example]
 stats: [combat]
 features:
   playing:
+    break-blocks: { whitelist: [] }
     kit: { items: [wooden_sword] }
     no-hunger: {}
 # Who quits dies, and may come back within 60 seconds.
