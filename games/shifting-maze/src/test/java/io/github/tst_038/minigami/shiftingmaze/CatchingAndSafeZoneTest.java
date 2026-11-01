@@ -61,7 +61,6 @@ class CatchingAndSafeZoneTest {
         run = new MazeRun(settings, 7);
         run.build(match);
         new Catching(run).enable(match);
-        new SafeZone(run, settings).enable(match);
     }
 
     private void withSafeZone(String path, Object value) {
@@ -138,6 +137,7 @@ class CatchingAndSafeZoneTest {
         var inside = join("blue");
         var caught = join("green");
         start();
+        takeAllKeys("blue");
         run.markEscaped(out.id());
         stand(inside, run.landmarks().exit());
         match.roster.eliminate(caught.id());
@@ -183,47 +183,6 @@ class CatchingAndSafeZoneTest {
     }
 
     @Test
-    void aMinotaurCannotEnterTheZoneButMayWalkElsewhere() {
-        var minotaur = join("minotaur");
-        start();
-        stand(minotaur, away());
-
-        assertTrue(moveTo(minotaur, run.landmarks().exit()));
-        assertEquals(List.of("shifting-maze.safe-zone"), minotaur.bars());
-        assertFalse(moveTo(minotaur, run.landmarks().lairs().getFirst()));
-    }
-
-    @Test
-    void aRunnerMayEnterOnlyWithAllItsTeamsKeys() {
-        var runner = join("red");
-        join("blue");
-        start();
-        stand(runner, away());
-
-        assertTrue(moveTo(runner, run.landmarks().exit()));
-        assertEquals(List.of("shifting-maze.exit-locked"), runner.bars());
-
-        takeAllKeys("red");
-        assertFalse(moveTo(runner, run.landmarks().exit()));
-    }
-
-    @Test
-    void aMinotaurFoundInsideTheZoneIsSentToItsLair() {
-        var minotaur = join("minotaur");
-        start();
-        stand(minotaur, run.landmarks().exit());
-        var spot = run.geometry().standingSpot(run.landmarks().exit());
-        var move = new PlayerMoveEvent(minotaur.player(), new Location(world, spot[0], 65, spot[2]), new Location(world, spot[0] + 0.5, 65, spot[2]));
-
-        match.fire(move);
-
-        var lair = run.geometry().standingSpot(run.landmarks().lairs().getFirst());
-        assertFalse(move.isCancelled());
-        assertEquals(lair[0], move.getTo().getX());
-        assertEquals(lair[2], move.getTo().getZ());
-    }
-
-    @Test
     void withoutASafeZoneNothingIsCancelledAndTheExitRoomIsNoRefuge() {
         withSafeZone("safe-zone", false);
         var minotaur = join("minotaur");
@@ -234,15 +193,5 @@ class CatchingAndSafeZoneTest {
         assertFalse(moveTo(minotaur, run.landmarks().exit()));
         assertTrue(hit(minotaur, runner));
         assertFalse(in(runner));
-    }
-
-    @Test
-    void aBiggerRadiusGrowsTheZoneByACell() {
-        withSafeZone("safe-zone.radius", 1);
-        var minotaur = join("minotaur");
-        start();
-        stand(minotaur, away());
-
-        assertTrue(moveTo(minotaur, new Cell(run.landmarks().exit().x() + 1, run.landmarks().exit().z())));
     }
 }

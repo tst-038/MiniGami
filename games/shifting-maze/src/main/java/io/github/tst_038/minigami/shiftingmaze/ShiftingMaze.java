@@ -27,6 +27,7 @@ public final class ShiftingMaze implements GameType {
 
     static final String MINOTAUR = "minotaur";
     static final String REGION = "maze";
+    static final String BUILDING = "building";
     static final String HEAD_START = "head-start";
     static final String RUNNING = "running";
 
@@ -50,23 +51,34 @@ public final class ShiftingMaze implements GameType {
     }
 
     @Override
+    public boolean startsDuringCountdown() {
+        return true;
+    }
+
+    @Override
     public List<Phase> phases() {
-        // A phase must last a tick at least, so no head start still gives the maze a moment to be built.
-        return List.of(Phase.untimed("waiting"), Phase.timed(HEAD_START, Math.max(1, settings.headStartSeconds() * 20L)),
+        // The maze is built, and everyone put in it, while the start countdown holds them frozen; the cap only guards against a build that never finishes.
+        return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 60 * 20L), Phase.timed(HEAD_START, Math.max(1, settings.headStartSeconds() * 20L)),
                 Phase.timed(RUNNING, settings.runSeconds() * 20L), Phase.timed("ending", 5 * 20));
     }
 
     @Override
     public Map<String, List<Feature>> features() {
         var run = new MazeRun(settings, ThreadLocalRandom.current().nextLong());
-        Feature headStart = context -> context.messages().send(context.audience(), "shifting-maze.head-start",
-                Formatter.number("seconds", settings.headStartSeconds()));
-        Feature running = context -> context.messages().send(context.audience(), "shifting-maze.running",
-                Formatter.number("keys", settings.keys()));
+        Feature headStart = context -> run.tellRoles(context, "head-start", "head-start-minotaur", Formatter.number("seconds", settings.headStartSeconds()));
+        Feature running = context -> run.tellRoles(context, "running", "running-minotaur", Formatter.number("keys", settings.keys()));
+        Feature built = context -> run.whenBuilt(() -> {
+            // The maze can finish after this phase is over.
+            if (!context.scope().isClosed()) {
+                context.endPhase();
+            }
+        });
         return Map.of(
+                GameType.STARTING, List.of(run::prepare),
+                BUILDING, List.of(new Raising(run), built),
                 HEAD_START, List.of(new Raising(run), headStart),
                 RUNNING, List.of(new Raising(run), new Shifting(run, settings, new Random(), Telegraph.of(settings)),
-                        new Keys(run, settings), new Exit(run, settings), new Catching(run), new SafeZone(run, settings), new Sight(run, settings), running),
+                        new Keys(run, settings), new Exit(run, settings), new Catching(run), new Sight(run, settings), running),
                 "ending", List.of(new AnnounceWinner()));
     }
 

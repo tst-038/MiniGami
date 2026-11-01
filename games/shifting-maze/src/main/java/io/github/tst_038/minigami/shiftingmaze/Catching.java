@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 /**
- * Players never hurt each other, but a minotaur's hit puts a runner who is still in the maze out. Runners in the exit's safe
+ * Players never hurt each other, but a minotaur's hit puts a runner who is still in the maze out. Runners with all their keys in the exit's safe
  * zone and runners who got out cannot be caught.
  */
 final class Catching implements Feature {
@@ -40,6 +40,6 @@ final class Catching implements Feature {
         return run.isMinotaur(context, by.getUniqueId()) && !run.isMinotaur(context, hit.getUniqueId())
                 && context.roster().find(by.getUniqueId()).filter(Participant::isAlive).isPresent()
                 && context.roster().find(hit.getUniqueId()).filter(Participant::isAlive).isPresent()
-                && !run.escaped(hit.getUniqueId()) && !run.inSafeZone(hit.getX(), hit.getZ());
+                && !run.escaped(hit.getUniqueId()) && !(run.inSafeZone(hit.getX(), hit.getZ()) && run.hasAllKeys(context, hit.getUniqueId()));
     }
 }

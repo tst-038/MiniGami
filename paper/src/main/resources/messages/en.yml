@@ -142,13 +142,14 @@ shifting-maze:
   head-start: "%prefix%<green>Run! <gray>The Minotaurs wake in <white>%seconds%</white>s."
   # When the Minotaurs are let go. %keys%: how many keys each team needs
   running: "%prefix%<red>The Minotaurs are loose! <gray>Find your team's <white>%keys%</white> keys, then reach the centre."
+  # The same moments, to the Minotaurs
+  head-start-minotaur: "%prefix%<red>You are a Minotaur! <gray>You wake in <white>%seconds%</white>s. Catch the runners before they reach the centre."
+  running-minotaur: "%prefix%<red>Hunt them! <gray>Catch every runner before their team gets all <white>%keys%</white> keys and reaches the centre."
   too-small: "%prefix%<red>This arena's maze region is too small for this game."
   # When walls are about to move
-  shifting: "%prefix%<gold>The walls are about to shift!"
   # Action bar near a wall about to move. %seconds%: until it does
   shift-countdown: "<gold>The walls shift in <white>%seconds%</white>s"
   # After the walls have moved
-  shifted: "%prefix%<gray>The walls have shifted."
   # To a team when a member takes one of its keys. %player%: who; %found%: keys the team has; %keys%: keys it needs
   key-found: "%prefix%%player% <gray>found a key (<gold>%found%</gold>/<gold>%keys%</gold>)."
   # Action bar for runners. %found%/%keys%: the team's keys; %out%/%free%: members out of the maze of those still free
@@ -158,7 +159,6 @@ shifting-maze:
   # To a team when a member gets out. %player%: who; %out%/%free%: members out of those still free
   member-out: "%prefix%%player% <green>is out! <gray>(%out%/%free%) The rest of your team must follow."
   # Action bar when a Minotaur tries to enter the exit room
-  safe-zone: "<red>Minotaurs cannot enter the exit room"
   # To everyone when the last free member of a team is out. %team%: the team
   escaped: "%prefix%%team% <green>escaped the maze!"
 team-deathmatch:

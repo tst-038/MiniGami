@@ -31,7 +31,7 @@ final class Telegraph {
                 cues.add(new Flicker(settings.blocks().warning()));
             }
             if (warning.particles()) {
-                cues.add(new Dust(settings.blocks().wall()));
+                cues.add(new Outline());
             }
             if (!warning.sound().isBlank()) {
                 cues.add(new Rumble(warning.sound(), warning.seconds() * 20));

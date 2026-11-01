@@ -2,6 +2,8 @@ package io.github.tst_038.minigami.shiftingmaze;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.shiftingmaze.blocks.Span;
 import io.github.tst_038.minigami.shiftingmaze.layout.Cell;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,7 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Every team's keys lie in the maze as glowing items in the team's colour, and only the team's own runners can take them.
+ * Every team's keys lie in the maze as enchanted items on a block of the team's wool, and only the team's own runners can take them.
  * Shows each runner how many keys their team has.
  */
 final class Keys implements Feature {
@@ -51,21 +53,25 @@ final class Keys implements Feature {
 
     private void spawn(MatchContext context) {
         var world = context.region(ShiftingMaze.REGION).orElseThrow().world();
+        var wool = new ArrayList<Fill>();
         for (var team : run.teams()) {
             var keys = new ArrayList<Key>();
-            var colour = run.colour(team);
             for (var cell : run.landmarks().keys().get(run.teamIndex(team))) {
                 var spot = run.geometry().standingSpot(cell);
+                var below = new Span((int) Math.floor(spot[0]), (int) spot[1] - 1, (int) Math.floor(spot[2]), (int) Math.floor(spot[0]), (int) spot[1] - 1, (int) Math.floor(spot[2]));
+                wool.add(run.fill(below, run.wool(team)));
                 ItemDisplay display = world.spawn(new Location(world, spot[0], spot[1] + 0.6, spot[2]), ItemDisplay.class, key -> {
-                    key.setItemStack(new ItemStack(settings.blocks().key()));
-                    key.setGlowing(true);
-                    key.setGlowColorOverride(colour);
+                    var item = new ItemStack(settings.blocks().key());
+                    item.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
+                    key.setItemStack(item);
                 });
                 context.scope().register(display::remove);
                 keys.add(new Key(cell, display));
             }
             lying.put(team, keys);
         }
+        // The wool under a key tells whose it is; the map reset after the match takes it away.
+        context.fill(wool);
     }
 
     private void take(MatchContext context) {

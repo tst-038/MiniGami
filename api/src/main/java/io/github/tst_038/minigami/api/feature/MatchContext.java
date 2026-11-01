@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -146,6 +147,13 @@ public interface MatchContext {
      * @throws IllegalArgumentException if the game doesn't keep the stat: it is neither the game's own nor in one of the game's stat groups
      */
     void count(UUID id, Stat stat, long amount);
+
+    /**
+     * Shows a countdown of the game in the HUD, as the value {@code %name%} that sidebar and boss bar texts can use, until this
+     * phase's features end. A negative number of ticks means none is running, and a line using it is left out.
+     */
+    default void showTimer(String name, LongSupplier ticksLeft) {
+    }
 
     /** Counts one more of the stat for the participant. */
     default void count(UUID id, Stat stat) {

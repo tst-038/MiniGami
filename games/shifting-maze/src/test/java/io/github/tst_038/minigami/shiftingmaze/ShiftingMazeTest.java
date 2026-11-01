@@ -17,12 +17,12 @@ class ShiftingMazeTest {
     private final ShiftingMaze game = new ShiftingMaze();
 
     @Test
-    void phasesAreWaitingHeadStartRunningAndEnding() {
+    void phasesAreWaitingBuildingHeadStartRunningAndEnding() {
         var phases = game.phases();
 
-        assertEquals(List.of("waiting", "head-start", "running", "ending"), phases.stream().map(phase -> phase.id()).toList());
-        assertEquals(10 * 20L, phases.get(1).durationTicks());
-        assertEquals(300 * 20L, phases.get(2).durationTicks());
+        assertEquals(List.of("waiting", "building", "head-start", "running", "ending"), phases.stream().map(phase -> phase.id()).toList());
+        assertEquals(10 * 20L, phases.get(2).durationTicks());
+        assertEquals(300 * 20L, phases.get(3).durationTicks());
     }
 
     @Test
@@ -31,8 +31,8 @@ class ShiftingMazeTest {
         yaml.loadFromString("head-start-seconds: 0\nrun-seconds: 60");
         var configured = game.configure(ConfigReader.of("maze.yml", yaml));
 
-        assertEquals(1L, configured.phases().get(1).durationTicks());
-        assertEquals(60 * 20L, configured.phases().get(2).durationTicks());
+        assertEquals(1L, configured.phases().get(2).durationTicks());
+        assertEquals(60 * 20L, configured.phases().get(3).durationTicks());
     }
 
     @Test
@@ -50,7 +50,7 @@ class ShiftingMazeTest {
 
     @Test
     void playersStayInAdventureMode() {
-        for (var phase : List.of("waiting", "head-start", "running", "ending")) {
+        for (var phase : List.of("waiting", "building", "head-start", "running", "ending")) {
             assertEquals(GameMode.ADVENTURE, game.gameMode(phase));
         }
     }
@@ -66,6 +66,7 @@ class ShiftingMazeTest {
     void theMazeIsRaisedWhenTheHeadStartBeginsAndWhenItEnds() {
         var features = game.features();
 
+        assertTrue(features.get("building").stream().anyMatch(Raising.class::isInstance));
         assertTrue(features.get("head-start").stream().anyMatch(Raising.class::isInstance));
         assertTrue(features.get("running").stream().anyMatch(Raising.class::isInstance));
         assertTrue(features.get("head-start").stream().anyMatch(feature -> feature.changesBlocks()));

@@ -11,19 +11,20 @@ cell-width: 3
 wall-thickness: 1
 wall-height: 3
 shift-seconds: 20
-shifts: 3
-warning: { seconds: 3, flicker: true, particles: true, sound: "block.grindstone.use" }
+shifts: 8
+warning: { seconds: 6, flicker: true, particles: true, sound: "block.grindstone.use" }
 keys: 3
+head-start-seconds: 20
 run-seconds: 300
 sight: { every-seconds: 30, seconds: 3 }
 safe-zone: { radius: 0 }
 blocks:
-  floor: smooth_stone
-  wall: stone_bricks
+  # A block, or blocks with weights: each block of the floor/wall picks one at random. Add lava or water pools here if you like.
+  floor: { cobblestone: 35, mossy_cobblestone: 20, stone: 25, gravel: 8, andesite: 8, water: 3, shroomlight: 2 }
+  wall: { stone_bricks: 40, mossy_stone_bricks: 20, cracked_stone_bricks: 15, cobblestone: 15, mossy_cobblestone: 10 }
   warning: cracked_stone_bricks
   exit: gold_block
   key: tripwire_hook
-  sight: white_stained_glass
   # ceiling: stone_bricks   # dark inside: turn off mob spawning or light the maze
 roles:
   minotaur:
@@ -45,8 +46,9 @@ features:
 quit: { then: out }
 hud:
   sidebar:
-    default: ["", "<gray>Time: <yellow>%time%", "<gray>Team: %team%", "<dark_red>Minotaurs: <white>%minotaur%"]
+    default: ["", "<gray>Time: <yellow>%time%", "<gray>Next shift: <white>%next-shift%", "<gray>Next glow: <white>%next-glow%", "<gray>Team: %team%", "<dark_red>Minotaurs: <white>%minotaur%"]
+    building: ["", "<gray>Building the maze...", "<gray>Team: %team%", "<dark_red>Minotaurs: <white>%minotaur%"]
   boss-bar:
     text:
-      head-start: "<green>Run! <white>%time% <gray>until the Minotaurs wake"
-      running: "<gold>Find your keys, reach the centre! <white>%time%"
+      head-start: "<green>Head start <white>%time% <gray>until the Minotaurs wake"
+      running: "<gold>Shifting Maze <white>%time%"

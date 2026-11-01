@@ -388,6 +388,14 @@ public final class MatchHud {
                 Formatter.number("alive", roster.alive().size())));
         roleCounts().forEach((name, count) -> resolvers.add(Formatter.number(name, count)));
         var empty = new HashSet<String>();
+        match.timers().forEach((name, ticksLeft) -> {
+            var left = ticksLeft.getAsLong();
+            if (left >= 0) {
+                resolvers.add(Placeholder.unparsed(name, clockText(left)));
+            } else {
+                empty.add(name);
+            }
+        });
         var time = timeShown();
         if (time.isPresent()) {
             resolvers.add(clock(time.getAsLong()));
@@ -430,7 +438,7 @@ public final class MatchHud {
 
     private void publish(Player viewer) {
         var values = values(viewer).resolver();
-        var names = Stream.of(VALUES.stream(), match.variant().stats().stream().map(Stat::id), roleCounts().keySet().stream()).flatMap(stream -> stream).distinct();
+        var names = Stream.of(VALUES.stream(), match.variant().stats().stream().map(Stat::id), roleCounts().keySet().stream(), match.timers().keySet().stream()).flatMap(stream -> stream).distinct();
         published.put(viewer.getUniqueId(), names.collect(Collectors.toMap(name -> name,
                 name -> LegacyComponentSerializer.legacySection().serialize(MiniMessage.miniMessage().deserialize("<" + name + ">", values)))));
     }
@@ -450,7 +458,11 @@ public final class MatchHud {
 
     /** {@code m:ss}, rounding up so it never shows 0:00 while time is left. */
     static TagResolver clock(long ticks) {
+        return Placeholder.unparsed("time", clockText(ticks));
+    }
+
+    private static String clockText(long ticks) {
         var seconds = (ticks + 19) / 20;
-        return Placeholder.unparsed("time", "%d:%02d".formatted(seconds / 60, seconds % 60));
+        return "%d:%02d".formatted(seconds / 60, seconds % 60);
     }
 }

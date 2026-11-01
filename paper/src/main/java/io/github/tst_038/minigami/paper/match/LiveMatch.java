@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
 import io.github.tst_038.minigami.api.feature.RoleSwitchEvent;
+import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.LongSupplier;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -85,7 +88,7 @@ import org.bukkit.plugin.Plugin;
 public final class LiveMatch {
 
     /** How long a match waits for more players once enough joined. */
-    public static final long START_DELAY_TICKS = 5 * 20;
+    public static final long START_DELAY_TICKS = 20 * 20;
     /** How long players stand frozen at their spawns before play begins. */
     public static final long COUNTDOWN_TICKS = 3 * 20;
 
@@ -104,6 +107,8 @@ public final class LiveMatch {
     private final Set<UUID> members = new LinkedHashSet<>();
     /** Members whose state has been saved; players waiting in place have none until the start. */
     private final Map<UUID, AutoCloseable> restores = new HashMap<>();
+    /** Done when every edit asked for so far is. */
+    private CompletableFuture<Void> edits = CompletableFuture.completedFuture(null);
     /** Holds on players who wait in place: nothing of theirs is saved, but they count as in a match. */
     private final Map<UUID, Presence.Claim> placeClaims = new HashMap<>();
     /** The team each spawn is for, by the spawn's place in the arena's list. */
@@ -131,6 +136,8 @@ public final class LiveMatch {
     private Scope countdown;
     /** The match clock's tick play begins at, while the start delay or the countdown runs. */
     private long goAt;
+    private final List<Feature> starting;
+    private boolean prepared;
 
     /**
      * @param arena must be playable
@@ -153,7 +160,9 @@ public final class LiveMatch {
         };
         this.sessions = sessions;
         this.messages = messages.over(variant.messages());
-        var features = new PhaseFeatures(features(variant), (phase, scope) -> new PaperMatchContext(plugin, this, scope));
+        var phaseFeatures = features(variant);
+        starting = phaseFeatures.getOrDefault(GameType.STARTING, List.of());
+        var features = new PhaseFeatures(phaseFeatures, (phase, scope) -> new PaperMatchContext(plugin, this, scope));
         this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), new PhaseListener() {
             @Override
             public void onEnter(Phase phase, Scope scope) {
@@ -281,7 +290,17 @@ public final class LiveMatch {
         if (match.scope().isClosed()) {
             return CompletableFuture.failedFuture(new IllegalStateException("The match is over"));
         }
-        return maps.fill(arena, fills);
+        var asked = System.nanoTime();
+        var edit = maps.fill(arena, fills).whenComplete((done, error) -> plugin.getLogger().info("Edited " + fills.size() + " areas in " + arena.id() + " in " + (System.nanoTime() - asked) / 1_000_000 + " ms"));
+        edits = CompletableFuture.allOf(edits, edit.handle((done, error) -> null));
+        return edit;
+    }
+
+    /** Named countdowns of the game for the HUD, in ticks left; a negative number means none is running. */
+    private final Map<String, LongSupplier> timers = new LinkedHashMap<>();
+
+    public Map<String, LongSupplier> timers() {
+        return timers;
     }
 
     /** Whether anyone may join it through public play; a private match only gets the players its opener puts in. */
@@ -384,7 +403,13 @@ public final class LiveMatch {
         messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
                 Formatter.number("players", match.roster().size()), Formatter.number("needed", variant.minPlayers()));
         if (startDelay == null && match.roster().size() >= variant.minPlayers()) {
-            startDelay = match.clock().schedule(START_DELAY_TICKS, () -> startPlaying(true));
+            prepareStart();
+            // The arena is built while they wait, and they land on spawns that stand in the finished maze.
+            startDelay = match.clock().schedule(START_DELAY_TICKS, () -> edits.thenRun(() -> {
+                if (!match.scope().isClosed()) {
+                    startPlaying(true);
+                }
+            }));
             goAt = match.clock().elapsedTicks() + START_DELAY_TICKS + COUNTDOWN_TICKS;
             match.scope().register(startDelay);
             messages.send(audience(), "match.starting", Formatter.number("seconds", (START_DELAY_TICKS + COUNTDOWN_TICKS) / 20));
@@ -685,6 +710,7 @@ public final class LiveMatch {
      * @param countDown whether they first stand frozen at their spawns for the countdown, or play begins at once
      */
     private void startPlaying(boolean countDown) {
+        prepareStart();
         startDelay = null;
         start = Instant.now();
         var tracking = new PaperMatchContext(plugin, this, match.scope());
@@ -740,15 +766,38 @@ public final class LiveMatch {
         countdown = match.scope().child();
         goAt = match.clock().elapsedTicks() + COUNTDOWN_TICKS;
         new Freeze().enable(new PaperMatchContext(plugin, this, countdown));
-        countdown.register(match.clock().schedule(COUNTDOWN_TICKS, () -> {
+        var early = variant.gametype().startsDuringCountdown();
+        if (early) {
+            match.advancePhase();
+        }
+        var phases = variant.gametype().phases();
+        countdown.register(match.clock().repeat(1, () -> {
+            if (match.clock().elapsedTicks() < goAt) {
+                return;
+            }
+            // A game that builds during the countdown keeps everyone frozen until that is done.
+            if (early && match.currentPhase().filter(phases.get(1)::equals).isPresent()) {
+                return;
+            }
             countdown.close();
             countdown = null;
             // An admin may have ended it in the meantime.
-            if (match.currentPhase().filter(variant.gametype().phases().getFirst()::equals).isPresent()) {
+            if (match.currentPhase().filter(phases.getFirst()::equals).isPresent()) {
                 match.advancePhase();
+                hud.started();
+            } else if (early && !match.isFinished()) {
                 hud.started();
             }
         }));
+    }
+
+    /** Lets the game get ready, once, for a start that is now certain. */
+    private void prepareStart() {
+        if (!prepared) {
+            prepared = true;
+            var context = new PaperMatchContext(plugin, this, match.scope());
+            starting.forEach(feature -> feature.enable(context));
+        }
     }
 
     /** Those taking part as play starts: the members, and those away who may still come back. */

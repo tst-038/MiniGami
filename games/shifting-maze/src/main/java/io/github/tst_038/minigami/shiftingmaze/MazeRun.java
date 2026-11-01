@@ -19,10 +19,10 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 
@@ -41,6 +41,7 @@ final class MazeRun {
     private final Set<String> announced = new HashSet<>();
     private boolean started;
     private boolean built;
+    private Random random;
     private Region region;
     private Geometry geometry;
     private Layout layout;
@@ -79,21 +80,36 @@ final class MazeRun {
     }
 
     /**
-     * Builds the maze with one fill, once; later calls do nothing. If the region can't hold a maze that gives every team its
-     * keys, tells everyone and puts everyone out a tick later, so the match ends at once and nothing is built.
+     * Lays out the maze and starts placing its floor and walls, once; later calls do nothing. Needs no teams, so it can start
+     * as soon as the match is about to begin.
+     */
+    void prepare(MatchContext context) {
+        if (region != null) {
+            return;
+        }
+        region = context.region(ShiftingMaze.REGION).orElseThrow();
+        geometry = new Geometry(region.minX(), region.minY(), region.minZ(), region.maxX(), region.maxY(), region.maxZ(),
+                settings.cellWidth(), settings.wallThickness(), settings.wallHeight(), settings.blocks().ceiling().isPresent());
+        if (geometry.tooSmall()) {
+            return;
+        }
+        random = new Random(seed);
+        layout = Generator.generate(geometry.columns(), geometry.rows(), settings.loops(), random);
+        context.fill(walls());
+    }
+
+    /**
+     * Places the landmarks for the teams and finishes the maze, once; later calls do nothing. If the region can't hold a maze that gives
+     * every team its keys, tells everyone and puts everyone out a tick later, so the match ends at once.
      */
     void build(MatchContext context) {
         if (started) {
             return;
         }
         started = true;
-        region = context.region(ShiftingMaze.REGION).orElseThrow();
-        geometry = new Geometry(region.minX(), region.minY(), region.minZ(), region.maxX(), region.maxY(), region.maxZ(),
-                settings.cellWidth(), settings.wallThickness(), settings.wallHeight(), settings.blocks().ceiling().isPresent());
+        prepare(context);
         teams = context.roster().teams().stream().flatMap(team -> team.id().stream()).filter(id -> !id.equals(ShiftingMaze.MINOTAUR)).toList();
         if (!geometry.tooSmall()) {
-            var random = new Random(seed);
-            layout = Generator.generate(geometry.columns(), geometry.rows(), settings.loops(), random);
             landmarks = Landmarks.place(layout, teams.size(), settings.keys(), random);
         }
         if (geometry.tooSmall() || !landmarks.everyTeamHasKeys(settings.keys())) {
@@ -101,29 +117,35 @@ final class MazeRun {
             context.scope().register(context.clock().schedule(1, () -> context.players().forEach(context::eliminate)));
             return;
         }
-        context.fill(fills()).thenRun(() -> {
+        var exit = geometry.cell(landmarks.exit());
+        // Edits are applied in the order they are asked, so this lands after the walls.
+        context.fill(List.of(fill(new Span(exit.minX(), exit.minY() - 1, exit.minZ(), exit.maxX(), exit.minY() - 1, exit.maxZ()), settings.blocks().exit()))).thenRun(() -> {
             built = true;
             whenBuilt.forEach(Runnable::run);
             whenBuilt.clear();
         });
     }
 
-    /** Floor, the exit's floor, posts, outer walls, closed inner walls and the ceiling, in the order they are placed. */
-    private List<Fill> fills() {
+    /** Floor, closed walls with their posts and the ceiling. */
+    private List<Fill> walls() {
         var blocks = settings.blocks();
         var fills = new ArrayList<Fill>();
         fills.add(fill(geometry.floor(), blocks.floor()));
-        var exit = geometry.cell(landmarks.exit());
-        fills.add(fill(new Span(exit.minX(), exit.minY() - 1, exit.minZ(), exit.maxX(), exit.minY() - 1, exit.maxZ()), blocks.exit()));
-        geometry.posts().forEach(span -> fills.add(fill(span, blocks.wall())));
-        geometry.boundary().forEach(span -> fills.add(fill(span, blocks.wall())));
-        layout.walls().stream().filter(wall -> !layout.isOpen(wall)).forEach(wall -> fills.add(fill(geometry.wall(wall), blocks.wall())));
+        geometry.solids(layout).forEach(span -> fills.add(fill(span, blocks.wall())));
         geometry.ceiling().ifPresent(span -> fills.add(fill(span, blocks.ceiling().orElseThrow())));
         return fills;
     }
 
+    Fill fill(Span span, Map<Material, Integer> mix) {
+        return Fill.mixed(box(span), mix);
+    }
+
+    private Region box(Span span) {
+        return Region.between(region.id(), region.world(), span.minX(), span.minY(), span.minZ(), span.maxX(), span.maxY(), span.maxZ());
+    }
+
     Fill fill(Span span, Material material) {
-        return new Fill(Region.between(region.id(), region.world(), span.minX(), span.minY(), span.minZ(), span.maxX(), span.maxY(), span.maxZ()), material);
+        return new Fill(box(span), material);
     }
 
     /** The index of a runner team in the order the maze was built for, or -1. */
@@ -153,6 +175,11 @@ final class MazeRun {
     void tell(MatchContext context, String teamId, String key, TagResolver... placeholders) {
         context.roster().teams().stream().filter(team -> team.id().equals(Optional.of(teamId))).flatMap(team -> team.ids().stream())
                 .flatMap(id -> context.player(id).stream()).forEach(player -> player.sendMessage(context.messages().render(key, placeholders)));
+    }
+
+    /** Whether the runner's team has found all its keys. */
+    boolean hasAllKeys(MatchContext context, UUID id) {
+        return teamOf(context, id).filter(team -> keysFound(team) >= settings.keys()).isPresent();
     }
 
     /** Whether the point is in the exit's safe zone; never when the zone is off. */
@@ -192,6 +219,13 @@ final class MazeRun {
         escaped.add(id);
     }
 
+    /** Tells the minotaurs one message and everyone else another, as the two sides have different goals. */
+    void tellRoles(MatchContext context, String runnerKey, String minotaurKey, TagResolver... placeholders) {
+        var sides = context.players().stream().collect(java.util.stream.Collectors.partitioningBy(player -> isMinotaur(context, player.getUniqueId())));
+        context.messages().send(Audience.audience(sides.get(false)), "shifting-maze." + runnerKey, placeholders);
+        context.messages().send(Audience.audience(sides.get(true)), "shifting-maze." + minotaurKey, placeholders);
+    }
+
     boolean isMinotaur(MatchContext context, UUID id) {
         return teamOf(context, id).equals(Optional.of(ShiftingMaze.MINOTAUR));
     }
@@ -200,10 +234,18 @@ final class MazeRun {
         return context.roster().find(id).flatMap(Participant::team);
     }
 
-    /** The colour of a team's glow, which is the team's own. */
-    Color colour(String teamId) {
-        var colour = NamedTextColor.NAMES.value(teamId);
-        return colour == null ? Color.WHITE : Color.fromRGB(colour.value());
+    /** The wool that marks what is a team's: the block underneath its keys. */
+    Material wool(String teamId) {
+        return switch (teamId) {
+            case "red" -> Material.RED_WOOL;
+            case "blue" -> Material.BLUE_WOOL;
+            case "green" -> Material.LIME_WOOL;
+            case "yellow" -> Material.YELLOW_WOOL;
+            case "aqua" -> Material.LIGHT_BLUE_WOOL;
+            case "light_purple" -> Material.PINK_WOOL;
+            case "gold" -> Material.ORANGE_WOOL;
+            default -> Material.WHITE_WOOL;
+        };
     }
 
     /** Where the participant starts: their team's corner, or the lair of the minotaur they are. Empty for a runner without a team. */

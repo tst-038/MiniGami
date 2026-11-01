@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.shiftingmaze.blocks;
 
 import io.github.tst_038.minigami.shiftingmaze.layout.Cell;
+import io.github.tst_038.minigami.shiftingmaze.layout.Layout;
 import io.github.tst_038.minigami.shiftingmaze.layout.Wall;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +83,37 @@ public final class Geometry {
             border.add(box(lineX(columns), cellZ(j), wallThickness, cellWidth, wallHeight));
         }
         return border;
+    }
+
+    /**
+     * The posts, the outer walls and the closed walls between cells, as few spans as possible: runs of them along a wall line are
+     * joined, so the maze takes a few hundred fills where one per wall would take thousands.
+     */
+    public List<Span> solids(Layout layout) {
+        List<Span> spans = new ArrayList<>();
+        for (int j = 0; j <= rows; j++) {
+            int start = 0;
+            for (int i = 0; i <= columns; i++) {
+                boolean joined = i < columns && (j == 0 || j == rows || !layout.isOpen(new Wall(new Cell(i, j - 1), new Cell(i, j))));
+                if (!joined) {
+                    spans.add(box(lineX(start), lineZ(j), lineX(i) + wallThickness - lineX(start), wallThickness, wallHeight));
+                    start = i + 1;
+                }
+            }
+        }
+        for (int i = 0; i <= columns; i++) {
+            int start = -1;
+            for (int j = 0; j <= rows; j++) {
+                boolean closed = j < rows && (i == 0 || i == columns || !layout.isOpen(new Wall(new Cell(i - 1, j), new Cell(i, j))));
+                if (closed && start < 0) {
+                    start = j;
+                } else if (!closed && start >= 0) {
+                    spans.add(box(lineX(i), cellZ(start), wallThickness, cellZ(j - 1) + cellWidth - cellZ(start), wallHeight));
+                    start = -1;
+                }
+            }
+        }
+        return spans;
     }
 
     /** The span of the wall between two neighbouring cells. */

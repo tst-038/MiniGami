@@ -272,7 +272,8 @@ public final class GameLoader {
         }
         var most = TeamSetup.IDS.size();
         if (teams.has("count")) {
-            var count = teams.integer("count", 2, most);
+            // Beside roles one team is a match: the roles are the other side.
+            var count = teams.integer("count", config.has("roles") ? 1 : 2, most);
             if (minPlayers < count) {
                 config.problem("min-players", "must be at least the number of teams (" + count + ")");
             }

@@ -27,6 +27,17 @@ public interface GameType {
      */
     Map<String, List<Feature>> features();
 
+    /** Features listed under this id instead of a phase are enabled once the match is about to begin, with the start timer, before any team exists. */
+    String STARTING = "starting";
+
+    /**
+     * Whether the phase after the first begins as the start countdown does, so a game that has to build its map has that
+     * time for it. Players stay frozen until the countdown ends, wherever the game moved them to.
+     */
+    default boolean startsDuringCountdown() {
+        return false;
+    }
+
     /**
      * The game type with the settings of its own a game gives it, read from the game's top level, such as
      * a build time. Games without settings keep the default, so such keys are unknown keys.

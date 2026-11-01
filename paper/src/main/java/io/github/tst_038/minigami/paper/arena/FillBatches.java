@@ -60,8 +60,8 @@ final class FillBatches {
             low = new Region(box.id(), box.world(), box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), mid);
             high = new Region(box.id(), box.world(), box.minX(), box.minY(), mid + 1, box.maxX(), box.maxY(), box.maxZ());
         }
-        var pieces = new ArrayList<>(split(new Fill(low, fill.material()), budget));
-        pieces.addAll(split(new Fill(high, fill.material()), budget));
+        var pieces = new ArrayList<>(split(new Fill(low, fill.material(), fill.mix()), budget));
+        pieces.addAll(split(new Fill(high, fill.material(), fill.mix()), budget));
         return pieces;
     }
 

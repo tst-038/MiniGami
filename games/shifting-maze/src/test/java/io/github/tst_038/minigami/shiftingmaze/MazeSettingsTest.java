@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -51,7 +52,7 @@ class MazeSettingsTest {
         assertEquals(new MazeSettings.Warning(3, true, true, "block.grindstone.use"), settings.warning().orElseThrow());
         assertEquals(3, settings.keys());
         assertEquals(new MazeSettings.Sight(30, 3), settings.sight().orElseThrow());
-        assertEquals(Material.STONE_BRICKS, settings.blocks().wall());
+        assertTrue(settings.blocks().wall().containsKey(Material.STONE_BRICKS));
         assertEquals(Material.TRIPWIRE_HOOK, settings.blocks().key());
         assertEquals(Optional.empty(), settings.blocks().ceiling());
     }
@@ -59,14 +60,15 @@ class MazeSettingsTest {
     @Test
     void valuesAreTaken() throws Exception {
         var settings = read("cell-width: 4\nwall-height: 5\nkeys: 0\nshift-seconds: 40\nwarning: { seconds: 5, flicker: false }\n"
-                + "blocks: { wall: deepslate_bricks, ceiling: stone }");
+                + "blocks: { wall: deepslate_bricks, floor: { stone: 3, water: 1 }, ceiling: stone }");
 
         assertEquals(4, settings.cellWidth());
         assertEquals(5, settings.wallHeight());
         assertEquals(0, settings.keys());
         assertEquals(new MazeSettings.Warning(5, false, true, "block.grindstone.use"), settings.warning().orElseThrow());
-        assertEquals(Material.DEEPSLATE_BRICKS, settings.blocks().wall());
+        assertEquals(Map.of(Material.DEEPSLATE_BRICKS, 1), settings.blocks().wall());
         assertEquals(Optional.of(Material.STONE), settings.blocks().ceiling());
+        assertEquals(Map.of(Material.STONE, 3, Material.WATER, 1), settings.blocks().floor());
     }
 
     @Test

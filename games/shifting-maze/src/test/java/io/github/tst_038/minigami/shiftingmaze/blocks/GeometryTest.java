@@ -133,4 +133,31 @@ class GeometryTest {
         assertFalse(g.near(centre, 1, far[0], far[2]));
         assertTrue(g.near(new Cell(0, 0), 3, g.standingSpot(new Cell(0, 0))[0], g.standingSpot(new Cell(0, 0))[2]));
     }
+
+    @Test
+    void joinedSolidsCoverTheSameBlocksAsPostsBoundaryAndClosedWalls() {
+        Geometry g = region(61, 5, 3, 1, false);
+        var layout = io.github.tst_038.minigami.shiftingmaze.layout.Generator.generate(g.columns(), g.rows(), 20, new java.util.Random(5));
+        List<Span> separate = new ArrayList<>(g.posts());
+        separate.addAll(g.boundary());
+        layout.walls().stream().filter(wall -> !layout.isOpen(wall)).forEach(wall -> separate.add(g.wall(wall)));
+        List<Span> joined = g.solids(layout);
+
+        assertEquals(blocks(separate), blocks(joined));
+        assertTrue(joined.size() < separate.size() / 2);
+    }
+
+    private static Set<List<Integer>> blocks(List<Span> spans) {
+        Set<List<Integer>> blocks = new HashSet<>();
+        for (Span s : spans) {
+            for (int x = s.minX(); x <= s.maxX(); x++) {
+                for (int y = s.minY(); y <= s.maxY(); y++) {
+                    for (int z = s.minZ(); z <= s.maxZ(); z++) {
+                        blocks.add(List.of(x, y, z));
+                    }
+                }
+            }
+        }
+        return blocks;
+    }
 }

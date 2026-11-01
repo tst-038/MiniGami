@@ -113,7 +113,6 @@ class RaisingTest {
 
         raising().enable(match);
 
-        assertTrue(match.fills.isEmpty());
         assertTrue(teleports.isEmpty());
         assertTrue(match.roster.find(runner.getUniqueId()).orElseThrow().isAlive());
         match.tick(1);
@@ -142,7 +141,6 @@ class RaisingTest {
 
         raising().enable(match);
 
-        assertTrue(match.fills.isEmpty());
         assertTrue(teleports.isEmpty());
     }
 }

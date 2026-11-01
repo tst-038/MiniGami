@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.shiftingmaze;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.configuration.MemoryConfiguration;
@@ -8,7 +10,7 @@ import org.bukkit.configuration.MemoryConfiguration;
 /**
  * The top-level settings of a Shifting Maze game file; every one is optional.
  *
- * @param safeZoneRadius cells around the exit that minotaurs may not enter; empty when the safe zone is off
+ * @param safeZoneRadius cells around the exit that in which a runner with all its keys cannot be caught; empty when the safe zone is off
  * @param warning how a coming wall shift is announced; empty when the cues are off
  * @param sight what the minotaurs are shown now and then; empty when it is off
  */
@@ -21,8 +23,12 @@ record MazeSettings(int cellWidth, int wallThickness, int wallHeight, int loops,
     record Sight(int everySeconds, int seconds) {
     }
 
-    /** @param ceiling empty for an open top; {@code key} is an item, the others are blocks */
-    record Blocks(Material floor, Material wall, Optional<Material> ceiling, Material warning, Material exit, Material key, Material sight) {
+    /**
+     * @param floor weight per block, each block of the floor picking one at random
+     * @param wall weight per block, as the floor
+     * @param ceiling empty for an open top; {@code key} is an item, the others are blocks
+     */
+    record Blocks(Map<Material, Integer> floor, Map<Material, Integer> wall, Optional<Material> ceiling, Material warning, Material exit, Material key) {
     }
 
     static MazeSettings defaults() {
@@ -65,13 +71,43 @@ record MazeSettings(int cellWidth, int wallThickness, int wallHeight, int loops,
 
     private static Blocks readBlocks(ConfigReader config) {
         return new Blocks(
-                block(config, "floor", Material.SMOOTH_STONE),
-                block(config, "wall", Material.STONE_BRICKS),
+                mix(config, "floor", DUNGEON_FLOOR),
+                mix(config, "wall", DUNGEON_WALL),
                 config.has("ceiling") ? Optional.of(block(config, "ceiling", Material.STONE_BRICKS)) : Optional.empty(),
                 block(config, "warning", Material.CRACKED_STONE_BRICKS),
                 block(config, "exit", Material.GOLD_BLOCK),
-                config.has("key") ? item(config, "key") : Material.TRIPWIRE_HOOK,
-                block(config, "sight", Material.WHITE_STAINED_GLASS));
+                config.has("key") ? item(config, "key") : Material.TRIPWIRE_HOOK);
+    }
+
+    private static final Map<Material, Integer> DUNGEON_FLOOR = Map.of(Material.COBBLESTONE, 35, Material.MOSSY_COBBLESTONE, 20, Material.STONE, 25,
+            Material.GRAVEL, 8, Material.ANDESITE, 8, Material.WATER, 3, Material.SHROOMLIGHT, 2);
+    private static final Map<Material, Integer> DUNGEON_WALL = Map.of(Material.STONE_BRICKS, 40, Material.MOSSY_STONE_BRICKS, 20,
+            Material.CRACKED_STONE_BRICKS, 15, Material.COBBLESTONE, 15, Material.MOSSY_COBBLESTONE, 10);
+
+    /** A block name, or a section of block names with their weights. */
+    private static Map<Material, Integer> mix(ConfigReader config, String key, Map<Material, Integer> fallback) {
+        if (!config.has(key)) {
+            return fallback;
+        }
+        if (!config.isSection(key)) {
+            return Map.of(block(config, key, Material.STONE), 1);
+        }
+        var section = config.section(key);
+        var mix = new LinkedHashMap<Material, Integer>();
+        for (var name : section.keys()) {
+            var material = Material.matchMaterial(name);
+            int weight = section.integer(name, 1, 1000);
+            if (material == null) {
+                section.problem(name, "must be a block");
+            } else {
+                mix.merge(material, weight, Integer::sum);
+            }
+        }
+        if (mix.isEmpty()) {
+            config.problem(key, "needs at least one block");
+            return fallback;
+        }
+        return mix;
     }
 
     private static int integer(ConfigReader config, String key, int min, int max, int fallback) {

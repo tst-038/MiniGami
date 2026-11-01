@@ -17,6 +17,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
@@ -125,8 +126,8 @@ public final class ArenaMaps {
      */
     public CompletableFuture<Void> fill(Arena arena, List<Fill> fills) {
         var maps = worldEdit.orElseThrow(() -> new IllegalStateException("Filling blocks needs WorldEdit"));
-        fills.stream().filter(fill -> !fill.material().isBlock()).findFirst().ifPresent(fill -> {
-            throw new IllegalArgumentException(fill.material() + " is not a block");
+        fills.stream().flatMap(fill -> Stream.concat(Stream.of(fill.material()), fill.mix().keySet().stream())).filter(material -> !material.isBlock()).findFirst().ifPresent(material -> {
+            throw new IllegalArgumentException(material + " is not a block");
         });
         return queue(arena, () -> maps.fill(fills)).whenCompleteAsync((ignored, problem) -> {
             if (problem != null) {

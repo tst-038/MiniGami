@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.shiftingmaze.layout.Wall;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.random.RandomGenerator;
+import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import org.bukkit.Material;
 
 /**
@@ -23,6 +24,8 @@ final class Shifting implements Feature {
     private final MazeSettings settings;
     private final RandomGenerator random;
     private final Telegraph telegraph;
+    /** The match tick of the next round, or -1 before the first is planned. */
+    private long nextAt = -1;
 
     Shifting(MazeRun run, MazeSettings settings, RandomGenerator random, Telegraph telegraph) {
         this.run = run;
@@ -35,10 +38,16 @@ final class Shifting implements Feature {
     public void enable(MatchContext context) {
         AutoCloseable stopCues = () -> telegraph.stop(context);
         context.scope().register(stopCues);
+        context.showTimer("next-shift", () -> nextAt < 0 ? -1 : Math.max(0, nextAt - context.clock().elapsedTicks()));
         run.whenBuilt(() -> {
             // The maze can finish after this phase is over.
             if (!context.scope().isClosed()) {
-                context.scope().register(context.clock().repeat(settings.shiftSeconds() * 20L, () -> plan(context)));
+                long period = settings.shiftSeconds() * 20L;
+                nextAt = context.clock().elapsedTicks() + period;
+                context.scope().register(context.clock().repeat(period, () -> {
+                    nextAt = context.clock().elapsedTicks() + period;
+                    plan(context);
+                }));
             }
         });
     }
@@ -66,8 +75,14 @@ final class Shifting implements Feature {
         var geometry = run.geometry();
         telegraph.start(context, moves.stream().map(move -> geometry.wall(move.opened())).toList(),
                 moves.stream().map(move -> geometry.wall(move.closed())).toList(), ticks);
-        context.messages().send(context.audience(), "shifting-maze.shifting");
-        context.scope().register(context.clock().schedule(ticks, () -> apply(context, moves)));
+        var countdown = new int[] {ticks / 20};
+        var announce = context.clock().repeat(20, () -> context.audience().sendActionBar(
+                context.messages().render("shifting-maze.shift-countdown", Formatter.number("seconds", countdown[0]--))));
+        context.scope().register(announce);
+        context.scope().register(context.clock().schedule(ticks, () -> {
+            announce.close();
+            apply(context, moves);
+        }));
     }
 
     private void apply(MatchContext context, List<Shift> moves) {
@@ -80,7 +95,7 @@ final class Shifting implements Feature {
         applied.forEach(move -> fills.add(run.fill(run.geometry().wall(move.opened()), Material.AIR)));
         applied.forEach(move -> fills.add(run.fill(run.geometry().wall(move.closed()), settings.blocks().wall())));
         // A fill is refused once the match is over, and then there is nobody left to tell.
-        context.fill(fills).thenRun(() -> context.messages().send(context.audience(), "shifting-maze.shifted")).exceptionally(ignored -> null);
+        context.fill(fills).exceptionally(ignored -> null);
     }
 
     /** Whether nobody who can still be caught stands in or at the wall. */

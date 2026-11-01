@@ -1,24 +1,20 @@
 package io.github.tst_038.minigami.shiftingmaze;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.FakeMatch;
 import io.github.tst_038.minigami.api.region.Region;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.function.Function;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Server;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,17 +27,8 @@ class SightTest {
     private final FakeMatch match = new FakeMatch();
     private MazeSettings settings = MazeSettings.defaults();
     private MazeRun run;
+    private final Set<UUID> glowing = new HashSet<>();
     private Player minotaur;
-
-    @BeforeAll
-    static void server() throws Exception {
-        // Material#createBlockData asks the server, and Bukkit#setServer wants a real build; so the field is set directly.
-        var field = Bukkit.class.getDeclaredField("server");
-        field.setAccessible(true);
-        if (field.get(null) == null) {
-            field.set(null, FakeMatch.proxy(Server.class, Map.of("createBlockData", (Function<Object[], Object>) args -> FakeMatch.proxy(BlockData.class, Map.of()))));
-        }
-    }
 
     @BeforeEach
     void setUp() {
@@ -52,7 +39,7 @@ class SightTest {
 
     private Player join(String team) {
         var id = UUID.randomUUID();
-        Player player = FakeMatch.proxy(Player.class, Map.of("getUniqueId", id, "getLocation", (Supplier<Location>) () -> new Location(null, 1, 64, 1)));
+        Player player = FakeMatch.proxy(Player.class, Map.of("getUniqueId", id, "setGlowing", (Function<Object[], Object>) args -> (boolean) args[0] ? glowing.add(id) : glowing.remove(id)));
         match.join(player);
         match.roster.assignTeam(id, team);
         return player;
@@ -65,54 +52,62 @@ class SightTest {
     }
 
     @Test
-    void everyRunnerGlowsForTheMinotaursOnly() {
-        join("red");
-        join("blue");
+    void everyRunnerGlowsButNotTheMinotaurs() {
+        var red = join("red");
+        var blue = join("blue");
         start();
 
         match.tick(EVERY);
 
-        assertEquals(2, match.spawned.size());
-        match.spawned.forEach(glow -> assertEquals(List.of(minotaur), List.copyOf(match.viewers.get(glow))));
+        assertEquals(Set.of(red.getUniqueId(), blue.getUniqueId()), glowing);
     }
 
     @Test
     void anEscapedRunnerDoesNotGlow() {
-        join("red");
+        var red = join("red");
         var out = join("blue");
         start();
         run.markEscaped(out.getUniqueId());
 
         match.tick(EVERY);
 
-        assertEquals(1, match.spawned.size());
+        assertEquals(Set.of(red.getUniqueId()), glowing);
     }
 
     @Test
-    void theGlowsGoAfterTheirSeconds() {
+    void theGlowGoesAfterItsSeconds() {
         join("red");
         start();
-        match.tick(EVERY);
-        assertTrue(match.removed.isEmpty());
+        match.tick(EVERY + SECONDS - 1);
+        assertFalse(glowing.isEmpty());
 
-        match.tick(SECONDS - 1);
-        assertTrue(match.removed.isEmpty());
         match.tick(1);
 
-        assertEquals(match.spawned, match.removed);
+        assertTrue(glowing.isEmpty());
     }
 
     @Test
     void aRunnerWhoGetsCaughtLosesTheirGlowAtOnce() {
         var caught = join("red");
-        join("blue");
+        var other = join("blue");
         start();
         match.tick(EVERY);
 
         match.roster.eliminate(caught.getUniqueId());
         match.tick(1);
 
-        assertEquals(1, match.removed.size());
+        assertEquals(Set.of(other.getUniqueId()), glowing);
+    }
+
+    @Test
+    void nobodyGlowsAfterTheMatchEnds() {
+        join("red");
+        start();
+        match.tick(EVERY);
+
+        match.scope.close();
+
+        assertTrue(glowing.isEmpty());
     }
 
     @Test
@@ -125,6 +120,6 @@ class SightTest {
 
         match.tick(EVERY * 3L);
 
-        assertTrue(match.spawned.isEmpty());
+        assertTrue(glowing.isEmpty());
     }
 }

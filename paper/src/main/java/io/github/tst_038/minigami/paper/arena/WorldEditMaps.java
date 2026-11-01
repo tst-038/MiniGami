@@ -10,6 +10,8 @@ import com.sk89q.worldedit.extent.clipboard.io.BuiltInClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.function.pattern.Pattern;
+import com.sk89q.worldedit.function.pattern.RandomPattern;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
@@ -170,11 +172,20 @@ final class WorldEditMaps {
             for (var fill : fills) {
                 var box = fill.box();
                 edit.setBlocks(new CuboidRegion(world, BlockVector3.at(box.minX(), box.minY(), box.minZ()),
-                        BlockVector3.at(box.maxX(), box.maxY(), box.maxZ())), BukkitAdapter.asBlockType(fill.material()).getDefaultState());
+                        BlockVector3.at(box.maxX(), box.maxY(), box.maxZ())), pattern(fill));
             }
         } catch (WorldEditException e) {
             throw new CompletionException(e);
         }
+    }
+
+    private static Pattern pattern(Fill fill) {
+        if (fill.mix().isEmpty()) {
+            return BukkitAdapter.asBlockType(fill.material()).getDefaultState();
+        }
+        var random = new RandomPattern();
+        fill.mix().forEach((material, weight) -> random.add(BukkitAdapter.asBlockType(material).getDefaultState(), weight));
+        return random;
     }
 
     private static void clear(Region box) {

@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -145,6 +146,12 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public void replace(Region region) {
         match.replace(region);
+    }
+
+    @Override
+    public void showTimer(String name, LongSupplier ticksLeft) {
+        match.timers().put(name, ticksLeft);
+        scope.register(() -> match.timers().remove(name, ticksLeft));
     }
 
     @Override
