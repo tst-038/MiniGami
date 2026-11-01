@@ -88,6 +88,9 @@ final class MazeRun {
             return;
         }
         region = context.region(ShiftingMaze.REGION).orElseThrow();
+        // Known from the start, so sidebar lines naming them are left out rather than shown raw before the game runs.
+        context.showTimer("next-shift", () -> ticksUntil(context, nextShiftAt));
+        context.showTimer("next-glow", () -> ticksUntil(context, nextGlowAt));
         geometry = new Geometry(region.minX(), region.minY(), region.minZ(), region.maxX(), region.maxY(), region.maxZ(),
                 settings.cellWidth(), settings.wallThickness(), settings.wallHeight(), settings.blocks().ceiling().isPresent());
         if (geometry.tooSmall()) {
@@ -134,6 +137,14 @@ final class MazeRun {
         geometry.solids(layout).forEach(span -> fills.add(fill(span, blocks.wall())));
         geometry.ceiling().ifPresent(span -> fills.add(fill(span, blocks.ceiling().orElseThrow())));
         return fills;
+    }
+
+    /** The match tick of the next wall shift and of the next glow, or -1 while none is planned. */
+    long nextShiftAt = -1;
+    long nextGlowAt = -1;
+
+    private static long ticksUntil(MatchContext context, long at) {
+        return at < 0 ? -1 : Math.max(0, at - context.clock().elapsedTicks());
     }
 
     Fill fill(Span span, Map<Material, Integer> mix) {

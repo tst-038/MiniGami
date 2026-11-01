@@ -24,8 +24,6 @@ final class Shifting implements Feature {
     private final MazeSettings settings;
     private final RandomGenerator random;
     private final Telegraph telegraph;
-    /** The match tick of the next round, or -1 before the first is planned. */
-    private long nextAt = -1;
 
     Shifting(MazeRun run, MazeSettings settings, RandomGenerator random, Telegraph telegraph) {
         this.run = run;
@@ -38,14 +36,13 @@ final class Shifting implements Feature {
     public void enable(MatchContext context) {
         AutoCloseable stopCues = () -> telegraph.stop(context);
         context.scope().register(stopCues);
-        context.showTimer("next-shift", () -> nextAt < 0 ? -1 : Math.max(0, nextAt - context.clock().elapsedTicks()));
         run.whenBuilt(() -> {
             // The maze can finish after this phase is over.
             if (!context.scope().isClosed()) {
                 long period = settings.shiftSeconds() * 20L;
-                nextAt = context.clock().elapsedTicks() + period;
+                run.nextShiftAt = context.clock().elapsedTicks() + period;
                 context.scope().register(context.clock().repeat(period, () -> {
-                    nextAt = context.clock().elapsedTicks() + period;
+                    run.nextShiftAt = context.clock().elapsedTicks() + period;
                     plan(context);
                 }));
             }

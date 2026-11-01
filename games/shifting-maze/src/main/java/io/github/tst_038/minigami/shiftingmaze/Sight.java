@@ -16,8 +16,6 @@ final class Sight implements Feature {
 
     private final MazeRun run;
     private final MazeSettings settings;
-    /** The match tick of the next glow, or -1 before the maze stands. */
-    private long nextAt = -1;
 
     Sight(MazeRun run, MazeSettings settings) {
         this.run = run;
@@ -30,14 +28,13 @@ final class Sight implements Feature {
             return;
         }
         var sight = settings.sight().get();
-        context.showTimer("next-glow", () -> nextAt < 0 ? -1 : Math.max(0, nextAt - context.clock().elapsedTicks()));
         run.whenBuilt(() -> {
             // The maze can finish after this phase is over.
             if (!context.scope().isClosed()) {
                 long period = sight.everySeconds() * 20L;
-                nextAt = context.clock().elapsedTicks() + period;
+                run.nextGlowAt = context.clock().elapsedTicks() + period;
                 context.scope().register(context.clock().repeat(period, () -> {
-                    nextAt = context.clock().elapsedTicks() + period;
+                    run.nextGlowAt = context.clock().elapsedTicks() + period;
                     show(context, sight.seconds() * 20L);
                 }));
             }
