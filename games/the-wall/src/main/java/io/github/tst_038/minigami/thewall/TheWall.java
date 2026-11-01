@@ -20,7 +20,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
  * border can close in during the fight, so it doesn't drag on.
  *
  * <p>Every team has a quarter of the arena, the regions {@code quarter-1}, {@code quarter-2} and so on in
- * team order; the {@code team-region} feature, set for the preparing phase in the game's file, keeps a
+ * team order; the {@code play-area} feature, set for the preparing phase in the game's file, keeps a
  * team in its own until the walls drop.
  *
  * <p>The arena decides which walls there are: every region named {@code wall} or {@code wall-…}, such

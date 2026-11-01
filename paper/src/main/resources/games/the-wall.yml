@@ -1,7 +1,7 @@
 # Up to 4 teams prepare walled off in their own quarter, then the walls drop and a border closes in; the last team standing wins.
 # The arena needs: a saved map (/mg arena example map save), a spawn per team (team: red, blue, green, yellow),
 # a region per team to prepare in, quarter-1 up to quarter-4 (/mg arena example region quarter-1 set),
-# a region called border, and its walls: regions named wall or wall-<anything> (wall-north, ...). A wall drops to air,
+# a region called fighting (the whole map, outer walls excluded), a region called border, and its walls: regions named wall or wall-<anything> (wall-north, ...). A wall drops to air,
 # or with WorldEdit installed, to a broken version saved by /mg arena example region <name> schematic.
 gametype: the-wall
 name: "<dark_red>The Wall"
@@ -16,14 +16,14 @@ prepare-seconds: 900
 # Closes the border region in to 20 blocks over 5 minutes; half a heart a second outside it.
 border: { end-size: 20, shrink-seconds: 300, damage: 1 }
 arenas: [example]
-# While preparing, a team keeps to its own quarter and may build and break there; once the walls drop, everywhere inside the border region is open.
+# While preparing, a team keeps to its own quarter and may build and break there; once the walls drop, everywhere inside the
+# fighting region is open, and the outer walls of the map stay shut.
 features:
   preparing:
-    team-region: {}
-    play-area: { region: border }
+    play-area: { region: team }
     break-blocks: { blacklist: [bedrock, barrier], place: true }
   fighting:
-    play-area: { region: border }
+    play-area: { region: fighting }
     break-blocks: { blacklist: [bedrock, barrier], place: true }
 stats: [combat]
 quit: { then: die, rejoin-seconds: 120 }

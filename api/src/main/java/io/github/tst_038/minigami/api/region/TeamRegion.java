@@ -15,6 +15,9 @@ import java.util.function.Function;
  */
 public record TeamRegion(Region region, Optional<String> team, List<UUID> members) {
 
+    /** What a feature names instead of an arena region to mean the region of each team; so no arena region can be called this. */
+    public static final String KEYWORD = "team";
+
     public TeamRegion {
         members = List.copyOf(members);
     }

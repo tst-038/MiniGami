@@ -119,7 +119,7 @@ class ArenaLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "arenas/hills/arena.yml: regions.Top: can't be a region name: use lower case letters, digits and dashes",
+                "arenas/hills/arena.yml: regions.Top: can't be a region name: use lower case letters, digits and dashes, and not \"team\"",
                 "arenas/hills/arena.yml: regions.base.from.z: is missing",
                 "arenas/hills/arena.yml: regions.base.to.y: must be between -2048 and 2047",
                 "arenas/hills/arena.yml: regions.base.to.w: unknown key"), problems(loaded));

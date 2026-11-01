@@ -112,8 +112,8 @@ You can also copy one of the files in `games/`, edit it, and run `/mg reload`.
 | `team-deathmatch` | Teams fight for kills; first to the target or most kills when time runs out. | spawns |
 | `domination` | Capture points score over time; first to the target wins. King of the hill is one point. | a region per capture point |
 | `hide-and-seek` | Seekers hunt hiders. Caught hiders are out, or join the seekers (infection). | spawns |
-| `build-battle` | Build a random theme in your own plot (kept inside it by `team-region`), then everyone scores the builds. | `plot-1`, `plot-2`, … regions and a saved map |
-| `the-wall` | Teams prepare behind walls; the walls drop and a border closes in. | team spawns, `quarter-1`…`quarter-4` and `border` regions, `wall…` regions and a saved map |
+| `build-battle` | Build a random theme in your own plot (kept inside it by `play-area`), then everyone scores the builds. | `plot-1`, `plot-2`, … regions and a saved map |
+| `the-wall` | Teams prepare behind walls; the walls drop and a border closes in. | team spawns, `quarter-1`…`quarter-4`, `fighting` and `border` regions, `wall…` regions and a saved map |
 
 `/mg gametype <id> info` lists a game type's phases, settings and what its arenas need.
 
@@ -146,8 +146,7 @@ features:
 | `death-items` | What happens to items and XP on death |
 | `countdown` | Counts down the last seconds of a timed phase above the hotbar |
 | `freeze` | Players can't move |
-| `team-region` | Keeps each team inside its own region (`plot-N`, `quarter-N`): no building, moving, spreading or explosions across the edge |
-| `play-area` | Keeps everyone inside one arena region (`region: border`): no building, breaking or walking out of it, and explosions leave the outside alone |
+| `play-area` | Keeps players inside a region: no building, breaking, moving, spreading or explosions across its edge. `region: team` is the region of each team (`plot-N`, `quarter-N`), any other name is one arena region everybody shares (`region: fighting`). `team` can't be a region name. `team-region` is the old name for `region: team` |
 | `effects` | Potion effects |
 
 `/mg feature list` and `/mg feature <id> info` show every feature with all its settings.

@@ -265,7 +265,7 @@ arena:
   info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena %arena% map save</white>"
   # Named boxes games use, saved from a WorldEdit selection. %region%: its name
   region:
-    invalid-name: "%prefix%<red><white>%region%</white> can't be a region name: use lower case letters, digits and dashes."
+    invalid-name: "%prefix%<red><white>%region%</white> can't be a region name: use lower case letters, digits and dashes, and not <white>team</white>."
     no-selection: "%prefix%<red>Select the region with WorldEdit first, for example with <white>//wand</white>."
     # %from%, %to%: its lowest and highest corner block
     saved: "%prefix%<green>Saved region <white>%region%</white> of <white>%arena%</white>: %from% to %to%."

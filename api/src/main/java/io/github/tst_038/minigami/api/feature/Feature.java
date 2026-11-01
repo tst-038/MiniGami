@@ -1,5 +1,7 @@
 package io.github.tst_038.minigami.api.feature;
 
+import java.util.List;
+
 /**
  * One reusable piece of game behaviour, such as void kills or no hunger, active during the phases
  * a game assigns it to.
@@ -18,5 +20,10 @@ public interface Feature {
      */
     default boolean changesBlocks() {
         return false;
+    }
+
+    /** The arena regions it relies on, by name. A game with it only plays in arenas that have them all. */
+    default List<String> regions() {
+        return List.of();
     }
 }

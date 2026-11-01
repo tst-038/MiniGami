@@ -14,12 +14,12 @@ vote-seconds: 20
 themes: [Rocket, Tree, Car, House, Castle, Dragon, Ship, Robot]
 # Builders who quit keep their plot for 5 minutes.
 quit: { then: stay, rejoin-seconds: 300 }
-# Teams build only inside their own plot (team-region), and nothing they set going (water, fire, pistons, explosions)
+# Teams build only inside their own plot (play-area), and nothing they set going (water, fire, pistons, explosions)
 # reaches past it. Mobs are part of a build too: at most 10 per plot (max, the default), and they stay in their plot.
 # Enabled in every phase they should live; they are removed after the last one.
 features:
   building:
-    team-region: {}
+    play-area: { region: team }
     plot-mobs: { max: 10 }
   voting:
     plot-mobs: { max: 10 }

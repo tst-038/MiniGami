@@ -12,8 +12,13 @@ import java.util.List;
  * @param mostTeams the most teams a match of it can have; without teams, a player is a team of one
  * @param hasTeams whether it plays in teams set with {@code teams:}, which shouldn't share a spawn
  * @param changesBlocks whether one of its features changes blocks, which only the arena's saved map puts back
+ * @param featureRegions the regions its features rely on, such as the one a play area keeps players in
  */
-public record Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks) {
+public record Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks, List<String> featureRegions) {
+
+    public Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks) {
+        this(arena, gametype, mostTeams, hasTeams, changesBlocks, List.of());
+    }
 
     /**
      * Every check an arena goes through for a game, in the order their findings are listed.

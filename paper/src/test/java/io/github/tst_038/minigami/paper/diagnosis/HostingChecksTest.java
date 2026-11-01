@@ -102,6 +102,13 @@ class HostingChecksTest {
     }
 
     @Test
+    void aRegionItsFeaturesRelyOnIsAFindingToo() {
+        var hosting = new Hosting(arena(1, List.of("hill"), true), NEEDY, 1, false, false, List.of("fighting", "hill"));
+
+        assertEquals(List.of(Map.of("region", "fighting")), check(new RegionsCheck(), hosting).stream().map(Finding::values).toList());
+    }
+
+    @Test
     void aRegionGroupIsMetByAnyRegionInIt() {
         assertEquals(List.of(), check(new RegionGroupsCheck(), new Hosting(arena(1, List.of("wall-north"), true), NEEDY, 1, false, false)));
 

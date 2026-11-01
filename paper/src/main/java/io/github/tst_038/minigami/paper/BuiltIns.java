@@ -22,7 +22,7 @@ import io.github.tst_038.minigami.features.plotmobs.PlotMobsFactory;
 import io.github.tst_038.minigami.features.onehit.OneHitFactory;
 import io.github.tst_038.minigami.features.projectilebreaks.ProjectileBreaksFactory;
 import io.github.tst_038.minigami.features.playarea.PlayAreaFactory;
-import io.github.tst_038.minigami.features.teamregion.TeamRegionFactory;
+import io.github.tst_038.minigami.features.playarea.TeamRegionFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.hideandseek.HideAndSeek;
 import io.github.tst_038.minigami.laststanding.LastStanding;
@@ -48,7 +48,7 @@ final class BuiltIns {
         return List.of(new VoidKillsFactory(), new KitFactory(savedKits), new DeathItemsFactory(), new BreakBlocksFactory(), new NoDamageFactory(),
                 new GiveDropsFactory(), new ProjectileBreaksFactory(), new AntiCampingFactory(), new DecayFloorFactory(), new NoHungerFactory(),
                 new OneHitFactory(), new CountdownFactory(), new FreezeFactory(), new EffectsFactory(), new NoMobsFactory(), new PlotMobsFactory(),
-                new TeamRegionFactory(), new PlayAreaFactory());
+                new PlayAreaFactory(), new TeamRegionFactory());
     }
 
     static List<StatGroup> statGroups() {

@@ -16,7 +16,7 @@ import org.bukkit.GameMode;
  * Every team builds on a theme in its own plot, then everyone scores the other teams' builds; the
  * highest total wins. Without teams in the game, everyone builds alone; with {@code teams: { size: 2 }}
  * it is duos. A plot is an arena region {@code plot-1}, {@code plot-2} and so on, one for every team a
- * match can have. The {@code team-region} feature, set for the building phase in the game's file, keeps
+ * match can have. The {@code play-area} feature, set for the building phase in the game's file, keeps
  * builders on their plot.
  *
  * <p>Game settings, all optional: {@code build-seconds} (300), {@code vote-seconds} per build (15) and

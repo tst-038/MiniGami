@@ -13,7 +13,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 
 /**
  * Every team builds on its plot, the region it was handed, together in creative, on a theme picked at
- * random. A player without a team builds alone. Keeping to the plot is up to the {@code team-region}
+ * random. A player without a team builds alone. Keeping to the plot is up to the {@code play-area}
  * feature.
  */
 final class Building implements Feature {

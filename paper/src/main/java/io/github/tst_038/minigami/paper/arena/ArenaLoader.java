@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.arena;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
@@ -80,8 +81,8 @@ public final class ArenaLoader {
         var section = config.section("regions");
         for (String name : section.keys()) {
             var region = section.section(name);
-            if (!IdRegistry.isValid(name)) {
-                section.problem(name, "can't be a region name: use lower case letters, digits and dashes");
+            if (!IdRegistry.isValid(name) || name.equals(TeamRegion.KEYWORD)) {
+                section.problem(name, "can't be a region name: use lower case letters, digits and dashes, and not \"" + TeamRegion.KEYWORD + "\"");
                 region.keys();
                 continue;
             }

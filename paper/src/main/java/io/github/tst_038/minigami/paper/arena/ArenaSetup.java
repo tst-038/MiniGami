@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
@@ -76,7 +77,7 @@ public final class ArenaSetup {
 
     /** Saves the player's WorldEdit selection as the region, replacing one of that name. */
     public void setRegion(Player player, String id, String name) {
-        if (!IdRegistry.isValid(name)) {
+        if (!IdRegistry.isValid(name) || name.equals(TeamRegion.KEYWORD)) {
             messages.send(player, "arena.region.invalid-name", Placeholder.unparsed("region", name));
             return;
         }
