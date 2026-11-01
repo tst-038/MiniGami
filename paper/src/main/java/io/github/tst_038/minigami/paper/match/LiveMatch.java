@@ -88,7 +88,7 @@ import org.bukkit.plugin.Plugin;
 public final class LiveMatch {
 
     /** How long a match waits for more players once enough joined. */
-    public static final long START_DELAY_TICKS = 20 * 20;
+    public static final long START_DELAY_TICKS = 17 * 20;
     /** How long players stand frozen at their spawns before play begins. */
     public static final long COUNTDOWN_TICKS = 3 * 20;
 
