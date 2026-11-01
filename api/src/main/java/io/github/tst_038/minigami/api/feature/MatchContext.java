@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.stat.Tally;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +21,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -85,6 +88,12 @@ public interface MatchContext {
      * @return completes on the server thread once every box is filled; fails if the match is over
      */
     CompletableFuture<Void> fill(List<Fill> fills);
+
+    /**
+     * Spawns an entity that only these players see, for as long as the feature runs: it is removed when the feature's scope
+     * closes, and earlier if the feature removes it. Others never see it, not even players who arrive later.
+     */
+    <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup);
 
     /** The phase the match is in, which for a feature is the phase it runs in. */
     Phase phase();

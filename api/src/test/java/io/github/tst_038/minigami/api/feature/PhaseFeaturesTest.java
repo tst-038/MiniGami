@@ -19,6 +19,7 @@ import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.stat.Tally;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.Map;
@@ -26,6 +27,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.junit.jupiter.api.Test;
@@ -175,6 +178,11 @@ class PhaseFeaturesTest {
 
         @Override
         public CompletableFuture<Void> fill(List<Fill> fills) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup) {
             throw new UnsupportedOperationException();
         }
 

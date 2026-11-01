@@ -15,6 +15,7 @@ import io.github.tst_038.minigami.core.stat.Tally;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +30,8 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -51,6 +54,8 @@ public final class FakeMatch implements MatchContext {
     /** The regions handed out to the teams, for {@link #teamRegions()}. */
     public final List<TeamRegion> teamRegions = new ArrayList<>();
     public final List<Fill> fills = new ArrayList<>();
+    /** What {@link #spawnFor} made, in order. */
+    public final List<Entity> spawned = new ArrayList<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
     private final Map<UUID, Player> players = new HashMap<>();
 
@@ -178,6 +183,14 @@ public final class FakeMatch implements MatchContext {
     public CompletableFuture<Void> fill(List<Fill> fills) {
         this.fills.addAll(fills);
         return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup) {
+        T entity = proxy(type, Map.of());
+        setup.accept(entity);
+        spawned.add(entity);
+        return entity;
     }
 
     @Override

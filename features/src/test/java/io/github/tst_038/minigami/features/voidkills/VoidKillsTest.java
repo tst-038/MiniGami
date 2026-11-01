@@ -17,6 +17,7 @@ import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.stat.Tally;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
@@ -27,6 +28,7 @@ import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -181,6 +183,11 @@ class VoidKillsTest {
 
         @Override
         public CompletableFuture<Void> fill(List<Fill> fills) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup) {
             throw new UnsupportedOperationException();
         }
 

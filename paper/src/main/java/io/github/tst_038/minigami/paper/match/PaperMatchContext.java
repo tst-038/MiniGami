@@ -14,6 +14,7 @@ import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.stat.Tally;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -148,6 +150,18 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public CompletableFuture<Void> fill(List<Fill> fills) {
         return match.fill(fills);
+    }
+
+    @Override
+    public <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup) {
+        T entity = at.getWorld().spawn(at, type, e -> {
+            e.setVisibleByDefault(false);
+            e.setPersistent(false);
+            setup.accept(e);
+        });
+        viewers.forEach(viewer -> viewer.showEntity(plugin, entity));
+        scope.register(entity::remove);
+        return entity;
     }
 
     @Override
