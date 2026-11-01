@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -152,6 +153,35 @@ final class MazeRun {
     void tell(MatchContext context, String teamId, String key, TagResolver... placeholders) {
         context.roster().teams().stream().filter(team -> team.id().equals(Optional.of(teamId))).flatMap(team -> team.ids().stream())
                 .flatMap(id -> context.player(id).stream()).forEach(player -> player.sendMessage(context.messages().render(key, placeholders)));
+    }
+
+    /** Whether the point is in the exit's safe zone; never when the zone is off. */
+    boolean inSafeZone(double x, double z) {
+        return settings.safeZoneRadius().isPresent() && geometry.near(landmarks.exit(), settings.safeZoneRadius().get(), x, z);
+    }
+
+    /**
+     * Announces the team's escape and counts it for those out, if its free members are all out. {@code ignoring} is a member about
+     * to be eliminated, so a catch settles the escape before the elimination can end the match.
+     */
+    void settleEscape(MatchContext context, String team, UUID ignoring) {
+        var members = alive(context, team).stream().filter(member -> !member.equals(ignoring)).toList();
+        if (!members.isEmpty() && members.stream().allMatch(member -> context.scores().of(member) > 0)) {
+            escaped(context, team, members);
+        }
+    }
+
+    /** Announces the team's escape once and counts it for the members who got out. */
+    void escaped(MatchContext context, String team, List<UUID> out) {
+        if (announceEscape(team)) {
+            context.messages().send(context.audience(), "shifting-maze.escaped", Placeholder.component("team", context.teamName(team)));
+            out.forEach(member -> context.count(member, ShiftingMaze.ESCAPES));
+        }
+    }
+
+    /** The members of the team who have not been caught. */
+    List<UUID> alive(MatchContext context, String team) {
+        return context.roster().alive().stream().filter(member -> member.team().equals(Optional.of(team))).map(member -> member.id()).toList();
     }
 
     boolean escaped(UUID id) {

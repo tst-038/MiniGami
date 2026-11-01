@@ -157,6 +157,8 @@ shifting-maze:
   exit-locked: "<red>Your team needs <white>%left%</white> more keys"
   # To a team when a member gets out. %player%: who; %out%/%free%: members out of those still free
   member-out: "%prefix%%player% <green>is out! <gray>(%out%/%free%) The rest of your team must follow."
+  # Action bar when a Minotaur tries to enter the exit room
+  safe-zone: "<red>Minotaurs cannot enter the exit room"
   # To everyone when the last free member of a team is out. %team%: the team
   escaped: "%prefix%%team% <green>escaped the maze!"
 team-deathmatch:

@@ -106,6 +106,15 @@ public final class Geometry {
         return column < 0 || row < 0 ? Optional.empty() : Optional.of(new Cell(column, row));
     }
 
+    /** Whether the point lies over the cells within {@code radius} cells of {@code centre} (any direction) or the walls between them. */
+    public boolean near(Cell centre, int radius, double x, double z) {
+        int x0 = cellX(Math.max(0, centre.x() - radius));
+        int x1 = cellX(Math.min(columns - 1, centre.x() + radius)) + cellWidth;
+        int z0 = cellZ(Math.max(0, centre.z() - radius));
+        int z1 = cellZ(Math.min(rows - 1, centre.z() + radius)) + cellWidth;
+        return x >= x0 && x < x1 && z >= z0 && z < z1;
+    }
+
     /** The middle of the cell, at the height of the first layer above the floor, as {x, y, z}. */
     public double[] standingSpot(Cell cell) {
         return new double[] {cellX(cell.x()) + cellWidth / 2.0, minY + 1, cellZ(cell.z()) + cellWidth / 2.0};

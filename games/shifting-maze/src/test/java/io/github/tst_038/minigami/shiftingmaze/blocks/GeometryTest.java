@@ -119,4 +119,18 @@ class GeometryTest {
         assertEquals(8, s.blocks());
         assertEquals(1.0, s.centre()[0]);
     }
+
+    @Test
+    void nearGrowsByWholeCellsAndStopsAtTheEdge() {
+        Geometry g = region(61, 5, 3, 1, false);
+        Cell centre = new Cell(5, 5);
+        double[] next = g.standingSpot(new Cell(6, 5));
+        double[] far = g.standingSpot(new Cell(7, 5));
+        double[] own = g.standingSpot(centre);
+        assertTrue(g.near(centre, 0, own[0], own[2]));
+        assertFalse(g.near(centre, 0, next[0], next[2]));
+        assertTrue(g.near(centre, 1, next[0], next[2]));
+        assertFalse(g.near(centre, 1, far[0], far[2]));
+        assertTrue(g.near(new Cell(0, 0), 3, g.standingSpot(new Cell(0, 0))[0], g.standingSpot(new Cell(0, 0))[2]));
+    }
 }
