@@ -73,10 +73,12 @@ class PlayAreaTest {
     }
 
     @Test
-    void aMoveOutOfTheTeamRegionIsCancelled() {
+    void aMoveOutOfTheTeamRegionSlidesAlongTheEdge() {
         perTeam();
 
-        assertTrue(match.fire(new PlayerMoveEvent(player, at(9.5), at(10.5))).isCancelled());
+        var event = match.fire(new PlayerMoveEvent(player, at(9.5), new Location(world, 10.5, 64, 6)));
+        assertFalse(event.isCancelled());
+        assertEquals(new Location(world, 9.5, 64, 6), event.getTo());
         assertFalse(match.fire(new PlayerMoveEvent(player, at(4), at(5))).isCancelled());
     }
 
@@ -101,7 +103,7 @@ class PlayAreaTest {
 
         assertTrue(breaks(at(5)));
         assertFalse(breaks(at(12)));
-        assertTrue(match.fire(new PlayerMoveEvent(player, at(9.5), at(10.5))).isCancelled());
+        assertEquals(at(9.5), match.fire(new PlayerMoveEvent(player, at(9.5), at(10.5))).getTo());
     }
 
     @Test

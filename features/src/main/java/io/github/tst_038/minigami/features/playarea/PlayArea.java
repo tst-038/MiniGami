@@ -72,8 +72,10 @@ final class PlayArea implements Feature {
             }
             // Someone already outside may walk back in; one who got there some other way, such as by respawning
             // at a spawn, is brought to their own team's region.
+            // Cancelling would snap the player back every tick and look like lag; keeping only the axes that stay
+            // inside lets them slide along the edge.
             if (contains(context, id, event.getFrom())) {
-                event.setCancelled(true);
+                event.setTo(slide(context, id, event.getFrom(), event.getTo()));
             } else if (shared.isEmpty()) {
                 context.teamRegion(id).ifPresent(own -> event.setTo(own.region().standingSpot()));
             }
@@ -104,6 +106,26 @@ final class PlayArea implements Feature {
             return true;
         }
         return own(context, id).filter(region -> region.contains(location)).isPresent();
+    }
+
+    /** Where the player ends up: the move, but on each axis that would take them out of their region, no move at all. */
+    private Location slide(MatchContext context, UUID id, Location from, Location to) {
+        var slid = from.clone();
+        slid.setYaw(to.getYaw());
+        slid.setPitch(to.getPitch());
+        slid.setX(to.getX());
+        if (!contains(context, id, slid)) {
+            slid.setX(from.getX());
+        }
+        slid.setY(to.getY());
+        if (!contains(context, id, slid)) {
+            slid.setY(from.getY());
+        }
+        slid.setZ(to.getZ());
+        if (!contains(context, id, slid)) {
+            slid.setZ(from.getZ());
+        }
+        return slid;
     }
 
     /** The region this player stays in. */
