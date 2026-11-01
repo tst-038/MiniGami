@@ -87,10 +87,12 @@ import org.bukkit.plugin.Plugin;
  */
 public final class LiveMatch {
 
-    /** How long a match waits for more players once enough joined. */
-    public static final long START_DELAY_TICKS = 17 * 20;
-    /** How long players stand frozen at their spawns before play begins. */
+    /** How long it takes from enough players joining until play begins. */
+    public static final long START_TICKS = 20 * 20;
+    /** How long players stand frozen at their spawns before play begins; part of {@link #START_TICKS}. */
     public static final long COUNTDOWN_TICKS = 3 * 20;
+    /** The wait before the players land on their spawns, while the arena is made ready. */
+    public static final long START_DELAY_TICKS = START_TICKS - COUNTDOWN_TICKS;
 
     private final Plugin plugin;
     private final Variant variant;
@@ -410,9 +412,9 @@ public final class LiveMatch {
                     startPlaying(true);
                 }
             }));
-            goAt = match.clock().elapsedTicks() + START_DELAY_TICKS + COUNTDOWN_TICKS;
+            goAt = match.clock().elapsedTicks() + START_TICKS;
             match.scope().register(startDelay);
-            messages.send(audience(), "match.starting", Formatter.number("seconds", (START_DELAY_TICKS + COUNTDOWN_TICKS) / 20));
+            messages.send(audience(), "match.starting", Formatter.number("seconds", START_TICKS / 20));
         }
     }
 

@@ -23,6 +23,7 @@ import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.kyori.adventure.bossbar.BossBar;
@@ -90,6 +91,7 @@ public final class MatchHud {
         this.mirrorTeams = mirrorTeams;
         this.published = published;
         this.placeholderApi = server.getPluginManager().isPluginEnabled("PlaceholderAPI");
+        this.named = names();
         this.bossBar = BossBar.bossBar(Component.empty(), 1, hud.bossBar().map(Hud.Bar::color).orElse(BossBar.Color.WHITE), BossBar.Overlay.PROGRESS);
     }
 
@@ -289,7 +291,7 @@ public final class MatchHud {
             online().forEach(player -> player.hideBossBar(bossBar));
             return;
         }
-        var total = startsIn.isPresent() ? LiveMatch.START_DELAY_TICKS + LiveMatch.COUNTDOWN_TICKS : match.match().phaseLengthTicks();
+        var total = startsIn.isPresent() ? LiveMatch.START_TICKS : match.match().phaseLengthTicks();
         bossBar.name(text(null, text.get(), values(null)));
         bossBar.progress(Math.clamp((float) left.getAsLong() / total, 0f, 1f));
         online().forEach(player -> player.showBossBar(bossBar));
@@ -378,6 +380,19 @@ public final class MatchHud {
         }
     }
 
+    /** Every {@code %name%} the sidebar and boss bar texts of the game use. */
+    private final Set<String> named;
+
+    private Set<String> names() {
+        var found = new HashSet<String>();
+        var texts = Stream.concat(hud.sidebar().values().stream().flatMap(List::stream), hud.bossBar().stream().flatMap(bar -> bar.texts().values().stream()));
+        texts.forEach(text -> NAMED.matcher(text).results().forEach(result -> found.add(result.group(1))));
+        found.remove("scores");
+        return Set.copyOf(found);
+    }
+
+    private static final Pattern NAMED = Pattern.compile("%([a-z0-9_-]+)%");
+
     private Values values(Player viewer) {
         var roster = match.match().roster();
         var resolvers = new ArrayList<TagResolver>(List.of(
@@ -420,6 +435,9 @@ public final class MatchHud {
             kept.forEach(stat -> empty.add(stat.id()));
         }
         hud.stats().stream().filter(stat -> !kept.contains(new Stat(stat))).forEach(empty::add);
+        // A value a text names that nothing provides yet, such as a game timer before its feature is enabled, has nothing to show either.
+        var known = TagResolver.resolver(resolvers);
+        named.stream().filter(name -> !known.has(name) && !empty.contains(name)).forEach(empty::add);
         // An empty value still shows as nothing in a text that isn't left out, such as a title.
         empty.forEach(name -> resolvers.add(Placeholder.unparsed(name, "")));
         return new Values(TagResolver.resolver(resolvers), Set.copyOf(empty));
