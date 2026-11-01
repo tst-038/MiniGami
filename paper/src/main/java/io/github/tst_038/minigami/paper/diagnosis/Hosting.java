@@ -26,7 +26,7 @@ public record Hosting(Arena arena, GameType gametype, int mostTeams, boolean has
      * @param worldEdit whether WorldEdit or FastAsyncWorldEdit is installed
      */
     public static List<Check<Hosting>> checks(boolean worldEdit) {
-        return List.of(new SpawnsCheck(), new RegionsCheck(), new RegionGroupsCheck(), new TeamRegionsCheck(), new MapCheck(),
+        return List.of(new SpawnsCheck(), new RegionsCheck(), new RegionGroupsCheck(), new TeamRegionsCheck(), new MapCheck(), new MapCoversCheck(),
                 new WorldEditCheck(worldEdit), new TeamSpawnsCheck());
     }
 

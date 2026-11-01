@@ -618,6 +618,8 @@ diagnosis:
   # %region%, %teams%: the most teams a match can have
   missing-team-region: "<red>missing region <white>%region%</white>, one per team for up to %teams% teams"
   no-map: "<red>it changes blocks but the arena has no saved map to put them back"
+  # %region%: lies partly or fully outside the saved map
+  region-outside-map: "<red>region <white>%region%</white> is not fully inside the saved map, so changes there would not be put back"
   no-worldedit: "<red>it changes blocks, and putting them back needs WorldEdit or FastAsyncWorldEdit"
   # %spawns%, %teams%
   few-team-spawns: "<yellow>it has %spawns% spawn(s) for up to %teams% teams, so some teams share a spawn"

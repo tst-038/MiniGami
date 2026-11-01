@@ -132,6 +132,22 @@ class HostingChecksTest {
     }
 
     @Test
+    void everyRegionTheGameNamesMustLieInsideTheSavedMap() {
+        var regions = Map.of("hill", region("hill"), "wall-north", region("wall-north"), "quarter-1", region("quarter-1"),
+                "quarter-2", new Region("quarter-2", null, 0, 64, 0, 9, 64, 4), "fighting", new Region("fighting", null, 0, 64, 0, 4, 70, 4));
+        Arena inMap = new Arena("example", null, List.of(), Optional.empty(), Optional.empty(), regions, Optional.of(new Region("map", null, 0, 60, 0, 5, 66, 5)));
+
+        var findings = check(new MapCoversCheck(), new Hosting(inMap, NEEDY, 2, true, true, List.of("fighting", "hill")));
+
+        assertEquals(List.of("fighting", "quarter-2"), findings.stream().map(finding -> finding.values().get("region")).toList());
+        assertTrue(findings.getFirst().isBlocking());
+        assertEquals(Optional.of("/mg arena example map save"), findings.getFirst().fix());
+        // Without block changes, or without a map (another finding), there is nothing to compare.
+        assertEquals(List.of(), check(new MapCoversCheck(), new Hosting(inMap, NEEDY, 2, true, false)));
+        assertEquals(List.of(), check(new MapCoversCheck(), new Hosting(arena(1, ALL_REGIONS, false), NEEDY, 2, true, true)));
+    }
+
+    @Test
     void changingBlocksNeedsWorldEdit() {
         var hosting = new Hosting(arena(1, List.of(), true), NEEDY, 1, false, true);
 
