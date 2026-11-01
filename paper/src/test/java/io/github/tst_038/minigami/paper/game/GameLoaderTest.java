@@ -579,6 +579,17 @@ class GameLoaderTest {
     }
 
     @Test
+    void rolesTakeTheirShareAndTeamsSplitThePlayersLeft() throws Exception {
+        var loaded = load("{gametype: test, min-players: 4, max-players: 12, waiting: arena, arenas: [demo], "
+                + "roles: {minotaur: {per: 5}}, teams: {count: 2}}");
+
+        assertEquals(List.of(), problems(loaded));
+        var variant = loaded.entries().find("fall").orElseThrow().base();
+        assertEquals(List.of("minotaur"), variant.roles().stream().map(Role::id).toList());
+        assertEquals(Optional.of(2), variant.teams().map(TeamSetup::count));
+    }
+
+    @Test
     void anArenaNeedsARegionForEveryTeamAMatchCanHaveToBeUsed() throws Exception {
         games.register(new BuildBattle());
         var variant = "{gametype: build-battle, min-players: 1, waiting: arena, arenas: [hills], ";
@@ -646,8 +657,12 @@ class GameLoaderTest {
     void reportsRolesThatCanNotWork() throws Exception {
         var variant = "gametype: test, waiting: arena, arenas: [demo], max-players: 8, ";
 
-        assertEquals(List.of("games/fall.yml: roles: set either teams or roles"),
-                problems(load("{" + variant + "min-players: 2, teams: {count: 2}, roles: {a: {players: 1}, b: {}}}")));
+        assertEquals(List.of("games/fall.yml: roles: with teams, the players left after the roles form the teams; give players or per to b"),
+                problems(load("{" + variant + "min-players: 4, teams: {count: 2}, roles: {a: {players: 1}, b: {}}}")));
+        assertEquals(List.of("games/fall.yml: min-players: must be at least 5: the roles ask for 3 players and the teams need 2 more"),
+                problems(load("{" + variant + "min-players: 4, teams: {count: 2}, roles: {a: {players: 1}, b: {per: 2}}}")));
+        assertEquals(List.of("games/fall.yml: min-players: must be at least 5: the roles ask for 3 players and the teams need 2 more"),
+                problems(load("{" + variant + "min-players: 4, teams: {size: 3}, roles: {a: {players: 3}}}")));
         assertEquals(List.of("games/fall.yml: roles: needs at least two roles"),
                 problems(load("{" + variant + "min-players: 2, roles: {a: {}}}")));
         assertEquals(List.of("games/fall.yml: roles: exactly one role must leave out players and per, to get everyone left over; a, b do"),

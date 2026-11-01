@@ -713,10 +713,8 @@ public final class LiveMatch {
             match.dispose();
             return;
         }
-        variant.teams().ifPresent(this::formTeams);
-        if (!variant.roles().isEmpty()) {
-            handOutRoles();
-        }
+        var leftOver = variant.roles().isEmpty() ? takingPart() : handOutRoles();
+        variant.teams().ifPresent(setup -> formTeams(setup, leftOver));
         teamRegions = variant.gametype().regionPerTeam()
                 .map(prefix -> TeamRegion.assign(prefix, match.roster().teams(), name -> Optional.ofNullable(arena.regions().get(name))))
                 .orElse(List.of());
@@ -760,9 +758,8 @@ public final class LiveMatch {
         return players;
     }
 
-    /** Splits everyone still in the match as its opening says, handing out team ids in order, and tells each their team. */
-    private void formTeams(TeamSetup setup) {
-        var players = takingPart();
+    /** Splits these players (those the roles left over, if any) as the opening says, handing out team ids in order, and tells each their team. */
+    private void formTeams(TeamSetup setup, List<UUID> players) {
         var teams = opening.teams().form(players, setup.teamsFor(players.size()));
         for (int i = 0; i < teams.size(); i++) {
             if (teams.get(i).isEmpty()) {
@@ -773,8 +770,12 @@ public final class LiveMatch {
         }
     }
 
-    /** Hands out the roles at random, each a team of its own, and tells each player their role. */
-    private void handOutRoles() {
+    /**
+     * Hands out the roles at random, each a team of its own, and tells each player their role.
+     *
+     * @return the players no role took; empty unless the variant also has teams
+     */
+    private List<UUID> handOutRoles() {
         var roles = variant.roles();
         var players = new RandomRoles(ThreadLocalRandom.current()).deal(takingPart(), roles.stream().map(Role::share).toList());
         for (int i = 0; i < roles.size(); i++) {
@@ -782,6 +783,7 @@ public final class LiveMatch {
                 putInTeam(players.get(i), roles.get(i).id(), "match.your-role");
             }
         }
+        return players.size() > roles.size() ? players.getLast() : List.of();
     }
 
     /**

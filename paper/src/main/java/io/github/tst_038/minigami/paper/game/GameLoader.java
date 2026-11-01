@@ -48,7 +48,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
  *   hide-and-seek:
  *     hiding: "%prefix%<green>Run!"
- * roles:                      # optional, instead of teams; handed out in this order
+ * roles:                      # optional; handed out in this order. Beside teams the roles go first, the teams split the rest (no role may then be the rest role)
  *   seeker: { name: "Seekers", color: red, players: 1, lives: 0 }   # or per: 5, one per five players
  *   hider:                                                         # neither: everyone left over
  *     name: "Hiders"
@@ -198,9 +198,9 @@ public final class GameLoader {
                 .forEach(key -> config.problem("messages." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
         var teamSpawns = config.has("team-spawns") ? config.choice("team-spawns", TeamSpawns.class) : TeamSpawns.TOGETHER;
-        var roles = roles(config, minPlayers, game);
+        var roles = roles(config, minPlayers, game, teams);
         var quit = quit(config);
-        var mostTeams = !roles.isEmpty() ? roles.size() : teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(maxPlayers);
+        var mostTeams = roles.size() + teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(roles.isEmpty() ? maxPlayers : 0);
         var listed = arenas(config, arenas);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         var stats = statGroups(config);
@@ -294,7 +294,7 @@ public final class GameLoader {
         return Optional.of(setup);
     }
 
-    private List<Role> roles(ConfigReader config, int minPlayers, GameType game) {
+    private List<Role> roles(ConfigReader config, int minPlayers, GameType game, Optional<TeamSetup> teams) {
         var needed = game == null ? List.<String>of() : game.roles();
         needed.forEach(id -> config.suggest("roles." + id, List.of()));
         if (!config.has("roles")) {
@@ -302,9 +302,6 @@ public final class GameLoader {
                 config.problem("roles", game.id() + " needs the roles " + String.join(", ", needed));
             }
             return List.of();
-        }
-        if (config.has("teams")) {
-            config.problem("roles", "set either teams or roles");
         }
         var section = config.section("roles");
         var roles = new ArrayList<Role>();
@@ -349,11 +346,21 @@ public final class GameLoader {
                     + (missing.isEmpty() ? "" : "; missing: " + String.join(", ", missing))
                     + (unknown.isEmpty() ? "" : "; unknown: " + String.join(", ", unknown)));
         }
-        if (roles.size() < 2) {
+        if (roles.size() < 2 && teams.isEmpty()) {
             config.problem("roles", "needs at least two roles");
         }
         var rest = roles.stream().filter(role -> role.share().isRest()).map(Role::id).toList();
-        if (rest.size() != 1) {
+        if (teams.isPresent()) {
+            var asked = roles.stream().mapToInt(role -> role.share().wanted(minPlayers)).sum();
+            var teamsNeed = teams.get().count() > 0 ? teams.get().count() : 2;
+            if (!rest.isEmpty()) {
+                config.problem("roles", "with teams, the players left after the roles form the teams; give players or per to "
+                        + String.join(", ", rest));
+            } else if (minPlayers < asked + teamsNeed) {
+                config.problem("min-players", "must be at least " + (asked + teamsNeed) + ": the roles ask for " + asked
+                        + " players and the teams need " + teamsNeed + " more");
+            }
+        } else if (rest.size() != 1) {
             config.problem("roles", "exactly one role must leave out players and per, to get everyone left over; "
                     + (rest.isEmpty() ? "none does" : String.join(", ", rest) + " do"));
         } else {

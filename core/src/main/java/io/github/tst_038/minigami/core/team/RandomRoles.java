@@ -19,12 +19,13 @@ public final class RandomRoles {
     }
 
     /**
-     * @return the players of each role, in the order of {@code shares}
-     * @throws IllegalArgumentException unless exactly one share is the rest
+     * @return the players of each role, in the order of {@code shares}; without a rest share one more, last list holds the
+     *         players left over (at least one when there is anyone)
+     * @throws IllegalArgumentException if more than one share is the rest
      */
     public List<List<UUID>> deal(List<UUID> players, List<RoleShare> shares) {
-        if (shares.stream().filter(RoleShare::isRest).count() != 1) {
-            throw new IllegalArgumentException("Needs exactly one rest role, got " + shares);
+        if (shares.stream().filter(RoleShare::isRest).count() > 1) {
+            throw new IllegalArgumentException("Needs at most one rest role, got " + shares);
         }
         var shuffled = new ArrayList<>(players);
         Collections.shuffle(shuffled, random);
@@ -40,6 +41,9 @@ public final class RandomRoles {
             var count = shares.get(i).isRest() ? left : counts[i];
             roles.add(List.copyOf(shuffled.subList(next, next + count)));
             next += count;
+        }
+        if (shares.stream().noneMatch(RoleShare::isRest)) {
+            roles.add(List.copyOf(shuffled.subList(next, shuffled.size())));
         }
         return roles;
     }

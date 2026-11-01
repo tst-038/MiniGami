@@ -58,9 +58,23 @@ class RandomRolesTest {
     }
 
     @Test
-    void needsExactlyOneRestRole() {
+    void withoutARestRoleTheLeftoverPlayersComeLast() {
+        var players = players(12);
+
+        var roles = new RandomRoles(new Random(1)).deal(players, List.of(RoleShare.onePer(5)));
+
+        assertEquals(List.of(2, 10), sizes(roles));
+        assertEquals(new HashSet<>(players), new HashSet<>(roles.stream().flatMap(Collection::stream).toList()));
+    }
+
+    @Test
+    void withoutARestRoleOneStaysLeftOver() {
+        assertEquals(List.of(2, 1), sizes(new RandomRoles(new Random(1)).deal(players(3), List.of(RoleShare.of(5)))));
+    }
+
+    @Test
+    void atMostOneRestRole() {
         var random = new RandomRoles(new Random(1));
-        assertThrows(IllegalArgumentException.class, () -> random.deal(players(2), List.of(RoleShare.of(1))));
         assertThrows(IllegalArgumentException.class, () -> random.deal(players(2), List.of(RoleShare.rest(), RoleShare.rest())));
     }
 }
