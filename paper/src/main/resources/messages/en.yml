@@ -143,6 +143,12 @@ shifting-maze:
   # When the Minotaurs are let go. %keys%: how many keys each team needs
   running: "%prefix%<red>The Minotaurs are loose! <gray>Find your team's <white>%keys%</white> keys, then reach the centre."
   too-small: "%prefix%<red>This arena's maze region is too small for this game."
+  # When walls are about to move
+  shifting: "%prefix%<gold>The walls are about to shift!"
+  # Action bar near a wall about to move. %seconds%: until it does
+  shift-countdown: "<gold>The walls shift in <white>%seconds%</white>s"
+  # After the walls have moved
+  shifted: "%prefix%<gray>The walls have shifted."
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>is on <gold>%kills%</gold> kills!"

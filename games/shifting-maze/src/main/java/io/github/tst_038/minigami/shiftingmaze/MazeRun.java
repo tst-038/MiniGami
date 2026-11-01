@@ -116,7 +116,7 @@ final class MazeRun {
         return fills;
     }
 
-    private Fill fill(Span span, Material material) {
+    Fill fill(Span span, Material material) {
         return new Fill(Region.between(region.id(), region.world(), span.minX(), span.minY(), span.minZ(), span.maxX(), span.maxY(), span.maxZ()), material);
     }
 
