@@ -149,6 +149,16 @@ shifting-maze:
   shift-countdown: "<gold>The walls shift in <white>%seconds%</white>s"
   # After the walls have moved
   shifted: "%prefix%<gray>The walls have shifted."
+  # To a team when a member takes one of its keys. %player%: who; %found%: keys the team has; %keys%: keys it needs
+  key-found: "%prefix%%player% <gray>found a key (<gold>%found%</gold>/<gold>%keys%</gold>)."
+  # Action bar for runners. %found%/%keys%: the team's keys; %out%/%free%: members out of the maze of those still free
+  keys-bar: "<gold>Keys %found%/%keys% <gray>· <green>Out %out%/%free%"
+  # Action bar at the exit of a team without all its keys. %left%: keys it still needs
+  exit-locked: "<red>Your team needs <white>%left%</white> more keys"
+  # To a team when a member gets out. %player%: who; %out%/%free%: members out of those still free
+  member-out: "%prefix%%player% <green>is out! <gray>(%out%/%free%) The rest of your team must follow."
+  # To everyone when the last free member of a team is out. %team%: the team
+  escaped: "%prefix%%team% <green>escaped the maze!"
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>is on <gold>%kills%</gold> kills!"

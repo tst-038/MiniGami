@@ -65,7 +65,8 @@ public final class ShiftingMaze implements GameType {
                 Formatter.number("keys", settings.keys()));
         return Map.of(
                 HEAD_START, List.of(new Raising(run), headStart),
-                RUNNING, List.of(new Raising(run), new Shifting(run, settings, new Random(), Telegraph.of(settings)), running),
+                RUNNING, List.of(new Raising(run), new Shifting(run, settings, new Random(), Telegraph.of(settings)),
+                        new Keys(run, settings), new Exit(run, settings), running),
                 "ending", List.of(new AnnounceWinner()));
     }
 

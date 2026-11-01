@@ -11,13 +11,16 @@ import io.github.tst_038.minigami.shiftingmaze.layout.Generator;
 import io.github.tst_038.minigami.shiftingmaze.layout.Landmarks;
 import io.github.tst_038.minigami.shiftingmaze.layout.Layout;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -33,6 +36,8 @@ final class MazeRun {
     private final List<Runnable> whenBuilt = new ArrayList<>();
     private final Set<UUID> escaped = new HashSet<>();
     private final Set<UUID> placed = new HashSet<>();
+    private final Map<String, Integer> keysFound = new HashMap<>();
+    private final Set<String> announced = new HashSet<>();
     private boolean started;
     private boolean built;
     private Region region;
@@ -123,6 +128,30 @@ final class MazeRun {
     /** The index of a runner team in the order the maze was built for, or -1. */
     int teamIndex(String teamId) {
         return teams.indexOf(teamId);
+    }
+
+    /** The runner teams, in the order the maze was built for. */
+    List<String> teams() {
+        return teams;
+    }
+
+    int keysFound(String teamId) {
+        return keysFound.getOrDefault(teamId, 0);
+    }
+
+    void keyFound(String teamId) {
+        keysFound.merge(teamId, 1, Integer::sum);
+    }
+
+    /** Whether this is the first time the team's escape is announced. */
+    boolean announceEscape(String teamId) {
+        return announced.add(teamId);
+    }
+
+    /** Sends the message to the team's members who are online. */
+    void tell(MatchContext context, String teamId, String key, TagResolver... placeholders) {
+        context.roster().teams().stream().filter(team -> team.id().equals(Optional.of(teamId))).flatMap(team -> team.ids().stream())
+                .flatMap(id -> context.player(id).stream()).forEach(player -> player.sendMessage(context.messages().render(key, placeholders)));
     }
 
     boolean escaped(UUID id) {

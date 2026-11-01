@@ -49,6 +49,8 @@ public final class FakeMatch implements MatchContext {
     public final YamlConfiguration texts = new YamlConfiguration();
     /** Action bars shown to {@link #audience()}, in order. */
     public final List<Component> actionBars = new ArrayList<>();
+    /** Chat messages sent to {@link #audience()}, in order. */
+    public final List<Component> chat = new ArrayList<>();
     /** The arena's regions by name, for {@link #region(String)}. */
     public final Map<String, Region> regions = new HashMap<>();
     /** The regions handed out to the teams, for {@link #teamRegions()}. */
@@ -214,6 +216,11 @@ public final class FakeMatch implements MatchContext {
             @Override
             public void sendActionBar(Component message) {
                 actionBars.add(message);
+            }
+
+            @Override
+            public void sendMessage(Component message) {
+                chat.add(message);
             }
         };
     }
