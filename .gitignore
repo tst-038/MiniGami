@@ -6,3 +6,4 @@ run/
 *.iml
 out/
 .DS_Store
+!games/*/src/**/build/
