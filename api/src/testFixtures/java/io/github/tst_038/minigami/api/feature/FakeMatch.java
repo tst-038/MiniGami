@@ -58,6 +58,10 @@ public final class FakeMatch implements MatchContext {
     public final List<Fill> fills = new ArrayList<>();
     /** What {@link #spawnFor} made, in order. */
     public final List<Entity> spawned = new ArrayList<>();
+    /** Who {@link #spawnFor} showed each spawned entity to. */
+    public final Map<Entity, Collection<? extends Player>> viewers = new HashMap<>();
+    /** The spawned entities that were removed. */
+    public final List<Entity> removed = new ArrayList<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
     private final Map<UUID, Player> players = new HashMap<>();
 
@@ -189,9 +193,17 @@ public final class FakeMatch implements MatchContext {
 
     @Override
     public <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup) {
-        T entity = proxy(type, Map.of());
+        // Setters and teleports are accepted and ignored; only removal is remembered.
+        @SuppressWarnings("unchecked")
+        T entity = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, (self, method, args) -> switch (method.getName()) {
+            case "hashCode" -> System.identityHashCode(self);
+            case "equals" -> self == args[0];
+            case "remove" -> removed.add((Entity) self);
+            default -> method.getReturnType() == boolean.class ? (Object) false : null;
+        });
         setup.accept(entity);
         spawned.add(entity);
+        this.viewers.put(entity, viewers);
         return entity;
     }
 
