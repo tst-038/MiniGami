@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.feature;
 
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,6 +20,7 @@ import io.github.tst_038.minigami.core.stat.Tally;
 import io.github.tst_038.minigami.core.win.LastManStanding;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -168,6 +170,11 @@ class PhaseFeaturesTest {
 
         @Override
         public void endPhase() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CompletableFuture<Void> fill(List<Fill> fills) {
             throw new UnsupportedOperationException();
         }
 

@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.feature;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -48,6 +50,7 @@ public final class FakeMatch implements MatchContext {
     public final Map<String, Region> regions = new HashMap<>();
     /** The regions handed out to the teams, for {@link #teamRegions()}. */
     public final List<TeamRegion> teamRegions = new ArrayList<>();
+    public final List<Fill> fills = new ArrayList<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
     private final Map<UUID, Player> players = new HashMap<>();
 
@@ -169,6 +172,12 @@ public final class FakeMatch implements MatchContext {
     @Override
     public void endPhase() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<Void> fill(List<Fill> fills) {
+        this.fills.addAll(fills);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

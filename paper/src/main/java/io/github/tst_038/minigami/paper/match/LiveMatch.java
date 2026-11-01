@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.api.feature.RoleSwitchEvent;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -44,6 +45,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
@@ -272,6 +274,14 @@ public final class LiveMatch {
     /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#replace}. */
     void replace(Region region) {
         maps.replace(arena, region);
+    }
+
+    /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#fill}. */
+    CompletableFuture<Void> fill(List<Fill> fills) {
+        if (match.scope().isClosed()) {
+            return CompletableFuture.failedFuture(new IllegalStateException("The match is over"));
+        }
+        return maps.fill(arena, fills);
     }
 
     /** Whether anyone may join it through public play; a private match only gets the players its opener puts in. */

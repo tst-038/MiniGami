@@ -14,12 +14,14 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -38,10 +40,17 @@ import org.bukkit.util.BoundingBox;
  */
 final class WorldEditMaps {
 
+    /** shortcut: fixed budget per tick, make it a setting if a real server lags. */
+    static final int BLOCKS_PER_TICK = 4096;
+
+    private final Plugin plugin;
+    private final boolean fawe;
     private final Executor offThread;
     private final Executor serverThread;
 
-    WorldEditMaps(Plugin plugin) {
+    WorldEditMaps(Plugin plugin, boolean fawe) {
+        this.plugin = plugin;
+        this.fawe = fawe;
         this.offThread = task -> plugin.getServer().getAsyncScheduler().runNow(plugin, ignored -> task.run());
         this.serverThread = task -> plugin.getServer().getGlobalRegionScheduler().execute(plugin, task);
     }
@@ -118,6 +127,54 @@ final class WorldEditMaps {
     CompletableFuture<Void> replace(Region box, Path file) {
         return CompletableFuture.supplyAsync(() -> Files.exists(file) ? Optional.of(read(file)) : Optional.<Clipboard>empty(), offThread)
                 .thenAcceptAsync(clipboard -> clipboard.ifPresentOrElse(found -> paste(box, found), () -> clear(box)), serverThread);
+    }
+
+    /**
+     * Fills the boxes in order: as one edit off the server thread with FastAsyncWorldEdit, else in
+     * batches of {@link #BLOCKS_PER_TICK} blocks, one per tick, on the server thread.
+     */
+    CompletableFuture<Void> fill(List<Fill> fills) {
+        if (fawe) {
+            return CompletableFuture.runAsync(() -> apply(fills), offThread);
+        }
+        var batches = FillBatches.of(fills, BLOCKS_PER_TICK);
+        var done = new CompletableFuture<Void>();
+        if (batches.isEmpty()) {
+            done.complete(null);
+        } else {
+            serverThread.execute(() -> runBatch(batches, 0, done));
+        }
+        return done;
+    }
+
+    private void runBatch(List<List<Fill>> batches, int index, CompletableFuture<Void> done) {
+        try {
+            apply(batches.get(index));
+        } catch (RuntimeException e) {
+            done.completeExceptionally(e);
+            return;
+        }
+        if (index + 1 == batches.size()) {
+            done.complete(null);
+        } else {
+            plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> runBatch(batches, index + 1, done), 1);
+        }
+    }
+
+    private static void apply(List<Fill> fills) {
+        if (fills.isEmpty()) {
+            return;
+        }
+        var world = BukkitAdapter.adapt(fills.getFirst().box().world());
+        try (var edit = WorldEdit.getInstance().newEditSession(world)) {
+            for (var fill : fills) {
+                var box = fill.box();
+                edit.setBlocks(new CuboidRegion(world, BlockVector3.at(box.minX(), box.minY(), box.minZ()),
+                        BlockVector3.at(box.maxX(), box.maxY(), box.maxZ())), BukkitAdapter.asBlockType(fill.material()).getDefaultState());
+            }
+        } catch (WorldEditException e) {
+            throw new CompletionException(e);
+        }
     }
 
     private static void clear(Region box) {

@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.features.voidkills;
 
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,7 @@ import io.github.tst_038.minigami.core.stat.Tally;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.UUID;
@@ -174,6 +176,11 @@ class VoidKillsTest {
 
         @Override
         public void endPhase() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CompletableFuture<Void> fill(List<Fill> fills) {
             throw new UnsupportedOperationException();
         }
 

@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.feature;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -15,6 +16,7 @@ import io.github.tst_038.minigami.core.stat.Tally;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -74,6 +76,15 @@ public interface MatchContext {
      * map puts them back after the match.
      */
     void replace(Region region);
+
+    /**
+     * Fills boxes with blocks, in order, through WorldEdit so a big build doesn't lag the server. Only
+     * for a feature that {@linkplain Feature#changesBlocks() changes blocks}, so the arena's map puts
+     * them back after the match. Edits of one arena never overlap: this waits for earlier ones.
+     *
+     * @return completes on the server thread once every box is filled; fails if the match is over
+     */
+    CompletableFuture<Void> fill(List<Fill> fills);
 
     /** The phase the match is in, which for a feature is the phase it runs in. */
     Phase phase();

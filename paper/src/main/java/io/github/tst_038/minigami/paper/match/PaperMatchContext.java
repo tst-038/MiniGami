@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -14,6 +15,7 @@ import io.github.tst_038.minigami.core.score.Scores;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.stat.Tally;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -141,6 +143,11 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public void replace(Region region) {
         match.replace(region);
+    }
+
+    @Override
+    public CompletableFuture<Void> fill(List<Fill> fills) {
+        return match.fill(fills);
     }
 
     @Override

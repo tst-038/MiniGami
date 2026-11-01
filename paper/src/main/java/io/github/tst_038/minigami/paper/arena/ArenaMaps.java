@@ -1,14 +1,20 @@
 package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
@@ -33,13 +39,15 @@ public final class ArenaMaps {
     /** Only made when WorldEdit is there, since it loads WorldEdit's classes. */
     private final Optional<WorldEditMaps> worldEdit;
     private final Set<String> resetting = new HashSet<>();
+    /** The last edit queued per arena, which the next one waits for so edits never overlap. */
+    private final Map<String, CompletableFuture<Void>> pending = new ConcurrentHashMap<>();
 
     public ArenaMaps(Plugin plugin, Messages messages) {
         this.plugin = plugin;
         this.messages = messages;
         this.worldEdit = plugin.getServer().getPluginManager().getPlugin("WorldEdit") == null
                 ? Optional.empty()
-                : Optional.of(new WorldEditMaps(plugin));
+                : Optional.of(new WorldEditMaps(plugin, plugin.getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null));
     }
 
     /** Whether WorldEdit or FastAsyncWorldEdit is there, which saving and pasting maps need. */
@@ -101,11 +109,30 @@ public final class ArenaMaps {
      */
     public void replace(Arena arena, Region region) {
         var maps = worldEdit.orElseThrow(() -> new IllegalStateException("Replacing a region needs WorldEdit"));
-        onServerThread(maps.replace(region, regionFile(arena, region.id())), problem -> {
+        onServerThread(queue(arena, () -> maps.replace(region, regionFile(arena, region.id()))), problem -> {
             if (problem != null) {
                 plugin.getLogger().log(Level.WARNING, "Could not replace " + arena.id() + "'s region " + region.id(), problem);
             }
         });
+    }
+
+    /**
+     * Fills boxes for a match, after every earlier edit of the arena and before the map reset after the
+     * match. The map reset puts them back.
+     *
+     * @return completes on the server thread
+     * @throws IllegalStateException without WorldEdit, which a game that changes blocks can't be played without
+     */
+    public CompletableFuture<Void> fill(Arena arena, List<Fill> fills) {
+        var maps = worldEdit.orElseThrow(() -> new IllegalStateException("Filling blocks needs WorldEdit"));
+        fills.stream().filter(fill -> !fill.material().isBlock()).findFirst().ifPresent(fill -> {
+            throw new IllegalArgumentException(fill.material() + " is not a block");
+        });
+        return queue(arena, () -> maps.fill(fills)).whenCompleteAsync((ignored, problem) -> {
+            if (problem != null) {
+                plugin.getLogger().log(Level.WARNING, "Could not fill blocks in " + arena.id(), problem);
+            }
+        }, serverThread());
     }
 
     /**
@@ -158,7 +185,7 @@ public final class ArenaMaps {
             feedback.ifPresent(audience -> messages.send(audience, "arena.map.resetting", Placeholder.unparsed("arena", arena.id())));
             return;
         }
-        onServerThread(worldEdit.get().paste(arena.map().orElseThrow(), file(arena)), problem -> {
+        onServerThread(queue(arena, () -> worldEdit.get().paste(arena.map().orElseThrow(), file(arena))), problem -> {
             resetting.remove(arena.id());
             if (problem == null) {
                 feedback.ifPresent(audience -> messages.send(audience, "arena.map.reset", Placeholder.unparsed("arena", arena.id())));
@@ -185,6 +212,19 @@ public final class ArenaMaps {
 
     private Path regionFile(Arena arena, String region) {
         return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("regions").resolve(region + ".schem");
+    }
+
+    /** Runs the work on the server thread once the arena's earlier edits are done, whether they worked or not. */
+    private CompletableFuture<Void> queue(Arena arena, Supplier<CompletableFuture<Void>> work) {
+        var earlier = pending.getOrDefault(arena.id(), CompletableFuture.completedFuture(null));
+        var next = earlier.handle((ignored, problem) -> (Void) null).thenComposeAsync(ignored -> work.get(), serverThread());
+        pending.put(arena.id(), next);
+        next.whenComplete((ignored, problem) -> pending.remove(arena.id(), next));
+        return next;
+    }
+
+    private Executor serverThread() {
+        return task -> plugin.getServer().getGlobalRegionScheduler().execute(plugin, task);
     }
 
     /** @param done gets the failure, or {@code null} on success */
