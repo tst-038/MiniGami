@@ -26,6 +26,7 @@ import io.github.tst_038.minigami.features.playarea.TeamRegionFactory;
 import io.github.tst_038.minigami.features.voidkills.VoidKillsFactory;
 import io.github.tst_038.minigami.hideandseek.HideAndSeek;
 import io.github.tst_038.minigami.laststanding.LastStanding;
+import io.github.tst_038.minigami.shiftingmaze.ShiftingMaze;
 import io.github.tst_038.minigami.stats.combat.CombatStats;
 import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
 import io.github.tst_038.minigami.thewall.TheWall;
@@ -40,7 +41,7 @@ final class BuiltIns {
     }
 
     static List<GameType> gametypes() {
-        return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall());
+        return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall(), new ShiftingMaze());
     }
 
     /** @param savedKits the kits saved with {@code /mg kit save}, by name */

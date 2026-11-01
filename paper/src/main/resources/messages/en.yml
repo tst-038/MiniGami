@@ -137,6 +137,12 @@ the-wall:
   # When teams are let loose in their part of the arena. %minutes%: until the walls drop
   preparing: "%prefix%<green>Prepare! <gray>The walls fall in <white>%minutes%</white> min."
   dropped: "%prefix%<red>The walls have fallen! <gray>Last team standing wins."
+shifting-maze:
+  # When the runners are let loose. %seconds%: until the Minotaurs wake
+  head-start: "%prefix%<green>Run! <gray>The Minotaurs wake in <white>%seconds%</white>s."
+  # When the Minotaurs are let go. %keys%: how many keys each team needs
+  running: "%prefix%<red>The Minotaurs are loose! <gray>Find your team's <white>%keys%</white> keys, then reach the centre."
+  too-small: "%prefix%<red>This arena's maze region is too small for this game."
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>is on <gold>%kills%</gold> kills!"
@@ -230,6 +236,9 @@ stats:
     kills: "kills"
     deaths: "deaths"
     point-seconds: "seconds on a capture point"
+    keys: "keys found"
+    escapes: "escapes"
+    catches: "runners caught"
 
 lobby:
   none: "%prefix%<red>No lobby set. Use <white>/mg lobby set</white>."

@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.shiftingmaze.build;
+package io.github.tst_038.minigami.shiftingmaze.blocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

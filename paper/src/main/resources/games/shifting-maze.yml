@@ -1,0 +1,52 @@
+# Minotaurs hunt teams of runners through a maze built when the match starts. Find your team's keys, then reach the centre.
+# The arena needs: a region called maze (floor layer at its bottom, at least wall-height + 1 high, empty when the map is saved),
+# spawns, a saved map that covers the maze (/mg arena <id> map save) and WorldEdit (FastAsyncWorldEdit recommended).
+gametype: shifting-maze
+name: "<gold>Shifting Maze"
+min-players: 3
+max-players: 16
+waiting: arena
+name-tags: teammates
+cell-width: 3
+wall-thickness: 1
+wall-height: 3
+shift-seconds: 20
+shifts: 3
+warning: { seconds: 3, flicker: true, particles: true, sound: "block.grindstone.use" }
+keys: 3
+run-seconds: 300
+sight: { every-seconds: 30, seconds: 3 }
+safe-zone: { radius: 0 }
+blocks:
+  floor: smooth_stone
+  wall: stone_bricks
+  warning: cracked_stone_bricks
+  exit: gold_block
+  key: tripwire_hook
+  sight: white_stained_glass
+  # ceiling: stone_bricks   # dark inside: turn off mob spawning or light the maze
+roles:
+  minotaur:
+    name: Minotaur
+    color: dark_red
+    per: 5
+    lives: 0
+    name-tags: everyone
+    features:
+      head-start: { freeze: {}, effects: { blindness: 1 } }
+      running: { effects: { speed: 1 } }
+teams: { count: 2 }
+lives: 0
+arenas: [example]
+features:
+  running:
+    no-hunger: {}
+    no-damage: { causes: [fall] }
+quit: { then: out }
+hud:
+  sidebar:
+    default: ["", "<gray>Time: <yellow>%time%", "<gray>Team: %team%", "<dark_red>Minotaurs: <white>%minotaur%"]
+  boss-bar:
+    text:
+      head-start: "<green>Run! <white>%time% <gray>until the Minotaurs wake"
+      running: "<gold>Find your keys, reach the centre! <white>%time%"

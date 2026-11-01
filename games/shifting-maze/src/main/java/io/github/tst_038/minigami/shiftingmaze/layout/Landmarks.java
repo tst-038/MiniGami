@@ -38,4 +38,9 @@ public record Landmarks(List<Cell> starts, Cell exit, List<Cell> lairs, List<Lis
         }
         return new Landmarks(List.copyOf(starts), exit, lairs, List.copyOf(keys));
     }
+
+    /** Whether every team got all of its keys, which a grid too small for them does not allow. */
+    public boolean everyTeamHasKeys(int keysPerTeam) {
+        return keys.stream().allMatch(team -> team.size() >= keysPerTeam);
+    }
 }

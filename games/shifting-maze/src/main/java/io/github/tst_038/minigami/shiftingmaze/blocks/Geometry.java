@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.shiftingmaze.build;
+package io.github.tst_038.minigami.shiftingmaze.blocks;
 
 import io.github.tst_038.minigami.shiftingmaze.layout.Cell;
 import io.github.tst_038.minigami.shiftingmaze.layout.Wall;

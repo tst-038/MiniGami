@@ -62,6 +62,14 @@ class LandmarksTest {
     }
 
     @Test
+    void saysWhetherEveryTeamGotItsKeys() {
+        assertTrue(Landmarks.place(grid(5, 5), 3, 5, new Random(1)).everyTeamHasKeys(5));
+        assertFalse(Landmarks.place(grid(5, 5), 3, 6, new Random(1)).everyTeamHasKeys(6));
+        assertFalse(Landmarks.place(grid(3, 3), 2, 1, new Random(1)).everyTeamHasKeys(1));
+        assertTrue(Landmarks.place(grid(3, 3), 2, 0, new Random(1)).everyTeamHasKeys(0));
+    }
+
+    @Test
     void zeroTeamsGivesNothing() {
         Landmarks l = Landmarks.place(grid(5, 5), 0, 3, new Random(1));
         assertTrue(l.starts().isEmpty());

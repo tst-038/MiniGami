@@ -85,7 +85,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
 
     /** Example games written to games/ on the first start only; admins change or delete them like any other game. */
     static final List<String> EXAMPLE_GAMES = List.of("spleef.yml", "king-of-the-hill.yml", "domination.yml", "team-deathmatch.yml",
-            "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml");
+            "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml", "shifting-maze.yml");
 
     private static final String MESSAGES = "messages/en.yml";
     private static final int LEADERBOARD_SIZE = 10;

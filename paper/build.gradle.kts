@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":games:hide-and-seek"))
     implementation(project(":games:domination"))
     implementation(project(":games:the-wall"))
+    implementation(project(":games:shifting-maze"))
     // Optional at runtime: arenas are reset from schematics only when WorldEdit or FAWE is installed.
     compileOnly(libs.worldedit.bukkit) { isTransitive = false }
     compileOnly(libs.worldedit.core) { isTransitive = false }

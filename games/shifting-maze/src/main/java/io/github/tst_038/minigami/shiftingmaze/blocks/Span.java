@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.shiftingmaze.build;
+package io.github.tst_038.minigami.shiftingmaze.blocks;
 
 /** A box of whole blocks, both corners included. */
 public record Span(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
