@@ -1,0 +1,6 @@
+# The old rares: what used to decide fights, as the style `old-rares`.
+entries:
+  - { item: diamond_sword, name: "<gold>Old Reliable", enchants: { sharpness: 3-5 }, weight: 3 }
+  - { item: bow, name: "<gold>Longshot", enchants: { power: 4-5, infinity: 1 }, weight: 2 }
+  - { item: enchanted_golden_apple, weight: 3 }
+  - { item: totem_of_undying, weight: 2 }

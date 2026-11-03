@@ -3,6 +3,7 @@
 # a region per team to prepare in, quarter-1 up to quarter-4 (/mg arena example region quarter-1 set),
 # a region called fighting (the whole map, outer walls excluded), a region called border, and its walls: regions named wall or wall-<anything> (wall-north, ...). A wall drops to air,
 # or with WorldEdit installed, to a broken version saved by /mg arena example region <name> schematic.
+# Loot containers are set with /mg arena example loot add <table> while looking at a chest.
 gametype: the-wall
 name: "<dark_red>The Wall"
 min-players: 4
@@ -25,6 +26,9 @@ features:
   fighting:
     play-area: { region: fighting }
     break-blocks: { blacklist: [bedrock, barrier], place: true }
+    # Fills the arena's loot containers, which open up as the walls break: /mg arena example loot add op 100
+    # Use style: christmas (a folder in loot/) to swap in a themed set of tables.
+    loot: {}
 stats: [combat]
 quit: { then: die, rejoin-seconds: 120 }
 hud:

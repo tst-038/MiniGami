@@ -1,0 +1,7 @@
+# Gifts. Names are MiniMessage text.
+entries:
+  - { item: iron_sword, name: "<red>Candy Cane Blade", enchants: { sharpness: 1-2 }, weight: 3 }
+  - { item: golden_apple, name: "<gold>Gingerbread", amount: 1-2, weight: 3 }
+  - { item: bow, name: "<green>Elf Bow", weight: 3 }
+  - { item: iron_chestplate, name: "<red>Santa's Coat", weight: 2 }
+  - { item: cake, weight: 1 }

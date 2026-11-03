@@ -91,7 +91,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
             "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml", "shifting-maze.yml");
 
     /** Example loot tables written to loot/ the first time the folder is missing, which games and loot points can use as they are. */
-    static final List<String> EXAMPLE_LOOT = List.of("junk.yml", "common.yml", "rare.yml", "op.yml", "chest.yml");
+    static final List<String> EXAMPLE_LOOT = List.of("junk.yml", "common.yml", "rare.yml", "op.yml", "chest.yml", "christmas/junk.yml", "christmas/rare.yml",
+            "old-rares/op.yml");
 
     private static final String MESSAGES = "messages/en.yml";
     private static final int LEADERBOARD_SIZE = 10;

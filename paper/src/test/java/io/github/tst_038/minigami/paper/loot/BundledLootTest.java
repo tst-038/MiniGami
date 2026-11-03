@@ -20,6 +20,7 @@ class BundledLootTest {
         var loaded = LootTables.load(YamlFiles.readTree(Path.of("src/main/resources/loot")), catalog);
 
         assertEquals(List.of(), loaded.problems());
-        assertEquals(List.of("chest", "common", "junk", "op", "rare"), List.copyOf(loaded.tables().ids()));
+        assertEquals(List.of("christmas", "old-rares"), List.copyOf(loaded.tables().styles()));
+        assertEquals(List.of("chest", "christmas/junk", "christmas/rare", "common", "junk", "old-rares/op", "op", "rare"), List.copyOf(loaded.tables().ids()));
     }
 }
