@@ -149,7 +149,7 @@ class GameLoaderTest {
     private YamlFiles.Loaded<Game> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new GameLoader(games, features, statGroups, Hosting.checks(true)).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE)).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private YamlFiles.Loaded<Game> loadAll(Map<String, String> yamlById) throws Exception {
@@ -159,7 +159,7 @@ class GameLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new GameLoader(games, features, statGroups, Hosting.checks(true)).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE)).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private static List<String> problems(YamlFiles.Loaded<Game> loaded) {

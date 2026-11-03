@@ -63,7 +63,7 @@ class BundledGamesTest {
         }
         var messages = resource("messages/en.yml");
 
-        var loaded = new GameLoader(gametypes, features, statGroups, Hosting.checks(true))
+        var loaded = new GameLoader(gametypes, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE))
                 .load(new YamlFiles("games", files, List.of()), arenas, false, resource("config.yml").getConfigurationSection("hud"), messages::isString);
 
         assertEquals(List.of(), loaded.problems());

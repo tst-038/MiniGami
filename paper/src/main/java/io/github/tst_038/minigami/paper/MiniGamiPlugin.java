@@ -162,7 +162,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         BuiltIns.features(kits::find, () -> lootTables, name -> Optional.empty()).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
         maps = new ArenaMaps(this, messages);
-        gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit()));
+        gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables));
         doctor = new Doctor(messages, getLogger(), () -> games);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);

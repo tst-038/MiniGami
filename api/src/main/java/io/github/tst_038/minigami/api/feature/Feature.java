@@ -22,6 +22,11 @@ public interface Feature {
         return false;
     }
 
+    /** Whether it fills the arena's loot containers, so a game with it wants an arena that has some. */
+    default boolean usesLootPoints() {
+        return false;
+    }
+
     /** The arena regions it relies on, by name. A game with it only plays in arenas that have them all. */
     default List<String> regions() {
         return List.of();

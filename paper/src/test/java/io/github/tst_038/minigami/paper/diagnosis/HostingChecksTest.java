@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.GameType;
+import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.loot.ItemCatalog;
+import io.github.tst_038.minigami.api.loot.LootPoint;
+import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.core.diagnosis.Check;
 import io.github.tst_038.minigami.core.diagnosis.Diagnosis;
@@ -81,7 +85,7 @@ class HostingChecksTest {
     void anArenaWithEverythingHasNoFindings() {
         var hosting = new Hosting(arena(2, ALL_REGIONS, true), NEEDY, 2, true, true);
 
-        assertEquals(List.of(), Diagnosis.run("needy", "example", hosting, Hosting.checks(true)).findings());
+        assertEquals(List.of(), Diagnosis.run("needy", "example", hosting, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE)).findings());
     }
 
     @Test
@@ -172,5 +176,54 @@ class HostingChecksTest {
         // Without teams set, or without spawns (another finding), there is nothing to warn about.
         assertEquals(List.of(), check(new TeamSpawnsCheck(), new Hosting(arena(2, List.of(), true), NEEDY, 4, false, false)));
         assertEquals(List.of(), check(new TeamSpawnsCheck(), new Hosting(arena(0, List.of(), true), NEEDY, 4, true, false)));
+    }
+
+    private static Hosting looting(List<LootPoint> points) {
+        var arena = new Arena("example", null, List.of(), Optional.empty(), Optional.empty(), Map.of(), Optional.empty(), points);
+        return new Hosting(arena, NEEDY, 1, false, false, List.of(), false, true);
+    }
+
+    private static LootCheck lootCheck(boolean isContainer) throws Exception {
+        var files = java.nio.file.Files.createTempDirectory("loot");
+        java.nio.file.Files.writeString(files.resolve("rare.yml"), "entries: [stick]");
+        java.nio.file.Files.createDirectories(files.resolve("ice"));
+        java.nio.file.Files.writeString(files.resolve("ice/only.yml"), "entries: [stick]");
+        var catalog = new ItemCatalog(material -> true, material -> 64, name -> false, name -> false, name -> false);
+        var tables = LootTables.load(YamlFiles.readTree(files), catalog).tables();
+        return new LootCheck(() -> tables, point -> isContainer);
+    }
+
+    @Test
+    void aLootGameWithoutLootPointsGetsAWarning() throws Exception {
+        var findings = check(lootCheck(true), looting(List.of()));
+
+        assertEquals(List.of("no-loot-points"), findings.stream().map(Finding::code).toList());
+        assertTrue(Diagnosis.run("needy", "example", looting(List.of()), List.of(lootCheck(true))).isReady());
+    }
+
+    @Test
+    void aGameWithoutLootIsNotChecked() throws Exception {
+        var arena = new Arena("example", null, List.of(), Optional.empty(), Optional.empty(), Map.of(), Optional.empty(), List.of());
+
+        assertEquals(List.of(), check(lootCheck(true), new Hosting(arena, NEEDY, 1, false, false)));
+    }
+
+    @Test
+    void aPointThatIsNoLongerAContainerGetsAWarning() throws Exception {
+        var findings = check(lootCheck(false), looting(List.of(new LootPoint(null, 1, 2, 3, Map.of("rare", 1), 100))));
+
+        assertEquals(List.of("loot-point-gone"), findings.stream().map(Finding::code).toList());
+        assertEquals(Map.of("x", "1", "y", "2", "z", "3"), findings.getFirst().values());
+    }
+
+    @Test
+    void aPointWithAnUnknownTableBlocks() throws Exception {
+        var hosting = looting(List.of(new LootPoint(null, 1, 2, 3, Map.of("rare", 1, "missing", 1, "only", 1), 100)));
+
+        var findings = check(lootCheck(true), hosting);
+
+        assertEquals(List.of("unknown-loot-table"), findings.stream().map(Finding::code).toList());
+        assertEquals("missing", findings.getFirst().values().get("table"));
+        assertTrue(findings.getFirst().isBlocking());
     }
 }

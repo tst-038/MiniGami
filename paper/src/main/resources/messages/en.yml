@@ -674,5 +674,10 @@ diagnosis:
   # %region%: lies partly or fully outside the saved map
   region-outside-map: "<red>region <white>%region%</white> is not fully inside the saved map, so changes there would not be put back"
   no-worldedit: "<red>it changes blocks, and putting them back needs WorldEdit or FastAsyncWorldEdit"
+  no-loot-points: "<yellow>it fills loot containers but the arena has none; set them with /mg arena <id> loot add"
+  # %x%, %y%, %z%: where the point is
+  loot-point-gone: "<yellow>the loot container at <white>%x% %y% %z%</white> is no longer a chest, barrel or shulker box"
+  # %table%: its id, %x%, %y%, %z%: where the point is
+  unknown-loot-table: "<red>the loot container at <white>%x% %y% %z%</white> names a table that does not exist: <white>%table%</white>"
   # %spawns%, %teams%
   few-team-spawns: "<yellow>it has %spawns% spawn(s) for up to %teams% teams, so some teams share a spawn"

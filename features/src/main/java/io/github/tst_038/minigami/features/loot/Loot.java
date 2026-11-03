@@ -61,6 +61,11 @@ public final class Loot implements Feature {
     }
 
     @Override
+    public boolean usesLootPoints() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         TableLookup<ItemSpec> lookup = style.<TableLookup<ItemSpec>>map(tables::inStyle).orElse(tables);
         var random = context.random();
