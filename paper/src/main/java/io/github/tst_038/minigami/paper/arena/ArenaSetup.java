@@ -103,6 +103,9 @@ public final class ArenaSetup {
             }
             arena.regions().values().forEach(region -> messages.send(sender, "arena.info-region",
                     Placeholder.unparsed("region", region.id()), corners(region)));
+            if (!arena.lootPoints().isEmpty()) {
+                messages.send(sender, "arena.info-loot", Placeholder.unparsed("arena", id), Formatter.number("count", arena.lootPoints().size()));
+            }
         });
     }
 

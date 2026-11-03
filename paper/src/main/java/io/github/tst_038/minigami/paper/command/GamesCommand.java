@@ -14,6 +14,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
+import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
@@ -62,7 +63,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> create(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
-            ArenaSetup arenas, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, PartyService parties, Nights nights, Schedules schedules, StatsView stats, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, LootSetup loot, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, PartyService parties, Nights nights, Schedules schedules, StatsView stats, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
@@ -96,7 +97,7 @@ public final class GamesCommand {
                 .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
                 .then(GameCommands.node(editor, info, help))
-                .then(ArenaCommands.node(editor, arenas, info, help))
+                .then(ArenaCommands.node(editor, arenas, loot, info, help))
                 .then(GameTypeCommands.game(info, () -> games, help))
                 .then(GameTypeCommands.feature(info, () -> features, help))
                 .then(ConfigCommands.lobby(editor, lobby, messages, help))

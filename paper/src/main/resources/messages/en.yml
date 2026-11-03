@@ -290,6 +290,32 @@ arena:
   # %from%, %to%: the lowest and highest corner block of the box it is pasted into
   info-map: "<gray> - <white>map</white>: %from% to %to%; pasted back after each match"
   info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena %arena% map save</white>"
+  # Containers that fill with loot when a match uses them. %arena%: the arena, %table%: the tables and chance a container uses,
+  # %x%, %y%, %z%: a container, %count%: how many containers
+  loot:
+    added: "%prefix%<green>The container at <white>%x%, %y%, %z%</white> of <white>%arena%</white> now fills from <white>%table%</white>."
+    added-many: "%prefix%<green><white>%count%</white> containers of <white>%arena%</white> now fill from <white>%table%</white>."
+    removed: "%prefix%<green>The container at <white>%x%, %y%, %z%</white> of <white>%arena%</white> no longer fills."
+    removed-many: "%prefix%<green><white>%count%</white> containers of <white>%arena%</white> no longer fill."
+    not-set: "%prefix%<red>The container at <white>%x%, %y%, %z%</white> of <white>%arena%</white> does not fill with loot."
+    none: "%prefix%<gray><white>%arena%</white> has no loot containers yet; look at a chest and use <white>/mg arena %arena% loot add <table></white>."
+    list: "%prefix%<gold>%arena%</gold> <gray>has <white>%count%</white> loot containers. Click one to go there."
+    # %table% is the tables the container fills from
+    entry: "<gray> - <teleport><hover:show_text:'Teleport'><white>%x%, %y%, %z%</white>: %table%</hover></teleport>"
+    entry-unknown: "<gray> - <teleport><hover:show_text:'Teleport'><red>%x%, %y%, %z%: %table% (a table is missing)</red></hover></teleport>"
+    showing: "%prefix%<green>Showing the loot containers of <white>%arena%</white> for <white>%seconds%</white> seconds."
+    # %most%: the most blocks a selection may hold
+    selection-too-big: "%prefix%<red>That selection is too big; it may hold at most <white>%most%</white> blocks."
+    no-container-in-selection: "%prefix%<red>There is no chest, barrel or shulker box in your selection."
+    none-in-selection: "%prefix%<red>No container in your selection fills with loot in <white>%arena%</white>."
+    look-at-container: "%prefix%<red>Look at a chest, barrel or shulker box."
+    # %spec%: what was typed
+    invalid-spec: "%prefix%<red><white>%spec%</white> is not a loot choice; write a table such as <white>castle/a</white>, a mix such as <white>ice/rare:70 ice/op:30</white>, and optionally a chance such as <white>50%</white>."
+    unknown-table: "%prefix%<red>There is no loot table <white>%table%</white>; see the files in <white>plugins/MiniGami/loot</white>."
+    marking: "%prefix%<green>Right click containers of <white>%arena%</white> to fill them from <white>%table%</white>; sneak and right click to stop one. <white>/mg arena %arena% loot mark off</white> ends this."
+    marking-stopped: "%prefix%<gray>You are no longer marking containers."
+  # %count%: how many containers
+  info-loot: "<gray> - <white>%count%</white> loot containers; see <white>/mg arena %arena% loot list</white>"
   # Named boxes games use, saved from a WorldEdit selection. %region%: its name
   region:
     invalid-name: "%prefix%<red><white>%region%</white> can't be a region name: use lower case letters, digits and dashes, and not <white>team</white>."

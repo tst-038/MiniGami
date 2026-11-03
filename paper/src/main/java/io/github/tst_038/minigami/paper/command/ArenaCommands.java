@@ -13,6 +13,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
+import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
@@ -21,6 +22,7 @@ import io.github.tst_038.minigami.paper.game.TeamSetup;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;
+import org.bukkit.entity.Player;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
@@ -32,7 +34,7 @@ final class ArenaCommands {
     private ArenaCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ArenaSetup arenas, ConfigInfo info, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ArenaSetup arenas, LootSetup loot, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("arena")
                 .requires(ADMIN)
                 .executes(help)
@@ -79,6 +81,7 @@ final class ArenaCommands {
                                                 .executes(byPlayer((player, context) -> arenas.showRegion(player, arena(context), string(context, "name")))))
                                         .then(Commands.literal("schematic").requires(PLAYER)
                                                 .executes(byPlayer((player, context) -> arenas.saveRegionSchematic(player, arena(context), string(context, "name")))))))
+                        .then(lootNode(loot, help))
                         .then(Commands.literal("map")
                                 .executes(help)
                                 .then(Commands.literal("save").requires(PLAYER)
@@ -87,6 +90,33 @@ final class ArenaCommands {
                                         .executes(bySender((sender, context) -> arenas.resetMap(sender, arena(context))))))
                         .then(spot(editor, help, "waiting", "waiting-spot"))
                         .then(spot(editor, help, "spectate", "spectator-spot")));
+    }
+
+    /**
+     * {@code loot list|show|add <tables>|remove|mark <tables>|mark off|selection add <tables>|selection remove}: the containers of the arena
+     * that matches fill, which are the one the admin looks at, those they click, or those in their WorldEdit selection. {@code <tables>} is
+     * {@code castle/a}, a mix {@code ice/rare:70 ice/op:30}, and may end in a chance such as {@code 50%}.
+     */
+    private static ArgumentBuilder<CommandSourceStack, ?> lootNode(LootSetup loot, Command<CommandSourceStack> help) {
+        return Commands.literal("loot")
+                .executes(help)
+                .then(Commands.literal("list").executes(bySender((sender, context) -> loot.list(sender, arena(context)))))
+                .then(Commands.literal("show").requires(PLAYER).executes(byPlayer((player, context) -> loot.show(player, arena(context)))))
+                .then(Commands.literal("add").requires(PLAYER).then(tables(loot, (player, context) -> loot.add(player, arena(context), string(context, "tables")))))
+                .then(Commands.literal("remove").requires(PLAYER).executes(byPlayer((player, context) -> loot.remove(player, arena(context)))))
+                .then(Commands.literal("mark").requires(PLAYER)
+                        .then(Commands.literal("off").executes(byPlayer((player, context) -> loot.stopMarking(player))))
+                        .then(tables(loot, (player, context) -> loot.startMarking(player, arena(context), string(context, "tables")))))
+                .then(Commands.literal("selection").requires(PLAYER)
+                        .executes(help)
+                        .then(Commands.literal("add").then(tables(loot, (player, context) -> loot.addSelection(player, arena(context), string(context, "tables")))))
+                        .then(Commands.literal("remove").executes(byPlayer((player, context) -> loot.removeSelection(player, arena(context))))));
+    }
+
+    private static ArgumentBuilder<CommandSourceStack, ?> tables(LootSetup loot, Nodes.Action<Player> action) {
+        return Commands.argument("tables", StringArgumentType.greedyString())
+                .suggests(suggest(context -> loot.tableIds()))
+                .executes(byPlayer(action));
     }
 
     /** {@code <literal> set|remove}: a single point of the arena, where the admin stands. */

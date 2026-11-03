@@ -15,6 +15,7 @@ import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
+import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
@@ -178,9 +179,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadAfterEdit);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
+        var lootSetup = new LootSetup(() -> arenas, () -> lootTables, editor, maps, messages, this);
+        getServer().getPluginManager().registerEvents(lootSetup, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights, scheduled,
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights, scheduled,
                         new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadStrict), "Join, leave and manage minigames"));
         loadConfig(null, false);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
