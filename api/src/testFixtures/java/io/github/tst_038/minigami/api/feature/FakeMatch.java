@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.feature;
 
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
@@ -19,11 +20,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.random.RandomGenerator;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -55,6 +58,10 @@ public final class FakeMatch implements MatchContext {
     public final Map<String, Region> regions = new HashMap<>();
     /** The regions handed out to the teams, for {@link #teamRegions()}. */
     public final List<TeamRegion> teamRegions = new ArrayList<>();
+    /** The arena's loot containers, for {@link #lootPoints()}. */
+    public final List<LootPoint> lootPoints = new ArrayList<>();
+    /** What {@link #random()} gives; seed it to fix a roll. */
+    public RandomGenerator random = new Random(0);
     public final List<Fill> fills = new ArrayList<>();
     /** What {@link #spawnFor} made, in order. */
     public final List<Entity> spawned = new ArrayList<>();
@@ -205,6 +212,16 @@ public final class FakeMatch implements MatchContext {
         spawned.add(entity);
         this.viewers.put(entity, viewers);
         return entity;
+    }
+
+    @Override
+    public List<LootPoint> lootPoints() {
+        return lootPoints;
+    }
+
+    @Override
+    public RandomGenerator random() {
+        return random;
     }
 
     @Override

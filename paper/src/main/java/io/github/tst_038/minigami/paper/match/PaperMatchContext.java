@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
@@ -131,6 +132,11 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public Optional<Region> region(String name) {
         return Optional.ofNullable(match.arena().regions().get(name));
+    }
+
+    @Override
+    public List<LootPoint> lootPoints() {
+        return match.arena().lootPoints();
     }
 
     @Override

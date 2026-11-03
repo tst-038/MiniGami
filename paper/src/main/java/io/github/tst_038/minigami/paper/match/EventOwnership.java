@@ -17,6 +17,7 @@ import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.world.StructureGrowEvent;
@@ -35,7 +36,8 @@ final class EventOwnership {
     static boolean isSupported(Class<? extends Event> type) {
         return isPlaced(type) || PlayerEvent.class.isAssignableFrom(type) || EntityEvent.class.isAssignableFrom(type)
                 || BlockBreakEvent.class.isAssignableFrom(type) || BlockDamageEvent.class.isAssignableFrom(type)
-                || BlockPlaceEvent.class.isAssignableFrom(type) || BlockDropItemEvent.class.isAssignableFrom(type);
+                || BlockPlaceEvent.class.isAssignableFrom(type) || BlockDropItemEvent.class.isAssignableFrom(type)
+                || InventoryOpenEvent.class.isAssignableFrom(type);
     }
 
     static Optional<UUID> playerOf(Event event) {
@@ -47,6 +49,7 @@ final class EventOwnership {
             case BlockDamageEvent e -> Optional.of(e.getPlayer().getUniqueId());
             case BlockPlaceEvent e -> Optional.of(e.getPlayer().getUniqueId());
             case BlockDropItemEvent e -> Optional.of(e.getPlayer().getUniqueId());
+            case InventoryOpenEvent e -> Optional.of(e.getPlayer().getUniqueId());
             default -> Optional.empty();
         };
     }

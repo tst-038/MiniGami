@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper;
 
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
+import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.domination.Domination;
@@ -15,6 +16,7 @@ import io.github.tst_038.minigami.features.freeze.FreezeFactory;
 import io.github.tst_038.minigami.features.givedrops.GiveDropsFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.kit.SavedKit;
+import io.github.tst_038.minigami.features.loot.LootFactory;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
 import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
 import io.github.tst_038.minigami.features.nomobs.NoMobsFactory;
@@ -33,6 +35,8 @@ import io.github.tst_038.minigami.thewall.TheWall;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import org.bukkit.inventory.ItemStack;
 
 /** The game types, features and stat groups that ship with the plugin. */
 final class BuiltIns {
@@ -44,12 +48,17 @@ final class BuiltIns {
         return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall(), new ShiftingMaze());
     }
 
-    /** @param savedKits the kits saved with {@code /mg kit save}, by name */
-    static List<FeatureFactory> features(Function<String, Optional<SavedKit>> savedKits) {
+    /**
+     * @param savedKits the kits saved with {@code /mg kit save}, by name
+     * @param lootTables the loot tables as currently loaded
+     * @param savedItems the items loot tables name, by name
+     */
+    static List<FeatureFactory> features(Function<String, Optional<SavedKit>> savedKits, Supplier<LootTables> lootTables,
+            Function<String, Optional<ItemStack>> savedItems) {
         return List.of(new VoidKillsFactory(), new KitFactory(savedKits), new DeathItemsFactory(), new BreakBlocksFactory(), new NoDamageFactory(),
                 new GiveDropsFactory(), new ProjectileBreaksFactory(), new AntiCampingFactory(), new DecayFloorFactory(), new NoHungerFactory(),
                 new OneHitFactory(), new CountdownFactory(), new FreezeFactory(), new EffectsFactory(), new NoMobsFactory(), new PlotMobsFactory(),
-                new PlayAreaFactory(), new TeamRegionFactory());
+                new PlayAreaFactory(), new TeamRegionFactory(), new LootFactory(lootTables, savedItems));
     }
 
     static List<StatGroup> statGroups() {

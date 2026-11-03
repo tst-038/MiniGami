@@ -159,7 +159,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
         BuiltIns.gametypes().forEach(gametypes::register);
-        BuiltIns.features(kits::find).forEach(features::register);
+        BuiltIns.features(kits::find, () -> lootTables, name -> Optional.empty()).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
         maps = new ArenaMaps(this, messages);
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit()));

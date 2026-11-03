@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.feature;
 
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Region;
@@ -18,8 +19,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -95,6 +98,16 @@ public interface MatchContext {
      * closes, and earlier if the feature removes it. Others never see it, not even players who arrive later.
      */
     <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup);
+
+    /** The containers of the arena that are filled with loot, as set up in the arena; none by default. */
+    default List<LootPoint> lootPoints() {
+        return List.of();
+    }
+
+    /** Where chance comes from in this match: what features roll with, so that a test can fix it. */
+    default RandomGenerator random() {
+        return ThreadLocalRandom.current();
+    }
 
     /** The phase the match is in, which for a feature is the phase it runs in. */
     Phase phase();
