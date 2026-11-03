@@ -20,7 +20,7 @@ class LootTableTest {
 
     @SafeVarargs
     private static Pool<String> pool(IntRange rolls, double chance, Entry<String>... entries) {
-        return new Pool<>(rolls, chance, java.util.Arrays.asList(entries));
+        return new Pool<>(rolls, chance, java.util.Arrays.stream(entries).toList());
     }
 
     @SafeVarargs
