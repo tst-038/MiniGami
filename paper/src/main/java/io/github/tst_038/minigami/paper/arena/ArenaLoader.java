@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -28,10 +29,13 @@ import org.bukkit.World;
  * regions:
  *   hill: { from: { x: -3, y: 64, z: -3 }, to: { x: 3, y: 67, z: 3 } }
  * map: { from: { x: -20, y: 60, z: -20 }, to: { x: 20, y: 80, z: 20 } }
+ * loot:
+ *   - { x: 12, y: 61, z: 11, table: castle/a }
+ *   - { x: 3, y: 64, z: 9, table: { ice/rare: 70, ice/op: 30 }, chance: 50 }
  * </pre>
  *
  * Yaw, pitch, the spawns, the waiting spot, the spectator spot (where players who are out watch from), the
- * regions and the map are optional. A spawn with a team is only used by that team in games with teams; spawns
+ * regions, the loot points and the map are optional. A spawn with a team is only used by that team in games with teams; spawns
  * without one are for everyone. A region is the box of
  * blocks between its two corners, both included. {@code map} is the box the arena's saved map is
  * pasted back into; saving the map sets it.
@@ -70,7 +74,7 @@ public final class ArenaLoader {
                 ? Optional.of(ConfigLocations.read(config.section("spectator-spot"), world))
                 : Optional.<Location>empty();
         var map = config.has("map") ? Optional.of(box("map", config.section("map"), world)) : Optional.<Region>empty();
-        return new Arena(id, world, spawns, waitingSpot, spectatorSpot, regions(config, world), map);
+        return new Arena(id, world, spawns, waitingSpot, spectatorSpot, regions(config, world), map, LootPoint.read(config, world));
     }
 
     private static Map<String, Region> regions(ConfigReader config, World world) {

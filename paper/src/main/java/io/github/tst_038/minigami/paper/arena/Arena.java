@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -12,11 +13,11 @@ import org.bukkit.World;
 
 /**
  * A place in a world that matches are played in: where players start, optionally where they wait before the
- * start, named regions that games use, in the order of the file, and the box its saved map covers. Locations are handed out as copies, since
+ * start, named regions that games use, in the order of the file, the containers matches fill with loot, and the box its saved map covers. Locations are handed out as copies, since
  * Bukkit's are mutable.
  */
 public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Optional<Location> spectatorSpot,
-        Map<String, Region> regions, Optional<Region> map) {
+        Map<String, Region> regions, Optional<Region> map, List<LootPoint> lootPoints) {
 
     /** @param team the team that starts here, or empty for a spawn anyone may use */
     public record Spawn(Location location, Optional<String> team) {
@@ -36,6 +37,13 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
         waitingSpot = waitingSpot.map(Location::clone);
         spectatorSpot = spectatorSpot.map(Location::clone);
         regions = Collections.unmodifiableMap(new LinkedHashMap<>(regions));
+        lootPoints = List.copyOf(lootPoints);
+    }
+
+    /** An arena without loot points. */
+    public Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Optional<Location> spectatorSpot,
+            Map<String, Region> regions, Optional<Region> map) {
+        this(id, world, spawns, waitingSpot, spectatorSpot, regions, map, List.of());
     }
 
     @Override

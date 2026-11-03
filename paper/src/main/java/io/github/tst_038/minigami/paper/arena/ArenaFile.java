@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import java.util.ArrayList;
@@ -40,6 +41,39 @@ public final class ArenaFile {
         spawns.remove(index);
         config.set("spawns", spawns);
         return true;
+    }
+
+    /** Adds the point, or replaces the one at its position in place: a container has one table. */
+    public static void setLootPoint(YamlConfiguration config, LootPoint point) {
+        var points = new ArrayList<Map<?, ?>>(config.getMapList("loot"));
+        var item = point.toConfig();
+        for (int i = 0; i < points.size(); i++) {
+            if (sameBlock(points.get(i), point)) {
+                points.set(i, item);
+                config.set("loot", points);
+                return;
+            }
+        }
+        points.add(item);
+        config.set("loot", points);
+    }
+
+    /** @return {@code false} if there is no loot point at the position */
+    public static boolean removeLootPoint(YamlConfiguration config, int x, int y, int z) {
+        var points = new ArrayList<Map<?, ?>>(config.getMapList("loot"));
+        if (!points.removeIf(point -> sameBlock(point, x, y, z))) {
+            return false;
+        }
+        config.set("loot", points.isEmpty() ? null : points);
+        return true;
+    }
+
+    private static boolean sameBlock(Map<?, ?> item, LootPoint point) {
+        return sameBlock(item, point.x(), point.y(), point.z());
+    }
+
+    private static boolean sameBlock(Map<?, ?> item, int x, int y, int z) {
+        return Integer.valueOf(x).equals(item.get("x")) && Integer.valueOf(y).equals(item.get("y")) && Integer.valueOf(z).equals(item.get("z"));
     }
 
     /** The box the saved map is pasted back into. */

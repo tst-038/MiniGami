@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import java.lang.reflect.Proxy;
 import java.util.List;
@@ -47,6 +48,24 @@ class ArenaFileTest {
 
         assertEquals(List.of(new Arena.Spawn(new Location(world, 1.23, 65, 2, -45.1f, 0), Optional.empty()),
                 new Arena.Spawn(new Location(world, 9, 9, 9), Optional.of("red"))), arena.spawns());
+    }
+
+    @Test
+    void lootPointsAreAddedReplacedInPlaceAndRemoved() throws Exception {
+        var config = new YamlConfiguration();
+        ArenaFile.create(config, world);
+        ArenaFile.setLootPoint(config, new LootPoint(world, 1, 64, 1, Map.of("castle/a", 1), 100));
+        ArenaFile.setLootPoint(config, new LootPoint(world, 5, 70, 5, Map.of("ice/rare", 70, "ice/op", 30), 50));
+        ArenaFile.setLootPoint(config, new LootPoint(world, 1, 64, 1, Map.of("castle/b", 1), 100));
+
+        assertEquals(List.of(new LootPoint(world, 1, 64, 1, Map.of("castle/b", 1), 100),
+                new LootPoint(world, 5, 70, 5, Map.of("ice/rare", 70, "ice/op", 30), 50)), reload(config).lootPoints());
+
+        assertFalse(ArenaFile.removeLootPoint(config, 9, 9, 9));
+        assertTrue(ArenaFile.removeLootPoint(config, 1, 64, 1));
+        assertTrue(ArenaFile.removeLootPoint(config, 5, 70, 5));
+        assertEquals(List.of(), reload(config).lootPoints());
+        assertFalse(config.contains("loot"));
     }
 
     @Test
