@@ -1,0 +1,9 @@
+# A general purpose container: mostly small finds, now and then something good.
+pools:
+  - rolls: 4-6
+    entries:
+      - { table: junk, weight: 50 }
+      - { table: common, weight: 50 }
+  - chance: 30
+    entries:
+      - { table: rare }

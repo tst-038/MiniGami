@@ -4,6 +4,8 @@ import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
+import io.github.tst_038.minigami.api.loot.ItemCatalog;
+import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -87,6 +89,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
     static final List<String> EXAMPLE_GAMES = List.of("spleef.yml", "king-of-the-hill.yml", "domination.yml", "team-deathmatch.yml",
             "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml", "shifting-maze.yml");
 
+    /** Example loot tables written to loot/ the first time the folder is missing, which games and loot points can use as they are. */
+    static final List<String> EXAMPLE_LOOT = List.of("junk.yml", "common.yml", "rare.yml", "op.yml", "chest.yml");
+
     private static final String MESSAGES = "messages/en.yml";
     private static final int LEADERBOARD_SIZE = 10;
     /** Five minutes: boards lag a little behind, but are never read from storage per view. */
@@ -96,6 +101,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private SavedKits kits;
+    /** The tables of the last load; a game keeps the ones it was loaded with. */
+    private volatile LootTables lootTables = LootTables.NONE;
     private GameLoader gameLoader;
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
@@ -212,8 +219,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 saveExample(NightTemplateLoader.FOLDER, "example.yml");
                 saveExample(ScheduleLoader.FOLDER, "example.yml");
             }
+            saveExamples("loot", EXAMPLE_LOOT);
             warnOldModes();
             var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
+            var lootFiles = YamlFiles.readTree(getDataPath().resolve("loot"));
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
             var nightFiles = YamlFiles.read(getDataPath().resolve(NightTemplateLoader.FOLDER));
             var scheduleFiles = YamlFiles.read(getDataPath().resolve(ScheduleLoader.FOLDER));
@@ -227,14 +236,17 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
-                // Before the games, which check the kit names they use.
+                var loadedLoot = LootTables.load(lootFiles, ItemCatalog.server(name -> false));
+                // Before the games, which check the kit names and loot styles they use.
                 kits.replace(loadedKits);
+                lootTables = loadedLoot.tables();
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
                 var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
                 var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries());
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
+                problems.addAll(loadedLoot.problems());
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedGames.problems());
                 problems.addAll(loadedNights.problems());
@@ -262,11 +274,12 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 schedules = loadedSchedules.entries();
                 fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
+                loadedLoot.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedArenas.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedGames.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedNights.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
                 loadedSchedules.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));
-                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids() + ", game nights: " + nightTemplates.ids() + ", schedules: " + schedules.ids());
+                getLogger().info("Loaded arenas: " + arenas.ids() + ", games: " + games.ids() + ", loot tables: " + lootTables.ids().size() + ", game nights: " + nightTemplates.ids() + ", schedules: " + schedules.ids());
                 var blocking = doctor.loaded(problems, gameFiles.files().keySet(), arenaFiles.files().keySet());
                 if (requester == null) {
                     // A match the server stopped in the middle of left its arena changed.

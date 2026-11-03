@@ -1,0 +1,11 @@
+# Everyday supplies.
+entries:
+  - { item: bread, amount: 2-5, weight: 4 }
+  - { item: cooked_beef, amount: 2-4, weight: 3 }
+  - { item: arrow, amount: 8-16, weight: 3 }
+  - { item: oak_planks, amount: 8-16, weight: 3 }
+  - { item: torch, amount: 8-16, weight: 2 }
+  - { item: iron_ingot, amount: 2-5, weight: 3 }
+  - { item: stone_sword, weight: 2 }
+  - { item: leather_chestplate, weight: 2 }
+  - { item: shield, weight: 1 }

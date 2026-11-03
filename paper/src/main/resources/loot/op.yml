@@ -1,0 +1,10 @@
+# The kind of find that decides a fight.
+entries:
+  - { item: diamond_sword, enchants: { sharpness: 2-4 }, weight: 3 }
+  - { item: diamond_chestplate, enchants: { protection: 2-3 }, weight: 3 }
+  - { item: bow, enchants: { power: 3-5, infinity: 1 }, weight: 2 }
+  - { item: enchanted_golden_apple, weight: 2 }
+  - { item: totem_of_undying, weight: 2 }
+  - { item: golden_apple, amount: 3-5, weight: 3 }
+  - { item: ender_pearl, amount: 4-8, weight: 2 }
+  - { item: netherite_ingot, amount: 1-2, weight: 1 }

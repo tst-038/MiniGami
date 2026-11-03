@@ -1,0 +1,13 @@
+# Gear worth fighting over.
+entries:
+  - { item: iron_sword, enchants: { sharpness: 1-2 }, weight: 3 }
+  - { item: iron_chestplate, weight: 3 }
+  - { item: iron_helmet, weight: 3 }
+  - { item: iron_leggings, weight: 3 }
+  - { item: iron_boots, weight: 3 }
+  - { item: bow, weight: 3 }
+  - { item: crossbow, weight: 2 }
+  - { item: golden_apple, amount: 1-2, weight: 3 }
+  - { item: ender_pearl, amount: 1-2, weight: 2 }
+  - { item: diamond, amount: 1-2, weight: 2 }
+  - { item: tnt, amount: 2-4, weight: 1 }
