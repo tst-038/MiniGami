@@ -480,6 +480,31 @@ kit:
   deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mg reload</white>."
   delete-failed: "%prefix%<red>Could not delete the file of kit <white>%name%</white>; see the server log."
 
+# Loot tables and the items they name. %table%: a table id, %name%: a saved item
+loot:
+  none: "%prefix%<gray>There are no loot tables; add files to <white>plugins/MiniGami/loot</white>."
+  # %count%: tables, %styles%: the style folders, comma separated
+  header: "%prefix%<gray>Loot tables (%count%); styles: <white>%styles%</white>:"
+  entry: "<gray> - <white>%table%</white>"
+  # %count%: how many, %names%: comma separated
+  saved-header: "%prefix%<gray>Saved items (%count%): <white>%names%</white>"
+  unknown: "%prefix%<red>There is no loot table <white>%table%</white>."
+  # %pools%: how many pools it has
+  info: "%prefix%<gold>%table%</gold> <gray>has %pools% pool(s):"
+  # %rolls%: draws each time, such as 4-6, %chance%: how often the pool runs at all
+  pool: "<gray> - <white>%rolls%</white> draw(s), runs <white>%chance%</white> of the time:"
+  # %what%: an item, nested table or nothing; %chance%: its share of a draw, empty for a rolled item
+  pool-entry: "<gray>     %chance% <white>%what%"
+  rolled: "%prefix%<gray>Rolled <white>%table%</white>: %count% item(s)"
+  rolled-nothing: "%prefix%<gray>Rolled <white>%table%</white> and got nothing."
+  invalid-name: "%prefix%<red><white>%name%</white> can't be an item name: use lower case letters, digits, dashes and underscores."
+  hold-an-item: "%prefix%<red>Hold the item you want to save."
+  saved: "%prefix%<green>Saved the item you hold as <white>%name%</white>. Use it in a table with <white>{ saved: %name% }</white>."
+  save-failed: "%prefix%<red>Could not write item <white>%name%</white> to disk; see the server log. It works until the server stops."
+  unknown-item: "%prefix%<red>There is no saved item called <white>%name%</white>."
+  deleted: "%prefix%<green>Deleted item <white>%name%</white>. A table that uses it reports that on the next <white>/mg reload</white>."
+  delete-failed: "%prefix%<red>Could not delete the file of item <white>%name%</white>; see the server log."
+
 # Parties: %player% and %leader% are names, %count% the size of the party;
 # <accept>…</accept> accepts an invite on click
 party:

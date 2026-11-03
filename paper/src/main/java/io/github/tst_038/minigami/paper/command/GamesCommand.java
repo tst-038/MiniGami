@@ -19,6 +19,7 @@ import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.kit.KitAdmin;
+import io.github.tst_038.minigami.paper.loot.LootAdmin;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
@@ -63,7 +64,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> create(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
-            ArenaSetup arenas, LootSetup loot, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, PartyService parties, Nights nights, Schedules schedules, StatsView stats, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, LootSetup loot, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, PartyService parties, Nights nights, Schedules schedules, StatsView stats, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mg")
                 .executes(help)
@@ -104,6 +105,7 @@ public final class GamesCommand {
                 .then(ConfigCommands.config(editor, info, help))
                 .then(PlayerCommands.node(snapshots))
                 .then(KitCommands.node(kits, help))
+                .then(LootCommands.node(lootAdmin, help))
                 .then(PartyCommands.node(parties, help))
                 .then(NightCommands.node(nights, editor, info, help))
                 .then(ScheduleCommands.node(schedules, editor, info, help))

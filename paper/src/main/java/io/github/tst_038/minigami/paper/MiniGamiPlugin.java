@@ -32,6 +32,8 @@ import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.github.tst_038.minigami.paper.kit.SavedKits;
+import io.github.tst_038.minigami.paper.loot.LootAdmin;
+import io.github.tst_038.minigami.paper.loot.SavedItems;
 import io.github.tst_038.minigami.paper.night.NightReport;
 import io.github.tst_038.minigami.paper.night.NightSidebar;
 import io.github.tst_038.minigami.paper.night.NightStore;
@@ -103,6 +105,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private SavedKits kits;
+    private SavedItems savedItems;
     /** The tables of the last load; a game keeps the ones it was loaded with. */
     private volatile LootTables lootTables = LootTables.NONE;
     private GameLoader gameLoader;
@@ -135,6 +138,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // Until the first load has read the admin's copy.
         messages = new Messages(bundledMessages, getLogger());
         kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
+        savedItems = new SavedItems(getDataPath().resolve("items"), getLogger());
         playPermissions = new PlayPermissions(getServer().getPluginManager());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
@@ -160,7 +164,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
         BuiltIns.gametypes().forEach(gametypes::register);
-        BuiltIns.features(kits::find, () -> lootTables, name -> Optional.empty()).forEach(features::register);
+        BuiltIns.features(kits::find, () -> lootTables, savedItems::find).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
         maps = new ArenaMaps(this, messages);
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables));
@@ -184,7 +188,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(lootSetup, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), parties, nights, scheduled,
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), parties, nights, scheduled,
                         new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadStrict), "Join, leave and manage minigames"));
         loadConfig(null, false);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
@@ -231,6 +235,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
             var nightFiles = YamlFiles.read(getDataPath().resolve(NightTemplateLoader.FOLDER));
             var scheduleFiles = YamlFiles.read(getDataPath().resolve(ScheduleLoader.FOLDER));
             var loadedKits = kits.read();
+            var loadedItems = savedItems.read();
             if (!isEnabled()) {
                 return;
             }
@@ -240,7 +245,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 }
                 var loadedSettings = SettingsLoader.load(settingsText, getServer()::getWorld);
                 var loadedArenas = ArenaLoader.load(arenaFiles, getServer()::getWorld);
-                var loadedLoot = LootTables.load(lootFiles, ItemCatalog.server(name -> false));
+                // Before the loot tables, which check the saved items they name.
+                savedItems.replace(loadedItems);
+                var loadedLoot = LootTables.load(lootFiles, ItemCatalog.server(savedItems::has));
                 // Before the games, which check the kit names and loot styles they use.
                 kits.replace(loadedKits);
                 lootTables = loadedLoot.tables();

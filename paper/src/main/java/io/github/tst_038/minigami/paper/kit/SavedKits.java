@@ -1,11 +1,11 @@
 package io.github.tst_038.minigami.paper.kit;
 
 import io.github.tst_038.minigami.features.kit.SavedKit;
+import io.github.tst_038.minigami.paper.item.ItemCodec;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -89,7 +89,7 @@ public final class SavedKits {
     /** The file's text; made on the server thread, since serializing an item reads server state. */
     public static String toText(SavedKit kit) {
         var config = new YamlConfiguration();
-        kit.slots().forEach((slot, item) -> config.set("slots." + slot, Base64.getEncoder().encodeToString(item.serializeAsBytes())));
+        kit.slots().forEach((slot, item) -> config.set("slots." + slot, ItemCodec.encode(item)));
         return config.saveToString();
     }
 
@@ -102,7 +102,7 @@ public final class SavedKits {
             throw new IllegalArgumentException("has no slots");
         }
         for (String slot : section.getKeys(false)) {
-            slots.put(Integer.parseInt(slot), ItemStack.deserializeBytes(Base64.getDecoder().decode(section.getString(slot))));
+            slots.put(Integer.parseInt(slot), ItemCodec.decode(section.getString(slot)));
         }
         return new SavedKit(slots);
     }
