@@ -52,6 +52,34 @@ public record YamlFiles(String folder, String layout, Map<String, YamlConfigurat
                 Files.isRegularFile(path.resolve(file)) ? Optional.of(path.getFileName().toString()) : Optional.empty());
     }
 
+    /**
+     * The {@code .yml} files of the folder and all folders inside it, by their path without the extension, such as
+     * {@code castle/a} for {@code castle/a.yml}. Blocking file IO: call it off the server thread.
+     */
+    public static YamlFiles readTree(Path directory) {
+        var folder = directory.getFileName().toString();
+        var files = new TreeMap<String, YamlConfiguration>();
+        var problems = new ArrayList<ConfigProblem>();
+        if (Files.isDirectory(directory)) {
+            try (var paths = Files.walk(directory)) {
+                for (Path path : paths.filter(Files::isRegularFile).filter(file -> file.getFileName().toString().endsWith(EXTENSION)).sorted().toList()) {
+                    var relative = directory.relativize(path).toString().replace('\\', '/');
+                    var id = relative.substring(0, relative.length() - EXTENSION.length());
+                    try {
+                        var config = new YamlConfiguration();
+                        config.loadFromString(Files.readString(path));
+                        files.put(id, config);
+                    } catch (IOException | InvalidConfigurationException e) {
+                        problems.add(new ConfigProblem(folder + "/" + relative, "", "can't be read: " + e.getMessage()));
+                    }
+                }
+            } catch (IOException e) {
+                problems.add(new ConfigProblem(folder, "", "can't be listed: " + e.getMessage()));
+            }
+        }
+        return new YamlFiles(folder, FLAT, files, problems);
+    }
+
     /** @param idOf the entry's id for a path in the folder, empty for paths that hold none */
     private static YamlFiles read(Path directory, String layout, Function<Path, Optional<String>> idOf) {
         var folder = directory.getFileName().toString();

@@ -30,6 +30,11 @@ public final class LootReader {
 
     private final ItemCatalog catalog;
 
+    /** Whether the text can be the id of a table: lower case letters, digits, {@code _} and {@code -}, with {@code /} between folders. */
+    public static boolean isValidId(String id) {
+        return TABLE_ID.matcher(id).matches();
+    }
+
     public LootReader(ItemCatalog catalog) {
         this.catalog = catalog;
     }
@@ -89,7 +94,7 @@ public final class LootReader {
 
     private Optional<Entry<ItemSpec>> table(ConfigReader config, int weight) {
         var id = config.string("table");
-        if (!TABLE_ID.matcher(id).matches()) {
+        if (!isValidId(id)) {
             config.problem("table", "'" + id + "' is not a table id; use lower case letters, digits, _ and -, with / between folders");
             return Optional.empty();
         }
