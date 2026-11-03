@@ -749,7 +749,7 @@ public final class LiveMatch {
         var everyone = takingPart();
         var together = variant.teams().isPresent() && variant.teamSpawns() == TeamSpawns.TOGETHER;
         var spots = SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together);
-        for (int i = 0; i < everyone.size(); i++) {
+        for (int i = 0; variant.gametype().usesSpawns() && i < everyone.size(); i++) {
             var team = teamOf(everyone.get(i));
             if (together && team.isPresent() && !SpawnPlan.hasOwn(team.get(), spawnTags)) {
                 teamHomes.putIfAbsent(team.get(), spots.get(i));
@@ -976,6 +976,10 @@ public final class LiveMatch {
      * ones, preferring those with ground below so nobody drops into a hole a game made, such as in spleef.
      */
     private Location spawnFor(UUID id) {
+        if (arena.spawns().isEmpty()) {
+            // A game without spawns puts players on their own region; shortcut: a player without one gets the first, fine while teams always have one.
+            return teamRegions.stream().filter(plot -> plot.members().contains(id)).findFirst().orElse(teamRegions.getFirst()).region().standingSpot();
+        }
         var team = teamOf(id);
         var home = team.map(teamHomes::get).map(OptionalInt::of).orElse(OptionalInt.empty());
         var spots = SpawnPlan.respawnChoices(team, spawnTags, home).stream().map(i -> arena.spawns().get(i).location()).toList();

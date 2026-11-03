@@ -13,8 +13,14 @@ import java.util.List;
  * @param hasTeams whether it plays in teams set with {@code teams:}, which shouldn't share a spawn
  * @param changesBlocks whether one of its features changes blocks, which only the arena's saved map puts back
  * @param featureRegions the regions its features rely on, such as the one a play area keeps players in
+ * @param needsSpawn whether the arena must have a spawn: the game starts players on them, or they wait at one
  */
-public record Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks, List<String> featureRegions) {
+public record Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks, List<String> featureRegions,
+        boolean needsSpawn) {
+
+    public Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks, List<String> featureRegions) {
+        this(arena, gametype, mostTeams, hasTeams, changesBlocks, featureRegions, true);
+    }
 
     public Hosting(Arena arena, GameType gametype, int mostTeams, boolean hasTeams, boolean changesBlocks) {
         this(arena, gametype, mostTeams, hasTeams, changesBlocks, List.of());

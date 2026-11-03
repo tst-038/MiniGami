@@ -38,13 +38,14 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
     }
 
     /**
-     * Where a player can be put down: above the middle of the region, on the first free block over the
-     * floor, or at the top if the middle is built full.
+     * Where a player can be put down: above the middle of the region, on the highest free block over a
+     * floor (so never in a cave below a region that spans the world's height), or at the top if the middle
+     * is built full.
      */
     public Location standingSpot() {
         int x = Math.floorDiv(minX + maxX, 2);
         int z = Math.floorDiv(minZ + maxZ, 2);
-        for (int y = minY + 1; y < maxY; y++) {
+        for (int y = maxY - 1; y > minY; y--) {
             if (world.getBlockAt(x, y - 1, z).isSolid() && world.getBlockAt(x, y, z).isPassable() && world.getBlockAt(x, y + 1, z).isPassable()) {
                 return new Location(world, x + 0.5, y, z + 0.5);
             }

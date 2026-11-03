@@ -85,6 +85,11 @@ class HostingChecksTest {
     }
 
     @Test
+    void anArenaWithoutSpawnsCanHostAGameThatNeedsNone() {
+        assertEquals(List.of(), check(new SpawnsCheck(), new Hosting(arena(0, ALL_REGIONS, true), NEEDY, 2, false, false, List.of(), false)));
+    }
+
+    @Test
     void anArenaWithoutSpawnsCantHost() {
         var findings = check(new SpawnsCheck(), new Hosting(arena(0, ALL_REGIONS, true), NEEDY, 2, false, false));
 

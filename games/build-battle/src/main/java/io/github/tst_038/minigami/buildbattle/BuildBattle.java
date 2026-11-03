@@ -64,6 +64,12 @@ public final class BuildBattle implements GameType {
                 "ending", List.of(new AnnounceWinner()));
     }
 
+    /** Builders are put in the middle of their plot, so the arena needs no spawns. */
+    @Override
+    public boolean usesSpawns() {
+        return false;
+    }
+
     @Override
     public Optional<String> regionPerTeam() {
         return Optional.of(PLOT);

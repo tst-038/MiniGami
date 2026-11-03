@@ -212,7 +212,7 @@ public final class GameLoader {
         var findings = new ArrayList<Finding>();
         // With an unknown game type the file has a problem already, and nothing to check against.
         for (var arena : game == null ? List.<Arena>of() : listed) {
-            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions), checks);
+            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty()), checks);
             if (diagnosis.isReady()) {
                 playable.add(arena);
             }

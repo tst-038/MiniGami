@@ -9,7 +9,7 @@ final class SpawnsCheck implements Check<Hosting> {
 
     @Override
     public void check(Hosting hosting, Diagnosis diagnosis) {
-        if (!hosting.arena().isPlayable()) {
+        if (hosting.needsSpawn() && !hosting.arena().isPlayable()) {
             diagnosis.blocking("no-spawns", Map.of(), hosting.command("spawn add"));
         }
     }

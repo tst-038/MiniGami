@@ -46,6 +46,15 @@ public interface GameType {
         return this;
     }
 
+    /**
+     * Whether the game starts players on the arena's spawns, and so needs them. A game that places players
+     * itself, such as in a region of their own, says no: its arenas need no spawns, and players stay where they
+     * waited until the game moves them.
+     */
+    default boolean usesSpawns() {
+        return true;
+    }
+
     /** A fresh one per match. */
     WinCondition winCondition();
 
