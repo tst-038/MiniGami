@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -76,5 +77,52 @@ class RandomRolesTest {
     void atMostOneRestRole() {
         var random = new RandomRoles(new Random(1));
         assertThrows(IllegalArgumentException.class, () -> random.deal(players(2), List.of(RoleShare.rest(), RoleShare.rest())));
+    }
+
+    @Test
+    void aGroupStaysOnOneRole() {
+        var players = players(10);
+        var party = Set.of(players.get(0), players.get(1));
+
+        for (int seed = 0; seed < 50; seed++) {
+            var roles = new RandomRoles(new Random(seed)).deal(players, List.of(RoleShare.onePer(5), RoleShare.rest()), List.of(party));
+
+            assertEquals(party.size(), roles.stream().mapToLong(role -> role.stream().filter(party::contains).count()).max().orElseThrow());
+            assertEquals(10, roles.stream().mapToInt(List::size).sum());
+        }
+    }
+
+    @Test
+    void aGroupTooBigForARoleGoesToTheRest() {
+        var players = players(10);
+        var party = Set.of(players.get(0), players.get(1), players.get(2));
+
+        for (int seed = 0; seed < 50; seed++) {
+            var roles = new RandomRoles(new Random(seed)).deal(players, List.of(RoleShare.onePer(5), RoleShare.rest()), List.of(party));
+
+            assertEquals(List.of(2, 8), sizes(roles));
+            assertEquals(0, roles.getFirst().stream().filter(party::contains).count());
+        }
+    }
+
+    @Test
+    void aRoleNoGroupFitsGetsTheSmallestGroup() {
+        var players = players(6);
+        var one = List.of(players.get(0), players.get(1));
+        var two = List.of(players.get(2), players.get(3));
+        var three = List.of(players.get(4), players.get(5));
+
+        var roles = new RandomRoles(new Random(1)).deal(players, List.of(RoleShare.of(1), RoleShare.rest()), List.of(one, two, three));
+
+        assertEquals(List.of(2, 4), sizes(roles));
+    }
+
+    @Test
+    void oneGroupOfEveryoneStillFillsTheRole() {
+        var players = players(5);
+
+        var roles = new RandomRoles(new Random(1)).deal(players, List.of(RoleShare.onePer(5), RoleShare.rest()), List.of(players));
+
+        assertEquals(List.of(1, 4), sizes(roles));
     }
 }

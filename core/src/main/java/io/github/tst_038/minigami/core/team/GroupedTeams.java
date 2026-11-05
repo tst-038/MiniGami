@@ -32,6 +32,11 @@ public final class GroupedTeams implements TeamFormation {
     }
 
     @Override
+    public List<? extends Collection<UUID>> groups() {
+        return List.copyOf(groups.get());
+    }
+
+    @Override
     public List<List<UUID>> form(List<UUID> players, int count) {
         if (count < 1) {
             throw new IllegalArgumentException("Needs at least one team, got " + count);

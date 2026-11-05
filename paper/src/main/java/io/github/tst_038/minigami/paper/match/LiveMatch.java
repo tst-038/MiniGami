@@ -828,7 +828,7 @@ public final class LiveMatch {
      */
     private List<UUID> handOutRoles() {
         var roles = variant.roles();
-        var players = new RandomRoles(ThreadLocalRandom.current()).deal(takingPart(), roles.stream().map(Role::share).toList());
+        var players = new RandomRoles(ThreadLocalRandom.current()).deal(takingPart(), roles.stream().map(Role::share).toList(), opening.teams().groups());
         for (int i = 0; i < roles.size(); i++) {
             if (!players.get(i).isEmpty()) {
                 putInTeam(players.get(i), roles.get(i).id(), "match.your-role");
