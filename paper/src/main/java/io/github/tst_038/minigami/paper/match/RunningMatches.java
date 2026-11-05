@@ -109,9 +109,10 @@ public final class RunningMatches implements Listener {
         messages.send(sender, "start.started");
     }
 
-    /** What is running, and how many listeners the plugin has, to spot leaks after matches end. */
+    /** The plugin version, what is running, and how many listeners the plugin has, to spot leaks after matches end. */
     public void debug(CommandSender sender) {
-        messages.send(sender, "debug.summary", Formatter.number("matches", matches.all().size()),
+        messages.send(sender, "debug.summary", Placeholder.unparsed("version", plugin.getPluginMeta().getVersion()),
+                Formatter.number("matches", matches.all().size()),
                 Formatter.number("listeners", HandlerList.getRegisteredListeners(plugin).size()),
                 Formatter.number("snapshots", sessions.pending()));
         for (var live : running()) {
