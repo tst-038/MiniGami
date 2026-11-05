@@ -127,6 +127,32 @@ class HostingChecksTest {
     }
 
     @Test
+    void aFeatureAsksForItsRegionGroupsAndRunsItsOwnChecks() {
+        Feature picky = new Feature() {
+            @Override
+            public void enable(io.github.tst_038.minigami.api.feature.MatchContext context) {
+            }
+
+            @Override
+            public List<String> regionGroups() {
+                return List.of("land");
+            }
+
+            @Override
+            public void diagnose(io.github.tst_038.minigami.api.feature.ArenaLayout arena, Diagnosis diagnosis) {
+                diagnosis.blocking("too-small", Map.of("groups", String.valueOf(arena.regions("land").size())));
+            }
+        };
+        var hosting = new Hosting(arena(1, List.of("hill", "wall-north", "quarter-1", "land-1"), true), NEEDY, 1, false, false, List.of(), false, false, List.of(picky));
+
+        assertEquals(List.of(), check(new RegionGroupsCheck(), hosting));
+        assertEquals(List.of(Map.of("groups", "1")), check(new FeatureCheck(), hosting).stream().map(Finding::values).toList());
+
+        var without = new Hosting(arena(1, List.of("hill"), true), NEEDY, 1, false, false, List.of(), false, false, List.of(picky));
+        assertTrue(check(new RegionGroupsCheck(), without).stream().anyMatch(finding -> finding.values().equals(Map.of("group", "land"))));
+    }
+
+    @Test
     void everyTeamAMatchCanHaveNeedsItsRegion() {
         var findings = check(new TeamRegionsCheck(), new Hosting(arena(4, List.of("quarter-1", "quarter-2"), true), NEEDY, 4, true, false));
 

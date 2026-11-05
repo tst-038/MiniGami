@@ -1,0 +1,31 @@
+# Dense woodland of oak and birch on rolling ground, with a few ponds.
+shape:
+  base: 40
+  hills: {amplitude: 12, scale: 40, octaves: 4}
+  detail: {amplitude: 2, scale: 12, octaves: 2}
+  sea-level: 30
+  deep-below: 12
+  pad-radius: 5
+  rock: stone
+  deep-rock: deepslate
+  floor: bedrock
+surface:
+  top: grass_block
+  under: dirt
+  depth: 3-5
+  shore: sand
+  shore-under: sandstone
+  lakebed: {gravel: 3, sand: 2, clay: 1}
+caves: {width: 0.08, scale: 24, min-depth: 5, lava-level: 8}
+ores:
+  - ores/vanilla
+# Quotas can count these together: `quota: {ores: 60-}`.
+groups:
+  ores: [coal_ore, iron_ore, copper_ore, gold_ore, redstone_ore, lapis_ore, diamond_ore,
+         deepslate_coal_ore, deepslate_iron_ore, deepslate_copper_ore, deepslate_gold_ore,
+         deepslate_redstone_ore, deepslate_lapis_ore, deepslate_diamond_ore]
+pools: [{name: water-pools, fluid: water, count: 1-2, radius: 3-4, depth: 3}]
+trees:
+  - {name: oaks, log: oak_log, leaves: oak_leaves, height: 5-7, count: 40-70, grows-on: [grass_block]}
+  - {name: birches, log: birch_log, leaves: birch_leaves, height: 5-7, count: 20-40, grows-on: [grass_block]}
+decor: [{name: undergrowth, blocks: {short_grass: 8, fern: 2, poppy: 1}, density: 0.2, stands-on: [grass_block]}]

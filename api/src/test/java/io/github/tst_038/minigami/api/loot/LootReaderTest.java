@@ -9,7 +9,7 @@ import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.core.loot.Entry;
-import io.github.tst_038.minigami.core.loot.IntRange;
+import io.github.tst_038.minigami.core.range.IntRange;
 import io.github.tst_038.minigami.core.loot.LootTable;
 import java.util.List;
 import java.util.Map;

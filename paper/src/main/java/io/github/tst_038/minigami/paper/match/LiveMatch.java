@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.features.freeze.Freeze;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -294,6 +295,18 @@ public final class LiveMatch {
         }
         var asked = System.nanoTime();
         var edit = maps.fill(arena, fills).whenComplete((done, error) -> plugin.getLogger().info("Edited " + fills.size() + " areas in " + arena.id() + " in " + (System.nanoTime() - asked) / 1_000_000 + " ms"));
+        edits = CompletableFuture.allOf(edits, edit.handle((done, error) -> null));
+        return edit;
+    }
+
+    /** See {@link io.github.tst_038.minigami.api.feature.MatchContext#place}. */
+    CompletableFuture<Void> place(CompletableFuture<List<Grid>> grids) {
+        if (match.scope().isClosed()) {
+            return CompletableFuture.failedFuture(new IllegalStateException("The match is over"));
+        }
+        var asked = System.nanoTime();
+        var edit = maps.place(arena, grids, () -> match.scope().isClosed())
+                .whenComplete((done, error) -> plugin.getLogger().info("Placed grids in " + arena.id() + " in " + (System.nanoTime() - asked) / 1_000_000 + " ms"));
         edits = CompletableFuture.allOf(edits, edit.handle((done, error) -> null));
         return edit;
     }
@@ -735,7 +748,9 @@ public final class LiveMatch {
                     continue;
                 }
             }
-            prepare(player);
+            if (variant.gametype().usesSpawns()) {
+                prepare(player);
+            }
         }
         if (members.isEmpty()) {
             match.dispose();
@@ -761,6 +776,7 @@ public final class LiveMatch {
         }
         if (!countDown) {
             // After the teleports, so the next phase's features never see players moving from where they waited to their spawn.
+            prepareInPlace();
             match.advancePhase();
             hud.started();
             return;
@@ -785,12 +801,20 @@ public final class LiveMatch {
             countdown = null;
             // An admin may have ended it in the meantime.
             if (match.currentPhase().filter(phases.getFirst()::equals).isPresent()) {
+                prepareInPlace();
                 match.advancePhase();
                 hud.started();
             } else if (early && !match.isFinished()) {
                 hud.started();
             }
         }));
+    }
+
+    /** A game that doesn't move players to spawns clears and prepares them only as play begins, as they stood where they waited until then. */
+    private void prepareInPlace() {
+        if (!variant.gametype().usesSpawns()) {
+            takingPart().stream().map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(this::prepare);
+        }
     }
 
     /** Lets the game get ready, once, for a start that is now certain. */

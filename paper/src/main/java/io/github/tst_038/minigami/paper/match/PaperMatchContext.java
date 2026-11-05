@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -135,6 +136,11 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public List<Location> spawnPoints() {
+        return match.arena().spawnPoints();
+    }
+
+    @Override
     public List<LootPoint> lootPoints() {
         return match.arena().lootPoints();
     }
@@ -163,6 +169,11 @@ public final class PaperMatchContext implements MatchContext {
     @Override
     public CompletableFuture<Void> fill(List<Fill> fills) {
         return match.fill(fills);
+    }
+
+    @Override
+    public CompletableFuture<Void> place(CompletableFuture<List<Grid>> grids) {
+        return match.place(grids);
     }
 
     @Override

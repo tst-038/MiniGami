@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.core.loot;
+package io.github.tst_038.minigami.core.range;
 
 import java.util.random.RandomGenerator;
 

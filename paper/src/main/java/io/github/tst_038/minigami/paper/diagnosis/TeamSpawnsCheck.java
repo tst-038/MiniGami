@@ -11,7 +11,7 @@ final class TeamSpawnsCheck implements Check<Hosting> {
     public void check(Hosting hosting, Diagnosis diagnosis) {
         var spawns = hosting.arena().spawns().size();
         // No spawns at all is the spawns check's finding.
-        if (hosting.hasTeams() && spawns > 0 && spawns < hosting.mostTeams()) {
+        if (hosting.needsSpawn() && hosting.hasTeams() && spawns > 0 && spawns < hosting.mostTeams()) {
             diagnosis.warning("few-team-spawns", Map.of("spawns", String.valueOf(spawns), "teams", String.valueOf(hosting.mostTeams())),
                     hosting.command("spawn add"));
         }

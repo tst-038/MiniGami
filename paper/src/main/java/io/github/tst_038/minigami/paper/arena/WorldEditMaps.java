@@ -15,8 +15,10 @@ import com.sk89q.worldedit.function.pattern.RandomPattern;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,9 +27,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -42,17 +48,16 @@ import org.bukkit.util.BoundingBox;
  */
 final class WorldEditMaps {
 
-    /** shortcut: fixed budget per tick, make it a setting if a real server lags. */
-    static final int BLOCKS_PER_TICK = 4096;
-
     private final Plugin plugin;
     private final boolean fawe;
     private final Executor offThread;
     private final Executor serverThread;
+    private final IntSupplier blocksPerTick;
 
-    WorldEditMaps(Plugin plugin, boolean fawe) {
+    WorldEditMaps(Plugin plugin, boolean fawe, IntSupplier blocksPerTick) {
         this.plugin = plugin;
         this.fawe = fawe;
+        this.blocksPerTick = blocksPerTick;
         this.offThread = task -> plugin.getServer().getAsyncScheduler().runNow(plugin, ignored -> task.run());
         this.serverThread = task -> plugin.getServer().getGlobalRegionScheduler().execute(plugin, task);
     }
@@ -133,13 +138,13 @@ final class WorldEditMaps {
 
     /**
      * Fills the boxes in order: as one edit off the server thread with FastAsyncWorldEdit, else in
-     * batches of {@link #BLOCKS_PER_TICK} blocks, one per tick, on the server thread.
+     * batches of the configured blocks per tick, one per tick, on the server thread.
      */
     CompletableFuture<Void> fill(List<Fill> fills) {
         if (fawe) {
             return CompletableFuture.runAsync(() -> apply(fills), offThread);
         }
-        var batches = FillBatches.of(fills, BLOCKS_PER_TICK);
+        var batches = FillBatches.of(fills, blocksPerTick.getAsInt());
         var done = new CompletableFuture<Void>();
         if (batches.isEmpty()) {
             done.complete(null);
@@ -147,6 +152,46 @@ final class WorldEditMaps {
             serverThread.execute(() -> runBatch(batches, 0, done));
         }
         return done;
+    }
+
+    /**
+     * Writes the grids in order: each as one edit off the server thread with FastAsyncWorldEdit, else
+     * in slices of the configured blocks per tick, one per tick, on the server thread. Must be called on
+     * the server thread, which turns the palettes into block states.
+     *
+     * @param cancelled asked before each slice; once true the rest is left out and the result fails
+     */
+    CompletableFuture<Void> place(List<Grid> grids, BooleanSupplier cancelled) {
+        var placements = grids.stream().map(GridPlacement::new).toList();
+        if (fawe) {
+            return CompletableFuture.runAsync(() -> placements.forEach(placement -> placement.write(0, placement.cells())), offThread);
+        }
+        var done = new CompletableFuture<Void>();
+        int budget = Math.max(1, blocksPerTick.getAsInt());
+        serverThread.execute(() -> placeSlice(placements, 0, 0, budget, cancelled, done));
+        return done;
+    }
+
+    private void placeSlice(List<GridPlacement> placements, int grid, int from, int budget, BooleanSupplier cancelled, CompletableFuture<Void> done) {
+        if (grid == placements.size()) {
+            done.complete(null);
+            return;
+        }
+        if (cancelled.getAsBoolean()) {
+            done.completeExceptionally(new CancellationException("The match is over"));
+            return;
+        }
+        var placement = placements.get(grid);
+        int to = (int) Math.min((long) from + budget, placement.cells());
+        try {
+            placement.write(from, to);
+        } catch (RuntimeException e) {
+            done.completeExceptionally(e);
+            return;
+        }
+        int nextGrid = to == placement.cells() ? grid + 1 : grid;
+        int nextFrom = to == placement.cells() ? 0 : to;
+        plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> placeSlice(placements, nextGrid, nextFrom, budget, cancelled, done), 1);
     }
 
     private void runBatch(List<List<Fill>> batches, int index, CompletableFuture<Void> done) {
@@ -160,6 +205,44 @@ final class WorldEditMaps {
             done.complete(null);
         } else {
             plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task -> runBatch(batches, index + 1, done), 1);
+        }
+    }
+
+    /** A grid with its palette turned into WorldEdit block states, which needs the server thread. */
+    private static final class GridPlacement {
+
+        private final Grid grid;
+        private final BlockState[] states;
+        private final short[] cells;
+
+        GridPlacement(Grid grid) {
+            this.grid = grid;
+            this.cells = grid.volume().cells();
+            this.states = new BlockState[grid.palette().size()];
+            for (int i = 0; i < states.length; i++) {
+                states[i] = BukkitAdapter.adapt(Bukkit.createBlockData(grid.palette().block((short) i)));
+            }
+        }
+
+        int cells() {
+            return cells.length;
+        }
+
+        /** Writes the cells from {@code from} up to {@code to}, in storage order, as one edit. */
+        void write(int from, int to) {
+            var box = grid.box();
+            int sizeX = grid.volume().sizeX();
+            int sizeZ = grid.volume().sizeZ();
+            try (var edit = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(box.world()))) {
+                for (int i = from; i < to; i++) {
+                    int x = i % sizeX;
+                    int z = i / sizeX % sizeZ;
+                    int y = i / (sizeX * sizeZ);
+                    edit.setBlock(BlockVector3.at(box.minX() + x, box.minY() + y, box.minZ() + z), states[cells[i]]);
+                }
+            } catch (WorldEditException e) {
+                throw new CompletionException(e);
+            }
         }
     }
 

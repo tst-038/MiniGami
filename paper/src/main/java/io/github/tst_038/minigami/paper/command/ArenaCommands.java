@@ -9,11 +9,13 @@ import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
+import io.github.tst_038.minigami.paper.arena.TerrainSetup;
 import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
@@ -34,7 +36,7 @@ final class ArenaCommands {
     private ArenaCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ArenaSetup arenas, LootSetup loot, ConfigInfo info, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("arena")
                 .requires(ADMIN)
                 .executes(help)
@@ -82,6 +84,7 @@ final class ArenaCommands {
                                         .then(Commands.literal("schematic").requires(PLAYER)
                                                 .executes(byPlayer((player, context) -> arenas.saveRegionSchematic(player, arena(context), string(context, "name")))))))
                         .then(lootNode(loot, help))
+                        .then(terrainNode(terrain, help))
                         .then(Commands.literal("map")
                                 .executes(help)
                                 .then(Commands.literal("save").requires(PLAYER)
@@ -111,6 +114,22 @@ final class ArenaCommands {
                         .executes(help)
                         .then(Commands.literal("add").then(tables(loot, (player, context) -> loot.addSelection(player, arena(context), string(context, "tables")))))
                         .then(Commands.literal("remove").executes(byPlayer((player, context) -> loot.removeSelection(player, arena(context))))));
+    }
+
+    /** {@code terrain preview <group> <style> [seed]}: fills the regions of the group with land, to look at a style. The map reset undoes it. */
+    private static ArgumentBuilder<CommandSourceStack, ?> terrainNode(TerrainSetup terrain, Command<CommandSourceStack> help) {
+        return Commands.literal("terrain")
+                .executes(help)
+                .then(Commands.literal("preview")
+                        .executes(help)
+                        .then(Commands.argument("group", StringArgumentType.word())
+                                .then(Commands.argument("style", StringArgumentType.word())
+                                        .suggests(suggest(context -> terrain.styleIds()))
+                                        .executes(bySender((sender, context) -> terrain.preview(sender, arena(context), string(context, "group"),
+                                                string(context, "style"), Optional.empty())))
+                                        .then(Commands.argument("seed", LongArgumentType.longArg())
+                                                .executes(bySender((sender, context) -> terrain.preview(sender, arena(context), string(context, "group"),
+                                                        string(context, "style"), Optional.of(LongArgumentType.getLong(context, "seed")))))))));
     }
 
     private static ArgumentBuilder<CommandSourceStack, ?> tables(LootSetup loot, Nodes.Action<Player> action) {

@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.arena;
 
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +15,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -43,12 +46,13 @@ public final class ArenaMaps {
     /** The last edit queued per arena, which the next one waits for so edits never overlap. */
     private final Map<String, CompletableFuture<Void>> pending = new ConcurrentHashMap<>();
 
-    public ArenaMaps(Plugin plugin, Messages messages) {
+    /** @param blocksPerTick how many blocks a tick may place when there is no FastAsyncWorldEdit; read at every edit, so a reload applies */
+    public ArenaMaps(Plugin plugin, Messages messages, IntSupplier blocksPerTick) {
         this.plugin = plugin;
         this.messages = messages;
         this.worldEdit = plugin.getServer().getPluginManager().getPlugin("WorldEdit") == null
                 ? Optional.empty()
-                : Optional.of(new WorldEditMaps(plugin, plugin.getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null));
+                : Optional.of(new WorldEditMaps(plugin, plugin.getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null, blocksPerTick));
     }
 
     /** Whether WorldEdit or FastAsyncWorldEdit is there, which saving and pasting maps need. */
@@ -132,6 +136,23 @@ public final class ArenaMaps {
         return queue(arena, () -> maps.fill(fills)).whenCompleteAsync((ignored, problem) -> {
             if (problem != null) {
                 plugin.getLogger().log(Level.WARNING, "Could not fill blocks in " + arena.id(), problem);
+            }
+        }, serverThread());
+    }
+
+    /**
+     * Puts grids into the arena for a match, after every earlier edit of the arena and before the map
+     * reset after the match, which puts the old blocks back.
+     *
+     * @param cancelled asked between batches without FastAsyncWorldEdit; once true the rest isn't placed
+     * @return completes on the server thread
+     * @throws IllegalStateException without WorldEdit, which a game that changes blocks can't be played without
+     */
+    public CompletableFuture<Void> place(Arena arena, CompletableFuture<List<Grid>> grids, BooleanSupplier cancelled) {
+        var maps = worldEdit.orElseThrow(() -> new IllegalStateException("Placing blocks needs WorldEdit"));
+        return queue(arena, () -> grids.thenComposeAsync(ready -> maps.place(ready, cancelled), serverThread())).whenCompleteAsync((ignored, problem) -> {
+            if (problem != null) {
+                plugin.getLogger().log(Level.WARNING, "Could not place blocks in " + arena.id(), problem);
             }
         }, serverThread());
     }

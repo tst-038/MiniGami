@@ -6,6 +6,8 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
 import io.github.tst_038.minigami.api.loot.LootTables;
+import io.github.tst_038.minigami.api.terrain.BlockCatalog;
+import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -16,6 +18,7 @@ import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
+import io.github.tst_038.minigami.paper.arena.TerrainSetup;
 import io.github.tst_038.minigami.paper.command.GamesCommand;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
@@ -78,6 +81,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
+import org.bukkit.command.CommandSender;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -96,6 +100,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
     static final List<String> EXAMPLE_LOOT = List.of("junk.yml", "common.yml", "rare.yml", "op.yml", "chest.yml", "christmas/junk.yml", "christmas/rare.yml",
             "old-rares/op.yml");
 
+    /** Example terrain styles written to terrain/ the first time the folder is missing. */
+    static final List<String> EXAMPLE_TERRAIN = List.of("plains.yml", "desert.yml", "snowy.yml", "forest.yml", "badlands.yml", "ores/vanilla.yml");
+
     private static final String MESSAGES = "messages/en.yml";
     private static final int LEADERBOARD_SIZE = 10;
     /** Five minutes: boards lag a little behind, but are never read from storage per view. */
@@ -108,6 +115,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private SavedItems savedItems;
     /** The tables of the last load; a game keeps the ones it was loaded with. */
     private volatile LootTables lootTables = LootTables.NONE;
+    private volatile TerrainStyles terrainStyles = TerrainStyles.NONE;
     private GameLoader gameLoader;
     private IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private ArenaMaps maps;
@@ -164,9 +172,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
         BuiltIns.gametypes().forEach(gametypes::register);
-        BuiltIns.features(kits::find, () -> lootTables, savedItems::find).forEach(features::register);
+        BuiltIns.features(kits::find, () -> lootTables, savedItems::find, () -> terrainStyles,
+                task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), getLogger()::info,
+                () -> getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission("minigami.admin"))).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
-        maps = new ArenaMaps(this, messages);
+        maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick());
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables));
         doctor = new Doctor(messages, getLogger(), () -> games);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
@@ -186,9 +196,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
         var lootSetup = new LootSetup(() -> arenas, () -> lootTables, editor, maps, messages, this);
         getServer().getPluginManager().registerEvents(lootSetup, this);
+        var terrainSetup = new TerrainSetup(() -> arenas, () -> terrainStyles, maps, running::isArenaInUse,
+                task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), messages, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), parties, nights, scheduled,
+                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, terrainSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), parties, nights, scheduled,
                         new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadStrict), "Join, leave and manage minigames"));
         loadConfig(null, false);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
@@ -228,9 +240,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 saveExample(ScheduleLoader.FOLDER, "example.yml");
             }
             saveExamples("loot", EXAMPLE_LOOT);
+            saveExamples("terrain", EXAMPLE_TERRAIN);
             warnOldModes();
             var arenaFiles = YamlFiles.readFolders(getDataPath().resolve("arenas"), ArenaLoader.FILE);
             var lootFiles = YamlFiles.readTree(getDataPath().resolve("loot"));
+            var terrainFiles = YamlFiles.readTree(getDataPath().resolve("terrain"));
             var gameFiles = YamlFiles.read(getDataPath().resolve("games"));
             var nightFiles = YamlFiles.read(getDataPath().resolve(NightTemplateLoader.FOLDER));
             var scheduleFiles = YamlFiles.read(getDataPath().resolve(ScheduleLoader.FOLDER));
@@ -251,6 +265,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 // Before the games, which check the kit names and loot styles they use.
                 kits.replace(loadedKits);
                 lootTables = loadedLoot.tables();
+                var loadedTerrain = TerrainStyles.load(terrainFiles, BlockCatalog.server());
+                terrainStyles = loadedTerrain.styles();
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
                 var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
                 var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries());
@@ -258,6 +274,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
                 problems.addAll(loadedLoot.problems());
+                problems.addAll(loadedTerrain.problems());
                 problems.addAll(loadedArenas.problems());
                 problems.addAll(loadedGames.problems());
                 problems.addAll(loadedNights.problems());

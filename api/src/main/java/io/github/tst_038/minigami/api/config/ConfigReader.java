@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.config;
 
+import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -9,8 +10,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -25,6 +28,8 @@ import org.bukkit.configuration.MemoryConfiguration;
  * on the root reader when done: it also reports keys nobody read, which are usually typos.
  */
 public final class ConfigReader {
+
+    private static final Pattern RANGE = Pattern.compile("(\\d+)(?:-(\\d+))?");
 
     private final Shared shared;
     private final String path;
@@ -86,6 +91,30 @@ public final class ConfigReader {
             return min;
         }
         return number;
+    }
+
+    /**
+     * A whole number such as {@code 3}, or a range such as {@code 2-4}, within the bounds. When the
+     * upper bound is {@link Integer#MAX_VALUE} an open range such as {@code 60-} is also accepted.
+     */
+    public Optional<IntRange> range(String key, int min, int max) {
+        var text = string(key);
+        var match = RANGE.matcher(text);
+        boolean open = max == Integer.MAX_VALUE && text.matches("\\d{1,8}-");
+        if (open) {
+            var low = Integer.parseInt(text.substring(0, text.length() - 1));
+            if (low >= min) {
+                return Optional.of(new IntRange(low, max));
+            }
+        } else if (match.matches() && match.group(1).length() < 9 && (match.group(2) == null || match.group(2).length() < 9)) {
+            int low = Integer.parseInt(match.group(1));
+            int high = match.group(2) == null ? low : Integer.parseInt(match.group(2));
+            if (low >= min && high <= max && low <= high) {
+                return Optional.of(new IntRange(low, high));
+            }
+        }
+        problem(key, "must be a number or a range like 2-4, from " + min + " to " + max);
+        return Optional.empty();
     }
 
     public double decimal(String key) {

@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.feature.ArenaLayout;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import java.util.Collections;
@@ -17,7 +18,7 @@ import org.bukkit.World;
  * Bukkit's are mutable.
  */
 public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Optional<Location> spectatorSpot,
-        Map<String, Region> regions, Optional<Region> map, List<LootPoint> lootPoints) {
+        Map<String, Region> regions, Optional<Region> map, List<LootPoint> lootPoints) implements ArenaLayout {
 
     /** @param team the team that starts here, or empty for a spawn anyone may use */
     public record Spawn(Location location, Optional<String> team) {
@@ -68,6 +69,16 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
         }
         var shared = locations(spawn -> spawn.team().isEmpty());
         return shared.isEmpty() ? locations(spawn -> true) : shared;
+    }
+
+    @Override
+    public List<Region> regions(String group) {
+        return regions.values().stream().filter(region -> region.isIn(group)).toList();
+    }
+
+    @Override
+    public List<Location> spawnPoints() {
+        return locations(spawn -> true);
     }
 
     private List<Location> locations(Predicate<Spawn> filter) {

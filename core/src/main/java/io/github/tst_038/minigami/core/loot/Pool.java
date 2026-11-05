@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.core.loot;
 
+import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.List;
 import java.util.random.RandomGenerator;
 

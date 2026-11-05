@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.core.loot.Entry.Item;
 import io.github.tst_038.minigami.core.loot.Entry.Nothing;
 import io.github.tst_038.minigami.core.loot.Entry.Table;
 import java.util.HashMap;
+import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

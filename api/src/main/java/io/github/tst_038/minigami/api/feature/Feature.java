@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.feature;
 
+import io.github.tst_038.minigami.core.diagnosis.Diagnosis;
 import java.util.List;
 
 /**
@@ -25,6 +26,19 @@ public interface Feature {
     /** Whether it fills the arena's loot containers, so a game with it wants an arena that has some. */
     default boolean usesLootPoints() {
         return false;
+    }
+
+    /** The groups of arena regions it relies on, such as {@code quarter}. A game with it only plays in arenas that have a region of each. */
+    default List<String> regionGroups() {
+        return List.of();
+    }
+
+    /**
+     * Checks that the arena suits this feature in ways the engine can't know, such as regions too
+     * small for what it builds. Blocking findings keep the arena from hosting the game; the codes need a
+     * text in the messages' {@code diagnosis} section.
+     */
+    default void diagnose(ArenaLayout arena, Diagnosis diagnosis) {
     }
 
     /** The arena regions it relies on, by name. A game with it only plays in arenas that have them all. */

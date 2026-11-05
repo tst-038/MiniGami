@@ -22,6 +22,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 public final class SettingsLoader {
 
     public static final String FILE = "config.yml";
+    static final int DEFAULT_BLOCKS_PER_TICK = 8192;
 
     /**
      * The settings, and why the defaults were used instead if the file is invalid.
@@ -61,6 +62,8 @@ public final class SettingsLoader {
         var lobby = reader.has("lobby")
                 ? Optional.of(ConfigLocations.readWithWorld(reader.section("lobby"), worlds))
                 : Optional.<Location>empty();
+        int blocksPerTick = reader.has("blocks-per-tick")
+                ? reader.integer("blocks-per-tick", 256, 1_000_000) : DEFAULT_BLOCKS_PER_TICK;
         var hud = bundledHud();
         if (reader.has("hud")) {
             reader.section("hud").keys();
@@ -72,7 +75,7 @@ public final class SettingsLoader {
         var keys = YamlFiles.keys(config, reader);
         try {
             reader.check();
-            return new Loaded(new Settings(lobby, hud), List.of(), keys);
+            return new Loaded(new Settings(lobby, blocksPerTick, hud), List.of(), keys);
         } catch (InvalidConfigException e) {
             return new Loaded(Settings.DEFAULTS, e.problems(), keys);
         }

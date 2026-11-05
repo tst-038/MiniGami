@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.List;
+import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -164,5 +166,18 @@ class ConfigReaderTest {
 
         assertEquals(java.util.Map.of("hide-and-seek.hiding", "Run!", "prefix", "> "), reader.texts("messages"));
         reader.check();
+    }
+
+    @Test
+    void readsNumbersAndRanges() throws Exception {
+        var reader = read("a: 3\nb: 2-4\nc: 60-\nd: 5-2\ne: 60-\nf: x");
+
+        assertEquals(Optional.of(IntRange.of(3)), reader.range("a", 0, 10));
+        assertEquals(Optional.of(new IntRange(2, 4)), reader.range("b", 0, 10));
+        assertEquals(Optional.of(new IntRange(60, Integer.MAX_VALUE)), reader.range("c", 0, Integer.MAX_VALUE));
+        assertEquals(Optional.empty(), reader.range("d", 0, 10));
+        assertEquals(Optional.empty(), reader.range("e", 0, 100));
+        assertEquals(Optional.empty(), reader.range("f", 0, 10));
+        assertEquals(3, problems(reader).size());
     }
 }

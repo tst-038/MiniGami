@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.api.feature;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -30,6 +31,7 @@ import java.util.random.RandomGenerator;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -60,9 +62,12 @@ public final class FakeMatch implements MatchContext {
     public final List<TeamRegion> teamRegions = new ArrayList<>();
     /** The arena's loot containers, for {@link #lootPoints()}. */
     public final List<LootPoint> lootPoints = new ArrayList<>();
+    /** The arena's spawns, for {@link #spawnPoints()}. */
+    public final List<Location> spawnPoints = new ArrayList<>();
     /** What {@link #random()} gives; seed it to fix a roll. */
     public RandomGenerator random = new Random(0);
     public final List<Fill> fills = new ArrayList<>();
+    public final List<Grid> grids = new ArrayList<>();
     /** What {@link #spawnFor} made, in order. */
     public final List<Entity> spawned = new ArrayList<>();
     /** Who {@link #spawnFor} showed each spawned entity to. */
@@ -193,6 +198,11 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
+    public CompletableFuture<Void> place(CompletableFuture<List<Grid>> grids) {
+        return grids.thenAccept(this.grids::addAll);
+    }
+
+    @Override
     public CompletableFuture<Void> fill(List<Fill> fills) {
         this.fills.addAll(fills);
         return CompletableFuture.completedFuture(null);
@@ -220,6 +230,11 @@ public final class FakeMatch implements MatchContext {
     }
 
     @Override
+    public List<Location> spawnPoints() {
+        return spawnPoints;
+    }
+
+    @Override
     public RandomGenerator random() {
         return random;
     }
@@ -231,7 +246,7 @@ public final class FakeMatch implements MatchContext {
 
     @Override
     public List<Region> regions(String group) {
-        throw new UnsupportedOperationException();
+        return regions.values().stream().filter(region -> region.isIn(group)).toList();
     }
 
     @Override

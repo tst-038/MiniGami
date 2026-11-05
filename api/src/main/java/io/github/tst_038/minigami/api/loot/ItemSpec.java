@@ -1,6 +1,6 @@
 package io.github.tst_038.minigami.api.loot;
 
-import io.github.tst_038.minigami.core.loot.IntRange;
+import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Material;

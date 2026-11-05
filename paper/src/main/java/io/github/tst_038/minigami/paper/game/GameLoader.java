@@ -207,13 +207,14 @@ public final class GameLoader {
         var changesBlocks = Variant.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
         var usesLoot = Variant.allFeatures(game, features, roles).anyMatch(Feature::usesLootPoints);
         var featureRegions = Variant.allFeatures(game, features, roles).flatMap(feature -> feature.regions().stream()).distinct().toList();
+        var allFeatures = Variant.allFeatures(game, features, roles).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
         // the reload it needs to get ready. It is left out, and the findings say why.
         var playable = new ArrayList<Arena>();
         var findings = new ArrayList<Finding>();
         // With an unknown game type the file has a problem already, and nothing to check against.
         for (var arena : game == null ? List.<Arena>of() : listed) {
-            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty(), usesLoot), checks);
+            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty(), usesLoot, allFeatures), checks);
             if (diagnosis.isReady()) {
                 playable.add(arena);
             }

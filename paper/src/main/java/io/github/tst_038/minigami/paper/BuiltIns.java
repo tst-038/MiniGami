@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.LootTables;
+import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.domination.Domination;
@@ -17,6 +18,7 @@ import io.github.tst_038.minigami.features.givedrops.GiveDropsFactory;
 import io.github.tst_038.minigami.features.kit.KitFactory;
 import io.github.tst_038.minigami.features.kit.SavedKit;
 import io.github.tst_038.minigami.features.loot.LootFactory;
+import io.github.tst_038.minigami.features.terrain.TerrainFactory;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
 import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
 import io.github.tst_038.minigami.features.nomobs.NoMobsFactory;
@@ -34,8 +36,11 @@ import io.github.tst_038.minigami.teamdeathmatch.TeamDeathmatch;
 import io.github.tst_038.minigami.thewall.TheWall;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import net.kyori.adventure.audience.Audience;
 import org.bukkit.inventory.ItemStack;
 
 /** The game types, features and stat groups that ship with the plugin. */
@@ -52,13 +57,20 @@ final class BuiltIns {
      * @param savedKits the kits saved with {@code /mg kit save}, by name
      * @param lootTables the loot tables as currently loaded
      * @param savedItems the items loot tables name, by name
+     * @param terrainStyles the terrain styles as currently loaded
+     * @param offThread where terrain is worked out, away from the server thread
+     * @param log where terrain generation reports its seeds and outcomes
+     * @param staff who is told in the game when terrain misses its quota
      */
     static List<FeatureFactory> features(Function<String, Optional<SavedKit>> savedKits, Supplier<LootTables> lootTables,
-            Function<String, Optional<ItemStack>> savedItems) {
+            Function<String, Optional<ItemStack>> savedItems,
+            Supplier<TerrainStyles> terrainStyles, Executor offThread, Consumer<String> log,
+            Supplier<Audience> staff) {
         return List.of(new VoidKillsFactory(), new KitFactory(savedKits), new DeathItemsFactory(), new BreakBlocksFactory(), new NoDamageFactory(),
                 new GiveDropsFactory(), new ProjectileBreaksFactory(), new AntiCampingFactory(), new DecayFloorFactory(), new NoHungerFactory(),
                 new OneHitFactory(), new CountdownFactory(), new FreezeFactory(), new EffectsFactory(), new NoMobsFactory(), new PlotMobsFactory(),
-                new PlayAreaFactory(), new TeamRegionFactory(), new LootFactory(lootTables, savedItems));
+                new PlayAreaFactory(), new TeamRegionFactory(), new LootFactory(lootTables, savedItems),
+                new TerrainFactory(terrainStyles, offThread, log, staff));
     }
 
     static List<StatGroup> statGroups() {

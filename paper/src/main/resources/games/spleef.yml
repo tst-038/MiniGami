@@ -25,7 +25,7 @@ features:
     kit: { items: [diamond_shovel] }
     break-blocks: { whitelist: [snow_block], instant: true }
     give-drops: { snow_block: [snowball] }
-    projectile-breaks: { whitelist: [snow_block] }
+    projectile-breaks: { blocks: [snow_block] }
     # Standing on one block too long breaks it.
     anti-camping: { seconds: 3, blocks: [snow_block] }
     no-damage: { causes: [fall, entity-attack, entity-sweep-attack] }

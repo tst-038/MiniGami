@@ -182,6 +182,11 @@ class PhaseFeaturesTest {
         }
 
         @Override
+        public CompletableFuture<Void> place(CompletableFuture<List<io.github.tst_038.minigami.api.region.Grid>> grids) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public <T extends Entity> T spawnFor(Collection<? extends Player> viewers, Location at, Class<T> type, Consumer<? super T> setup) {
             throw new UnsupportedOperationException();
         }

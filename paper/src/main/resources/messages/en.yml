@@ -338,6 +338,13 @@ arena:
     resetting: "%prefix%<red>The map of <white>%arena%</white> is already being reset."
     reset: "%prefix%<green>Reset the map of <white>%arena%</white>."
     reset-failed: "%prefix%<red>Could not reset the map of <white>%arena%</white>; the server log says why."
+  # %arena%: an arena; %style%: a terrain style; %group%: a region group; %seed%: the seed of the land
+  terrain:
+    unknown-style: "%prefix%<red>There is no terrain style <white>%style%</white>; a style is a file in terrain/."
+    no-regions: "%prefix%<red><white>%arena%</white> has no regions in the group <white>%group%</white>."
+    generating: "%prefix%<gray>Making <white>%style%</white> land in <white>%arena%</white> with seed <white>%seed%</white>..."
+    placed: "%prefix%<green>The land is in <white>%arena%</white>; <white>/mg arena %arena% map reset</white> puts the old blocks back."
+    failed: "%prefix%<red>Could not place the land in <white>%arena%</white>; the server log says why."
 
 # %command%: a command; click a line to put it in the chat box
 help:
@@ -687,6 +694,10 @@ doctor:
   more: "<gray>   More: <suggest><white>%command%</white></suggest>"
 
 # Why an arena can't host a game, for the doctor lines above. Placeholders per reason.
+# %area%: the region; %key%: what the quota counts; %found%: how many there are; %wanted%: the range asked for; %seed%: to make the same land again
+terrain:
+  quota-missed: "<red>[MiniGami] Land in <white>%area%</white> misses its quota: <white>%key%</white> has %found%, wanted %wanted% <gray>(seed %seed%)"
+
 diagnosis:
   no-spawns: "<red>it has no spawns"
   # %region%
@@ -704,5 +715,15 @@ diagnosis:
   loot-point-gone: "<yellow>the loot container at <white>%x% %y% %z%</white> is no longer a chest, barrel or shulker box"
   # %table%: its id, %x%, %y%, %z%: where the point is
   unknown-loot-table: "<red>the loot container at <white>%x% %y% %z%</white> names a table that does not exist: <white>%table%</white>"
+  # %key%, %style%: a quota key that is no ore, placer, group or block of the terrain style
+  unknown-quota-key: "<red>the terrain quota names <white>%key%</white>, which style <white>%style%</white> has no ore, placer or block for"
+  # %key%, %area%, %wanted%, %room%
+  quota-too-large: "<red>the terrain quota wants <white>%wanted% %key%</white> in <white>%area%</white>, which has room for about %room%"
+  # %key%, %area%, %lowest%, %height%
+  ore-out-of-reach: "<red>the terrain quota wants <white>%key%</white> in <white>%area%</white>, but it only occurs from y=%lowest% and the region is %height% high"
+  # %area%, %at%
+  anchor-outside-area: "<red>a spawn at <white>%at%</white> is too close to the edge of the terrain in <white>%area%</white>"
+  # %area%, %at%, %sea%
+  anchor-below-sea: "<red>a spawn at <white>%at%</white> in <white>%area%</white> lies below the terrain's sea level (%sea%)"
   # %spawns%, %teams%
   few-team-spawns: "<yellow>it has %spawns% spawn(s) for up to %teams% teams, so some teams share a spawn"

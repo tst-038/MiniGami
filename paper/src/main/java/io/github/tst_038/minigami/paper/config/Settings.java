@@ -7,11 +7,12 @@ import org.bukkit.configuration.ConfigurationSection;
 /**
  * The server-wide settings from {@code config.yml}.
  *
+ * @param blocksPerTick how many blocks a tick may place when a game builds without FastAsyncWorldEdit
  * @param hud the HUD every game has unless it sets its own; read by the game loader, so only its shape is known here
  */
-public record Settings(Optional<Location> lobby, ConfigurationSection hud) {
+public record Settings(Optional<Location> lobby, int blocksPerTick, ConfigurationSection hud) {
 
-    public static final Settings DEFAULTS = new Settings(Optional.empty(), SettingsLoader.bundledHud());
+    public static final Settings DEFAULTS = new Settings(Optional.empty(), SettingsLoader.DEFAULT_BLOCKS_PER_TICK, SettingsLoader.bundledHud());
 
     public Settings {
         lobby = lobby.map(Location::clone);

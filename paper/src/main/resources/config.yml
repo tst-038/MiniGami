@@ -3,6 +3,11 @@
 # Where players wait for games with "waiting: lobby". Set it in-game with /mg lobby set, or here:
 # lobby: { world: world, x: 0.5, y: 64, z: 0.5, yaw: 0, pitch: 0 }
 
+# How many blocks a game may place per tick when it builds (terrain, walls) and FastAsyncWorldEdit is not
+# installed. With FastAsyncWorldEdit every build is one edit off the main thread and this is not used.
+# Lower it if the server lags while a match starts, raise it to start matches sooner.
+blocks-per-tick: 8192
+
 # What players see of a match next to chat. Every game gets this; a game file can override any part
 # of it under its own hud: key, or turn it all off with hud: false.
 #

@@ -2,7 +2,7 @@ package io.github.tst_038.minigami.api.loot;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.core.loot.Entry;
-import io.github.tst_038.minigami.core.loot.IntRange;
+import io.github.tst_038.minigami.core.range.IntRange;
 import io.github.tst_038.minigami.core.loot.LootTable;
 import io.github.tst_038.minigami.core.loot.Pool;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import org.bukkit.Material;
  */
 public final class LootReader {
 
-    private static final Pattern RANGE = Pattern.compile("(\\d+)(?:-(\\d+))?");
     private static final Pattern TABLE_ID = Pattern.compile("[a-z0-9_-]+(/[a-z0-9_-]+)*");
 
     private final ItemCatalog catalog;
@@ -53,7 +52,7 @@ public final class LootReader {
     }
 
     private Optional<Pool<ItemSpec>> pool(ConfigReader config) {
-        var rolls = config.has("rolls") ? range(config, "rolls", 0, 100).orElse(IntRange.of(1)) : IntRange.of(1);
+        var rolls = config.has("rolls") ? config.range("rolls", 0, 100).orElse(IntRange.of(1)) : IntRange.of(1);
         var chance = 100.0;
         if (config.has("chance")) {
             chance = config.decimal("chance");
@@ -128,7 +127,7 @@ public final class LootReader {
                 if (!catalog.enchantment().test(enchant)) {
                     section.problem(enchant, "unknown enchantment");
                 } else {
-                    range(section, enchant, 1, 255).ifPresent(level -> enchants.put(enchant, level));
+                    section.range(enchant, 1, 255).ifPresent(level -> enchants.put(enchant, level));
                 }
             }
         }
@@ -147,21 +146,6 @@ public final class LootReader {
     }
 
     private IntRange amount(ConfigReader config, int most) {
-        return config.has("amount") ? range(config, "amount", 1, most).orElse(IntRange.of(1)) : IntRange.of(1);
-    }
-
-    /** A whole number such as {@code 3}, or a range such as {@code 2-4}, within the bounds. */
-    private Optional<IntRange> range(ConfigReader config, String key, int min, int max) {
-        var text = config.string(key);
-        var match = RANGE.matcher(text);
-        if (match.matches() && match.group(1).length() < 9 && (match.group(2) == null || match.group(2).length() < 9)) {
-            int low = Integer.parseInt(match.group(1));
-            int high = match.group(2) == null ? low : Integer.parseInt(match.group(2));
-            if (low >= min && high <= max && low <= high) {
-                return Optional.of(new IntRange(low, high));
-            }
-        }
-        config.problem(key, "must be a number or a range like 2-4, from " + min + " to " + max);
-        return Optional.empty();
+        return config.has("amount") ? config.range("amount", 1, most).orElse(IntRange.of(1)) : IntRange.of(1);
     }
 }

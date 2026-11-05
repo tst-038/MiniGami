@@ -4,7 +4,7 @@ import io.github.tst_038.minigami.api.loot.ItemSpec;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.loot.Entry;
-import io.github.tst_038.minigami.core.loot.IntRange;
+import io.github.tst_038.minigami.core.range.IntRange;
 import io.github.tst_038.minigami.core.loot.TableLookup;
 import java.io.IOException;
 import java.util.Collection;

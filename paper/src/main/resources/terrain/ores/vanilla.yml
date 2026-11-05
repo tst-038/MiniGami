@@ -1,0 +1,17 @@
+# An ore set: styles include it with `ores: [ores/vanilla]`. Heights are blocks above the bottom of the area.
+# `veins` is the starting amount per area; a quota on an ore scales it up or down per match.
+ores:
+  - {name: coal, ore: coal_ore, deep-ore: deepslate_coal_ore, size: 17, veins: 20, air-discard: 0.5,
+     height: {shape: uniform, min: 20, max: 60}}
+  - {name: iron, ore: iron_ore, deep-ore: deepslate_iron_ore, size: 9, veins: 20, air-discard: 0.5,
+     height: {shape: trapezoid, min: 5, max: 55, plateau: 20}}
+  - {name: copper, ore: copper_ore, deep-ore: deepslate_copper_ore, size: 10, veins: 8, air-discard: 0,
+     height: {shape: triangle, min: 10, max: 45}}
+  - {name: gold, ore: gold_ore, deep-ore: deepslate_gold_ore, size: 9, veins: 4, air-discard: 0.5,
+     height: {shape: triangle, min: 4, max: 28}}
+  - {name: redstone, ore: redstone_ore, deep-ore: deepslate_redstone_ore, size: 8, veins: 8, air-discard: 0,
+     height: {shape: uniform, min: 4, max: 14}}
+  - {name: lapis, ore: lapis_ore, deep-ore: deepslate_lapis_ore, size: 7, veins: 2, air-discard: 0,
+     height: {shape: triangle, min: 4, max: 30}}
+  - {name: diamond, ore: diamond_ore, deep-ore: deepslate_diamond_ore, size: 8, veins: 4, air-discard: 0.5,
+     height: {shape: triangle, min: 4, max: 20}}

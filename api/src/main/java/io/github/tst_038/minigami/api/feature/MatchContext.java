@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.api.feature;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
+import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.core.clock.MatchClock;
@@ -94,6 +95,24 @@ public interface MatchContext {
     CompletableFuture<Void> fill(List<Fill> fills);
 
     /**
+     * Puts blocks worked out in memory into the arena, in order, replacing everything in their boxes.
+     * With FastAsyncWorldEdit each grid is one edit off the server thread; without it the blocks go in
+     * in batches of a few thousand per tick. Rules as for {@link #fill}.
+     *
+     * @return completes on the server thread once every grid is placed; fails if the match is over
+     */
+    default CompletableFuture<Void> place(List<Grid> grids) {
+        return place(CompletableFuture.completedFuture(grids));
+    }
+
+    /**
+     * As {@link #place(List)} for grids that are still being worked out, such as on another thread: the
+     * arena's earlier edits and the grids are both waited for, so nothing holds the server thread. If the
+     * grids fail, nothing is placed and the result fails with them. The match doesn't start before it is done.
+     */
+    CompletableFuture<Void> place(CompletableFuture<List<Grid>> grids);
+
+    /**
      * Spawns an entity that only these players see, for as long as the feature runs: it is removed when the feature's scope
      * closes, and earlier if the feature removes it. Others never see it, not even players who arrive later.
      */
@@ -101,6 +120,11 @@ public interface MatchContext {
 
     /** The containers of the arena that are filled with loot, as set up in the arena; none by default. */
     default List<LootPoint> lootPoints() {
+        return List.of();
+    }
+
+    /** Where players are put down in the arena, as set up in it; none by default. */
+    default List<Location> spawnPoints() {
         return List.of();
     }
 
