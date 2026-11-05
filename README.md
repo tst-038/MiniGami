@@ -5,8 +5,7 @@ domination, team deathmatch, hide and seek, infection, build battle and the wall
 change and combine. Add game nights with standings, scheduled games with rewards, parties, persistent stats and a HUD,
 all without writing code.
 
-> **Status: beta (0.4.0).** Things work, but expect rough edges. Back up your server before installing, and please
-> report what you run into.
+> **Status: 1.0.0.** Back up your server before installing, and please report what you run into.
 
 ## Contents
 
