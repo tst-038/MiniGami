@@ -39,12 +39,8 @@ final class Shifting implements Feature {
         run.whenBuilt(() -> {
             // The maze can finish after this phase is over.
             if (!context.scope().isClosed()) {
-                long period = settings.shiftSeconds() * 20L;
-                run.nextShiftAt = context.clock().elapsedTicks() + period;
-                context.scope().register(context.clock().repeat(period, () -> {
-                    run.nextShiftAt = context.clock().elapsedTicks() + period;
-                    plan(context);
-                }));
+                run.nextShiftAt = context.clock().elapsedTicks() + period() + lead();
+                context.scope().register(context.clock().repeat(period(), () -> plan(context)));
             }
         });
     }
@@ -59,9 +55,21 @@ final class Shifting implements Feature {
         return List.of(ShiftingMaze.REGION);
     }
 
+    private long period() {
+        return settings.shiftSeconds() * 20L;
+    }
+
+    /** Ticks between a round being planned and its walls moving: the warning, or none. */
+    private long lead() {
+        return settings.warning().map(warning -> warning.seconds() * 20L).orElse(0L);
+    }
+
     private void plan(MatchContext context) {
+        // The timer on the sidebar counts to the walls moving, which is after the warning.
+        run.nextShiftAt = context.clock().elapsedTicks() + lead();
         var moves = Shifter.planRound(run.layout(), settings.shifts(), random, wall -> closable(context, wall));
         if (moves.isEmpty()) {
+            run.nextShiftAt = context.clock().elapsedTicks() + period() + lead();
             return;
         }
         if (settings.warning().isEmpty()) {
@@ -83,6 +91,8 @@ final class Shifting implements Feature {
     }
 
     private void apply(MatchContext context, List<Shift> moves) {
+        // The next round was planned a period after this one, and its walls move a warning after that.
+        run.nextShiftAt = context.clock().elapsedTicks() + period();
         telegraph.stop(context);
         var applied = moves.stream().filter(move -> Shifter.apply(run.layout(), move, wall -> closable(context, wall))).toList();
         if (applied.isEmpty()) {

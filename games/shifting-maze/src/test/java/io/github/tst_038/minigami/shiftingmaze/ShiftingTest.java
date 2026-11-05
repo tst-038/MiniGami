@@ -91,6 +91,19 @@ class ShiftingTest {
     }
 
     @Test
+    void theTimerCountsToTheWallsMovingNotToTheWarning() {
+        run.build(match);
+        shifting().enable(match);
+        assertEquals(SHIFT + WARNING, run.nextShiftAt);
+
+        match.tick(SHIFT);
+        assertEquals(SHIFT + WARNING, run.nextShiftAt, "the warning has started, the walls move in WARNING ticks");
+
+        match.tick(WARNING);
+        assertEquals(SHIFT + WARNING + SHIFT, run.nextShiftAt, "the walls moved, the next ones move a period later");
+    }
+
+    @Test
     void aPlayerInTheClosingDoorwayDropsThatMove() {
         run.build(match);
         int built = match.fills.size();
