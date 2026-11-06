@@ -380,6 +380,7 @@ info:
     # %problems%: how many
     problems: "<red>%problems% problem(s)"
     not-loaded: "<yellow>not loaded; /mg reload"
+    disabled: "<gray>disabled; /mg game %id% enable"
     no-arenas: "<yellow>no playable arena; /mg doctor %id% says why"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"

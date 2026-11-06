@@ -113,7 +113,8 @@ public final class ConfigInfo {
             messages.send(sender, "info.game-entry", Placeholder.unparsed("id", id),
                     Placeholder.unparsed("gametype", config.getString("gametype", "?")),
                     Formatter.number("variants", loaded.map(game -> game.variants().size()).orElse(0)),
-                    Placeholder.component("status", status(Kind.GAME, id, loaded.isPresent(), status)),
+                    Placeholder.component("status", config.getBoolean("enabled", true) ? status(Kind.GAME, id, loaded.isPresent(), status)
+                            : status("info.status.disabled", Placeholder.unparsed("id", id))),
                     infoClick("/mg game " + id + " info"));
         });
     }
