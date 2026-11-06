@@ -16,4 +16,13 @@ class GameModeTest {
         assertEquals(GameMode.SURVIVAL, wall.gameMode("fighting"));
         assertEquals(GameMode.ADVENTURE, wall.gameMode("ending"));
     }
+
+    @Test
+    void theLandIsMadeInAShortPhaseOfItsOwnDuringTheCountdown() {
+        var wall = new TheWall();
+
+        org.junit.jupiter.api.Assertions.assertTrue(wall.startsDuringCountdown());
+        assertEquals("building", wall.phases().get(1).id());
+        assertEquals("preparing", wall.phases().get(2).id());
+    }
 }

@@ -32,6 +32,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
  */
 public final class TheWall implements GameType {
 
+    static final String BUILDING = "building";
     static final String PREPARING = "preparing";
     static final String FIGHTING = "fighting";
     static final String WALLS = "wall";
@@ -56,7 +57,14 @@ public final class TheWall implements GameType {
 
     @Override
     public List<Phase> phases() {
-        return List.of(Phase.untimed("waiting"), Phase.timed(PREPARING, prepareSeconds * 20L), Phase.untimed(FIGHTING), Phase.timed("ending", 5 * 20));
+        // The land is made while the start countdown holds everyone frozen; the cap only guards against a build that never finishes.
+        return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 120 * 20L), Phase.timed(PREPARING, prepareSeconds * 20L), Phase.untimed(FIGHTING), Phase.timed("ending", 5 * 20));
+    }
+
+    /** The land is made, with the players frozen at their quarters, while the start countdown runs. */
+    @Override
+    public boolean startsDuringCountdown() {
+        return true;
     }
 
     /** Players dig and build from the preparation on. */
@@ -71,7 +79,7 @@ public final class TheWall implements GameType {
         var fight = new ArrayList<Feature>();
         fight.add(new WallDrop());
         border.ifPresent(settings -> fight.add(new ClosingBorder(settings)));
-        return Map.of(PREPARING, List.of(prepare), FIGHTING, fight, "ending", List.of(new AnnounceWinner()));
+        return Map.of(BUILDING, List.of(new Built()), PREPARING, List.of(prepare), FIGHTING, fight, "ending", List.of(new AnnounceWinner()));
     }
 
     @Override
