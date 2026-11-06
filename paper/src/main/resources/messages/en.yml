@@ -482,6 +482,12 @@ snapshot:
   details: "<gray> %game-mode% at %x%, %y%, %z% in %world%, health %health%, food %food%, level %level%"
   items: "<gray> Items: <white>%items%"
   effects: "<gray> Effects: <white>%effects%"
+  # The chest staff get from /mg player <player> snapshot (the lines above are for the console)
+  view:
+    title: "<dark_gray>%player%'s saved state"
+    vitals: "<gold>Health and level"
+    where: "<gold>Where they were"
+    effects: "<gold>Effects"
   in-match-hint: "<gray> They are in a match; this comes back by itself when they leave it."
   restore-hint: "<gray> Give it back with <white>/mg player %player% snapshot restore</white>."
   restore-last-hint: "<gray> Put it back with <white>/mg player %player% snapshot restore</white>; their current state is kept, so doing it again undoes it."

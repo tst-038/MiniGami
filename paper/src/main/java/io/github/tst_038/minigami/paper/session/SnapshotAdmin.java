@@ -35,6 +35,7 @@ public final class SnapshotAdmin {
         this.store = store;
         this.sessions = sessions;
         this.messages = messages;
+        plugin.getServer().getPluginManager().registerEvents(new SnapshotView(), plugin);
     }
 
     public void inspect(CommandSender sender, Player target) {
@@ -52,13 +53,19 @@ public final class SnapshotAdmin {
                     Placeholder.unparsed("health", "%.1f".formatted(snapshot.health())),
                     Formatter.number("food", snapshot.foodLevel()),
                     Formatter.number("level", snapshot.level()));
-            // displayName() carries the item as hover, so staff can see enchantments and names.
             var items = ItemStack.deserializeItemsFromBytes(Base64.getDecoder().decode(snapshot.items()));
-            messages.send(sender, "snapshot.items", Placeholder.component("items", Component.join(JoinConfiguration.commas(true),
-                    Arrays.stream(items).filter(Objects::nonNull).filter(item -> !item.isEmpty())
-                            .map(item -> Component.text(item.getAmount() + "x ").append(item.displayName())).toList())));
-            messages.send(sender, "snapshot.effects", Placeholder.unparsed("effects",
-                    String.join(", ", snapshot.effects().stream().map(PlayerSnapshot.SavedEffect::type).toList())));
+            if (sender instanceof Player viewer) {
+                var where = "%s at %.0f, %.0f, %.0f".formatted(Optional.ofNullable(plugin.getServer().getWorld(location.world()))
+                        .map(World::getName).orElse(location.world().toString()), location.x(), location.y(), location.z());
+                viewer.getScheduler().run(plugin, opened -> viewer.openInventory(SnapshotView.create(messages, target, snapshot, items, where)), null);
+            } else {
+                // displayName() carries the item as hover, so staff can see enchantments and names.
+                messages.send(sender, "snapshot.items", Placeholder.component("items", Component.join(JoinConfiguration.commas(true),
+                        Arrays.stream(items).filter(Objects::nonNull).filter(item -> !item.isEmpty())
+                                .map(item -> Component.text(item.getAmount() + "x ").append(item.displayName())).toList())));
+                messages.send(sender, "snapshot.effects", Placeholder.unparsed("effects",
+                        String.join(", ", snapshot.effects().stream().map(PlayerSnapshot.SavedEffect::type).toList())));
+            }
             messages.send(sender, sessions.isInMatch(target.getUniqueId()) ? "snapshot.in-match-hint"
                     : saved ? "snapshot.restore-hint" : "snapshot.restore-last-hint", player);
         });
