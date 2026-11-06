@@ -93,7 +93,11 @@ public final class NightReport {
             lines.add(messages.render("night.sidebar.next", Placeholder.parsed("game", game)));
             lines.add(Component.text(" "));
         });
-        var standings = night.standings().ordered().stream().limit(TOP).toList();
+        var all = new ArrayList<>(night.standings().ordered());
+        // With teams every team is listed from the start, also before it has scored.
+        night.teams().filter(teams -> !night.template().teams().solo()).ifPresent(teams -> teams.ids().stream()
+                .filter(id -> all.stream().noneMatch(standing -> standing.id().equals(id))).forEach(id -> all.add(night.standings().of(id))));
+        var standings = all.stream().limit(TOP).toList();
         if (standings.isEmpty()) {
             lines.add(messages.render("night.sidebar.none"));
         }
