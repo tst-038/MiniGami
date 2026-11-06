@@ -44,6 +44,7 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
@@ -201,6 +202,9 @@ public final class Nights implements Listener {
                 messages.send(audience(onlinePlayers(night)), "night.player-joined", Placeholder.component("player", joining.name()));
                 night.join(joining.getUniqueId());
                 enter(joining);
+                if (active.state != State.PLAYING) {
+                    sidebar.show(night, List.of(joining));
+                }
                 messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
                 // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
                 night.teams().ifPresent(formed -> tellTeam(night, joining));
@@ -353,6 +357,14 @@ public final class Nights implements Listener {
     public void standings(CommandSender sender) {
         if (hasNight(sender)) {
             report.send(active.night, sender, sender instanceof Player player ? List.of(player) : List.of(), "night.standings-header");
+        }
+    }
+
+    /** Players waiting for the night's next game can't be hurt; a game's own rules apply while it runs. */
+    @EventHandler(ignoreCancelled = true)
+    public void onWaitingDamage(EntityDamageEvent event) {
+        if (active != null && active.state != State.PLAYING && event.getEntity() instanceof Player player && active.night.players().contains(player.getUniqueId())) {
+            event.setCancelled(true);
         }
     }
 
