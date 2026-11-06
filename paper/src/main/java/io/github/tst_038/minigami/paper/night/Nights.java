@@ -205,7 +205,7 @@ public final class Nights implements Listener {
                 night.join(joining.getUniqueId());
                 enter(joining);
                 if (active.state != State.PLAYING) {
-                    sidebar.show(night, List.of(joining));
+                    showSidebar(night, List.of(joining));
                 }
                 messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
                 // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
@@ -295,7 +295,7 @@ public final class Nights implements Listener {
             return;
         }
         publish();
-        sidebar.show(night, onlinePlayers(night));
+        showSidebar(night, onlinePlayers(night));
         announceNext();
     }
 
@@ -396,7 +396,7 @@ public final class Nights implements Listener {
         // Once the game has let go of its players, who are still in its last phase, they get the standings back.
         played.match().scope().register(() -> {
             if (active != null && active.night == night && active.state == State.BETWEEN) {
-                sidebar.show(night, onlinePlayers(night));
+                showSidebar(night, onlinePlayers(night));
             }
         });
         if (night.finished()) {
@@ -454,7 +454,7 @@ public final class Nights implements Listener {
                 plugin.getLogger().log(Level.WARNING, player.getName() + " could not join the night's game", e);
                 messages.send(host, "night.join-failed", Placeholder.component("player", player.name()));
                 game.stop();
-                sidebar.show(night, players);
+                showSidebar(night, players);
                 return;
             }
         }
@@ -608,6 +608,10 @@ public final class Nights implements Listener {
     /** Everyone who may host, console included. */
     private Audience hosts() {
         return plugin.getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission(HOST_PERMISSION));
+    }
+
+    private void showSidebar(Night night, Collection<Player> players) {
+        sidebar.show(night, players, night.current().map(this::gameName));
     }
 
     private String gameName(PlaylistEntry entry) {

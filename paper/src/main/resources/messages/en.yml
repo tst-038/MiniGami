@@ -645,8 +645,12 @@ night:
   team-members: "%name% <gray>(%members%)"
   sidebar:
     title: "%name%"
+    # %game%: the next game's name
+    next: "<gray>Next: <white>%game%"
+    # Shown while nobody has points yet
+    none: "<gray>No points yet"
     # %number%, %total%: the next game's place in the playlist
-    game: "<gray>Next: game %number% of %total%"
+    progress: "<gray>Game: <white>%number%/%total%"
     # %place%, %name%, %points%, %tied%
     line: "<gray>%tied%%place%. <white>%name% <gold>%points%"
 

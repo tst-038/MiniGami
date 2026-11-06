@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.gamenight.night.Night;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.util.Collection;
+import java.util.Optional;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
@@ -32,13 +33,13 @@ public final class NightSidebar {
     }
 
     /** Gives the players a sidebar with the standings as they are now. */
-    void show(Night night, Collection<Player> players) {
+    void show(Night night, Collection<Player> players, Optional<String> nextGame) {
         var board = server.getScoreboardManager().getNewScoreboard();
         var objective = board.registerNewObjective("night", Criteria.DUMMY, messages.render("night.sidebar.title", Placeholder.parsed("name", night.template().name())));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         objective.numberFormat(NumberFormat.blank());
         // The entries are never shown, only their custom names.
-        var lines = report.sidebar(night);
+        var lines = report.sidebar(night, nextGame);
         for (int i = 0; i < lines.size(); i++) {
             var score = objective.getScore("line-" + i);
             score.setScore(lines.size() - i);

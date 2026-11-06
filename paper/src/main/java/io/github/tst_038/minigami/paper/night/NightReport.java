@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.gamenight.standings.Standings.Standing;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -85,15 +86,24 @@ public final class NightReport {
         }
     }
 
-    /** The lines of the sidebar between games. */
-    List<Component> sidebar(Night night) {
+    /** The lines of the sidebar between games: the next game, the standings, then how far the night is. */
+    List<Component> sidebar(Night night, Optional<String> nextGame) {
         var lines = new ArrayList<Component>();
-        if (!night.finished()) {
-            lines.add(messages.render("night.sidebar.game", Formatter.number("number", night.gameNumber()), Formatter.number("total", night.template().playlist().size())));
+        nextGame.ifPresent(game -> {
+            lines.add(messages.render("night.sidebar.next", Placeholder.parsed("game", game)));
+            lines.add(Component.text(" "));
+        });
+        var standings = night.standings().ordered().stream().limit(TOP).toList();
+        if (standings.isEmpty()) {
+            lines.add(messages.render("night.sidebar.none"));
         }
-        night.standings().ordered().stream().limit(TOP).forEach(standing -> lines.add(messages.render("night.sidebar.line",
+        standings.forEach(standing -> lines.add(messages.render("night.sidebar.line",
                 Formatter.number("place", standing.place()), tied(night, standing), Placeholder.component("name", label(night, standing.id())),
                 Formatter.number("points", standing.points()))));
+        if (!night.finished()) {
+            lines.add(Component.text(" "));
+            lines.add(messages.render("night.sidebar.progress", Formatter.number("number", night.gameNumber()), Formatter.number("total", night.template().playlist().size())));
+        }
         return lines;
     }
 
