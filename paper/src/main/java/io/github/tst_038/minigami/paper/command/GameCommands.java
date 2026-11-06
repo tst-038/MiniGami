@@ -15,7 +15,7 @@ import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-/** {@code /mg game list|create <id> <gametype> <arena>} and {@code /mg game <id> info|set|unset|delete|variant ...}. */
+/** {@code /mg game list|create <id> <gametype> <arena>} and {@code /mg game <id> info|enable|disable|set|unset|delete|variant ...}. */
 final class GameCommands {
 
     private GameCommands() {
@@ -38,6 +38,8 @@ final class GameCommands {
                         .suggests(suggest(() -> editor.ids(Kind.GAME)))
                         .executes(help)
                         .then(Commands.literal("info").executes(bySender((sender, context) -> info.game(sender, game(context)))))
+                        .then(Commands.literal("enable").executes(bySender((sender, context) -> editor.set(sender, Kind.GAME, game(context), "enabled", "true"))))
+                        .then(Commands.literal("disable").executes(bySender((sender, context) -> editor.set(sender, Kind.GAME, game(context), "enabled", "false"))))
                         .then(Edits.set(editor, Kind.GAME, GameCommands::game))
                         .then(Edits.unset(editor, Kind.GAME, GameCommands::game))
                         .then(Edits.delete(editor, Kind.GAME, GameCommands::game))

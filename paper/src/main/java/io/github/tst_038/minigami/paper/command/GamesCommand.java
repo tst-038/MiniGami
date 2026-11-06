@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.command;
 
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
+import static io.github.tst_038.minigami.paper.command.Nodes.HELPER;
 import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
@@ -93,7 +94,15 @@ public final class GamesCommand {
                                                 .requires(ADMIN)
                                                 .executes(bySender((sender, context) -> publicMatches.join(sender, player(context),
                                                         string(context, "game"), Optional.of(string(context, "variant")))))))))
-                .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> running.leave(player))))
+                .then(Commands.literal("leave")
+                        .then(Commands.argument("player", ArgumentTypes.player()).requires(HELPER)
+                                .executes(bySender((sender, context) -> running.leave(sender, player(context)))))
+                        .executes(context -> {
+                            if (context.getSource().getExecutor() instanceof Player self) {
+                                running.leave(self);
+                            }
+                            return com.mojang.brigadier.Command.SINGLE_SUCCESS;
+                        }))
                 .then(StatsCommands.stats(stats, messages))
                 .then(StatsCommands.leaderboard(stats))
                 .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))

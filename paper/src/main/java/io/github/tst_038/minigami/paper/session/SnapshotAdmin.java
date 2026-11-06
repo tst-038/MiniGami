@@ -38,7 +38,7 @@ public final class SnapshotAdmin {
     }
 
     public void inspect(CommandSender sender, Player target) {
-        withSnapshot(sender, target, (snapshot, saved) -> {
+        withSnapshot(sender, target, true, (snapshot, saved) -> {
             var player = Placeholder.component("player", target.name());
             messages.send(sender, saved ? "snapshot.saved" : "snapshot.last", player);
             var location = snapshot.location();
@@ -59,12 +59,13 @@ public final class SnapshotAdmin {
                             .map(item -> Component.text(item.getAmount() + "x ").append(item.displayName())).toList())));
             messages.send(sender, "snapshot.effects", Placeholder.unparsed("effects",
                     String.join(", ", snapshot.effects().stream().map(PlayerSnapshot.SavedEffect::type).toList())));
-            messages.send(sender, saved ? "snapshot.restore-hint" : "snapshot.restore-last-hint", player);
+            messages.send(sender, sessions.isInMatch(target.getUniqueId()) ? "snapshot.in-match-hint"
+                    : saved ? "snapshot.restore-hint" : "snapshot.restore-last-hint", player);
         });
     }
 
     public void restore(CommandSender sender, Player target) {
-        withSnapshot(sender, target, (snapshot, saved) -> {
+        withSnapshot(sender, target, false, (snapshot, saved) -> {
             var player = Placeholder.component("player", target.name());
             try {
                 if (saved) {
@@ -84,13 +85,13 @@ public final class SnapshotAdmin {
 
     /**
      * Reads the snapshot off the server thread, then hands it over on the target's thread with whether
-     * it is the one still to be restored. Players in a match are left alone: their state comes back
-     * when they leave it.
+     * it is the one still to be restored. Players in a match can be looked at ({@code inMatchOk}) but not
+     * restored: their state comes back when they leave it.
      */
-    private void withSnapshot(CommandSender sender, Player target, BiConsumer<PlayerSnapshot, Boolean> action) {
+    private void withSnapshot(CommandSender sender, Player target, boolean inMatchOk, BiConsumer<PlayerSnapshot, Boolean> action) {
         var id = target.getUniqueId();
         var player = Placeholder.component("player", target.name());
-        if (sessions.isInMatch(id)) {
+        if (!inMatchOk && sessions.isInMatch(id)) {
             messages.send(sender, "snapshot.in-match", player);
             return;
         }
@@ -107,7 +108,7 @@ public final class SnapshotAdmin {
             }
             target.getScheduler().run(plugin, ignored -> {
                 // The player may have joined a match while the file was read.
-                if (sessions.isInMatch(id)) {
+                if (!inMatchOk && sessions.isInMatch(id)) {
                     messages.send(sender, "snapshot.in-match", player);
                 } else if (saved.isPresent()) {
                     action.accept(saved.get(), true);

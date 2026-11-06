@@ -29,6 +29,7 @@ join:
 
 leave:
   not-in-match: "%prefix%<red>You're not in a match."
+  other-not-in-match: "%prefix%<red>%player% is not in a match."
 
 start:
   nothing-to-start: "%prefix%<red>No match is waiting to start."
@@ -480,6 +481,7 @@ snapshot:
   details: "<gray> %game-mode% at %x%, %y%, %z% in %world%, health %health%, food %food%, level %level%"
   items: "<gray> Items: <white>%items%"
   effects: "<gray> Effects: <white>%effects%"
+  in-match-hint: "<gray> They are in a match; this comes back by itself when they leave it."
   restore-hint: "<gray> Give it back with <white>/mg player %player% snapshot restore</white>."
   restore-last-hint: "<gray> Put it back with <white>/mg player %player% snapshot restore</white>; their current state is kept, so doing it again undoes it."
   restored: "%prefix%<green>Gave %player% their saved state back."

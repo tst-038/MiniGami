@@ -88,9 +88,14 @@ public final class RunningMatches implements Listener {
     }
 
     public void leave(Player player) {
+        leave(player, player);
+    }
+
+    /** Takes {@code player} out of their match; {@code by} is told if there is none, and is the player themselves or staff. */
+    public void leave(CommandSender by, Player player) {
         var match = find(player.getUniqueId());
         if (match.isEmpty()) {
-            messages.send(player, "leave.not-in-match");
+            messages.send(by, by == player ? "leave.not-in-match" : "leave.other-not-in-match", Placeholder.component("player", player.name()));
             return;
         }
         match.get().leave(player);

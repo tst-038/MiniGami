@@ -104,8 +104,9 @@ public final class GameLoader {
         // enabled: false keeps a file (documentation, work in progress) out of the games without deleting it.
         files.files().forEach((id, own) -> {
             if (own.getBoolean("enabled", true)) {
-                own.set("enabled", null);
-                withHud.put(id, withHud(hud, own, null));
+                var merged = withHud(hud, own, null);
+                merged.set("enabled", null);
+                withHud.put(id, merged);
             }
         });
         return new YamlFiles(files.folder(), withHud, files.problems())
