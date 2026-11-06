@@ -101,7 +101,13 @@ public final class GameLoader {
     public YamlFiles.Loaded<Game> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud,
             Predicate<String> knownMessage) {
         var withHud = new TreeMap<String, YamlConfiguration>();
-        files.files().forEach((id, own) -> withHud.put(id, withHud(hud, own, null)));
+        // enabled: false keeps a file (documentation, work in progress) out of the games without deleting it.
+        files.files().forEach((id, own) -> {
+            if (own.getBoolean("enabled", true)) {
+                own.set("enabled", null);
+                withHud.put(id, withHud(hud, own, null));
+            }
+        });
         return new YamlFiles(files.folder(), withHud, files.problems())
                 .parse(Game::id, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud, knownMessage));
     }

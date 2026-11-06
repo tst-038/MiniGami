@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.game;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
@@ -670,6 +671,17 @@ class GameLoaderTest {
         var seeker = good.entries().find("fall").orElseThrow().base().role("seeker").orElseThrow();
         assertEquals(1, seeker.features().get("playing").size());
         assertEquals(Map.of(), good.entries().find("fall").orElseThrow().base().features());
+    }
+
+    @Test
+    void aDisabledGameIsLeftOut() throws Exception {
+        var loaded = loadAll(Map.of(
+                "off", "enabled: false\ngametype: nonsense",
+                "on", "enabled: true\ngametype: nonsense"));
+        // The disabled file isn't even read; the enabled one is checked like any other.
+        assertFalse(problems(loaded).isEmpty());
+        assertTrue(problems(loaded).stream().allMatch(problem -> problem.contains("on.yml")));
+        assertTrue(loaded.entries().ids().isEmpty());
     }
 
     @Test
