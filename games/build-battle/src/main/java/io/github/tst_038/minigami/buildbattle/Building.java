@@ -32,6 +32,11 @@ final class Building implements Feature {
     }
 
     @Override
+    public boolean needsPlayersToBuild() {
+        return true;
+    }
+
+    @Override
     public void enable(MatchContext context) {
         var seconds = Formatter.number("seconds", ticks / 20);
         if (themes.isEmpty()) {

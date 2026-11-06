@@ -32,6 +32,11 @@ public final class BreakBlocks implements Feature {
     }
 
     @Override
+    public boolean needsPlayersToBuild() {
+        return changesBlocks();
+    }
+
+    @Override
     public void enable(MatchContext context) {
         context.on(BlockDamageEvent.class, event -> {
             if (instant && breakable.allows(event.getBlock().getType())) {

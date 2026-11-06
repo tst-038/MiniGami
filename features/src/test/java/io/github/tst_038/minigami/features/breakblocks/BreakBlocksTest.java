@@ -40,6 +40,8 @@ class BreakBlocksTest {
         assertTrue(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, true).changesBlocks());
         assertTrue(new BreakBlocks(Breakable.whitelist(Set.of(Material.STONE)), false, true, false).changesBlocks());
         assertTrue(new BreakBlocks(Breakable.any(), false, true, false).changesBlocks());
+        assertTrue(new BreakBlocks(Breakable.any(), false, true, false).needsPlayersToBuild());
+        assertFalse(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, false).needsPlayersToBuild());
     }
 
     @Test

@@ -23,9 +23,12 @@ public interface Feature {
         return false;
     }
 
-    /** Whether players change the blocks themselves, so the game must let them (not adventure mode); false for edits the match makes on its own. */
+    /**
+     * Whether players break or place blocks themselves, so the game must give them a mode that can (not adventure).
+     * False for what the match does on its own, such as generating land, filling containers or breaking blocks under players.
+     */
     default boolean needsPlayersToBuild() {
-        return changesBlocks();
+        return false;
     }
 
     /** Whether it fills the arena's loot containers, so a game with it wants an arena that has some. */
