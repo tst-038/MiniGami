@@ -96,8 +96,22 @@ public final class ArenaSetup {
         region(player, id, name).ifPresent(region -> maps.saveRegionSchematic(player, arenas.get().find(id).orElseThrow(), name));
     }
 
+    /** Puts the region's schematic on the player's WorldEdit clipboard. */
+    public void loadRegionSchematic(Player player, String id, String name) {
+        region(player, id, name).ifPresent(region -> {
+            var arena = arenas.get().find(id).orElseThrow();
+            if (!maps.hasWorldEdit()) {
+                messages.send(player, "arena.map.no-worldedit");
+            } else if (!maps.hasRegionSchematic(arena, name)) {
+                messages.send(player, "arena.region.no-schematic", Placeholder.unparsed("region", name));
+            } else {
+                maps.loadRegionSchematic(player, arena, name);
+            }
+        });
+    }
+
     /** Pastes the region's schematic into the world to look at it; the arena's map reset puts the old blocks back. */
-    public void loadRegionSchematic(CommandSender sender, String id, String name) {
+    public void pasteRegionSchematic(CommandSender sender, String id, String name) {
         region(sender, id, name).ifPresent(region -> {
             var arena = arenas.get().find(id).orElseThrow();
             if (!maps.hasWorldEdit()) {
@@ -106,7 +120,7 @@ public final class ArenaSetup {
                 messages.send(sender, "arena.region.no-schematic", Placeholder.unparsed("region", name));
             } else {
                 maps.replace(arena, region);
-                messages.send(sender, "arena.region.schematic-loaded", Placeholder.unparsed("region", name));
+                messages.send(sender, "arena.region.schematic-pasted", Placeholder.unparsed("region", name));
             }
         });
     }

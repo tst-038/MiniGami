@@ -312,6 +312,13 @@ final class WorldEditMaps {
         }
     }
 
+    /** Reads the schematic off the server thread and makes it the player's WorldEdit clipboard, to //paste or edit. */
+    CompletableFuture<Void> load(Player player, Path file) {
+        return CompletableFuture.supplyAsync(() -> read(file), offThread)
+                .thenAcceptAsync(clipboard -> WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player))
+                        .setClipboard(new ClipboardHolder(clipboard)), serverThread);
+    }
+
     // findByPath is newer than FastAsyncWorldEdit's copy of this class.
     @SuppressWarnings("deprecation")
     private static Clipboard read(Path file) {

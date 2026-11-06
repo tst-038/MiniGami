@@ -232,6 +232,18 @@ public final class ArenaMaps {
         return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("map.schem");
     }
 
+    /** Puts the region's schematic on the player's WorldEdit clipboard. */
+    void loadRegionSchematic(Player player, Arena arena, String region) {
+        onServerThread(worldEdit.get().load(player, regionFile(arena, region)), problem -> {
+            if (problem == null) {
+                messages.send(player, "arena.region.schematic-loaded", Placeholder.unparsed("region", region));
+            } else {
+                plugin.getLogger().log(Level.WARNING, "Could not load the schematic of " + arena.id() + "'s region " + region, problem);
+                messages.send(player, "arena.map.load-failed", Placeholder.unparsed("arena", arena.id()));
+            }
+        });
+    }
+
     /** Whether the region has a saved schematic. Checks the disk on the server thread, but a single stat is too short to matter. */
     boolean hasRegionSchematic(Arena arena, String region) {
         return Files.exists(regionFile(arena, region));
