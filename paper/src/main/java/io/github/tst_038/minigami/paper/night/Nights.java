@@ -42,9 +42,11 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
@@ -360,12 +362,23 @@ public final class Nights implements Listener {
         }
     }
 
-    /** Players waiting for the night's next game can't be hurt; a game's own rules apply while it runs. */
+    /** Players waiting for the night's next game can't be hurt or go hungry; a game's own rules apply while it runs. */
     @EventHandler(ignoreCancelled = true)
     public void onWaitingDamage(EntityDamageEvent event) {
-        if (active != null && active.state != State.PLAYING && event.getEntity() instanceof Player player && active.night.players().contains(player.getUniqueId())) {
+        if (waiting(event.getEntity())) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onWaitingHunger(FoodLevelChangeEvent event) {
+        if (waiting(event.getEntity())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean waiting(Entity entity) {
+        return active != null && active.state != State.PLAYING && entity instanceof Player player && active.night.players().contains(player.getUniqueId());
     }
 
     /** Scores the finished game of the night, and goes on to the next one or ends the night. */

@@ -199,6 +199,14 @@ public final class GameLoader {
         var teams = teams(config, minPlayers, maxPlayers);
         var teamSpawns = config.has("team-spawns") ? config.choice("team-spawns", TeamSpawns.class) : TeamSpawns.TOGETHER;
         var roles = roles(config, minPlayers, game, teams);
+        // The roles take their players first; only the rest form teams.
+        teams.filter(setup -> setup.size() > 0).ifPresent(setup -> {
+            var runners = maxPlayers - roles.stream().mapToInt(role -> role.share().wanted(maxPlayers)).sum();
+            if (setup.teamsFor(runners) > TeamSetup.IDS.size()) {
+                config.problem("teams.size", "max-players " + (runners == maxPlayers ? "" : "leaves " + runners + " players for teams, which ")
+                        + "makes " + setup.teamsFor(runners) + " teams; at most " + TeamSetup.IDS.size() + " are possible");
+            }
+        });
         var quit = quit(config);
         var mostTeams = roles.size() + teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(roles.isEmpty() ? maxPlayers : 0);
         var listed = arenas(config, arenas);
@@ -282,40 +290,17 @@ public final class GameLoader {
             return Optional.of(TeamSetup.ofCount(count));
         }
         var size = teams.integer("size", 1, Integer.MAX_VALUE);
-        if (size == 1) {
+        var roles = config.has("roles");
+        if (size == 1 && !roles) {
             teams.problem("size", "teams of one are free for all; leave out teams instead");
             return Optional.empty();
         }
         var setup = TeamSetup.ofSize(size);
-        // With a single team the match would be decided the moment it starts.
-        if (minPlayers <= size) {
+        // With a single team the match would be decided the moment it starts, unless roles play against it.
+        if (!roles && minPlayers <= size) {
             config.problem("min-players", "must be more than the team size (" + size + "), so there are at least two teams");
         }
-        // The roles take their players first; only the rest form teams.
-        var runners = maxPlayers - roleSlots(config, maxPlayers);
-        if (setup.teamsFor(runners) > most) {
-            teams.problem("size", "max-players " + (runners == maxPlayers ? "" : "leaves " + runners + " players for teams, which ") + "makes "
-                    + setup.teamsFor(runners) + " teams; at most " + most + " are possible");
-        }
         return Optional.of(setup);
-    }
-
-    /** How many of this many players the configured roles ask for, as the roles section below reads them. */
-    private static int roleSlots(ConfigReader config, int total) {
-        if (!config.has("roles")) {
-            return 0;
-        }
-        var section = config.section("roles");
-        var slots = 0;
-        for (String id : section.keys()) {
-            var role = section.section(id);
-            if (role.has("players") && role.has("per")) {
-                continue;
-            }
-            slots += role.has("players") ? RoleShare.of(role.integer("players", 1, Integer.MAX_VALUE)).wanted(total)
-                    : role.has("per") ? RoleShare.onePer(role.integer("per", 2, Integer.MAX_VALUE)).wanted(total) : 0;
-        }
-        return slots;
     }
 
     private List<Role> roles(ConfigReader config, int minPlayers, GameType game, Optional<TeamSetup> teams) {
@@ -376,7 +361,7 @@ public final class GameLoader {
         var rest = roles.stream().filter(role -> role.share().isRest()).map(Role::id).toList();
         if (teams.isPresent()) {
             var asked = roles.stream().mapToInt(role -> role.share().wanted(minPlayers)).sum();
-            var teamsNeed = teams.get().count() > 0 ? teams.get().count() : 2;
+            var teamsNeed = teams.get().count() > 0 ? teams.get().count() : 1;
             if (!rest.isEmpty()) {
                 config.problem("roles", "with teams, the players left after the roles form the teams; give players or per to "
                         + String.join(", ", rest));

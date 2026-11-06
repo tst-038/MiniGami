@@ -565,6 +565,16 @@ class GameLoaderTest {
     }
 
     @Test
+    void rolesMayPlayAgainstSoloRunnersOrASingleTeam() throws Exception {
+        var game = "{gametype: test, waiting: arena, arenas: [demo], roles: {hunter: {per: 5}}, ";
+
+        assertEquals(List.of(), problems(load(game + "min-players: 2, max-players: 10, teams: {size: 1}}")));
+        assertEquals(List.of(), problems(load(game + "min-players: 2, max-players: 10, teams: {size: 2}}")));
+        assertEquals(List.of("games/fall.yml: teams.size: max-players leaves 9 players for teams, which makes 9 teams; at most 8 are possible"),
+                problems(load(game + "min-players: 2, max-players: 11, teams: {size: 1}}")));
+    }
+
+    @Test
     void theRolesPlayersDoNotCountTowardsTheTeamLimit() throws Exception {
         var game = "{gametype: test, min-players: 5, waiting: arena, arenas: [demo], roles: {seeker: {per: 5}}, teams: {size: 3}, ";
 
@@ -670,8 +680,8 @@ class GameLoaderTest {
                 problems(load("{" + variant + "min-players: 4, teams: {count: 2}, roles: {a: {players: 1}, b: {}}}")));
         assertEquals(List.of("games/fall.yml: min-players: must be at least 5: the roles ask for 3 players and the teams need 2 more"),
                 problems(load("{" + variant + "min-players: 4, teams: {count: 2}, roles: {a: {players: 1}, b: {per: 2}}}")));
-        assertEquals(List.of("games/fall.yml: min-players: must be at least 5: the roles ask for 3 players and the teams need 2 more"),
-                problems(load("{" + variant + "min-players: 4, teams: {size: 3}, roles: {a: {players: 3}}}")));
+        assertEquals(List.of("games/fall.yml: min-players: must be at least 4: the roles ask for 3 players and the teams need 1 more"),
+                problems(load("{" + variant + "min-players: 3, teams: {size: 3}, roles: {a: {players: 3}}}")));
         assertEquals(List.of("games/fall.yml: roles: needs at least two roles"),
                 problems(load("{" + variant + "min-players: 2, roles: {a: {}}}")));
         assertEquals(List.of("games/fall.yml: roles: exactly one role must leave out players and per, to get everyone left over; a, b do"),

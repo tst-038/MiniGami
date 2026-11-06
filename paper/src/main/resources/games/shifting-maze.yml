@@ -3,8 +3,8 @@
 # spawns, a saved map that covers the maze (/mg arena <id> map save) and WorldEdit (FastAsyncWorldEdit recommended).
 gametype: shifting-maze
 name: "<gold>Shifting Maze"
-min-players: 3
-max-players: 16
+min-players: 2
+max-players: 20
 waiting: arena
 name-tags: teammates
 cell-width: 3
@@ -36,7 +36,8 @@ roles:
     features:
       head-start: { freeze: {}, effects: { blindness: 1 } }
       running: { effects: { speed: 1 } }
-teams: { count: 2 }
+# Teams of 2 among the runners; size: 1 makes everyone run alone (at most 8 runners then).
+teams: { size: 2 }
 lives: 0
 arenas: [example]
 features:
