@@ -16,9 +16,4 @@ class GameModeTest {
         assertEquals(GameMode.SURVIVAL, wall.gameMode("fighting"));
         assertEquals(GameMode.ADVENTURE, wall.gameMode("ending"));
     }
-
-    @Test
-    void thePreparationBeginsDuringTheCountdownSoTheLandIsReadyWhenPlayStarts() {
-        org.junit.jupiter.api.Assertions.assertTrue(new TheWall().startsDuringCountdown());
-    }
 }

@@ -59,12 +59,6 @@ public final class TheWall implements GameType {
         return List.of(Phase.untimed("waiting"), Phase.timed(PREPARING, prepareSeconds * 20L), Phase.untimed(FIGHTING), Phase.timed("ending", 5 * 20));
     }
 
-    /** The land is made while the players stand frozen at their quarters, not after the countdown. */
-    @Override
-    public boolean startsDuringCountdown() {
-        return true;
-    }
-
     /** Players dig and build from the preparation on. */
     @Override
     public GameMode gameMode(String phase) {
