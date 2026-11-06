@@ -12,7 +12,8 @@ import java.util.List;
 public record TeamSetup(int count, int size) {
 
     /** Team ids in the order teams are handed out; each is also the team's colour. */
-    public static final List<String> IDS = List.of("red", "blue", "green", "yellow", "aqua", "light_purple", "gold", "white");
+    public static final List<String> IDS = List.of("red", "blue", "green", "yellow", "aqua", "light_purple", "gold", "white",
+            "dark_green", "dark_blue", "dark_aqua", "dark_purple", "gray", "dark_gray", "black", "dark_red");
 
     public static TeamSetup ofCount(int count) {
         return new TeamSetup(count, 0);

@@ -36,7 +36,7 @@ roles:
     features:
       head-start: { freeze: {}, effects: { blindness: 1 } }
       running: { effects: { speed: 1 } }
-# Teams of 2 among the runners; size: 1 makes everyone run alone (at most 8 runners then).
+# Teams of 2 among the runners; size: 1 makes everyone run alone (at most 16 runners then).
 teams: { size: 2 }
 lives: 0
 arenas: [example]

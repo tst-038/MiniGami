@@ -169,7 +169,7 @@ class ArenaLoaderTest {
 
         assertEquals(List.of(), problems(role));
         assertEquals(List.of(new Location(world, 1, 64, 1)), role.entries().find("winter").orElseThrow().spawnsFor(Optional.of("seeker")));
-        assertEquals(List.of("arenas/winter/arena.yml: spawns[0].team: 'Seeker' is neither a team (red, blue, green, yellow, aqua, light_purple, gold, white)"
+        assertEquals(List.of("arenas/winter/arena.yml: spawns[0].team: 'Seeker' is neither a team (red, blue, green, yellow, aqua, light_purple, gold, white, dark_green, dark_blue, dark_aqua, dark_purple, gray, dark_gray, black, dark_red)"
                 + " nor a role id in lower case letters, digits and dashes"), problems(invalid));
     }
 }

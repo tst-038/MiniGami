@@ -114,6 +114,14 @@ team:
   light_purple: "<light_purple>Pink"
   gold: "<gold>Orange"
   white: "<white>White"
+  dark_green: "<dark_green>Dark Green"
+  dark_blue: "<dark_blue>Dark Blue"
+  dark_aqua: "<dark_aqua>Teal"
+  dark_purple: "<dark_purple>Purple"
+  gray: "<gray>Gray"
+  dark_gray: "<dark_gray>Dark Gray"
+  black: "<black>Black"
+  dark_red: "<dark_red>Dark Red"
 
 hide-and-seek:
   # When the hunted get their head start; worded for any roles, such as infection's. %seconds%: how long it lasts

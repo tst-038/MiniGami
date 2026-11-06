@@ -255,6 +255,14 @@ final class MazeRun {
             case "aqua" -> Material.LIGHT_BLUE_WOOL;
             case "light_purple" -> Material.PINK_WOOL;
             case "gold" -> Material.ORANGE_WOOL;
+            case "dark_green" -> Material.GREEN_WOOL;
+            case "dark_blue" -> Material.PURPLE_WOOL;
+            case "dark_aqua" -> Material.CYAN_WOOL;
+            case "dark_purple" -> Material.MAGENTA_WOOL;
+            case "gray" -> Material.LIGHT_GRAY_WOOL;
+            case "dark_gray" -> Material.GRAY_WOOL;
+            case "black" -> Material.BLACK_WOOL;
+            case "dark_red" -> Material.BROWN_WOOL;
             default -> Material.WHITE_WOOL;
         };
     }

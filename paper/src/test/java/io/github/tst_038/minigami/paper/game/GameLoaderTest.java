@@ -554,12 +554,12 @@ class GameLoaderTest {
                 problems(load("{" + variant + "min-players: 2, max-players: 8, teams: {count: 2, size: 2}}")));
         assertEquals(List.of("games/fall.yml: min-players: must be at least the number of teams (3)"),
                 problems(load("{" + variant + "min-players: 2, max-players: 8, teams: {count: 3}}")));
-        assertEquals(List.of("games/fall.yml: teams.count: must be between 2 and 8"),
-                problems(load("{" + variant + "min-players: 2, max-players: 8, teams: {count: 9}}")));
+        assertEquals(List.of("games/fall.yml: teams.count: must be between 2 and 16"),
+                problems(load("{" + variant + "min-players: 2, max-players: 8, teams: {count: 17}}")));
         assertEquals(List.of("games/fall.yml: teams.size: teams of one are free for all; leave out teams instead"),
                 problems(load("{" + variant + "min-players: 2, max-players: 8, teams: {size: 1}}")));
-        assertEquals(List.of("games/fall.yml: teams.size: max-players makes 10 teams; at most 8 are possible"),
-                problems(load("{" + variant + "min-players: 3, max-players: 20, teams: {size: 2}}")));
+        assertEquals(List.of("games/fall.yml: teams.size: max-players makes 20 teams; at most 16 are possible"),
+                problems(load("{" + variant + "min-players: 3, max-players: 40, teams: {size: 2}}")));
         assertEquals(List.of("games/fall.yml: min-players: must be more than the team size (2), so there are at least two teams"),
                 problems(load("{" + variant + "min-players: 2, max-players: 8, teams: {size: 2}}")));
     }
@@ -570,8 +570,8 @@ class GameLoaderTest {
 
         assertEquals(List.of(), problems(load(game + "min-players: 2, max-players: 10, teams: {size: 1}}")));
         assertEquals(List.of(), problems(load(game + "min-players: 2, max-players: 10, teams: {size: 2}}")));
-        assertEquals(List.of("games/fall.yml: teams.size: max-players leaves 9 players for teams, which makes 9 teams; at most 8 are possible"),
-                problems(load(game + "min-players: 2, max-players: 11, teams: {size: 1}}")));
+        assertEquals(List.of("games/fall.yml: teams.size: max-players leaves 18 players for teams, which makes 18 teams; at most 16 are possible"),
+                problems(load(game + "min-players: 2, max-players: 22, teams: {size: 1}}")));
     }
 
     @Test
@@ -579,8 +579,8 @@ class GameLoaderTest {
         var game = "{gametype: test, min-players: 5, waiting: arena, arenas: [demo], roles: {seeker: {per: 5}}, teams: {size: 3}, ";
 
         assertEquals(List.of(), problems(load(game + "max-players: 27}")));
-        assertEquals(List.of("games/fall.yml: teams.size: max-players leaves 29 players for teams, which makes 10 teams; at most 8 are possible"),
-                problems(load(game + "max-players: 36}")));
+        assertEquals(List.of("games/fall.yml: teams.size: max-players leaves 60 players for teams, which makes 20 teams; at most 16 are possible"),
+                problems(load(game + "max-players: 75}")));
     }
 
     @Test
