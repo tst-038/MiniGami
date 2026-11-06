@@ -565,6 +565,15 @@ class GameLoaderTest {
     }
 
     @Test
+    void theRolesPlayersDoNotCountTowardsTheTeamLimit() throws Exception {
+        var game = "{gametype: test, min-players: 5, waiting: arena, arenas: [demo], roles: {seeker: {per: 5}}, teams: {size: 3}, ";
+
+        assertEquals(List.of(), problems(load(game + "max-players: 27}")));
+        assertEquals(List.of("games/fall.yml: teams.size: max-players leaves 29 players for teams, which makes 10 teams; at most 8 are possible"),
+                problems(load(game + "max-players: 36}")));
+    }
+
+    @Test
     void rolesAreHandedOutInFileOrderWithTheirShareColourAndLives() throws Exception {
         var loaded = load("{gametype: test, min-players: 3, max-players: 8, waiting: arena, arenas: [demo], roles: {"
                 + "seeker: {name: Seekers, color: dark_red, players: 1, lives: 0}, hider: {}, guard: {per: 4}}}");

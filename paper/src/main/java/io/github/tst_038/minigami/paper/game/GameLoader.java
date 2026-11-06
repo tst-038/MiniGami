@@ -291,10 +291,31 @@ public final class GameLoader {
         if (minPlayers <= size) {
             config.problem("min-players", "must be more than the team size (" + size + "), so there are at least two teams");
         }
-        if (setup.teamsFor(maxPlayers) > most) {
-            teams.problem("size", "max-players makes " + setup.teamsFor(maxPlayers) + " teams; at most " + most + " are possible");
+        // The roles take their players first; only the rest form teams.
+        var runners = maxPlayers - roleSlots(config, maxPlayers);
+        if (setup.teamsFor(runners) > most) {
+            teams.problem("size", "max-players " + (runners == maxPlayers ? "" : "leaves " + runners + " players for teams, which ") + "makes "
+                    + setup.teamsFor(runners) + " teams; at most " + most + " are possible");
         }
         return Optional.of(setup);
+    }
+
+    /** How many of this many players the configured roles ask for, as the roles section below reads them. */
+    private static int roleSlots(ConfigReader config, int total) {
+        if (!config.has("roles")) {
+            return 0;
+        }
+        var section = config.section("roles");
+        var slots = 0;
+        for (String id : section.keys()) {
+            var role = section.section(id);
+            if (role.has("players") && role.has("per")) {
+                continue;
+            }
+            slots += role.has("players") ? RoleShare.of(role.integer("players", 1, Integer.MAX_VALUE)).wanted(total)
+                    : role.has("per") ? RoleShare.onePer(role.integer("per", 2, Integer.MAX_VALUE)).wanted(total) : 0;
+        }
+        return slots;
     }
 
     private List<Role> roles(ConfigReader config, int minPlayers, GameType game, Optional<TeamSetup> teams) {
