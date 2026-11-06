@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.night;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.gamenight.night.Night;
 import io.github.tst_038.minigami.gamenight.standings.Standings.Standing;
+import io.github.tst_038.minigami.paper.game.TeamSetup;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,7 +41,12 @@ public final class NightReport {
     /** Whoever the id scores for: the player, or the night team. */
     Component label(Night night, String id) {
         return night.template().teams().solo() ? Component.text(playerName(UUID.fromString(id)))
-                : messages.render("night.team-name", Placeholder.unparsed("team", id));
+                : messages.render("night.team-name", Placeholder.component("team", messages.render("team." + colour(id))));
+    }
+
+    /** The in-game team colour of a night team, handed out in the same order as in matches. */
+    private static String colour(String id) {
+        return TeamSetup.IDS.get((Integer.parseInt(id) - 1) % TeamSetup.IDS.size());
     }
 
     /** Like {@link #label}, with the members of a night team. */

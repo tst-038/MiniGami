@@ -639,8 +639,8 @@ night:
   # shown before a place that more than one player or team shares (ex aequo)
   tied: "="
   standings-none: "<gray> Nobody has scored yet."
-  # %team%: the team's number
-  team-name: "Team %team%"
+  # %team%: the team's coloured name, as in matches
+  team-name: "%team%"
   # %name%: the team's name, %members%
   team-members: "%name% <gray>(%members%)"
   sidebar:
