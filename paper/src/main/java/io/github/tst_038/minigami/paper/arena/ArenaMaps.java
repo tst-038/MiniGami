@@ -232,6 +232,11 @@ public final class ArenaMaps {
         return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("map.schem");
     }
 
+    /** Whether the region has a saved schematic. Checks the disk on the server thread, but a single stat is too short to matter. */
+    boolean hasRegionSchematic(Arena arena, String region) {
+        return Files.exists(regionFile(arena, region));
+    }
+
     private Path regionFile(Arena arena, String region) {
         return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("regions").resolve(region + ".schem");
     }
