@@ -100,8 +100,12 @@ public final class NightReport {
         standings.forEach(standing -> lines.add(messages.render("night.sidebar.line",
                 Formatter.number("place", standing.place()), tied(night, standing), Placeholder.component("name", label(night, standing.id())),
                 Formatter.number("points", standing.points()))));
+        lines.add(Component.text(" "));
+        lines.add(messages.render("night.sidebar.players", Formatter.number("count", night.players().size())));
+        if (!night.template().teams().solo()) {
+            night.teams().ifPresent(teams -> lines.add(messages.render("night.sidebar.teams", Formatter.number("count", teams.ids().size()))));
+        }
         if (!night.finished()) {
-            lines.add(Component.text(" "));
             lines.add(messages.render("night.sidebar.progress", Formatter.number("number", night.gameNumber()), Formatter.number("total", night.template().playlist().size())));
         }
         return lines;

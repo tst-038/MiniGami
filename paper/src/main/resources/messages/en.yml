@@ -649,6 +649,10 @@ night:
     next: "<gray>Next: <white>%game%"
     # Shown while nobody has points yet
     none: "<gray>No points yet"
+    # %count%: players in the night
+    players: "<gray>Players: <white>%count%"
+    # %count%: night teams, only shown with teams
+    teams: "<gray>Teams: <white>%count%"
     # %number%, %total%: the next game's place in the playlist
     progress: "<gray>Game: <white>%number%/%total%"
     # %place%, %name%, %points%, %tied%
