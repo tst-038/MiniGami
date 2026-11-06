@@ -20,11 +20,12 @@ public final class Areas {
     /**
      * Trims each region from below so that the style's ground height lands on its spawns: land is shaped
      * for the bottom of the area, so a region spanning the world's height (-64 up) would otherwise sink the land
-     * far under the spawns and pull a spike up to them. Regions without spawns are kept as they are.
+     * far under the spawns and pull a spike up to them. A region without spawns of its own takes the lowest spawn of the arena.
      */
     public static List<Region> windows(List<Region> regions, List<Location> spawns, int groundHeight) {
         return regions.stream().map(region -> {
-            var lowest = spawns.stream().filter(region::contains).mapToInt(Location::getBlockY).min();
+            var own = spawns.stream().filter(region::contains).mapToInt(Location::getBlockY).min();
+            var lowest = own.isPresent() ? own : spawns.stream().mapToInt(Location::getBlockY).min();
             if (lowest.isEmpty()) {
                 return region;
             }

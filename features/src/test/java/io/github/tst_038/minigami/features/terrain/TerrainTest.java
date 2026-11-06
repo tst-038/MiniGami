@@ -112,6 +112,8 @@ class TerrainTest {
         assertEquals(23, window.minY());
         assertEquals(319, window.maxY());
         assertEquals(tall, Areas.windows(List.of(tall), List.of(), 40).getFirst());
+        var empty = new Region("quarter-2", world, 100, -64, 0, 163, 319, 63);
+        assertEquals(23, Areas.windows(List.of(empty), List.of(spawn), 40).getFirst().minY(), "no spawn of its own: the arena's lowest");
     }
 
     @Test
