@@ -14,7 +14,8 @@ import org.bukkit.inventory.ItemStack;
 /**
  * Gives every player still in the match the same items when the phase starts, and again when they
  * respawn, come back or switch role: only the ones they lack, so items kept through a death don't pile up.
- * A saved kit puts each item in its own slot and refills only the empty ones.
+ * A saved kit puts each item in its own slot and refills only the empty ones. With {@code respawn} off
+ * the kit is given once, when the phase starts.
  */
 public final class Kit implements Feature {
 
@@ -24,14 +25,20 @@ public final class Kit implements Feature {
 
     private final List<Item> items;
     private final SavedKit saved;
+    private final boolean respawn;
 
-    public Kit(List<Item> items, SavedKit saved) {
+    public Kit(List<Item> items, SavedKit saved, boolean respawn) {
         this.items = List.copyOf(items);
         this.saved = saved;
+        this.respawn = respawn;
     }
 
     List<Item> items() {
         return items;
+    }
+
+    boolean respawn() {
+        return respawn;
     }
 
     SavedKit saved() {
@@ -41,7 +48,9 @@ public final class Kit implements Feature {
     @Override
     public void enable(MatchContext context) {
         context.players().forEach(this::give);
-        context.on(PlayerRespawnEvent.class, event -> topUp(context, event.getPlayer()));
+        if (respawn) {
+            context.on(PlayerRespawnEvent.class, event -> topUp(context, event.getPlayer()));
+        }
         context.on(MatchRejoinEvent.class, event -> topUp(context, event.getPlayer()));
         context.on(RoleSwitchEvent.class, event -> topUp(context, event.getPlayer()));
     }

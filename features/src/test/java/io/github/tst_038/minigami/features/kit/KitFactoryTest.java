@@ -35,6 +35,16 @@ class KitFactoryTest {
     }
 
     @Test
+    void respawnDefaultsToOnAndCanBeTurnedOff() throws Exception {
+        assertEquals(true, readRespawn("kit: { items: [bow] }"));
+        assertEquals(false, readRespawn("kit: { items: [bow], respawn: false }"));
+    }
+
+    private boolean readRespawn(String yaml) throws Exception {
+        return read(root(yaml)).respawn();
+    }
+
+    @Test
     void itemsWithAmounts() throws Exception {
         var root = root("kit: { items: [iron_sword, arrow 16, bow] }");
 

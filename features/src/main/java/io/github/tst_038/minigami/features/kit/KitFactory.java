@@ -15,6 +15,7 @@ import org.bukkit.Material;
 /**
  * {@code kit: { items: [iron_sword, arrow 16] }} gives vanilla items, each with an optional amount;
  * {@code kit: { saved: seeker }} gives an inventory saved with /mg kit save. Both may be set.
+ * {@code respawn: false} gives the kit once, at the start, instead of topping it up after every respawn.
  */
 public final class KitFactory implements FeatureFactory {
 
@@ -45,7 +46,7 @@ public final class KitFactory implements FeatureFactory {
     public Feature create(ConfigReader config) {
         if (!config.has("items") && !config.has("saved")) {
             config.problem("items", "is missing; or name a saved kit with saved: <name>");
-            return new Kit(List.of(), NONE);
+            return new Kit(List.of(), NONE, true);
         }
         var items = config.has("items") ? items(config) : List.<Kit.Item>of();
         var saved = NONE;
@@ -57,7 +58,7 @@ public final class KitFactory implements FeatureFactory {
             }
             saved = found.orElse(NONE);
         }
-        return new Kit(items, saved);
+        return new Kit(items, saved, !config.has("respawn") || config.bool("respawn"));
     }
 
     private List<Kit.Item> items(ConfigReader config) {
