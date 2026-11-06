@@ -120,6 +120,7 @@ class TerrainTest {
     void findsTheGroupItNeedsAndChangesBlocks() throws Exception {
         var terrain = terrain("terrain: {style: plains, regions: quarter}");
         assertTrue(terrain.changesBlocks());
+        assertFalse(terrain.needsPlayersToBuild());
         assertEquals(List.of("quarter"), terrain.regionGroups());
     }
 

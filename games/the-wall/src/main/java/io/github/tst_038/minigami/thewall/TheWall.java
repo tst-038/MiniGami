@@ -70,7 +70,7 @@ public final class TheWall implements GameType {
     /** Players dig and build from the preparation on. */
     @Override
     public GameMode gameMode(String phase) {
-        return phase.equals(BUILDING) || phase.equals(PREPARING) || phase.equals(FIGHTING) ? GameMode.SURVIVAL : GameMode.ADVENTURE;
+        return phase.equals(PREPARING) || phase.equals(FIGHTING) ? GameMode.SURVIVAL : GameMode.ADVENTURE;
     }
 
     @Override

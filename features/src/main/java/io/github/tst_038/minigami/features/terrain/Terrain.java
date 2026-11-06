@@ -58,6 +58,11 @@ public final class Terrain implements Feature {
     }
 
     @Override
+    public boolean needsPlayersToBuild() {
+        return false;
+    }
+
+    @Override
     public List<String> regionGroups() {
         return List.of(group);
     }

@@ -12,7 +12,7 @@ class GameModeTest {
         var wall = new TheWall();
 
         assertEquals(GameMode.ADVENTURE, wall.gameMode("waiting"));
-        assertEquals(GameMode.SURVIVAL, wall.gameMode("building"));
+        assertEquals(GameMode.ADVENTURE, wall.gameMode("building"));
         assertEquals(GameMode.SURVIVAL, wall.gameMode("preparing"));
         assertEquals(GameMode.SURVIVAL, wall.gameMode("fighting"));
         assertEquals(GameMode.ADVENTURE, wall.gameMode("ending"));

@@ -23,6 +23,11 @@ public interface Feature {
         return false;
     }
 
+    /** Whether players change the blocks themselves, so the game must let them (not adventure mode); false for edits the match makes on its own. */
+    default boolean needsPlayersToBuild() {
+        return changesBlocks();
+    }
+
     /** Whether it fills the arena's loot containers, so a game with it wants an arena that has some. */
     default boolean usesLootPoints() {
         return false;
