@@ -1,0 +1,32 @@
+# Everyone gets a brush; aim it to paint a ball of blocks in your colour. Every block you hold is a point and painting over
+# someone else's takes it from them. Most blocks when time is up wins.
+# The arena needs: a region group canvas (any number of regions, /mg arena example region canvas set) with white concrete
+# (or whatever paintable lists) inside, spawns, and a saved map so the paint is cleaned up (/mg arena example map save).
+gametype: paint
+name: "<light_purple>Paint"
+min-players: 2
+max-players: 8
+waiting: arena
+play-seconds: 180
+# The item that paints; the kit below must hand it out.
+brush: blaze_rod
+# How far around the block aimed at the brush reaches, how far it can aim, and the rest between strokes.
+radius: 2
+range: 30
+cooldown-ticks: 10
+# Blocks that can be painted over; painted blocks can always be painted over again.
+paintable: [white_concrete]
+# One block per team (or player) in turn.
+colors: [red_concrete, blue_concrete, lime_concrete, yellow_concrete, orange_concrete, purple_concrete, cyan_concrete, pink_concrete]
+# Paint in teams; without this everyone paints for themselves.
+# teams: { count: 2 }
+arenas: [example]
+features:
+  playing:
+    kit: { items: [blaze_rod] }
+    no-hunger: {}
+    no-damage: { causes: [entity-attack] }
+quit: { then: out }
+hud:
+  sidebar:
+    playing: ["", "<gray>Time: <yellow>%time%", "<gray>Your blocks: <white>%points%", "", "%scores%"]
