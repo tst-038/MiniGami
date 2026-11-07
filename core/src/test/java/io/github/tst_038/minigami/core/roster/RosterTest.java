@@ -184,6 +184,58 @@ class RosterTest {
     }
 
     @Test
+    void aRankIsANamePerParticipantAndEmptyUntilAssigned() {
+        roster.add(alice);
+        roster.add(bob);
+        assertEquals(Optional.empty(), roster.find(alice).orElseThrow().rank());
+
+        roster.assignRank(alice, "king");
+
+        assertEquals(Optional.of("king"), roster.find(alice).orElseThrow().rank());
+        assertEquals(Optional.empty(), roster.find(bob).orElseThrow().rank());
+    }
+
+    @Test
+    void aRankCanBeChangedTakenAwayAndIsKeptByEliminatedParticipants() {
+        roster.add(alice);
+        roster.assignRank(alice, "king");
+        roster.assignRank(alice, "pawn");
+        roster.eliminate(alice);
+        assertEquals(Optional.of("pawn"), roster.find(alice).orElseThrow().rank());
+
+        roster.assignRank(alice, null);
+
+        assertEquals(Optional.empty(), roster.find(alice).orElseThrow().rank());
+    }
+
+    @Test
+    void aRankDoesNotChangeTheTeam() {
+        roster.add(alice);
+        roster.assignTeam(alice, "red");
+
+        roster.assignRank(alice, "king");
+
+        assertEquals(Optional.of("red"), roster.find(alice).orElseThrow().team());
+    }
+
+    @Test
+    void ranksAreAssignedPerMemberOfATeam() {
+        roster.add(alice);
+        roster.add(bob);
+        roster.assignTeam(alice, "red");
+        roster.assignTeam(bob, "red");
+
+        roster.teams().getFirst().ids().forEach(id -> roster.assignRank(id, "pawn"));
+
+        assertEquals(Optional.of("pawn"), roster.find(bob).orElseThrow().rank());
+    }
+
+    @Test
+    void rankingAnUnknownPlayerFails() {
+        assertThrows(IllegalArgumentException.class, () -> roster.assignRank(alice, "king"));
+    }
+
+    @Test
     void assigningAnUnknownPlayerFails() {
         assertThrows(IllegalArgumentException.class, () -> roster.assignTeam(alice, "red"));
     }

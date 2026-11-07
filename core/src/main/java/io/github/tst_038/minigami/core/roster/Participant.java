@@ -9,6 +9,7 @@ public final class Participant {
     private final UUID id;
     private ParticipantState state = ParticipantState.ALIVE;
     private String team;
+    private String rank;
 
     Participant(UUID id) {
         this.id = id;
@@ -33,6 +34,15 @@ public final class Participant {
 
     void setTeam(String team) {
         this.team = team;
+    }
+
+    /** A name the game gave this participant within their team, such as a rank; empty when it gave none. */
+    public Optional<String> rank() {
+        return Optional.ofNullable(rank);
+    }
+
+    void setRank(String rank) {
+        this.rank = rank;
     }
 
     void setState(ParticipantState state) {

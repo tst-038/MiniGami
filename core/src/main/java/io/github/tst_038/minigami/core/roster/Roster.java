@@ -83,6 +83,20 @@ public final class Roster {
     }
 
     /**
+     * Gives a participant a rank, a name the roster attaches without giving it a meaning; null takes it away. A game
+     * that ranks a team assigns each member in turn.
+     *
+     * @throws IllegalArgumentException if this player is not in the roster
+     */
+    public void assignRank(UUID id, String rank) {
+        var participant = participants.get(id);
+        if (participant == null) {
+            throw new IllegalArgumentException("Not in the roster: " + id);
+        }
+        participant.setRank(rank);
+    }
+
+    /**
      * The teams in the order of their first member, then everyone without a team as a team of one,
      * in join order.
      */
