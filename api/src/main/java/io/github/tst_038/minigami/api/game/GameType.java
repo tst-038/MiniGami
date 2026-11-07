@@ -67,6 +67,14 @@ public interface GameType {
     }
 
     /**
+     * The rank ids the game's own code relies on, such as {@code king} and {@code guard}; its games must
+     * define at least these. Ranks split each team, where roles are teams of their own.
+     */
+    default List<String> ranks() {
+        return List.of();
+    }
+
+    /**
      * The arena regions the game's code relies on, such as {@code hill}; every arena of its games must
      * have them. Empty when the game needs none.
      */

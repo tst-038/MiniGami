@@ -101,6 +101,34 @@ class GameLoaderTest {
         }
     };
 
+    /** A game whose code relies on a king and a guard in each team. */
+    private static final GameType RANKED = new GameType() {
+        @Override
+        public String id() {
+            return "ranked";
+        }
+
+        @Override
+        public List<Phase> phases() {
+            return GAME.phases();
+        }
+
+        @Override
+        public Map<String, List<Feature>> features() {
+            return Map.of();
+        }
+
+        @Override
+        public WinCondition winCondition() {
+            return new LastManStanding();
+        }
+
+        @Override
+        public List<String> ranks() {
+            return List.of("king", "guard");
+        }
+    };
+
     /** A game whose code relies on a hill region in its arenas. */
     private static final GameType HILL = new GameType() {
         @Override
@@ -133,6 +161,7 @@ class GameLoaderTest {
         games.register(GAME);
         games.register(HIDE);
         games.register(HILL);
+        games.register(RANKED);
         arenas.register(new Arena("hills", null, List.of(new Arena.Spawn(new Location(null, 0, 64, 0), Optional.empty())), Optional.empty(), Optional.empty(),
                 Map.of("hill", new Region("hill", null, 0, 64, 0, 4, 64, 4), "plot-1", new Region("plot-1", null, 0, 64, 0, 4, 64, 4),
                         "plot-2", new Region("plot-2", null, 0, 64, 0, 4, 64, 4), "plot-3", new Region("plot-3", null, 0, 64, 0, 4, 64, 4)),
@@ -350,7 +379,7 @@ class GameLoaderTest {
 
         assertTrue(loaded.entries().ids().isEmpty());
         assertEquals(List.of(
-                "games/fall.yml: gametype: unknown game type 'spleef'; known: hide, hill, test",
+                "games/fall.yml: gametype: unknown game type 'spleef'; known: hide, hill, ranked, test",
                 "games/fall.yml: max-players: must be at least min-players (4)",
                 "games/fall.yml: waiting: must be one of: in-place, lobby, arena",
                 "games/fall.yml: arenas: no valid arena 'nope'; arenas: demo, empty, hills",
@@ -757,5 +786,43 @@ class GameLoaderTest {
         assertEquals(List.of("games/fall.yml: roles: hide needs the roles seeker, hider"), problems(load("{" + variant + "}")));
         assertEquals(List.of("games/fall.yml: roles: hide needs exactly the roles seeker, hider; missing: hider; unknown: runner"),
                 problems(load("{" + variant + "roles: {seeker: {players: 1}, runner: {}}}")));
+    }
+
+    @Test
+    void ranksSplitEachTeamWithTheirShareAndOwnFeatures() throws Exception {
+        var loaded = load("{gametype: ranked, waiting: arena, arenas: [demo], min-players: 4, max-players: 8, teams: {count: 2}, ranks: {"
+                + "king: {players: 1, features: {playing: {void-kills: {y: 0}}}}, guard: {}}}");
+
+        assertEquals(List.of(), problems(loaded));
+        var variant = loaded.entries().find("fall").orElseThrow().base();
+        assertEquals(List.of("king", "guard"), variant.ranks().stream().map(Rank::id).toList());
+        assertEquals(RoleShare.of(1), variant.rank("king").orElseThrow().share());
+        assertTrue(variant.rank("guard").orElseThrow().share().isRest());
+        assertEquals(1, variant.rank("king").orElseThrow().features().get("playing").size());
+        assertEquals(Map.of(), variant.features());
+    }
+
+    @Test
+    void aGameDefinesTheRanksItsGameNeeds() throws Exception {
+        var variant = "gametype: ranked, waiting: arena, arenas: [demo], min-players: 4, max-players: 8, teams: {count: 2}, ";
+
+        assertEquals(List.of("games/fall.yml: ranks: ranked needs the ranks king, guard"), problems(load("{" + variant + "}")));
+        assertEquals(List.of("games/fall.yml: ranks: ranked needs the ranks king, guard; missing: king"),
+                problems(load("{" + variant + "ranks: {guard: {}}}")));
+    }
+
+    @Test
+    void reportsRanksThatCanNotWork() throws Exception {
+        var variant = "gametype: test, waiting: arena, arenas: [demo], min-players: 4, max-players: 8, ";
+
+        assertEquals(List.of("games/fall.yml: ranks: exactly one rank must leave out players and per, to get everyone left over; a, b do"),
+                problems(load("{" + variant + "teams: {count: 2}, ranks: {a: {}, b: {}}}")));
+        assertEquals(List.of("games/fall.yml: ranks: exactly one rank must leave out players and per, to get everyone left over; none does"),
+                problems(load("{" + variant + "teams: {count: 2}, ranks: {a: {players: 1}}}")));
+        assertEquals(List.of("games/fall.yml: ranks: ranks split a team; set teams or roles"), problems(load("{" + variant + "ranks: {a: {players: 1}, b: {}}}")));
+        assertEquals(List.of("games/fall.yml: ranks.a.per: set either players or per"),
+                problems(load("{" + variant + "teams: {count: 2}, ranks: {a: {players: 1, per: 2}, b: {}}}")));
+        assertEquals(List.of("games/fall.yml: ranks.Big_One: use lower case letters, digits and dashes"),
+                problems(load("{" + variant + "teams: {count: 2}, ranks: {Big_One: {players: 1}, b: {}}}")));
     }
 }

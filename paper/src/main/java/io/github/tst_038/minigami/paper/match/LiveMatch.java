@@ -19,11 +19,13 @@ import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.phase.PhaseListener;
 import io.github.tst_038.minigami.core.presence.Presence;
 import io.github.tst_038.minigami.core.result.MatchRecord;
+import io.github.tst_038.minigami.core.roster.MatchTeam;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.scope.Scope;
 import io.github.tst_038.minigami.core.floor.Floors;
 import io.github.tst_038.minigami.core.spawn.SpawnPlan;
 import io.github.tst_038.minigami.core.spawn.Spread;
+import io.github.tst_038.minigami.core.team.RandomRanks;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -31,6 +33,7 @@ import io.github.tst_038.minigami.paper.hud.MatchHud;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.game.Quit;
+import io.github.tst_038.minigami.paper.game.Rank;
 import io.github.tst_038.minigami.paper.game.Respawn;
 import io.github.tst_038.minigami.paper.game.Role;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
@@ -54,6 +57,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -214,19 +218,26 @@ public final class LiveMatch {
 
     /**
      * The game's own features per phase, then those the variant configures, then each role's, which get
-     * a context of their own that only covers the role's members.
+     * a context of their own that only covers the role's members, and then each rank's likewise.
      */
     private Map<String, List<Feature>> features(Variant variant) {
         var merged = new HashMap<String, List<Feature>>();
         variant.gametype().features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
         variant.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features));
         for (var role : variant.roles()) {
-            var forRole = Optional.of(role.id());
-            role.features().forEach((phase, features) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(features.stream()
-                    .map(feature -> (Feature) context -> feature.enable(new PaperMatchContext(plugin, this, context.scope(), forRole)))
-                    .toList()));
+            addWrapped(merged, role.features(), participant -> participant.team().equals(Optional.of(role.id())));
+        }
+        for (var rank : variant.ranks()) {
+            addWrapped(merged, rank.features(), participant -> participant.rank().equals(Optional.of(rank.id())));
         }
         return merged;
+    }
+
+    /** Adds features that only see the participants the filter lets through. */
+    private void addWrapped(Map<String, List<Feature>> merged, Map<String, List<Feature>> features, Predicate<Participant> members) {
+        features.forEach((phase, list) -> merged.computeIfAbsent(phase, id -> new ArrayList<>()).addAll(list.stream()
+                .map(feature -> (Feature) context -> feature.enable(new PaperMatchContext(plugin, this, context.scope(), Optional.of(members))))
+                .toList()));
     }
 
     public void start() {
@@ -779,6 +790,7 @@ public final class LiveMatch {
         }
         var leftOver = variant.roles().isEmpty() ? takingPart() : handOutRoles();
         variant.teams().ifPresent(setup -> formTeams(setup, leftOver));
+        dealRanks();
         teamRegions = variant.gametype().regionPerTeam()
                 .map(prefix -> TeamRegion.assign(prefix, match.roster().teams(), name -> Optional.ofNullable(arena.regions().get(name))))
                 .orElse(List.of());
@@ -864,6 +876,17 @@ public final class LiveMatch {
             var teamId = TeamSetup.IDS.get(i);
             putInTeam(teams.get(i), teamId, "match.your-team");
         }
+    }
+
+    /** Splits every team by the variant's ranks, at random and each team on its own. */
+    private void dealRanks() {
+        if (variant.ranks().isEmpty()) {
+            return;
+        }
+        var teams = match.roster().teams().stream().filter(team -> team.id().isPresent()).map(MatchTeam::ids).toList();
+        new RandomRanks(ThreadLocalRandom.current())
+                .deal(teams, variant.ranks().stream().map(Rank::id).toList(), variant.ranks().stream().map(Rank::share).toList())
+                .forEach(match.roster()::assignRank);
     }
 
     /**

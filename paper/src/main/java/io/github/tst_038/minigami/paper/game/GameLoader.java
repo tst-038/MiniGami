@@ -57,6 +57,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *     on-out: seeker                                              # optional; joins it instead of going out
  *     name-tags: teammates                                        # optional; the role's own, over the game's
  *     features: { playing: { kit: { items: [stick] } } }          # optional; only for this role
+ * ranks:                      # optional; split each team at random, in this order (needs teams or roles); one rank leaves out players and per, to get the rest
+ *   king: { players: 1, features: { playing: { effects: { glowing: 1 } } } }   # features are optional, and only for this rank
+ *   guard: {}
  * quit:                       # optional; what quitting a running match does
  *   then: die                 # stay, die or out (the default)
  *   rejoin-seconds: 60        # how long they can come back; 0 (the default): not at all
@@ -217,13 +220,14 @@ public final class GameLoader {
                         + "makes " + setup.teamsFor(runners) + " teams; at most " + TeamSetup.IDS.size() + " are possible");
             }
         });
+        var ranks = ranks(config, game, teams.isPresent() || !roles.isEmpty());
         var quit = quit(config);
         var mostTeams = roles.size() + teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(roles.isEmpty() ? maxPlayers : 0);
         var listed = arenas(config, arenas);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         var stats = statGroups(config);
-        var changesBlocks = Variant.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
-        var usesLoot = Variant.allFeatures(game, features, roles).anyMatch(Feature::usesLootPoints);
+        var changesBlocks = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::changesBlocks);
+        var usesLoot = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::usesLootPoints);
         var region = config.has("region") ? Optional.of(config.string("region")) : Optional.<String>empty();
         config.suggest("respawn", List.of("spawns", "highest-floor"));
         var respawn = config.has("respawn") ? config.choice("respawn", Respawn.class) : Respawn.SPAWNS;
@@ -231,8 +235,8 @@ public final class GameLoader {
             config.problem("respawn", "highest-floor needs the region the game plays in; set region");
         }
         var respawnSeconds = config.has("respawn-seconds") ? config.integer("respawn-seconds", 0, 3600) : 0;
-        var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles).flatMap(feature -> feature.regions().stream())).distinct().toList();
-        var allFeatures = Variant.allFeatures(game, features, roles).toList();
+        var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles, ranks).flatMap(feature -> feature.regions().stream())).distinct().toList();
+        var allFeatures = Variant.allFeatures(game, features, roles, ranks).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
         // the reload it needs to get ready. It is left out, and the findings say why.
         var playable = new ArrayList<Arena>();
@@ -248,7 +252,7 @@ public final class GameLoader {
             findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, respawnSeconds, roles, quit, playable, findings,
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
                 features, stats, hud);
     }
 
@@ -399,6 +403,51 @@ public final class GameLoader {
             }
         }
         return roles;
+    }
+
+    /**
+     * The ranks that split each team: a fixed number or one per so many players, and one rank that gets whoever is left. The game
+     * type's own ranks must all be defined.
+     */
+    private List<Rank> ranks(ConfigReader config, GameType game, boolean hasTeams) {
+        var needed = game == null ? List.<String>of() : game.ranks();
+        needed.forEach(id -> config.suggest("ranks." + id, List.of()));
+        if (!config.has("ranks")) {
+            if (!needed.isEmpty()) {
+                config.problem("ranks", game.id() + " needs the ranks " + String.join(", ", needed));
+            }
+            return List.of();
+        }
+        if (!hasTeams) {
+            config.problem("ranks", "ranks split a team; set teams or roles");
+        }
+        var section = config.section("ranks");
+        var ranks = new ArrayList<Rank>();
+        for (String id : section.keys()) {
+            if (!IdRegistry.isValid(id)) {
+                section.problem(id, "use lower case letters, digits and dashes");
+            }
+            var rank = section.section(id);
+            if (rank.has("players") && rank.has("per")) {
+                rank.problem("per", "set either players or per");
+                rank.keys();
+            }
+            var share = rank.has("players") ? RoleShare.of(rank.integer("players", 1, Integer.MAX_VALUE))
+                    : rank.has("per") ? RoleShare.onePer(rank.integer("per", 2, Integer.MAX_VALUE))
+                    : RoleShare.rest();
+            ranks.add(new Rank(id, share, rank.has("features") ? features(rank.section("features"), game) : Map.of()));
+        }
+        var ids = ranks.stream().map(Rank::id).toList();
+        var missing = needed.stream().filter(id -> !ids.contains(id)).toList();
+        if (!missing.isEmpty()) {
+            config.problem("ranks", game.id() + " needs the ranks " + String.join(", ", needed) + "; missing: " + String.join(", ", missing));
+        }
+        var rest = ranks.stream().filter(rank -> rank.share().isRest()).map(Rank::id).toList();
+        if (rest.size() != 1) {
+            config.problem("ranks", "exactly one rank must leave out players and per, to get everyone left over; "
+                    + (rest.isEmpty() ? "none does" : String.join(", ", rest) + " do"));
+        }
+        return ranks;
     }
 
     /** The listed arenas that loaded, ready or not. */

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -36,30 +37,30 @@ import org.bukkit.plugin.Plugin;
 
 /**
  * A match's context for one phase: listeners registered here only see this match's events, and for
- * a role's features only those of the role's members.
+ * a role's or rank's features only those of its members.
  */
 public final class PaperMatchContext implements MatchContext {
 
     private final Plugin plugin;
     private final LiveMatch match;
     private final Scope scope;
-    /** The role whose features get this context; empty for features of the whole match. */
-    private final Optional<String> role;
+    /** Whose features get this context; empty for features of the whole match. */
+    private final Optional<Predicate<Participant>> members;
 
     public PaperMatchContext(Plugin plugin, LiveMatch match, Scope scope) {
         this(plugin, match, scope, Optional.empty());
     }
 
-    public PaperMatchContext(Plugin plugin, LiveMatch match, Scope scope, Optional<String> role) {
+    public PaperMatchContext(Plugin plugin, LiveMatch match, Scope scope, Optional<Predicate<Participant>> members) {
         this.plugin = plugin;
         this.match = match;
         this.scope = scope;
-        this.role = role;
+        this.members = members;
     }
 
     /** Asked at each event, so a player who changes role is covered by their new role's features from then on. */
     private boolean covers(UUID id) {
-        return match.isActive(id) && (role.isEmpty() || roster().find(id).flatMap(Participant::team).equals(role));
+        return match.isActive(id) && members.map(filter -> roster().find(id).filter(filter).isPresent()).orElse(true);
     }
 
     private boolean inArena(Location location) {
@@ -104,8 +105,7 @@ public final class PaperMatchContext implements MatchContext {
 
     @Override
     public List<Player> players() {
-        return roster().alive().stream().map(Participant::id)
-                .filter(id -> role.isEmpty() || roster().find(id).flatMap(Participant::team).equals(role))
+        return roster().alive().stream().filter(members.orElse(participant -> true)).map(Participant::id)
                 .flatMap(id -> player(id).stream()).toList();
     }
 
