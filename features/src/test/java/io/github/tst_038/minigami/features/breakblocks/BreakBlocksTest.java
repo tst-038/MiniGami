@@ -31,17 +31,17 @@ class BreakBlocksTest {
     }
 
     private void enable(boolean instant, boolean drops) {
-        new BreakBlocks(Breakable.whitelist(Set.of(Material.SNOW_BLOCK)), instant, drops, false).enable(match);
+        new BreakBlocks(Breakable.whitelist(Set.of(Material.SNOW_BLOCK)), instant, drops, false, Set.of()).enable(match);
     }
 
     @Test
     void onlyChangesBlocksWhenSomethingCanBeBrokenOrPlaced() {
-        assertFalse(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, false).changesBlocks());
-        assertTrue(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, true).changesBlocks());
-        assertTrue(new BreakBlocks(Breakable.whitelist(Set.of(Material.STONE)), false, true, false).changesBlocks());
-        assertTrue(new BreakBlocks(Breakable.any(), false, true, false).changesBlocks());
-        assertTrue(new BreakBlocks(Breakable.any(), false, true, false).needsPlayersToBuild());
-        assertFalse(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, false).needsPlayersToBuild());
+        assertFalse(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, false, Set.of()).changesBlocks());
+        assertTrue(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, true, Set.of()).changesBlocks());
+        assertTrue(new BreakBlocks(Breakable.whitelist(Set.of(Material.STONE)), false, true, false, Set.of()).changesBlocks());
+        assertTrue(new BreakBlocks(Breakable.any(), false, true, false, Set.of()).changesBlocks());
+        assertTrue(new BreakBlocks(Breakable.any(), false, true, false, Set.of()).needsPlayersToBuild());
+        assertFalse(new BreakBlocks(Breakable.whitelist(Set.of()), false, true, false, Set.of()).needsPlayersToBuild());
     }
 
     @Test
@@ -77,7 +77,7 @@ class BreakBlocksTest {
 
     @Test
     void placingIsAllowedWhenSwitchedOnAndTheListsDontRestrictIt() {
-        new BreakBlocks(Breakable.whitelist(Set.of(Material.SNOW_BLOCK)), false, true, true).enable(match);
+        new BreakBlocks(Breakable.whitelist(Set.of(Material.SNOW_BLOCK)), false, true, true, Set.of()).enable(match);
 
         assertFalse(match.fire(new BlockPlaceEvent(stone, null, snow, null, player, true, null)).isCancelled());
         assertTrue(match.fire(new BlockBreakEvent(stone, player)).isCancelled());
@@ -85,7 +85,7 @@ class BreakBlocksTest {
 
     @Test
     void anExceptListBreaksEverythingButThoseBlocks() {
-        new BreakBlocks(Breakable.blacklist(Set.of(Material.STONE)), false, true, false).enable(match);
+        new BreakBlocks(Breakable.blacklist(Set.of(Material.STONE)), false, true, false, Set.of()).enable(match);
 
         assertFalse(match.fire(new BlockBreakEvent(snow, player)).isCancelled());
         assertTrue(match.fire(new BlockBreakEvent(stone, player)).isCancelled());

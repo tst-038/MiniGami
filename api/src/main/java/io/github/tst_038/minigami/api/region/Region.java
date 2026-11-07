@@ -34,7 +34,12 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
         int x = location.getBlockX();
         int y = location.getBlockY();
         int z = location.getBlockZ();
-        return world.equals(location.getWorld()) && x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+        return java.util.Objects.equals(world, location.getWorld()) && x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+    }
+
+    /** Whether someone can stand in the region: the block at this location is part of it or the one right above it, where feet rest on its top layer. */
+    public boolean containsStanding(Location location) {
+        return contains(location) || contains(location.clone().subtract(0, 1, 0));
     }
 
     /**

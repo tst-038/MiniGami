@@ -219,7 +219,7 @@ class GameLoaderTest {
                           quick: { name: Quick, hud: { titles: { fade-in: 5, stay: 20, fade-out: 5 } } }
                           quiet: { name: Quiet, hud: { titles: false } }
                         """,
-                "broken", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo], variants: {odd: {name: Odd, hud: {sidebar: {fighting: [game], playing: [lives, \"%scores% left\"]}, sounds: {jump: x}, titles: {stay: -1}}}}}"));
+                "broken", "{gametype: test, min-players: 1, max-players: 2, waiting: arena, arenas: [demo], variants: {odd: {name: Odd, hud: {sidebar: {fighting: [game], playing: [lives, \"%scores% left\", \"Top: %floors%\"]}, sounds: {jump: x}, titles: {stay: -1}}}}}"));
 
         var plain = loaded.entries().find("plain").orElseThrow();
         assertEquals(List.of("%game%", "%time%"), plain.base().hud().sidebar("playing"));
@@ -238,6 +238,7 @@ class GameLoaderTest {
         assertEquals(List.of("games/broken.yml: variants.odd.hud.sidebar.fighting: unknown phase; the game has: waiting, playing, or starting or default",
                 "games/broken.yml: variants.odd.hud.sidebar.playing: 'lives': lines are texts now, such as \"<gray>Alive: <white>%alive%\"",
                 "games/broken.yml: variants.odd.hud.sidebar.playing: %scores% must be a line of its own",
+                "games/broken.yml: variants.odd.hud.sidebar.playing: %floors% must be a line of its own",
                 "games/broken.yml: variants.odd.hud.titles.stay: must be at least 0",
                 "games/broken.yml: variants.odd.hud.sounds.jump: unknown moment; moments: countdown, start, kill, out, win, podium, lose"), problems(loaded));
     }
@@ -643,6 +644,33 @@ class GameLoaderTest {
         // The findings say why the others are left out.
         assertEquals(List.of("demo missing-region", "empty no-spawns", "empty missing-region"), loaded.entries().find("fall").orElseThrow().base().findings().stream()
                 .map(finding -> finding.arena() + " " + finding.code()).toList());
+    }
+
+    @Test
+    void aGameCanPlayInOneRegionOfAnArenaAndUsesOnlyTheSpawnsInIt() throws Exception {
+        arenas.register(new Arena("shared", null, List.of(new Arena.Spawn(new Location(null, 1, 64, 1), Optional.empty()), new Arena.Spawn(new Location(null, 50, 64, 50), Optional.empty())),
+                Optional.empty(), Optional.empty(), Map.of("tnt", new Region("tnt", null, 0, 60, 0, 10, 70, 10), "spleef", new Region("spleef", null, 40, 60, 40, 60, 70, 60)),
+                Optional.empty()));
+        var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [shared], region: ";
+
+        var loaded = load(variant + "tnt}");
+
+        assertEquals(List.of(), problems(loaded));
+        var spawns = loaded.entries().find("fall").orElseThrow().base().arenas().getFirst().spawns();
+        assertEquals(List.of(1), spawns.stream().map(spawn -> spawn.location().getBlockX()).toList());
+        // The arena itself keeps all its spawns for the other games.
+        assertEquals(2, arenas.find("shared").orElseThrow().spawns().size());
+        assertEquals(List.of("shared missing-region"), load(variant + "nowhere}").entries().find("fall").orElseThrow().base().findings().stream()
+                .map(finding -> finding.arena() + " " + finding.code()).toList());
+    }
+
+    @Test
+    void respawningOnTheHighestFloorNeedsTheRegionTheGamePlaysIn() throws Exception {
+        var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills], respawn: highest-floor";
+
+        assertEquals(Respawn.HIGHEST_FLOOR, load(variant + ", region: hill}").entries().find("fall").orElseThrow().base().respawn());
+        assertEquals(List.of("games/fall.yml: respawn: highest-floor needs the region the game plays in; set region"), problems(load(variant + "}")));
+        assertEquals(Respawn.SPAWNS, load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills]}").entries().find("fall").orElseThrow().base().respawn());
     }
 
     private static List<String> arenaIds(YamlFiles.Loaded<Game> loaded) {

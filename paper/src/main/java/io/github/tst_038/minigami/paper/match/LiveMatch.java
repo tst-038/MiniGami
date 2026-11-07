@@ -21,7 +21,9 @@ import io.github.tst_038.minigami.core.presence.Presence;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.scope.Scope;
+import io.github.tst_038.minigami.core.floor.Floors;
 import io.github.tst_038.minigami.core.spawn.SpawnPlan;
+import io.github.tst_038.minigami.core.spawn.Spread;
 import io.github.tst_038.minigami.core.team.RandomRoles;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -29,6 +31,7 @@ import io.github.tst_038.minigami.paper.hud.MatchHud;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.game.Quit;
+import io.github.tst_038.minigami.paper.game.Respawn;
 import io.github.tst_038.minigami.paper.game.Role;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
 import io.github.tst_038.minigami.paper.game.TeamSpawns;
@@ -1004,8 +1007,9 @@ public final class LiveMatch {
     }
 
     /**
-     * A spawn the player may start at: their team's own, else the one their team was given, else the shared
-     * ones, preferring those with ground below so nobody drops into a hole a game made, such as in spleef.
+     * Where the player comes back to: of the spawns open to them, the standable ones, or with
+     * {@code respawn: highest-floor} the standable places on the highest floor left in the region the game plays in;
+     * and of those the one farthest from the other players, so nobody lands on a hole or on top of someone.
      */
     private Location spawnFor(UUID id) {
         if (arena.spawns().isEmpty()) {
@@ -1015,16 +1019,20 @@ public final class LiveMatch {
         var team = teamOf(id);
         var home = team.map(teamHomes::get).map(OptionalInt::of).orElse(OptionalInt.empty());
         var spots = SpawnPlan.respawnChoices(team, spawnTags, home).stream().map(i -> arena.spawns().get(i).location()).toList();
-        var grounded = spots.stream().filter(LiveMatch::hasFloor).toList();
-        if (grounded.isEmpty()) {
-            grounded = arena.spawns().stream().map(Arena.Spawn::location).filter(LiveMatch::hasFloor).toList();
+        var candidates = variant.respawn() == Respawn.HIGHEST_FLOOR ? arena.playRegion().map(Standable::floors).filter(floors -> !floors.isEmpty()).map(floors -> floors.get(floors.lastKey())).orElseGet(() -> Standable.among(spots))
+                : Standable.among(spots);
+        var others = members.stream().filter(other -> !other.equals(id)).map(plugin.getServer()::getPlayer)
+                .filter(other -> other != null && match.roster().find(other.getUniqueId()).filter(Participant::isAlive).isPresent()).map(Player::getLocation).toList();
+        // With nobody to keep away from every candidate is as good as the next, so don't always take the first.
+        if (others.isEmpty()) {
+            return candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
         }
-        var pool = grounded.isEmpty() ? spots : grounded;
-        return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        return candidates.get(Spread.farthest(candidates.stream().map(Standable::point).toList(), others.stream().map(Standable::point).toList()));
     }
 
-    private static boolean hasFloor(Location spot) {
-        return spot.clone().subtract(0, 0.1, 0).getBlock().isSolid();
+    /** The floors left in the region the game plays in, if it picked one; a scan of the whole region, so ask sparingly. */
+    public Optional<Floors> floors() {
+        return arena.playRegion().map(region -> new Floors(Standable.floors(region).keySet()));
     }
 
     private void saveState(Player player) {

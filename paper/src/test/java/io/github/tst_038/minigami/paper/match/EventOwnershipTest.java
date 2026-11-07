@@ -22,7 +22,9 @@ import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.entity.EntityToggleSwimEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
+import org.bukkit.entity.FallingBlock;
 import org.junit.jupiter.api.Test;
 
 class EventOwnershipTest {
@@ -119,5 +121,25 @@ class EventOwnershipTest {
 
         assertTrue(EventOwnership.belongsTo(flow, id -> false, place -> place.getBlockX() == 10));
         assertFalse(EventOwnership.belongsTo(flow, id -> true, place -> false));
+    }
+
+    @Test
+    void aLandingFallingBlockBelongsToTheMatchWhoseArenaItLandsIn() {
+        var landing = new Location(null, 10, 64, 10);
+        var block = Block.class.cast(Proxy.newProxyInstance(Block.class.getClassLoader(), new Class<?>[] {Block.class},
+                (proxy, method, args) -> method.getName().equals("getLocation") ? landing.clone() : null));
+        var change = new EntityChangeBlockEvent(entity(FallingBlock.class, UUID.randomUUID()), block, null);
+
+        assertTrue(EventOwnership.isSupported(EntityChangeBlockEvent.class));
+        assertTrue(EventOwnership.belongsTo(change, id -> false, place -> place.getBlockX() == 10));
+        assertFalse(EventOwnership.belongsTo(change, id -> true, place -> false));
+    }
+
+    @Test
+    void aPlayerChangingABlockStaysThePlayersOwnEvent() {
+        var id = UUID.randomUUID();
+        var change = new EntityChangeBlockEvent(entity(Player.class, id), null, null);
+
+        assertTrue(EventOwnership.belongsTo(change, id::equals, place -> false));
     }
 }

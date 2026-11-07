@@ -37,6 +37,8 @@ public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Option
     public static final String STARTING = "starting";
     /** On a line of its own: a line per team by points, or without teams the top three players. */
     public static final String SCORES = "%scores%";
+    /** On a line of its own: a line per floor with players on it, the highest first. */
+    public static final String FLOORS = "%floors%";
     /** Line names from before lines were texts, to point anyone still using them to the new way. */
     private static final Set<String> OLD_LINES = Set.of("game", "arena", "time", "players", "alive", "team", "lives", "points", "scores", "blank", "footer");
 
@@ -103,8 +105,12 @@ public record Hud(String sidebarTitle, Map<String, List<String>> sidebar, Option
                 for (String line : lines) {
                     if (OLD_LINES.contains(line) || stats.contains(line)) {
                         section.problem(phase, "'" + line + "': lines are texts now, such as \"<gray>Alive: <white>%alive%\"");
-                    } else if (line.contains(SCORES) && !line.equals(SCORES)) {
-                        section.problem(phase, SCORES + " must be a line of its own");
+                    } else {
+                        for (var own : List.of(SCORES, FLOORS)) {
+                            if (line.contains(own) && !line.equals(own)) {
+                                section.problem(phase, own + " must be a line of its own");
+                            }
+                        }
                     }
                 }
                 sidebar.put(phase, lines);

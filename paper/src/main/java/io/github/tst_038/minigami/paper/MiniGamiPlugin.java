@@ -94,7 +94,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
 
     /** Example games written to games/ on the first start only; admins change or delete them like any other game. */
     static final List<String> EXAMPLE_GAMES = List.of("spleef.yml", "king-of-the-hill.yml", "domination.yml", "team-deathmatch.yml",
-            "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml", "shifting-maze.yml");
+            "hide-and-seek.yml", "infection.yml", "build-battle.yml", "the-wall.yml", "shifting-maze.yml", "tnt-run.yml");
 
     /** Example loot tables written to loot/ the first time the folder is missing, which games and loot points can use as they are. */
     static final List<String> EXAMPLE_LOOT = List.of("junk.yml", "common.yml", "rare.yml", "op.yml", "chest.yml", "christmas/junk.yml", "christmas/rare.yml",

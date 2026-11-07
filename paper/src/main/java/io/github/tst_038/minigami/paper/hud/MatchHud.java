@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import io.github.tst_038.minigami.core.floor.Floors;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,9 +58,11 @@ public final class MatchHud {
     public static final String CELEBRATION = "minigami.celebration";
 
     /** The match's values every HUD text can use, next to each stat the match keeps. */
-    static final List<String> VALUES = List.of("game", "arena", "players", "max", "alive", "time", "team", "lives", "points");
+    static final List<String> VALUES = List.of("game", "arena", "players", "max", "alive", "time", "team", "lives", "points", "level", "levels", "on-level");
 
     private static final long REFRESH_TICKS = 5;
+    /** How often the floors are counted again; it reads every block of the region the game plays in. */
+    private static final long FLOORS_TICKS = 20;
     /** The most lines a sidebar shows. */
     private static final int MAX_LINES = 15;
     /** Places after the winner that still get cheered rather than a game over. */
@@ -81,6 +84,8 @@ public final class MatchHud {
     private final Map<UUID, Scoreboard> previous = new HashMap<>();
     /** What each sidebar shows, so unchanged lines aren't sent again. */
     private final Map<UUID, List<Component>> shown = new HashMap<>();
+    /** The floors as last counted; empty while the game has no region to play in, or before the first count. */
+    private Optional<Floors> floors = Optional.empty();
     private long lastCountdown = -1;
 
     /** @param published where each member's values go for other plugins */
@@ -99,6 +104,7 @@ public final class MatchHud {
     public void start() {
         var scope = match.match().scope();
         scope.register(match.match().clock().repeat(REFRESH_TICKS, this::refresh));
+        scope.register(match.match().clock().repeat(FLOORS_TICKS, () -> floors = match.isJoinable() ? Optional.empty() : match.floors()));
         scope.register(() -> List.copyOf(boards.keySet()).forEach(this::hide));
     }
 
@@ -235,6 +241,8 @@ public final class MatchHud {
         for (var line : hud.sidebar(layout(phase.get().id(), hud.sidebar()))) {
             if (line.equals(Hud.SCORES)) {
                 lines.addAll(scores(viewer));
+            } else if (line.equals(Hud.FLOORS)) {
+                lines.addAll(floorLines(viewer));
             } else if (!values.hides(line)) {
                 lines.add(text(viewer, line, values));
             }
@@ -270,6 +278,23 @@ public final class MatchHud {
                     Placeholder.unparsed("player", Objects.requireNonNullElse(name, "?")), Formatter.number("points", scores.of(best.get(i)))));
         }
         return lines;
+    }
+
+    /** A line per floor with members alive on it, the highest first, the viewer's own marked. */
+    private List<Component> floorLines(Player viewer) {
+        var floors = this.floors.orElse(null);
+        if (floors == null) {
+            return List.of();
+        }
+        var own = viewer == null ? OptionalInt.empty() : floors.levelAt(viewer.getLocation().getY());
+        var perLevel = new java.util.TreeMap<Integer, Long>(Comparator.reverseOrder());
+        match.match().roster().alive().stream().map(participant -> server.getPlayer(participant.id())).filter(Objects::nonNull)
+                .map(player -> floors.levelAt(player.getLocation().getY())).filter(OptionalInt::isPresent)
+                .forEach(level -> perLevel.merge(level.getAsInt(), 1L, Long::sum));
+        return perLevel.entrySet().stream()
+                .map(entry -> render(viewer, own.equals(OptionalInt.of(entry.getKey())) ? "hud.floors.own" : "hud.floors.other",
+                        Formatter.number("level", entry.getKey()), Formatter.number("players", entry.getValue())))
+                .toList();
     }
 
     private OptionalLong phaseLeft() {
@@ -388,6 +413,7 @@ public final class MatchHud {
         var texts = Stream.concat(hud.sidebar().values().stream().flatMap(List::stream), hud.bossBar().stream().flatMap(bar -> bar.texts().values().stream()));
         texts.forEach(text -> NAMED.matcher(text).results().forEach(result -> found.add(result.group(1))));
         found.remove("scores");
+        found.remove("floors");
         return Set.copyOf(found);
     }
 
@@ -425,6 +451,7 @@ public final class MatchHud {
         } else {
             empty.add("lives");
         }
+        levels(viewer, participant.isPresent(), resolvers, empty);
         var kept = match.variant().stats();
         if (participant.isPresent()) {
             var id = viewer.getUniqueId();
@@ -441,6 +468,21 @@ public final class MatchHud {
         // An empty value still shows as nothing in a text that isn't left out, such as a title.
         empty.forEach(name -> resolvers.add(Placeholder.unparsed(name, "")));
         return new Values(TagResolver.resolver(resolvers), Set.copyOf(empty));
+    }
+
+    /** {@code level}: the floor the viewer is on, {@code levels}: how many are left, {@code on-level}: the members alive on the viewer's floor. */
+    private void levels(Player viewer, boolean member, List<TagResolver> resolvers, Set<String> empty) {
+        var floors = this.floors.orElse(null);
+        var own = floors == null || !member ? OptionalInt.empty() : floors.levelAt(viewer.getLocation().getY());
+        if (floors == null || own.isEmpty()) {
+            empty.addAll(List.of("level", "levels", "on-level"));
+            return;
+        }
+        var together = match.match().roster().alive().stream().map(participant -> server.getPlayer(participant.id())).filter(Objects::nonNull)
+                .filter(other -> floors.levelAt(other.getLocation().getY()).equals(own)).count();
+        resolvers.add(Formatter.number("level", own.getAsInt()));
+        resolvers.add(Formatter.number("levels", floors.count()));
+        resolvers.add(Formatter.number("on-level", together));
     }
 
     /** Per role of the game, such as {@code hider}: the members alive, and under {@code hider-out} those who are out. */

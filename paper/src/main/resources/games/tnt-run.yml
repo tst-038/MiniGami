@@ -1,0 +1,27 @@
+# A game: what players join, with /mg join tnt-run, and see their stats of. The game type is the code it runs.
+# This example game plays in the example arena; give it spawns first (/mg arena example spawn add).
+#
+# TNT Run: keep running, the floor drops away under your feet; whoever falls through is out, the last one standing wins.
+# The arena floor is sand with TNT right under it (build one or more such layers), and a saved map
+# (/mg arena example map save) puts it back after each match. Nothing explodes: the TNT only falls away.
+gametype: last-standing
+name: "<red>TNT Run"
+min-players: 2
+max-players: 12
+waiting: arena
+arenas: [example]
+features:
+  playing:
+    death-items: { items: vanish, xp: vanish }
+    # Sand drops away a moment after you step on it and the TNT under it falls too. 20 ticks is a second.
+    # For a floor of only TNT layers: { delay-ticks: 10, blocks: [tnt], lit: true, respawn-grace-ticks: 20 }; the TNT drops away flashing and never explodes, and a player who respawns gets a second to move.
+    decay-floor: { delay-ticks: 10, blocks: [sand], break-below: [tnt], fall: true }
+    no-damage: { causes: [fall, entity-attack, entity-sweep-attack] }
+    no-hunger: {}
+    no-drop-items: {}
+    # For a floor of several layers, set y below the bottom one: { y: 40 }
+    void-kills: {}
+variants:
+  lives:
+    name: "<red>TNT Run <gray>(3 lives)"
+    lives: 3

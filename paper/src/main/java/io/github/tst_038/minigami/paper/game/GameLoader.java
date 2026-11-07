@@ -44,6 +44,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
  * team-spawns: spread        # optional; together (the default): a team shares one spawn, or spread: every player takes the next one
+ * respawn: highest-floor      # optional; spawns (the default), or the highest floor still standing in region, for games that break their floor
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
  *   hide-and-seek:
@@ -59,6 +60,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *   then: die                 # stay, die or out (the default)
  *   rejoin-seconds: 60        # how long they can come back; 0 (the default): not at all
  * arenas: [demo]
+ * region: floor-tnt           # optional; plays in this region of the arena, so one map can host several games: only the spawns inside it are used
  * stats: [combat]             # optional; stat groups to keep, next to the game type's own stats
  * features:                   # optional; per phase of the game type, per feature
  *   playing:
@@ -221,14 +223,22 @@ public final class GameLoader {
         var stats = statGroups(config);
         var changesBlocks = Variant.allFeatures(game, features, roles).anyMatch(Feature::changesBlocks);
         var usesLoot = Variant.allFeatures(game, features, roles).anyMatch(Feature::usesLootPoints);
-        var featureRegions = Variant.allFeatures(game, features, roles).flatMap(feature -> feature.regions().stream()).distinct().toList();
+        var region = config.has("region") ? Optional.of(config.string("region")) : Optional.<String>empty();
+        config.suggest("respawn", List.of("spawns", "highest-floor"));
+        var respawn = config.has("respawn") ? config.choice("respawn", Respawn.class) : Respawn.SPAWNS;
+        if (respawn == Respawn.HIGHEST_FLOOR && region.isEmpty()) {
+            config.problem("respawn", "highest-floor needs the region the game plays in; set region");
+        }
+        var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles).flatMap(feature -> feature.regions().stream())).distinct().toList();
         var allFeatures = Variant.allFeatures(game, features, roles).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
         // the reload it needs to get ready. It is left out, and the findings say why.
         var playable = new ArrayList<Arena>();
         var findings = new ArrayList<Finding>();
         // With an unknown game type the file has a problem already, and nothing to check against.
-        for (var arena : game == null ? List.<Arena>of() : listed) {
+        for (var whole : game == null ? List.<Arena>of() : listed) {
+            // Without the region the check reports it missing; the arena stays whole for that.
+            var arena = region.map(whole.regions()::get).map(whole::within).orElse(whole);
             var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty(), usesLoot, allFeatures), checks);
             if (diagnosis.isReady()) {
                 playable.add(arena);
@@ -236,7 +246,7 @@ public final class GameLoader {
             findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, roles, quit, playable, findings,
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, roles, quit, playable, findings,
                 features, stats, hud);
     }
 

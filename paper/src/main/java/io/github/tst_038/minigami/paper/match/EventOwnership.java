@@ -15,6 +15,7 @@ import org.bukkit.event.block.BlockPistonEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -25,7 +26,7 @@ import org.bukkit.event.world.StructureGrowEvent;
 /**
  * Decides which match an event belongs to, by the player it is about or who caused it, such as who
  * broke a block or threw what hit something. Blocks that change by themselves, such as flowing water,
- * a growing tree, a piston, an explosion or a mob spawning, belong to the match whose arena they start in.
+ * a growing tree, a piston, an explosion, a mob spawning or a falling block landing, belong to the match whose arena they start in.
  */
 final class EventOwnership {
 
@@ -58,7 +59,7 @@ final class EventOwnership {
         return BlockFromToEvent.class.isAssignableFrom(type) || StructureGrowEvent.class.isAssignableFrom(type)
                 || BlockSpreadEvent.class.isAssignableFrom(type) || BlockPistonEvent.class.isAssignableFrom(type)
                 || BlockExplodeEvent.class.isAssignableFrom(type) || EntityExplodeEvent.class.isAssignableFrom(type)
-                || CreatureSpawnEvent.class.isAssignableFrom(type);
+                || CreatureSpawnEvent.class.isAssignableFrom(type) || EntityChangeBlockEvent.class.isAssignableFrom(type);
     }
 
     /** Where a block change that no player made starts; empty for any other event. */
@@ -71,6 +72,8 @@ final class EventOwnership {
             case BlockExplodeEvent e -> Optional.of(e.getBlock().getLocation());
             case EntityExplodeEvent e -> Optional.of(e.getLocation());
             case CreatureSpawnEvent e -> Optional.of(e.getLocation());
+            // A player trampling farmland stays the player's own event.
+            case EntityChangeBlockEvent e when !(e.getEntity() instanceof Player) -> Optional.of(e.getBlock().getLocation());
             default -> Optional.empty();
         };
     }

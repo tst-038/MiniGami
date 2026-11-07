@@ -199,6 +199,10 @@ hud:
   scores:
     team: "%team%<gray>: <white>%points%"
     player: "<gray>%place%. <white>%player% <dark_gray>- <yellow>%points%"
+  # %floors% in a sidebar: a line per floor with players on it, the highest first, with %level% and %players%.
+  floors:
+    own: "<yellow>Level %level%<gray>: <white>%players% <yellow>◀"
+    other: "<gray>Level %level%: <white>%players%"
   # Every title can use the match's values too, such as %game% or %lives%.
   title:
     countdown: "<gold><bold>%seconds%"

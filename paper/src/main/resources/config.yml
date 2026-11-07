@@ -12,7 +12,7 @@ blocks-per-tick: 8192
 # of it under its own hud: key, or turn it all off with hud: false.
 #
 # Texts are MiniMessage with the match's values: %game%, %arena%, %players%, %max%, %alive%, %time% (m:ss),
-# and the viewer's %team%, %lives%, %points% and any stat such as %kills%. A game with roles also has %<role>% (members alive)
+# and the viewer's %team%, %lives%, %points%, and for games that play in a region the floors left in it: %levels%, the viewer's %level% (1 is the highest) and the members alive on it, %on-level%, or a line of its own %floors% for a line per floor with players on it, and any stat such as %kills%. A game with roles also has %<role>% (members alive)
 # and %<role>-out% (members out), such as %hider% and %hider-out%. A line naming a value with
 # nothing to show is left out, such as %lives% when lives are unlimited, %time% while waiting for players,
 # or a stat the game doesn't keep. PlaceholderAPI's placeholders work too when it is installed.

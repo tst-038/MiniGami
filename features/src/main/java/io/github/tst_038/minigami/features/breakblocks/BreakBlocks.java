@@ -2,6 +2,9 @@ package io.github.tst_038.minigami.features.breakblocks;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
+import java.util.Set;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -18,12 +21,14 @@ public final class BreakBlocks implements Feature {
     private final boolean instant;
     private final boolean drops;
     private final boolean place;
+    private final Set<Material> tools;
 
-    BreakBlocks(Breakable breakable, boolean instant, boolean drops, boolean place) {
+    BreakBlocks(Breakable breakable, boolean instant, boolean drops, boolean place, Set<Material> tools) {
         this.breakable = breakable;
         this.instant = instant;
         this.drops = drops;
         this.place = place;
+        this.tools = tools;
     }
 
     @Override
@@ -39,13 +44,15 @@ public final class BreakBlocks implements Feature {
     @Override
     public void enable(MatchContext context) {
         context.on(BlockDamageEvent.class, event -> {
-            if (instant && breakable.allows(event.getBlock().getType())) {
+            if (!holdsTool(event.getPlayer())) {
+                event.setCancelled(true);
+            } else if (instant && breakable.allows(event.getBlock().getType())) {
                 event.setInstaBreak(true);
             }
         });
         context.on(BlockBreakEvent.class, event -> {
             var block = event.getBlock();
-            if (!breakable.allows(block.getType())) {
+            if (!breakable.allows(block.getType()) || !holdsTool(event.getPlayer())) {
                 event.setCancelled(true);
                 return;
             }
@@ -58,5 +65,10 @@ public final class BreakBlocks implements Feature {
         if (!place) {
             context.on(BlockPlaceEvent.class, event -> event.setCancelled(true));
         }
+    }
+
+    /** Whether the player may break with what they hold: any item, if the game names no tools. */
+    private boolean holdsTool(Player player) {
+        return tools.isEmpty() || tools.contains(player.getInventory().getItemInMainHand().getType());
     }
 }

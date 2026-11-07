@@ -19,8 +19,12 @@ import org.bukkit.inventory.ItemStack;
  */
 public final class Kit implements Feature {
 
-    /** A plain item with an amount, given wherever it fits. */
-    public record Item(Material material, int amount) {
+    /** A plain item with an amount, given wherever it fits; {@code unbreakable} ones never wear out. */
+    public record Item(Material material, int amount, boolean unbreakable) {
+
+        public Item(Material material, int amount) {
+            this(material, amount, false);
+        }
     }
 
     private final List<Item> items;
@@ -76,6 +80,10 @@ public final class Kit implements Feature {
     }
 
     private static ItemStack stack(Item item) {
-        return ItemStack.of(item.material(), item.amount());
+        var stack = ItemStack.of(item.material(), item.amount());
+        if (item.unbreakable()) {
+            stack.editMeta(meta -> meta.setUnbreakable(true));
+        }
+        return stack;
     }
 }

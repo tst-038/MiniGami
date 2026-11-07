@@ -15,10 +15,12 @@ import org.bukkit.Material;
 /**
  * {@code kit: { items: [iron_sword, arrow 16] }} gives vanilla items, each with an optional amount;
  * {@code kit: { saved: seeker }} gives an inventory saved with /mg kit save. Both may be set.
+ * An item can end in {@code unbreakable}, as in {@code diamond_shovel unbreakable}.
  * {@code respawn: false} gives the kit once, at the start, instead of topping it up after every respawn.
  */
 public final class KitFactory implements FeatureFactory {
 
+    private static final String UNBREAKABLE = "unbreakable";
     private static final SavedKit NONE = new SavedKit(Map.of());
 
     private final Function<String, Optional<SavedKit>> savedKits;
@@ -70,15 +72,20 @@ public final class KitFactory implements FeatureFactory {
                 config.problem("items", "unknown item '" + parts[0] + "'");
             } else if (!isItem.test(material)) {
                 config.problem("items", "'" + material.getKey().getKey() + "' is not an item");
-            } else if (parts.length > 2) {
-                config.problem("items", "'" + entry + "' should be an item and an amount, like 'arrow 16'");
             } else {
-                var amount = parts.length == 2 ? amount(parts[1]) : 1;
+                var options = List.of(parts).subList(1, parts.length);
+                var unbreakable = options.contains(UNBREAKABLE);
+                var counts = options.stream().filter(option -> !option.equals(UNBREAKABLE)).toList();
                 var most = maxStack.applyAsInt(material);
-                if (amount < 1 || amount > most) {
-                    config.problem("items", "the amount of " + material.getKey().getKey() + " must be a whole number from 1 to " + most);
+                if (counts.size() > 1 || options.size() > counts.size() + 1) {
+                    config.problem("items", "'" + entry + "' should be an item with an amount and/or 'unbreakable', like 'arrow 16' or 'diamond_shovel unbreakable'");
                 } else {
-                    items.add(new Kit.Item(material, amount));
+                    var amount = counts.isEmpty() ? 1 : amount(counts.get(0));
+                    if (amount < 1 || amount > most) {
+                        config.problem("items", "the amount of " + material.getKey().getKey() + " must be a whole number from 1 to " + most);
+                    } else {
+                        items.add(new Kit.Item(material, amount, unbreakable));
+                    }
                 }
             }
         }

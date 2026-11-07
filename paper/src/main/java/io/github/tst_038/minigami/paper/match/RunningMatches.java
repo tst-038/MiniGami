@@ -73,6 +73,7 @@ public final class RunningMatches implements Listener {
         // Registered first so it runs last, once the match has let go of the arena.
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {
+            maps.setUp(arena);
             match.start();
         } catch (RuntimeException e) {
             match.match().dispose();

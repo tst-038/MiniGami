@@ -55,6 +55,13 @@ class KitFactoryTest {
     }
 
     @Test
+    void anItemCanBeUnbreakable() throws Exception {
+        var kit = read(root("kit: { items: [iron_sword unbreakable, arrow 16 unbreakable, bow] }"));
+
+        assertEquals(List.of(new Kit.Item(Material.IRON_SWORD, 1, true), new Kit.Item(Material.ARROW, 16, true), new Kit.Item(Material.BOW, 1)), kit.items());
+    }
+
+    @Test
     void savedKitByName() throws Exception {
         var root = root("kit: { saved: seeker }");
 
@@ -84,7 +91,7 @@ class KitFactoryTest {
                 "games/test.yml: kit.items: the amount of arrow must be a whole number from 1 to 64",
                 "games/test.yml: kit.items: the amount of arrow must be a whole number from 1 to 64",
                 "games/test.yml: kit.items: the amount of arrow must be a whole number from 1 to 64",
-                "games/test.yml: kit.items: 'arrow 1 2' should be an item and an amount, like 'arrow 16'",
+                "games/test.yml: kit.items: 'arrow 1 2' should be an item with an amount and/or 'unbreakable', like 'arrow 16' or 'diamond_shovel unbreakable'",
                 "games/test.yml: kit.items: the amount of iron_sword must be a whole number from 1 to 1"), problems(root));
     }
 

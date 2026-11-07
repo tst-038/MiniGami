@@ -13,6 +13,7 @@ import org.bukkit.Material;
  * A block may be broken if there is no {@code whitelist} or it is on it, and it is not on the {@code blacklist};
  * with neither list every block is breakable, and an empty {@code whitelist} breaks nothing.
  * {@code instant} is off, {@code drops} on and {@code place} off unless set.
+ * {@code tools: [diamond_shovel]} lets only players holding one of them break blocks at all, and instantly.
  * {@code place} lets players place any block; the lists never restrict placing.
  */
 public final class BreakBlocksFactory implements FeatureFactory {
@@ -30,7 +31,8 @@ public final class BreakBlocksFactory implements FeatureFactory {
         var instant = config.has("instant") && config.bool("instant");
         var drops = !config.has("drops") || config.bool("drops");
         var place = config.has("place") && config.bool("place");
-        return new BreakBlocks(breakable, instant, drops, place);
+        var tools = config.has("tools") ? Set.copyOf(config.materials("tools")) : Set.<Material>of();
+        return new BreakBlocks(breakable, instant, drops, place, tools);
     }
 
     private static Set<Material> blocks(ConfigReader config, String key) {

@@ -20,6 +20,7 @@ import io.github.tst_038.minigami.features.kit.SavedKit;
 import io.github.tst_038.minigami.features.loot.LootFactory;
 import io.github.tst_038.minigami.features.terrain.TerrainFactory;
 import io.github.tst_038.minigami.features.nodamage.NoDamageFactory;
+import io.github.tst_038.minigami.features.nodropitems.NoDropItemsFactory;
 import io.github.tst_038.minigami.features.nohunger.NoHungerFactory;
 import io.github.tst_038.minigami.features.nomobs.NoMobsFactory;
 import io.github.tst_038.minigami.features.plotmobs.PlotMobsFactory;
@@ -67,7 +68,7 @@ final class BuiltIns {
             Supplier<TerrainStyles> terrainStyles, Executor offThread, Consumer<String> log,
             Supplier<Audience> staff) {
         return List.of(new VoidKillsFactory(), new KitFactory(savedKits), new DeathItemsFactory(), new BreakBlocksFactory(), new NoDamageFactory(),
-                new GiveDropsFactory(), new ProjectileBreaksFactory(), new AntiCampingFactory(), new DecayFloorFactory(), new NoHungerFactory(),
+                new GiveDropsFactory(), new ProjectileBreaksFactory(), new AntiCampingFactory(), new DecayFloorFactory(), new NoHungerFactory(), new NoDropItemsFactory(),
                 new OneHitFactory(), new CountdownFactory(), new FreezeFactory(), new EffectsFactory(), new NoMobsFactory(), new PlotMobsFactory(),
                 new PlayAreaFactory(), new TeamRegionFactory(), new LootFactory(lootTables, savedItems),
                 new TerrainFactory(terrainStyles, offThread, log, staff));

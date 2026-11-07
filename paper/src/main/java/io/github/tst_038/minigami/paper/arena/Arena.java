@@ -16,9 +16,11 @@ import org.bukkit.World;
  * A place in a world that matches are played in: where players start, optionally where they wait before the
  * start, named regions that games use, in the order of the file, the containers matches fill with loot, and the box its saved map covers. Locations are handed out as copies, since
  * Bukkit's are mutable.
+ *
+ * <p>{@code playRegion} is the region a game plays in when it picked one (see {@link #within}).
  */
 public record Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Optional<Location> spectatorSpot,
-        Map<String, Region> regions, Optional<Region> map, List<LootPoint> lootPoints) implements ArenaLayout {
+        Map<String, Region> regions, Optional<Region> map, List<LootPoint> lootPoints, Optional<Region> playRegion) implements ArenaLayout {
 
     /** @param team the team that starts here, or empty for a spawn anyone may use */
     public record Spawn(Location location, Optional<String> team) {
@@ -39,6 +41,12 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
         spectatorSpot = spectatorSpot.map(Location::clone);
         regions = Collections.unmodifiableMap(new LinkedHashMap<>(regions));
         lootPoints = List.copyOf(lootPoints);
+    }
+
+    /** An arena that isn't narrowed to a region. */
+    public Arena(String id, World world, List<Spawn> spawns, Optional<Location> waitingSpot, Optional<Location> spectatorSpot,
+            Map<String, Region> regions, Optional<Region> map, List<LootPoint> lootPoints) {
+        this(id, world, spawns, waitingSpot, spectatorSpot, regions, map, lootPoints, Optional.empty());
     }
 
     /** An arena without loot points. */
@@ -69,6 +77,12 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
         }
         var shared = locations(spawn -> spawn.team().isEmpty());
         return shared.isEmpty() ? locations(spawn -> true) : shared;
+    }
+
+    /** This arena for a game that plays in one of its regions: only the spawns inside it, or standing on its top layer, are left. Map, regions and loot stay whole. */
+    public Arena within(Region region) {
+        return new Arena(id, world, spawns.stream().filter(spawn -> region.containsStanding(spawn.location())).toList(), waitingSpot, spectatorSpot, regions, map,
+                lootPoints, Optional.of(region));
     }
 
     @Override

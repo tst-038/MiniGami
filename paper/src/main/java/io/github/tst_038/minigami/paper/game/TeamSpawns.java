@@ -4,6 +4,6 @@ package io.github.tst_038.minigami.paper.game;
 public enum TeamSpawns {
     /** A team shares one spawn and comes back to it, and teams are kept apart; as a wall game needs. */
     TOGETHER,
-    /** Every player takes the next spawn whatever their team, and comes back to a random one. */
+    /** Every player takes the next spawn whatever their team, and comes back to the spawn farthest from the others. */
     SPREAD
 }
