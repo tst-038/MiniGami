@@ -28,6 +28,7 @@ import java.util.stream.Stream;
  * @param teamSpawns whether a team starts and respawns at one spawn or spread over all; spawns tagged for a team always go to it
  * @param roles in the order they are handed out; empty when it has none
  * @param respawn where a player who comes back is put down
+ * @param respawnSeconds how long a player who died but is still in waits before they are put at a spawn; 0 means at once
  * @param quit what quitting a running match does to a player still in it
  * @param arenas the arenas it lists that can host it
  * @param findings what is wrong with the arenas it lists, also those left out of {@code arenas} for it
@@ -36,7 +37,7 @@ import java.util.stream.Stream;
  * @param hud what players see of a match next to chat
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, Respawn respawn, List<Role> roles, Quit quit, List<Arena> arenas, List<Finding> findings,
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, Respawn respawn, int respawnSeconds, List<Role> roles, Quit quit, List<Arena> arenas, List<Finding> findings,
         Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud) {
 
     public Variant {

@@ -128,6 +128,8 @@ public final class LiveMatch {
     private final Map<UUID, MatchClock.Task> away = new HashMap<>();
     /** Keeps those away counted as in the match until they come back, run out of time, or it ends. */
     private final Map<UUID, Presence.Claim> awayClaims = new HashMap<>();
+    /** Participants who died and wait to be put at a spawn, each with the timer that does it. */
+    private final Map<UUID, MatchClock.Task> respawning = new HashMap<>();
     /** Participants who left after the start; the roster still has them. */
     private final Set<UUID> left = new HashSet<>();
     /** The region of every team, handed out when play starts. */
@@ -196,7 +198,8 @@ public final class LiveMatch {
     }
 
     private void setGameMode(Player player) {
-        if (match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isPresent()) {
+        // Whoever waits to respawn gets the phase's mode when they come back.
+        if (!respawning.containsKey(player.getUniqueId()) && match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isPresent()) {
             match.currentPhase().ifPresent(phase -> player.setGameMode(variant.gametype().gameMode(phase.id())));
         }
     }
@@ -250,14 +253,14 @@ public final class LiveMatch {
                 event.setCancelled(true);
             }
         });
-        if (arena.spectatorSpot().isPresent()) {
+        if (arena.spectatorSpot().isPresent() || variant.respawnSeconds() > 0) {
             protectSpectators(context);
         }
         hud.start();
         match.start();
     }
 
-    /** Those who are out and watch from the spectator spot can't touch the match, nor be touched. */
+    /** Those who are out and watch from the spectator spot, or wait to respawn, can't touch the match, nor be touched. */
     private void protectSpectators(PaperMatchContext context) {
         context.on(EntityDamageEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getEntity())));
         context.on(EntityDamageByEntityEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getDamager())));
@@ -274,7 +277,7 @@ public final class LiveMatch {
 
     private boolean isWatching(Entity entity) {
         return entity instanceof Player player && isActive(player.getUniqueId())
-                && match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty();
+                && (respawning.containsKey(player.getUniqueId()) || match.roster().find(player.getUniqueId()).filter(Participant::isAlive).isEmpty());
     }
 
     public Match match() {
@@ -961,6 +964,7 @@ public final class LiveMatch {
         }
         messages.send(audience(), "match.eliminated", Placeholder.component("player", playerName(player)));
         match.eliminate(id);
+        stopRespawning(id);
         hud.out(player);
         return false;
     }
@@ -988,11 +992,53 @@ public final class LiveMatch {
         var player = event.getPlayer();
         var id = player.getUniqueId();
         var out = match.roster().find(id).filter(Participant::isAlive).isEmpty();
+        if (!out && variant.respawnSeconds() > 0 && match.result().isEmpty()) {
+            waitToRespawn(event);
+            return;
+        }
         var where = out ? arena.spectatorSpot().orElseGet(() -> spawnFor(id)) : spawnFor(id);
         event.setRespawnLocation(where);
         if (out) {
             // The game variant is reset during the respawn, so it is set right after.
             player.getScheduler().run(plugin, task -> setSpectating(player), null);
+        }
+    }
+
+    /**
+     * Holds a participant who died but is still in at the arena's respawning spot, protected like a spectator, or
+     * spectating at the spawn they will get when the arena has none. When the time is up they are put at a spawn
+     * and play on in the phase's game mode.
+     */
+    private void waitToRespawn(PlayerRespawnEvent event) {
+        var player = event.getPlayer();
+        var id = player.getUniqueId();
+        var spot = arena.respawningSpot();
+        event.setRespawnLocation(spot.orElseGet(() -> spawnFor(id)));
+        stopRespawning(id);
+        respawning.put(id, match.scope().register(match.clock().schedule(variant.respawnSeconds() * 20L, () -> comeBack(id))));
+        // The game mode is reset during the respawn, so it is set right after.
+        player.getScheduler().run(plugin, task -> {
+            if (respawning.containsKey(id)) {
+                player.setGameMode(spot.isPresent() ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+                player.sendActionBar(messages.render("match.respawning", Formatter.number("seconds", variant.respawnSeconds())));
+            }
+        }, null);
+    }
+
+    /** The wait is over; nothing happens for one who went out or left in the meantime. */
+    private void comeBack(UUID id) {
+        respawning.remove(id);
+        var player = plugin.getServer().getPlayer(id);
+        if (player != null && members.contains(id) && match.roster().find(id).filter(Participant::isAlive).isPresent()) {
+            player.teleport(spawnFor(id));
+            setGameMode(player);
+        }
+    }
+
+    private void stopRespawning(UUID id) {
+        var task = respawning.remove(id);
+        if (task != null) {
+            task.close();
         }
     }
 
@@ -1061,6 +1107,7 @@ public final class LiveMatch {
 
     /** Players who waited in place had nothing changed, so there is nothing to give back. */
     private void restore(UUID id) {
+        stopRespawning(id);
         scoreboardTeams.remove(id);
         hud.hide(id);
         releasePlace(id);

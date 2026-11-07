@@ -239,6 +239,9 @@ public final class ArenaSetup {
             arena.spectatorSpot().ifPresentOrElse(
                     spot -> messages.send(sender, "arena.info-spectator-spot", point(spot)),
                     () -> messages.send(sender, "arena.info-no-spectator-spot"));
+            arena.respawningSpot().ifPresentOrElse(
+                    spot -> messages.send(sender, "arena.info-respawning-spot", point(spot)),
+                    () -> messages.send(sender, "arena.info-no-respawning-spot"));
             arena.map().filter(box -> maps.hasMap(arena)).ifPresentOrElse(
                     box -> messages.send(sender, "arena.info-map", corners(box)),
                     () -> messages.send(sender, "arena.info-no-map", Placeholder.unparsed("arena", id)));

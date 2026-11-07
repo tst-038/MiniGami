@@ -46,6 +46,7 @@ class ArenaLoaderTest {
                   - { x: 5, y: 64, z: 5 }
                 waiting-spot: { x: 1, y: 70, z: 1 }
                 spectator-spot: { x: 2, y: 90, z: 2 }
+                respawning-spot: { x: 3, y: 95, z: 3 }
                 """);
 
         assertEquals(List.of(), problems(loaded));
@@ -53,6 +54,7 @@ class ArenaLoaderTest {
         assertEquals(List.of(new Location(world, 0.5, 64, 0.5, 90, 10), new Location(world, 5, 64, 5)), arena.spawnsFor(Optional.empty()));
         assertEquals(Optional.of(new Location(world, 1, 70, 1)), arena.waitingSpot());
         assertEquals(Optional.of(new Location(world, 2, 90, 2)), arena.spectatorSpot());
+        assertEquals(Optional.of(new Location(world, 3, 95, 3)), arena.respawningSpot());
         assertTrue(arena.isPlayable());
     }
 
@@ -64,6 +66,7 @@ class ArenaLoaderTest {
         assertFalse(arena.isPlayable());
         assertEquals(Optional.empty(), arena.waitingSpot());
         assertEquals(Optional.empty(), arena.spectatorSpot());
+        assertEquals(Optional.empty(), arena.respawningSpot());
     }
 
     @Test

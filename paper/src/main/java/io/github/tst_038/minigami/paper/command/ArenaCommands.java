@@ -28,7 +28,7 @@ import org.bukkit.entity.Player;
 
 /**
  * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
- * {@code spawn list|add [team]|remove <n>|waiting set|remove|spectator set|remove} (also {@code waiting} and {@code spectate} on the arena itself), {@code region list|<name> set|remove|show|schematic [load|paste]}. Points are where the
+ * {@code spawn list|add [team]|remove <n>|waiting set|remove|spectator set|remove|respawning set|remove} (also {@code waiting} and {@code spectate} on the arena itself), {@code region list|<name> set|remove|show|schematic [load|paste]}. Points are where the
  * admin stands; regions and maps come from their WorldEdit selection.
  */
 final class ArenaCommands {
@@ -68,7 +68,8 @@ final class ArenaCommands {
                                                 .executes(bySender((sender, context) -> arenas.removeSpawn(sender, arena(context),
                                                         IntegerArgumentType.getInteger(context, "number"))))))
                                 .then(spot(editor, help, "waiting", "waiting-spot"))
-                                .then(spot(editor, help, "spectator", "spectator-spot")))
+                                .then(spot(editor, help, "spectator", "spectator-spot"))
+                                .then(spot(editor, help, "respawning", "respawning-spot")))
                         .then(Commands.literal("region")
                                 .executes(help)
                                 .then(Commands.literal("list").executes(bySender((sender, context) -> arenas.regions(sender, arena(context)))))

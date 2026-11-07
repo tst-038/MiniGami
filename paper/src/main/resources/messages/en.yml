@@ -56,6 +56,8 @@ match:
   away-expired: "%prefix%%player% <red>didn't return and is out!"
   # The death message of a participant whose game kills them for quitting. %player%
   died-quitting: "<red>%player%</red> <gray>rage quit the match"
+  # Above the hotbar while a player waits to respawn (respawn-seconds). %seconds%: how long the wait is
+  respawning: "<gray>Respawning in <gold>%seconds%</gold> seconds"
   # %player%: the winner
   winner: "%prefix%<gold>%player%</gold> <gray>won the match!"
   # Above the hotbar in the last seconds of a phase with the countdown feature. %seconds%: seconds left
@@ -301,6 +303,8 @@ arena:
   no-spawns: "%prefix%<gray><white>%arena%</white> has no spawns yet; add one with <white>/mg arena %arena% spawn add</white>."
   info-spectator-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>spectator spot</white>: %x%, %y%, %z%</hover></teleport>"
   info-no-spectator-spot: "<gray> - no spectator spot; players who are out spectate where they fell"
+  info-respawning-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>respawning spot</white>: %x%, %y%, %z%</hover></teleport>"
+  info-no-respawning-spot: "<gray> - no respawning spot; players waiting to respawn spectate at the spawn they will get"
   info-no-waiting-spot: "<gray> - no waiting spot; players wait at spawn 1"
   # %region%: its name; %from%, %to%: its lowest and highest corner block
   info-region: "<gray> - <white>region %region%</white>: %from% to %to%"

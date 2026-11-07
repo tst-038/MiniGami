@@ -45,6 +45,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
  * team-spawns: spread        # optional; together (the default): a team shares one spawn, or spread: every player takes the next one
  * respawn: highest-floor      # optional; spawns (the default), or the highest floor still standing in region, for games that break their floor
+ * respawn-seconds: 5         # optional; how long a player who died waits to come back, at the arena's respawning spot; 0 (the default): at once
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
  *   hide-and-seek:
@@ -229,6 +230,7 @@ public final class GameLoader {
         if (respawn == Respawn.HIGHEST_FLOOR && region.isEmpty()) {
             config.problem("respawn", "highest-floor needs the region the game plays in; set region");
         }
+        var respawnSeconds = config.has("respawn-seconds") ? config.integer("respawn-seconds", 0, 3600) : 0;
         var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles).flatMap(feature -> feature.regions().stream())).distinct().toList();
         var allFeatures = Variant.allFeatures(game, features, roles).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
@@ -246,7 +248,7 @@ public final class GameLoader {
             findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, roles, quit, playable, findings,
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, respawnSeconds, roles, quit, playable, findings,
                 features, stats, hud);
     }
 

@@ -26,6 +26,7 @@ import org.bukkit.World;
  *   - { x: 9.5, y: 64, z: 0.5, team: red }
  * waiting-spot: { x: 0.5, y: 70, z: 0.5 }
  * spectator-spot: { x: 0.5, y: 90, z: 0.5 }
+ * respawning-spot: { x: 0.5, y: 90, z: 0.5 }
  * regions:
  *   hill: { from: { x: -3, y: 64, z: -3 }, to: { x: 3, y: 67, z: 3 } }
  * map: { from: { x: -20, y: 60, z: -20 }, to: { x: 20, y: 80, z: 20 } }
@@ -34,7 +35,7 @@ import org.bukkit.World;
  *   - { x: 3, y: 64, z: 9, table: { ice/rare: 70, ice/op: 30 }, chance: 50 }
  * </pre>
  *
- * Yaw, pitch, the spawns, the waiting spot, the spectator spot (where players who are out watch from), the
+ * Yaw, pitch, the spawns, the waiting spot, the spectator spot (where players who are out watch from), the respawning spot (where players wait for a delayed respawn), the
  * regions, the loot points and the map are optional. A spawn with a team is only used by that team in games with teams; spawns
  * without one are for everyone. A region is the box of
  * blocks between its two corners, both included. {@code map} is the box the arena's saved map is
@@ -73,8 +74,12 @@ public final class ArenaLoader {
         var spectatorSpot = config.has("spectator-spot")
                 ? Optional.of(ConfigLocations.read(config.section("spectator-spot"), world))
                 : Optional.<Location>empty();
+        config.suggest("respawning-spot", List.of(ConfigLocations.HERE));
+        var respawningSpot = config.has("respawning-spot")
+                ? Optional.of(ConfigLocations.read(config.section("respawning-spot"), world))
+                : Optional.<Location>empty();
         var map = config.has("map") ? Optional.of(box("map", config.section("map"), world)) : Optional.<Region>empty();
-        return new Arena(id, world, spawns, waitingSpot, spectatorSpot, regions(config, world), map, LootPoint.read(config, world));
+        return new Arena(id, world, spawns, waitingSpot, spectatorSpot, regions(config, world), map, LootPoint.read(config, world), Optional.empty(), respawningSpot);
     }
 
     private static Map<String, Region> regions(ConfigReader config, World world) {

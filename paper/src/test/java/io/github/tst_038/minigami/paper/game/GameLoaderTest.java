@@ -673,6 +673,17 @@ class GameLoaderTest {
         assertEquals(Respawn.SPAWNS, load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills]}").entries().find("fall").orElseThrow().base().respawn());
     }
 
+    @Test
+    void respawnSecondsDelaysTheComebackAndCannotBeNegative() throws Exception {
+        var base = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills]";
+
+        assertEquals(0, load(base + "}").entries().find("fall").orElseThrow().base().respawnSeconds());
+        assertEquals(5, load(base + ", respawn-seconds: 5}").entries().find("fall").orElseThrow().base().respawnSeconds());
+        var game = load(base + ", respawn-seconds: 5, variants: {quick: {name: Quick, respawn-seconds: 2}}}").entries().find("fall").orElseThrow();
+        assertEquals(2, game.variants().get("quick").respawnSeconds());
+        assertEquals(List.of("games/fall.yml: respawn-seconds: must be between 0 and 3600"), problems(load(base + ", respawn-seconds: -1}")));
+    }
+
     private static List<String> arenaIds(YamlFiles.Loaded<Game> loaded) {
         return loaded.entries().find("fall").orElseThrow().base().arenas().stream().map(Arena::id).toList();
     }
