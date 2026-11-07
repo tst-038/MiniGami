@@ -17,11 +17,13 @@ import io.github.tst_038.minigami.core.stat.Tally;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -74,6 +76,8 @@ public final class FakeMatch implements MatchContext {
     public final Map<Entity, Collection<? extends Player>> viewers = new HashMap<>();
     /** The spawned entities that were removed. */
     public final List<Entity> removed = new ArrayList<>();
+    /** Who {@link #endRespawns} was called for. */
+    public final Set<UUID> endedRespawns = new HashSet<>();
     private final Map<Class<?>, Consumer<Event>> handlers = new HashMap<>();
     private final Map<UUID, Player> players = new HashMap<>();
 
@@ -190,6 +194,11 @@ public final class FakeMatch implements MatchContext {
     @Override
     public void count(UUID id, Stat stat, long amount) {
         stats.add(id, stat, amount);
+    }
+
+    @Override
+    public void endRespawns(UUID id) {
+        endedRespawns.add(id);
     }
 
     @Override

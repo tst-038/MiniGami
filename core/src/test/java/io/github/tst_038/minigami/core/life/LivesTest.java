@@ -51,6 +51,66 @@ class LivesTest {
     }
 
     @Test
+    void endingRespawnsMakesTheNextDeathTheLastEvenWithLivesLeft() {
+        livesOf.put(alice, 3);
+        lives.endRespawns(alice);
+
+        assertEquals(OptionalInt.of(0), lives.left(alice));
+        assertTrue(lives.die(alice));
+    }
+
+    @Test
+    void endingRespawnsAlsoHoldsForUnlimitedLives() {
+        lives.endRespawns(alice);
+
+        assertEquals(OptionalInt.of(0), lives.left(alice));
+        assertTrue(lives.die(alice));
+    }
+
+    @Test
+    void endingRespawnsTwiceOrForAnUnknownIdIsHarmless() {
+        var bob = UUID.randomUUID();
+        livesOf.put(alice, 2);
+        lives.endRespawns(alice);
+        lives.endRespawns(alice);
+        lives.endRespawns(bob);
+
+        assertTrue(lives.die(alice));
+        assertTrue(lives.die(alice));
+        assertTrue(lives.die(bob));
+    }
+
+    @Test
+    void endingRespawnsIsOnlyForThatParticipant() {
+        var bob = UUID.randomUUID();
+        livesOf.put(alice, 2);
+        livesOf.put(bob, 2);
+        lives.endRespawns(alice);
+
+        assertFalse(lives.die(bob));
+    }
+
+    @Test
+    void ranOutLivesStayRanOutAfterEndingRespawns() {
+        livesOf.put(alice, 1);
+        lives.die(alice);
+        lives.endRespawns(alice);
+
+        assertEquals(OptionalInt.of(0), lives.left(alice));
+    }
+
+    @Test
+    void resettingTakesBackTheEndOfRespawns() {
+        livesOf.put(alice, 2);
+        lives.endRespawns(alice);
+
+        lives.reset(alice);
+
+        assertEquals(OptionalInt.of(2), lives.left(alice));
+        assertFalse(lives.die(alice));
+    }
+
+    @Test
     void livesAreAskedAtEachDeath() {
         livesOf.put(alice, 3);
         lives.die(alice);

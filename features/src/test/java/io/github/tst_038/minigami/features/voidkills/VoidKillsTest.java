@@ -177,6 +177,11 @@ class VoidKillsTest {
         }
 
         @Override
+        public void endRespawns(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void endPhase() {
             throw new UnsupportedOperationException();
         }

@@ -233,6 +233,13 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public void endRespawns(UUID id) {
+        if (!scope.isClosed()) {
+            match.endRespawns(id);
+        }
+    }
+
+    @Override
     public void endPhase() {
         if (!scope.isClosed()) {
             match.match().advancePhase();

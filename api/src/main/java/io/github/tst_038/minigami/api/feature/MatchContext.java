@@ -192,6 +192,12 @@ public interface MatchContext {
     default void showTimer(String name, LongSupplier ticksLeft) {
     }
 
+    /**
+     * Makes the participant's next death their last, even if they have lives left or unlimited ones, so a game can take
+     * away the comeback of someone it has decided is done. Does nothing for one who isn't in the match.
+     */
+    void endRespawns(UUID id);
+
     /** Counts one more of the stat for the participant. */
     default void count(UUID id, Stat stat) {
         count(id, stat, 1);

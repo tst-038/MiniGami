@@ -384,6 +384,13 @@ public final class LiveMatch {
                 : OptionalLong.of(Math.max(0, goAt - match.clock().elapsedTicks()));
     }
 
+    /** Makes the participant's next death their last. */
+    void endRespawns(UUID id) {
+        if (match.roster().find(id).isPresent()) {
+            lives.endRespawns(id);
+        }
+    }
+
     /** The lives a participant has left; empty when they are unlimited. */
     public OptionalInt livesLeft(UUID id) {
         return lives.left(id);
