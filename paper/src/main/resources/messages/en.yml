@@ -129,6 +129,10 @@ hide-and-seek:
   hiding: "%prefix%<green>Hide! <gray>The hunt starts in <white>%seconds%</white>s."
   # When the hunters are let go. %seconds%: how long the hunted must last
   seeking: "%prefix%<red>The hunt is on! <gray>Survive <white>%seconds%</white>s."
+paint:
+  # A team, or a player without teams, took the lead alone. %team%: its name, %blocks%: the blocks it holds
+  leader: "%prefix%%team% <gray>takes the lead with <white>%blocks%</white> blocks!"
+
 domination:
   # A team, or a player without teams, took a capture point. %team%: its name, %point%: the point's name
   taken: "%prefix%%team% <gray>captured %point%<gray>!"
@@ -266,6 +270,8 @@ stats:
     keys: "keys found"
     escapes: "escapes"
     catches: "runners caught"
+    blocks-painted: "blocks painted"
+    blocks-stolen: "blocks stolen"
 
 lobby:
   none: "%prefix%<red>No lobby set. Use <white>/mg lobby set</white>."

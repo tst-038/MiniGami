@@ -1,7 +1,7 @@
 # MiniGami
 
 A multi-game minigame engine for [Paper](https://papermc.io). One plugin runs many minigames: spleef, king of the hill,
-domination, team deathmatch, hide and seek, infection, build battle and the wall. Each game is a YAML file you can copy,
+domination, team deathmatch, hide and seek, infection, build battle, the wall and paint. Each game is a YAML file you can copy,
 change and combine. Add game nights with standings, scheduled games with rewards, parties, persistent stats and a HUD,
 all without writing code.
 
@@ -113,6 +113,7 @@ You can also copy one of the files in `games/`, edit it, and run `/mg reload`.
 | `hide-and-seek` | Seekers hunt hiders. Caught hiders are out, or join the seekers (infection). | spawns |
 | `build-battle` | Build a random theme in your own plot (kept inside it by `play-area`), then everyone scores the builds. | `plot-1`, `plot-2`, … regions and a saved map |
 | `shifting-maze` | Minotaurs hunt teams of runners through a maze whose walls shift; teams find their keys and reach the centre. | a `maze` region and a saved map; needs WorldEdit |
+| `paint` | Paint the canvas with a brush: every block you hold is a point, painting over another team's block takes it from them. Most blocks wins. | a `canvas` region and a saved map |
 | `the-wall` | Teams prepare behind walls; the walls drop and a border closes in. | team spawns, `quarter-1`…`quarter-4`, `fighting` and `border` regions, `wall…` regions and a saved map |
 
 `/mg gametype <id> info` lists a game type's phases, settings and what its arenas need.
