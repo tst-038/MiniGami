@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.buildbattle.BuildBattle;
 import io.github.tst_038.minigami.domination.Domination;
+import io.github.tst_038.minigami.king.King;
 import io.github.tst_038.minigami.features.anticamping.AntiCampingFactory;
 import io.github.tst_038.minigami.features.breakblocks.BreakBlocksFactory;
 import io.github.tst_038.minigami.features.countdown.CountdownFactory;
@@ -53,7 +54,7 @@ final class BuiltIns {
     }
 
     static List<GameType> gametypes() {
-        return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall(), new ShiftingMaze(), new PoleDuel(), new Paint());
+        return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall(), new ShiftingMaze(), new PoleDuel(), new Paint(), new King());
     }
 
     /**

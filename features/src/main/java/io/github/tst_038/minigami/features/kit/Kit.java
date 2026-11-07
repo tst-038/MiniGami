@@ -10,10 +10,12 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 /**
  * Gives every player still in the match the same items when the phase starts, and again when they
  * respawn, come back or switch role: only the ones they lack, so items kept through a death don't pile up.
+ * Armor in the item list is worn.
  * A saved kit puts each item in its own slot and refills only the empty ones. With {@code respawn} off
  * the kit is given once, when the phase starts.
  */
@@ -62,8 +64,7 @@ public final class Kit implements Feature {
     private void topUp(MatchContext context, Player player) {
         if (context.roster().find(player.getUniqueId()).filter(Participant::isAlive).isPresent()) {
             var inventory = player.getInventory();
-            inventory.addItem(items.stream().filter(item -> !inventory.contains(item.material()))
-                    .map(Kit::stack).toArray(ItemStack[]::new));
+            items.stream().filter(item -> !inventory.contains(item.material())).forEach(item -> add(inventory, stack(item)));
             saved.slots().forEach((slot, item) -> {
                 var current = inventory.getItem(slot);
                 if (current == null || current.isEmpty()) {
@@ -75,8 +76,18 @@ public final class Kit implements Feature {
 
     private void give(Player player) {
         var inventory = player.getInventory();
-        inventory.addItem(items.stream().map(Kit::stack).toArray(ItemStack[]::new));
+        items.forEach(item -> add(inventory, stack(item)));
         saved.slots().forEach((slot, item) -> inventory.setItem(slot, item.clone()));
+    }
+
+    /** Armor goes on in its own slot when that is free, anything else wherever it fits. */
+    private static void add(PlayerInventory inventory, ItemStack stack) {
+        var slot = stack.getType().getEquipmentSlot();
+        if (slot.isArmor() && inventory.getItem(slot).isEmpty()) {
+            inventory.setItem(slot, stack);
+        } else {
+            inventory.addItem(stack);
+        }
     }
 
     private static ItemStack stack(Item item) {

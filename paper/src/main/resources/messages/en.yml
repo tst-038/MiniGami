@@ -180,6 +180,15 @@ shifting-maze:
   # Action bar when a Minotaur tries to enter the exit room
   # To everyone when the last free member of a team is out. %team%: the team
   escaped: "%prefix%%team% <green>escaped the maze!"
+king:
+  # At the start, to the King's team. %king%: the King
+  chosen: "%prefix%<gold>%king% <gray>is your King! Keep them alive: <white>while the King lives, you come back."
+  # When a King dies. %team%: their team, %king%: the King
+  died: "%prefix%%team%<red>'s King %king% <red>has fallen!"
+  # To the rest of that team
+  last-life: "%prefix%<red>Your King has fallen. <gray>You have one life left."
+  # When time ran out with both teams still standing
+  time-up: "%prefix%<gray>Time is up! <white>The King, the survivors and the kills decide."
 team-deathmatch:
   # After a kill. %team%: the killer's team, or the killer without teams; %kills%: its kills so far
   kills: "%prefix%%team% <gray>is on <gold>%kills%</gold> kills!"
@@ -282,6 +291,7 @@ stats:
     catches: "runners caught"
     blocks-painted: "blocks painted"
     blocks-stolen: "blocks stolen"
+    king-kills: "kings killed"
 
 lobby:
   none: "%prefix%<red>No lobby set. Use <white>/mg lobby set</white>."

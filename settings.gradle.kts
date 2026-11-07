@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("core", "api", "features", "stats", "gamenight", "games:last-standing", "games:build-battle", "games:team-deathmatch", "games:hide-and-seek", "games:domination", "games:the-wall", "games:shifting-maze", "games:pole-duel", "games:paint", "games:item-race", "paper")
+include("core", "api", "features", "stats", "gamenight", "games:last-standing", "games:build-battle", "games:team-deathmatch", "games:hide-and-seek", "games:domination", "games:the-wall", "games:shifting-maze", "games:pole-duel", "games:paint", "games:king", "games:item-race", "paper")

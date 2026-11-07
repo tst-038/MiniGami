@@ -395,10 +395,14 @@ public final class LiveMatch {
                 : OptionalLong.of(Math.max(0, goAt - match.clock().elapsedTicks()));
     }
 
-    /** Makes the participant's next death their last. */
+    /** Makes the participant's next death their last; one who already died and is waiting to come back is out at once. */
     void endRespawns(UUID id) {
         if (match.roster().find(id).isPresent()) {
             lives.endRespawns(id);
+            var waiting = respawning.containsKey(id) ? plugin.getServer().getPlayer(id) : null;
+            if (waiting != null) {
+                eliminate(waiting);
+            }
         }
     }
 
