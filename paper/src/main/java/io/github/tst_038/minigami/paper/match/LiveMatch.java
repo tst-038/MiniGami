@@ -239,6 +239,14 @@ public final class LiveMatch {
                 event.setCancelled(true);
             }
         });
+        // Nobody dies while gathering (waiting in place isn't routed here); void and kill stay deadly so nobody falls forever.
+        context.on(EntityDamageEvent.class, event -> {
+            var cause = event.getCause();
+            if (isJoinable() && event.getEntity() instanceof Player player && isMember(player.getUniqueId())
+                    && cause != EntityDamageEvent.DamageCause.VOID && cause != EntityDamageEvent.DamageCause.KILL) {
+                event.setCancelled(true);
+            }
+        });
         if (arena.spectatorSpot().isPresent()) {
             protectSpectators(context);
         }
