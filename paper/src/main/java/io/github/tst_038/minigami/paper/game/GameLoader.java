@@ -220,6 +220,7 @@ public final class GameLoader {
                         + "makes " + setup.teamsFor(runners) + " teams; at most " + TeamSetup.IDS.size() + " are possible");
             }
         });
+        requiredTeams(config, game, teams, roles);
         var ranks = ranks(config, game, teams.isPresent() || !roles.isEmpty());
         var quit = quit(config);
         var mostTeams = roles.size() + teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(roles.isEmpty() ? maxPlayers : 0);
@@ -403,6 +404,20 @@ public final class GameLoader {
             }
         }
         return roles;
+    }
+
+    /** A game written for a number of teams needs exactly that many: its roles plus the teams of a fixed count. */
+    private static void requiredTeams(ConfigReader config, GameType game, Optional<TeamSetup> teams, List<Role> roles) {
+        if (game == null || game.requiredTeams().isEmpty()) {
+            return;
+        }
+        var wanted = game.requiredTeams().getAsInt();
+        // Teams of a fixed size make a number of teams that depends on the players, so they have no count to compare.
+        var have = roles.size() + teams.map(TeamSetup::count).orElse(0);
+        if (have != wanted) {
+            config.problem("teams", game.id() + " needs exactly " + wanted + " teams; set teams: { count: " + wanted + " }"
+                    + (have > 0 ? ", it has " + have : ""));
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import org.bukkit.GameMode;
 
@@ -72,6 +73,14 @@ public interface GameType {
      */
     default List<String> ranks() {
         return List.of();
+    }
+
+    /**
+     * The exact number of teams the game's code is written for, such as two for a game of one side against the other;
+     * roles count as teams. Empty when the game works with any number.
+     */
+    default OptionalInt requiredTeams() {
+        return OptionalInt.empty();
     }
 
     /**
