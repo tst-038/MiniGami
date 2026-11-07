@@ -146,6 +146,10 @@ the-wall:
   # When teams are let loose in their part of the arena. %minutes%: until the walls drop
   preparing: "%prefix%<green>Prepare! <gray>The walls fall in <white>%minutes%</white> min."
   dropped: "%prefix%<red>The walls have fallen! <gray>Last team standing wins."
+pole-duel:
+  # When every player stands on a pole
+  built: "%prefix%<green>Bridge across with slabs and knock the others off! <gray>Touch the ground and you are out."
+  no-room: "%prefix%<red>The arena has no room for a pole each, so the match is called off."
 shifting-maze:
   # When the runners are let loose. %seconds%: until the Minotaurs wake
   head-start: "%prefix%<green>Run! <gray>The Minotaurs wake in <white>%seconds%</white>s."
@@ -732,6 +736,8 @@ terrain:
   quota-missed: "<red>[MiniGami] Land in <white>%area%</white> misses its quota: <white>%key%</white> has %found%, wanted %wanted% <gray>(seed %seed%)"
 
 diagnosis:
+  # %region%, %players%, %height%: the region lacks room for a pole each for that many players, or is shorter than that
+  pole-duel-too-small: "<red>region <white>%region%</white> is too small for <white>%players%</white> poles, or under <white>%height%</white> blocks high"
   no-spawns: "<red>it has no spawns"
   # %region%
   missing-region: "<red>missing region <white>%region%</white>"

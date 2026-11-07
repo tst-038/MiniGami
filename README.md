@@ -113,6 +113,7 @@ You can also copy one of the files in `games/`, edit it, and run `/mg reload`.
 | `hide-and-seek` | Seekers hunt hiders. Caught hiders are out, or join the seekers (infection). | spawns |
 | `build-battle` | Build a random theme in your own plot (kept inside it by `play-area`), then everyone scores the builds. | `plot-1`, `plot-2`, … regions and a saved map |
 | `shifting-maze` | Minotaurs hunt teams of runners through a maze whose walls shift; teams find their keys and reach the centre. | a `maze` region and a saved map; needs WorldEdit |
+| `pole-duel` | Everyone stands on a pole; bridge with slabs, knock the others off, last one up wins. | a `poles` region and a saved map |
 | `the-wall` | Teams prepare behind walls; the walls drop and a border closes in. | team spawns, `quarter-1`…`quarter-4`, `fighting` and `border` regions, `wall…` regions and a saved map |
 
 `/mg gametype <id> info` lists a game type's phases, settings and what its arenas need.

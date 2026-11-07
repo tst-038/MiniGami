@@ -1,0 +1,38 @@
+# A game: what players join, with /mg join pole-duel, and see their stats of. The game type is the code it runs.
+#
+# Pole Duel: every player gets a pole of their own, set out at random. Bridge across with slabs, knock the others off,
+# and whoever touches the ground is out; the last one standing wins.
+# The arena needs a saved map (/mg arena example map save), which puts the ground back after each match, and a region called
+# poles (/mg arena example region poles set): its bottom layer is the ground (solid blocks), and it needs room above for the
+# poles (pole-height + 3 blocks high) and room across for a pole each, min-distance blocks apart. No spawns are used.
+gametype: pole-duel
+name: "<aqua>Pole Duel"
+min-players: 2
+max-players: 12
+waiting: arena
+arenas: [example]
+# Poles are pole-height blocks tall and at least min-distance blocks apart. Players hold at most slabs slabs, and get one more
+# every resupply-seconds seconds.
+pole-height: 6
+min-distance: 4
+pole-material: oak_log
+slab-material: oak_slab
+slabs: 64
+resupply-seconds: 5
+features:
+  playing:
+    # Set y to just above the ground (the poles region's bottom layer): { y: 64.5 }. The default is below the lowest player,
+    # which on a pole is not the ground.
+    void-kills: { y: 64.5 }
+    break-blocks: { place: true }
+    no-hunger: {}
+    no-drop-items: {}
+    # A knockback stick: make one with /mg kit save, then give it here. The kit file cannot enchant by itself.
+    # kit: { saved: pole-stick }
+stats: [combat]
+quit: { then: die, rejoin-seconds: 60 }
+hud:
+  boss-bar:
+    text:
+      building: "<yellow>Setting up the poles..."
+      playing: "<aqua>Pole Duel <gray>Knock the others off; stay up"
