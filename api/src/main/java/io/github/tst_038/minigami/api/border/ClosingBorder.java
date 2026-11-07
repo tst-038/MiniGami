@@ -1,10 +1,11 @@
-package io.github.tst_038.minigami.thewall;
+package io.github.tst_038.minigami.api.border;
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
+import io.github.tst_038.minigami.core.border.BorderSize;
 import io.github.tst_038.minigami.core.roster.Participant;
 import org.bukkit.entity.Player;
 
@@ -17,18 +18,18 @@ import org.bukkit.entity.Player;
  * <p>Players are only ever told where it will be one second later, so it stands still as soon as the
  * match clock does, while the match is paused.
  */
-final class ClosingBorder implements Feature {
+public final class ClosingBorder implements Feature {
 
-    static final String REGION = "border";
+    public static final String REGION = "border";
 
     /**
      * @param endSize the border's width in blocks once it stops closing
      * @param shrinkTicks how long it takes to close
      * @param damage health taken each second outside it, in half hearts
      */
-    record Settings(int endSize, long shrinkTicks, double damage) {
+    public record Settings(int endSize, long shrinkTicks, double damage) {
 
-        static Settings read(ConfigReader config) {
+        public static Settings read(ConfigReader config) {
             return new Settings(config.has("end-size") ? config.integer("end-size", 1, 10000) : 20,
                     (config.has("shrink-seconds") ? config.integer("shrink-seconds", 1, 7200) : 300) * 20L,
                     config.has("damage") ? config.integer("damage", 0, 40) : 1);
@@ -37,7 +38,7 @@ final class ClosingBorder implements Feature {
 
     private final Settings settings;
 
-    ClosingBorder(Settings settings) {
+    public ClosingBorder(Settings settings) {
         this.settings = settings;
     }
 

@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.thewall;
+package io.github.tst_038.minigami.core.border;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

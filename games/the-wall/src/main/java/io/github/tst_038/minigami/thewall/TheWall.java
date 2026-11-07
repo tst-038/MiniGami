@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.thewall;
 
+import io.github.tst_038.minigami.api.border.ClosingBorder;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
