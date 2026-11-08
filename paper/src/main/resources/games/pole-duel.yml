@@ -33,7 +33,7 @@ stats: [combat]
 quit: { then: die, rejoin-seconds: 60 }
 hud:
   sidebar:
-    playing: ["", "<gray>Time: <yellow>%time%", "<gray>Players left: <white>%alive%"]
+    playing: ["", "<gray>Time: <yellow>%time%", "<gray>Players left: <white>%alive%", "<gray>Next slab: <yellow>%next-slab%"]
   boss-bar:
     text:
       building: "<yellow>Setting up the poles..."

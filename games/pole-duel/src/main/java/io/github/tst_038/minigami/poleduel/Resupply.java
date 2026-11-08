@@ -18,7 +18,13 @@ final class Resupply implements Feature {
     @Override
     public void enable(MatchContext context) {
         context.players().forEach(player -> give(player, settings.slabs()));
-        context.scope().register(context.clock().repeat(settings.resupplySeconds() * 20L, () -> context.players().forEach(player -> give(player, 1))));
+        var interval = settings.resupplySeconds() * 20L;
+        var nextAt = new long[] {context.clock().elapsedTicks() + interval};
+        context.showTimer("next-slab", () -> Math.max(0, nextAt[0] - context.clock().elapsedTicks()));
+        context.scope().register(context.clock().repeat(interval, () -> {
+            nextAt[0] = context.clock().elapsedTicks() + interval;
+            context.players().forEach(player -> give(player, 1));
+        }));
     }
 
     private void give(Player player, int most) {
