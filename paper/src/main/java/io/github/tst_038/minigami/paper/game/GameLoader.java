@@ -60,6 +60,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * ranks:                      # optional; split each team at random, in this order (needs teams or roles); one rank leaves out players and per, to get the rest
  *   king: { players: 1, features: { playing: { effects: { glowing: 1 } } } }   # features are optional, and only for this rank
  *   guard: {}
+ * advancements: true          # optional; players earn advancements in its matches (default false)
  * quit:                       # optional; what quitting a running match does
  *   then: die                 # stay, die or out (the default)
  *   rejoin-seconds: 60        # how long they can come back; 0 (the default): not at all
@@ -254,7 +255,7 @@ public final class GameLoader {
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
         return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
-                features, stats, hud);
+                features, stats, hud, config.has("advancements") && config.bool("advancements"));
     }
 
     /** Every stat a game or stat group keeps. */
