@@ -115,6 +115,11 @@ public final class PlayerProfiles implements Listener {
         ids.stream().filter(online::contains).forEach(this::load);
     }
 
+    /** Reloads every player who is online. */
+    void reloadOnline() {
+        reload(Set.copyOf(online));
+    }
+
     private record NameRow(UUID id, String name) {
     }
 

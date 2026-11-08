@@ -34,7 +34,8 @@ final class ScheduleCommands {
     private ScheduleCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(Schedules schedules, ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
+    /** {@code /mg schedule join [schedule]}, for players. */
+    static ArgumentBuilder<CommandSourceStack, ?> forPlayers(Schedules schedules, Command<CommandSourceStack> help) {
         return Commands.literal("schedule")
                 .executes(help)
                 .then(Commands.literal("join")
@@ -42,9 +43,18 @@ final class ScheduleCommands {
                         .executes(byPlayer((player, context) -> schedules.join(player, Optional.empty())))
                         .then(Commands.argument("schedule", StringArgumentType.word())
                                 .suggests(suggest(schedules::ids))
-                                .executes(byPlayer((player, context) -> schedules.join(player, Optional.of(schedule(context)))))
-                                // Admins put another player in the call.
-                                .then(Commands.argument("player", ArgumentTypes.player()).requires(ADMIN)
+                                .executes(byPlayer((player, context) -> schedules.join(player, Optional.of(schedule(context)))))));
+    }
+
+    /** {@code /mga schedule …}, for staff; {@code join} also names a player to put in the call, for admins. */
+    static ArgumentBuilder<CommandSourceStack, ?> node(Schedules schedules, ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
+        return Commands.literal("schedule")
+                .executes(help)
+                .then(Commands.literal("join")
+                        .requires(ADMIN)
+                        .then(Commands.argument("schedule", StringArgumentType.word())
+                                .suggests(suggest(schedules::ids))
+                                .then(Commands.argument("player", ArgumentTypes.player())
                                         .executes(bySender((sender, context) -> schedules.join(sender, player(context), Optional.of(schedule(context))))))))
                 .then(Commands.literal("list").requires(HELPER).executes(bySender((sender, context) -> schedules.list(sender))))
                 .then(running("now", schedules, schedules::now))

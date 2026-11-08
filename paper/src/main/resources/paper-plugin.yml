@@ -32,7 +32,7 @@ permissions:
     description: Staff rank. List and look at matches, and kick players from matches and game nights
     default: op
   minigami.host:
-    description: Run game nights with /mg night
+    description: Run game nights with /mga night
     default: op
   minigami.play.*:
     description: Join every game (each game has its own minigami.play.<game>)

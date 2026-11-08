@@ -59,6 +59,7 @@ import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
 import io.github.tst_038.minigami.paper.stats.StatPlaceholders;
 import io.github.tst_038.minigami.paper.stats.StatsExpansion;
 import io.github.tst_038.minigami.paper.stats.StatsRecorder;
+import io.github.tst_038.minigami.paper.stats.StatsAdmin;
 import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
@@ -200,9 +201,14 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var terrainSetup = new TerrainSetup(() -> arenas, () -> terrainStyles, maps, running::isArenaInUse,
                 task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), messages, this);
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register(GamesCommand.create(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, terrainSetup, info, gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), parties, nights, scheduled,
-                        new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger()), doctor, () -> settings.lobby(), this::loadStrict), "Join, leave and manage minigames"));
+        var statsView = new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger());
+        var statsAdmin = new StatsAdmin(storage, profiles, leaderboards, statsView, serverThread, messages, getLogger());
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            event.registrar().register(GamesCommand.playerRoot(messages, publicMatches, running, parties, nights, scheduled, statsView), "Join, leave and see stats of minigames");
+            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, terrainSetup, info,
+                    gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), nights, scheduled,
+                    statsView, statsAdmin, doctor, () -> settings.lobby(), this::loadStrict), "Manage minigames");
+        });
         loadConfig(null, false);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);

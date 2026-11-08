@@ -5,7 +5,7 @@ prefix: "<gray>「<gradient:#FFB7C5:#FF5F9E:#FFB7C5>MiniGami</gradient><gray>」
 join:
   # %player%: who tried to join
   already-in-match: "%prefix%<red>%player% is already in a match."
-  name-a-player: "%prefix%<red>Who should join? <white>/mg join %game% [variant] %player%</white>"
+  name-a-player: "%prefix%<red>Who should join? <white>/mga join %game% %player% [variant]</white>"
   # %game%: the game as typed
   unknown-game: "%prefix%<red>Unknown game <white>%game%</white>. See <white>/mg list</white>."
   # %game%: the game's name, %variant%: as typed, %variants%: the ones it has
@@ -25,7 +25,7 @@ join:
   party-too-big: "%prefix%<red>Your party is too big (<white>%size%</white>/%max%)."
   # %size%: players in the party who are online, %team%: most players in a team
   party-too-big-for-team: "%prefix%<red>Your party doesn't fit in one team (<white>%size%</white>/%team%)."
-  failed: "%prefix%<red>%player% can't join: items from a previous match weren't returned. Relog, or staff: <white>/mg player %player% snapshot restore</white>"
+  failed: "%prefix%<red>%player% can't join: items from a previous match weren't returned. Relog, or staff: <white>/mga player %player% snapshot restore</white>"
 
 leave:
   not-in-match: "%prefix%<red>You're not in a match."
@@ -90,11 +90,11 @@ match:
     state-left: "<dark_gray>left"
     unknown: "%prefix%<red>No match is running in <white>%match%</white>."
     cannot-start: "%prefix%<red><white>%match%</white> has already started or has no players."
-    cannot-end: "%prefix%<red><white>%match%</white> hasn't started or is already ending; stop it instead with <white>/mg match %match% stop</white>."
+    cannot-end: "%prefix%<red><white>%match%</white> hasn't started or is already ending; stop it instead with <white>/mga match %match% stop</white>."
     started: "%prefix%<red><white>%match%</white> has already started; players can only be added before."
     ended: "%prefix%<green>Ended <white>%match%</white>; the win condition decided the result."
     stopped: "%prefix%<green>Stopped <white>%match%</white> without a result."
-    paused: "%prefix%<green>Paused <white>%match%</white>; resume it with <white>/mg match %match% resume</white>."
+    paused: "%prefix%<green>Paused <white>%match%</white>; resume it with <white>/mga match %match% resume</white>."
     # %seconds%: the countdown before play goes on
     resumed: "%prefix%<green>Resuming <white>%match%</white> in %seconds% seconds."
     already-resuming: "%prefix%<red><white>%match%</white> is already counting down to go on."
@@ -292,6 +292,11 @@ stats:
   top-none: "<gray> Nobody yet."
   # On a board, for a player whose name isn't known
   unknown-name: "<dark_gray>unknown player"
+  admin:
+    changed: "%prefix%<gray>%player%<gray>'s <white>%stat%</white> in <white>%game%</white> is now <gold>%amount%</gold>."
+    confirm: "%prefix%<red>That can't be undone. Add <white>confirm</white> at the end of the command to do it."
+    reset-player: "%prefix%<gray>Cleared the <white>%game%</white> stats of <white>%player%</white> (* is every game)."
+    reset-game: "%prefix%<gray>Cleared everyone's stats in <white>%game%</white>."
   # A stat's display name by its id; a game's own stats need one here too.
   name:
     wins: "wins"
@@ -309,7 +314,7 @@ stats:
     king-kills: "kings killed"
 
 lobby:
-  none: "%prefix%<red>No lobby set. Use <white>/mg lobby set</white>."
+  none: "%prefix%<red>No lobby set. Use <white>/mga lobby set</white>."
 
 # Arena setup. %arena%: the arena id, %world%: its world, %number%: a spawn's number as listed by info
 arena:
@@ -319,7 +324,7 @@ arena:
   in-use: "%prefix%<red>A match is running in <white>%arena%</white>; change it once the match has ended."
   other-world: "%prefix%<red><white>%arena%</white> is in world <white>%world%</white>; go there to set its points."
   no-spawn: "%prefix%<red><white>%arena%</white> has no spawn <white>%number%</white>."
-  created: "%prefix%<green>Created arena <white>%arena%</white> in <white>%world%</white>. Add spawns with <white>/mg arena %arena% spawn add</white>."
+  created: "%prefix%<green>Created arena <white>%arena%</white> in <white>%world%</white>. Add spawns with <white>/mga arena %arena% spawn add</white>."
   spawn-added: "%prefix%<green>Added spawn <white>%number%</white> to <white>%arena%</white>."
   spawn-removed: "%prefix%<green>Removed spawn <white>%number%</white> from <white>%arena%</white>."
   # %spawns%: how many spawns
@@ -331,7 +336,7 @@ arena:
   # %team%: what was typed, %teams%: the team colours; a role's id works too
   unknown-team: "%prefix%<red><white>%team%</white> is neither a team (<white>%teams%</white>) nor a role id in lower case letters, digits and dashes."
   info-waiting-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>waiting spot</white>: %x%, %y%, %z%</hover></teleport>"
-  no-spawns: "%prefix%<gray><white>%arena%</white> has no spawns yet; add one with <white>/mg arena %arena% spawn add</white>."
+  no-spawns: "%prefix%<gray><white>%arena%</white> has no spawns yet; add one with <white>/mga arena %arena% spawn add</white>."
   info-spectator-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>spectator spot</white>: %x%, %y%, %z%</hover></teleport>"
   info-no-spectator-spot: "<gray> - no spectator spot; players who are out spectate where they fell"
   info-respawning-spot: "<gray> - <teleport><hover:show_text:'Teleport'><white>respawning spot</white>: %x%, %y%, %z%</hover></teleport>"
@@ -341,7 +346,7 @@ arena:
   info-region: "<gray> - <white>region %region%</white>: %from% to %to%"
   # %from%, %to%: the lowest and highest corner block of the box it is pasted into
   info-map: "<gray> - <white>map</white>: %from% to %to%; pasted back after each match"
-  info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mg arena %arena% map save</white>"
+  info-no-map: "<gray> - no saved map; save one from a WorldEdit selection with <white>/mga arena %arena% map save</white>"
   # Containers that fill with loot when a match uses them. %arena%: the arena, %table%: the tables and chance a container uses,
   # %x%, %y%, %z%: a container, %count%: how many containers
   loot:
@@ -350,7 +355,7 @@ arena:
     removed: "%prefix%<green>The container at <white>%x%, %y%, %z%</white> of <white>%arena%</white> no longer fills."
     removed-many: "%prefix%<green><white>%count%</white> containers of <white>%arena%</white> no longer fill."
     not-set: "%prefix%<red>The container at <white>%x%, %y%, %z%</white> of <white>%arena%</white> does not fill with loot."
-    none: "%prefix%<gray><white>%arena%</white> has no loot containers yet; look at a chest and use <white>/mg arena %arena% loot add <table></white>."
+    none: "%prefix%<gray><white>%arena%</white> has no loot containers yet; look at a chest and use <white>/mga arena %arena% loot add <table></white>."
     list: "%prefix%<gold>%arena%</gold> <gray>has <white>%count%</white> loot containers. Click one to go there."
     # %table% is the tables the container fills from
     entry: "<gray> - <teleport><hover:show_text:'Teleport'><white>%x%, %y%, %z%</white>: %table%</hover></teleport>"
@@ -364,10 +369,10 @@ arena:
     # %spec%: what was typed
     invalid-spec: "%prefix%<red><white>%spec%</white> is not a loot choice; write a table such as <white>castle/a</white>, a mix such as <white>ice/rare:70 ice/op:30</white>, and optionally a chance such as <white>50%</white>."
     unknown-table: "%prefix%<red>There is no loot table <white>%table%</white>; see the files in <white>plugins/MiniGami/loot</white>."
-    marking: "%prefix%<green>Right click containers of <white>%arena%</white> to fill them from <white>%table%</white>; sneak and right click to stop one. <white>/mg arena %arena% loot mark off</white> ends this."
+    marking: "%prefix%<green>Right click containers of <white>%arena%</white> to fill them from <white>%table%</white>; sneak and right click to stop one. <white>/mga arena %arena% loot mark off</white> ends this."
     marking-stopped: "%prefix%<gray>You are no longer marking containers."
   # %count%: how many containers
-  info-loot: "<gray> - <white>%count%</white> loot containers; see <white>/mg arena %arena% loot list</white>"
+  info-loot: "<gray> - <white>%count%</white> loot containers; see <white>/mga arena %arena% loot list</white>"
   # Named boxes games use, saved from a WorldEdit selection. %region%: its name
   region:
     invalid-name: "%prefix%<red><white>%region%</white> can't be a region name: use lower case letters, digits and dashes, and not <white>team</white>."
@@ -376,12 +381,12 @@ arena:
     saved: "%prefix%<green>Saved region <white>%region%</white> of <white>%arena%</white>: %from% to %to%."
     removed: "%prefix%<green>Removed region <white>%region%</white> from <white>%arena%</white>."
     unknown: "%prefix%<red><white>%arena%</white> has no region <white>%region%</white>."
-    none: "%prefix%<gray><white>%arena%</white> has no regions yet; select one with WorldEdit and save it with <white>/mg arena %arena% region %name% set</white>."
+    none: "%prefix%<gray><white>%arena%</white> has no regions yet; select one with WorldEdit and save it with <white>/mga arena %arena% region %name% set</white>."
     showing: "%prefix%<gray>Showing region <white>%region%</white> for %seconds% seconds."
     # What a game may turn the region into, such as a crumbled wall; pasted with its lowest corner on the region's
     schematic-loaded: "%prefix%<green>Region <white>%region%</white>'s schematic is on your WorldEdit clipboard; <white>//paste</white> places it."
-    schematic-pasted: "%prefix%<green>Pasted what region <white>%region%</white> turns into. The arena's map reset (<white>/mg arena map reset</white>) undoes it."
-    no-schematic: "%prefix%<red>Region <white>%region%</white> has no schematic; select one and use <white>/mg arena <arena> region %region% schematic</white>."
+    schematic-pasted: "%prefix%<green>Pasted what region <white>%region%</white> turns into. The arena's map reset (<white>/mga arena map reset</white>) undoes it."
+    no-schematic: "%prefix%<red>Region <white>%region%</white> has no schematic; select one and use <white>/mga arena <arena> region %region% schematic</white>."
     schematic-saved: "%prefix%<green>Saved what region <white>%region%</white> turns into. Make it the region's size."
   # The arena's map: a WorldEdit schematic pasted back after each match and at startup
   map:
@@ -390,7 +395,7 @@ arena:
     saved: "%prefix%<green>Saved the map of <white>%arena%</white>; it is pasted back after each match."
     save-failed: "%prefix%<red>Could not save the map of <white>%arena%</white>; the server log says why."
     load-failed: "%prefix%<red>Could not load the schematic of <white>%arena%</white>; the server log says why."
-    none: "%prefix%<red><white>%arena%</white> has no saved map; save one with <white>/mg arena %arena% map save</white>."
+    none: "%prefix%<red><white>%arena%</white> has no saved map; save one with <white>/mga arena %arena% map save</white>."
     resetting: "%prefix%<red>The map of <white>%arena%</white> is already being reset."
     reset: "%prefix%<green>Reset the map of <white>%arena%</white>."
     reset-failed: "%prefix%<red>Could not reset the map of <white>%arena%</white>; the server log says why."
@@ -399,7 +404,7 @@ arena:
     unknown-style: "%prefix%<red>There is no terrain style <white>%style%</white>; a style is a file in terrain/."
     no-regions: "%prefix%<red><white>%arena%</white> has no regions in the group <white>%group%</white>."
     generating: "%prefix%<gray>Making <white>%style%</white> land in <white>%arena%</white> with seed <white>%seed%</white>..."
-    placed: "%prefix%<green>The land is in <white>%arena%</white>; <white>/mg arena %arena% map reset</white> puts the old blocks back."
+    placed: "%prefix%<green>The land is in <white>%arena%</white>; <white>/mga arena %arena% map reset</white> puts the old blocks back."
     failed: "%prefix%<red>Could not place the land in <white>%arena%</white>; the server log says why."
 
 # %command%: a command; click a line to put it in the chat box
@@ -422,9 +427,9 @@ info:
     ok: "<green>ready"
     # %problems%: how many
     problems: "<red>%problems% problem(s)"
-    not-loaded: "<yellow>not loaded; /mg reload"
-    disabled: "<gray>disabled; /mg game %id% enable"
-    no-arenas: "<yellow>no playable arena; /mg doctor %id% says why"
+    not-loaded: "<yellow>not loaded; /mga reload"
+    disabled: "<gray>disabled; /mga game %id% enable"
+    no-arenas: "<yellow>no playable arena; /mga doctor %id% says why"
     no-spawns: "<yellow>no spawns"
     in-use: "<aqua>in use"
   # %count%; per entry %id%, %name%, %games%: how many are in the playlist, and %status%
@@ -487,9 +492,9 @@ reload:
   done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games, <white>%nights%</white> game nights."
   failed: "%prefix%<red>Config not loaded, the old one stays in use. <white>%problems%</white> problem(s):"
   problem: "<red> - %problem%"
-  skipped: "%prefix%<yellow><white>%problems%</white> file(s) have problems and were left out. <white>/mg reload</white> shows them again:"
+  skipped: "%prefix%<yellow><white>%problems%</white> file(s) have problems and were left out. <white>/mga reload</white> shows them again:"
   # %findings%: how many arena problems leave an arena out of a game
-  findings: "%prefix%<yellow><white>%findings%</white> arena problem(s) keep games out of arenas; <click:run_command:'/mg doctor'><hover:show_text:'Click to see them'><white>/mg doctor</white></hover></click> lists them."
+  findings: "%prefix%<yellow><white>%findings%</white> arena problem(s) keep games out of arenas; <click:run_command:'/mga doctor'><hover:show_text:'Click to see them'><white>/mga doctor</white></hover></click> lists them."
 
 edit:
   invalid-id: "%prefix%<red><white>%id%</white> can't be an id: use lower case letters, digits and dashes."
@@ -525,15 +530,15 @@ snapshot:
   details: "<gray> %game-mode% at %x%, %y%, %z% in %world%, health %health%, food %food%, level %level%"
   items: "<gray> Items: <white>%items%"
   effects: "<gray> Effects: <white>%effects%"
-  # The chest staff get from /mg player <player> snapshot (the lines above are for the console)
+  # The chest staff get from /mga player <player> snapshot (the lines above are for the console)
   view:
     title: "<dark_gray>%player%'s saved state"
     vitals: "<gold>Health and level"
     where: "<gold>Where they were"
     effects: "<gold>Effects"
   in-match-hint: "<gray> They are in a match; this comes back by itself when they leave it."
-  restore-hint: "<gray> Give it back with <white>/mg player %player% snapshot restore</white>."
-  restore-last-hint: "<gray> Put it back with <white>/mg player %player% snapshot restore</white>; their current state is kept, so doing it again undoes it."
+  restore-hint: "<gray> Give it back with <white>/mga player %player% snapshot restore</white>."
+  restore-last-hint: "<gray> Put it back with <white>/mga player %player% snapshot restore</white>; their current state is kept, so doing it again undoes it."
   restored: "%prefix%<green>Gave %player% their saved state back."
   restored-last: "%prefix%<green>Put the last state of %player% back. Run it again to undo."
   restore-failed: "%prefix%<red>Could not give %player% their state back; see the server log."
@@ -544,11 +549,11 @@ kit:
   empty: "%prefix%<red>Your inventory is empty, so there is nothing to save."
   saved: "%prefix%<green>Saved kit <white>%name%</white> <gray>(%items% slots)</gray>. Use it in a game with <white>kit: %name%</white>."
   save-failed: "%prefix%<red>Could not write kit <white>%name%</white> to disk; see the server log. It works until the server stops."
-  none: "%prefix%<gray>There are no saved kits. Save your inventory with <white>/mg kit save [name]</white>."
+  none: "%prefix%<gray>There are no saved kits. Save your inventory with <white>/mga kit save [name]</white>."
   header: "%prefix%<gray>Saved kits (%count%):"
   entry: "<gray> - <white>%name%</white> (%items% slots)"
   unknown: "%prefix%<red>There is no saved kit called <white>%name%</white>."
-  deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mg reload</white>."
+  deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mga reload</white>."
   delete-failed: "%prefix%<red>Could not delete the file of kit <white>%name%</white>; see the server log."
 
 # Loot tables and the items they name. %table%: a table id, %name%: a saved item
@@ -573,7 +578,7 @@ loot:
   saved: "%prefix%<green>Saved the item you hold as <white>%name%</white>. Use it in a table with <white>{ saved: %name% }</white>."
   save-failed: "%prefix%<red>Could not write item <white>%name%</white> to disk; see the server log. It works until the server stops."
   unknown-item: "%prefix%<red>There is no saved item called <white>%name%</white>."
-  deleted: "%prefix%<green>Deleted item <white>%name%</white>. A table that uses it reports that on the next <white>/mg reload</white>."
+  deleted: "%prefix%<green>Deleted item <white>%name%</white>. A table that uses it reports that on the next <white>/mga reload</white>."
   delete-failed: "%prefix%<red>Could not delete the file of item <white>%name%</white>; see the server log."
 
 # Parties: %player% and %leader% are names, %count% the size of the party;
@@ -603,7 +608,7 @@ party:
   online: "<green>online"
   offline: "<gray>offline"
 
-# Game nights, run by commands: /mg night. %name% is the night's name from its template, in its own formatting.
+# Game nights, run by commands: /mga night. %name% is the night's name from its template, in its own formatting.
 night:
   # %night%: as typed, %nights%: the ones there are
   unknown: "%prefix%<red>Unknown game night <white>%night%</white><red>. Try: <white>%nights%</white>"
@@ -611,7 +616,7 @@ night:
   # %name%: the night that is running
   already-running: "%prefix%%name%<red> is already running."
   # Told to the hosts when they start a night
-  opened: "%prefix%<green>Sign-up for %name%<green> is open. Start with <white>/mg night begin</white>."
+  opened: "%prefix%<green>Sign-up for %name%<green> is open. Start with <white>/mga night begin</white>."
   # To everyone online. <join>…</join> joins on click
   open: "%prefix%%name% <gold>is open for sign-up! <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
   already-joined: "%prefix%<red>You're already in the night."
@@ -633,31 +638,31 @@ night:
   player-already-in-night: "%prefix%<red><white>%player%</white> is already in the night."
   you-were-kicked: "%prefix%<red>You were kicked from the night."
   # begin
-  already-begun: "%prefix%<red>The night has begun. Use <white>/mg night next</white>."
+  already-begun: "%prefix%<red>The night has begun. Use <white>/mga night next</white>."
   nobody: "%prefix%<red>Nobody has joined yet."
   # %team%: the night team's name, %members%: who is in it
   your-team: "%prefix%<gray>You're in <white>%team%</white> <gray>with <white>%members%</white><gray>."
   # next
-  not-begun: "%prefix%<red>The night has not begun; start it with <white>/mg night begin</white>."
-  game-running: "%prefix%<red>A game is being played; skip it with <white>/mg night skip</white> or wait for it to end."
+  not-begun: "%prefix%<red>The night has not begun; start it with <white>/mga night begin</white>."
+  game-running: "%prefix%<red>A game is being played; skip it with <white>/mga night skip</white> or wait for it to end."
   # %game%: the playlist's game id
-  missing-game: "%prefix%<red>The game <white>%game%</white> of the playlist doesn't exist (anymore), or has no such variant. Skip it with <white>/mg night skip</white>."
+  missing-game: "%prefix%<red>The game <white>%game%</white> of the playlist doesn't exist (anymore), or has no such variant. Skip it with <white>/mga night skip</white>."
   # %size%: players online in the night, %min%, %max%: what the game holds
-  too-few: "%prefix%<red>Only %size% players of the night are online, but this game needs %min%. Retry with <white>/mg night next</white> or skip it."
+  too-few: "%prefix%<red>Only %size% players of the night are online, but this game needs %min%. Retry with <white>/mga night next</white> or skip it."
   too-many: "%prefix%<red>%size% players are in the night, but this game holds %max%. Kick some, or skip the game."
   # %players%: who is in another match
-  busy: "%prefix%<red>These players are in another match: <white>%players%</white>. Retry with <white>/mg night next</white>."
+  busy: "%prefix%<red>These players are in another match: <white>%players%</white>. Retry with <white>/mga night next</white>."
   # %game%: the game's name
-  no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy. Retry with <white>/mg night next</white> when one is free."
+  no-free-arena: "%prefix%<red>All arenas of %game%<red> are busy. Retry with <white>/mga night next</white> when one is free."
   # None of its arenas is set up for it. %game%: the game's name
-  not-ready: "%prefix%<red>No arena is set up for %game%<red> yet. Fix it, then retry with <white>/mg night next</white>, or skip it."
+  not-ready: "%prefix%<red>No arena is set up for %game%<red> yet. Fix it, then retry with <white>/mga night next</white>, or skip it."
   # %player%
-  join-failed: "%prefix%<red>%player% can't join right now: their things from an earlier match still need to be given back. Retry with <white>/mg night next</white>."
-  open-failed: "%prefix%<red>The game could not be opened; see the server log. Retry with <white>/mg night next</white> or skip it."
+  join-failed: "%prefix%<red>%player% can't join right now: their things from an earlier match still need to be given back. Retry with <white>/mga night next</white>."
+  open-failed: "%prefix%<red>The game could not be opened; see the server log. Retry with <white>/mga night next</white> or skip it."
   # %number%, %total%: the game's place in the playlist, %game%: its name
   game-starting: "%prefix%<gold>Game %number% of %total%: <white>%game%"
   # Told to the hosts when a game ended. %game%: the next game's name
-  next-up: "%prefix%<gray>Up next: %game%<gray>. Start it with <white>/mg night next</white> or skip it with <white>/mg night skip</white>."
+  next-up: "%prefix%<gray>Up next: %game%<gray>. Start it with <white>/mga night next</white> or skip it with <white>/mga night skip</white>."
   # %game%: the name of the game skipped
   skipped: "%prefix%<yellow>Skipped %game%<yellow>."
   no-game-playing: "%prefix%<red>No game of the night is being played."
@@ -741,7 +746,7 @@ debug:
   summary: "%prefix%<gray>MiniGami <white>%version%</white>, matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"
   match: "%prefix%<gray>%game% on %arena%: phase <white>%phase%</white>, <white>%members%</white> in match, <white>%alive%</white> alive, tick <white>%tick%</white>"
 
-# /mg doctor: why games can't be played where. Also shown to staff when a join fails, and logged at each load.
+# /mga doctor: why games can't be played where. Also shown to staff when a join fails, and logged at each load.
 doctor:
   header: "%prefix%<gold>Doctor</gold> <gray>what keeps games out of arenas:"
   no-games: "<gray> No games are set up."
@@ -758,7 +763,7 @@ doctor:
   arena-not-loaded: "<red> ✖ Arena <white>%arena%</white> didn't load, so no game plays in it:"
   # %problem%: a problem in a file
   problem: "<red>   - %problem%"
-  reload: "<gray>   Its file changed since the last load; <white>/mg reload</white> to load it."
+  reload: "<gray>   Its file changed since the last load; <white>/mga reload</white> to load it."
   # One finding. %arena%, %game%: the game's id and variant, %reason%: one of the diagnosis texts, %fix%: the fix line or nothing
   blocking: "<red>   ✖ <white>%arena%</white> can't host <white>%game%</white>: %reason%%fix%"
   warning: "<yellow>   ● <white>%arena%</white> hosts <white>%game%</white>, but %reason%%fix%"
@@ -786,7 +791,7 @@ diagnosis:
   # %region%: lies partly or fully outside the saved map
   region-outside-map: "<red>region <white>%region%</white> is not fully inside the saved map, so changes there would not be put back"
   no-worldedit: "<red>it changes blocks, and putting them back needs WorldEdit or FastAsyncWorldEdit"
-  no-loot-points: "<yellow>it fills loot containers but the arena has none; set them with /mg arena <id> loot add"
+  no-loot-points: "<yellow>it fills loot containers but the arena has none; set them with /mga arena <id> loot add"
   # %x%, %y%, %z%: where the point is
   loot-point-gone: "<yellow>the loot container at <white>%x% %y% %z%</white> is no longer a chest, barrel or shulker box"
   # %table%: its id, %x%, %y%, %z%: where the point is

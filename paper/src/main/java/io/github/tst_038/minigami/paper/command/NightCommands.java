@@ -33,7 +33,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 
 /**
- * {@code /mg night join|leave|standings} for players, and for hosts {@code add <player>},
+ * {@code /mg night join|leave|standings} for players, and {@code /mga night} for hosts {@code add <player>},
  * {@code start <night>|begin|next|skip|pause|resume|end|kick <player>|team <player> <team>}. For admins, the
  * templates: {@code list|create <id> <game> [name]|info <id>|delete <id>} and {@code edit <id> set|unset|playlist ...}, where
  * {@code playlist} is {@code list|add <game> [variant]|remove <n>|move <n> <to>|points <n> <place> <points>|taking-part <n> <points>}.
@@ -43,15 +43,22 @@ final class NightCommands {
     private NightCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(Nights nights, ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
+    /** {@code /mg night join|leave|standings}, for players. */
+    static ArgumentBuilder<CommandSourceStack, ?> forPlayers(Nights nights, Command<CommandSourceStack> help) {
         return Commands.literal("night")
                 .executes(help)
                 .then(Commands.literal("join").requires(PLAYER).executes(byPlayer((player, context) -> nights.join(player))))
                 .then(Commands.literal("leave").requires(PLAYER).executes(byPlayer((player, context) -> nights.leave(player))))
+                .then(Commands.literal("standings").executes(bySender((sender, context) -> nights.standings(sender))));
+    }
+
+    /** {@code /mga night …}, for hosts and admins. */
+    static ArgumentBuilder<CommandSourceStack, ?> node(Nights nights, ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
+        return Commands.literal("night")
+                .executes(help)
                 .then(Commands.literal("add").requires(HOST)
                         .then(Commands.argument("player", ArgumentTypes.player())
                                 .executes(bySender((sender, context) -> nights.add(sender, player(context))))))
-                .then(Commands.literal("standings").executes(bySender((sender, context) -> nights.standings(sender))))
                 .then(Commands.literal("start").requires(HOST)
                         .then(Commands.argument("night", StringArgumentType.word())
                                 .suggests(suggest(nights::templateIds))
