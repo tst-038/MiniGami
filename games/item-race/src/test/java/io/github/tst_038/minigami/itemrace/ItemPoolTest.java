@@ -24,6 +24,9 @@ class ItemPoolTest {
               end: [ shulker_shell ]
             """;
 
+    // The real check needs the server's registry; the fake says water is not an item.
+    private static final java.util.function.Predicate<Material> ITEM = m -> m != Material.WATER;
+
     private static ConfigReader reader(String yaml) throws InvalidConfigurationException {
         var configuration = new YamlConfiguration();
         configuration.loadFromString(yaml);
@@ -32,14 +35,14 @@ class ItemPoolTest {
 
     private static ItemPool read(String yaml) throws Exception {
         var config = reader(yaml);
-        var pool = ItemPool.read(config);
+        var pool = ItemPool.read(config, ITEM);
         config.check();
         return pool.orElseThrow();
     }
 
     private static String problem(String yaml) throws Exception {
         var config = reader(yaml);
-        ItemPool.read(config);
+        ItemPool.read(config, ITEM);
         return assertThrows(InvalidConfigException.class, config::check).getMessage();
     }
 
@@ -111,6 +114,8 @@ class ItemPoolTest {
         assertTrue(problem("items:\n  overworld: [ { item: cake, weight: 0 } ]\n").contains("items.overworld[0].weight"));
         assertTrue(problem("items:\n  overworld: [ { item: cake, weight: lots } ]\n").contains("whole number"));
         assertTrue(problem("items:\n  overworld: [ nonsense ]\n").contains("unknown item 'nonsense'"));
+        assertTrue(problem("items:\n  overworld: [ water ]\n").contains("items.overworld[0].item"));
+        assertTrue(problem("items:\n  overworld: [ water ]\n").contains("not an item"));
         assertTrue(problem("items:\n  overworld: [ { weight: 2 } ]\n").contains("items.overworld[0].item"));
         assertTrue(problem("items:\n  moon: [ cake ]\n").contains("unknown dimension"));
         assertTrue(problem(ITEMS + "dimensions: [moon]\n").contains("unknown dimension 'moon'"));

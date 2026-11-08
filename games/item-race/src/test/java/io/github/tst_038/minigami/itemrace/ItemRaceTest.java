@@ -21,7 +21,7 @@ class ItemRaceTest {
     @Test
     void settingsAreReadAndABorderNeedsItsRegion() throws Exception {
         var config = yaml("items:\n  overworld: [cake]\nplay-seconds: 600\nborder: { end-size: 100 }\n");
-        var game = new ItemRace().configure(config);
+        var game = new ItemRace(m -> true).configure(config);
         config.check();
 
         assertEquals(List.of("border"), game.regions());
@@ -35,7 +35,7 @@ class ItemRaceTest {
     @Test
     void withoutABorderThereIsNone() throws Exception {
         var config = yaml("items:\n  overworld: [cake]\n");
-        var game = new ItemRace().configure(config);
+        var game = new ItemRace(m -> true).configure(config);
         config.check();
 
         assertEquals(List.of(), game.regions());
@@ -45,7 +45,7 @@ class ItemRaceTest {
     @Test
     void aGameWithoutItemsIsAConfigProblem() throws Exception {
         var config = yaml("play-seconds: 600\n");
-        new ItemRace().configure(config);
+        new ItemRace(m -> true).configure(config);
 
         assertThrows(InvalidConfigException.class, config::check);
     }

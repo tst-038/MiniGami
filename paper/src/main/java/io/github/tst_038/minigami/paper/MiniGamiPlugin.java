@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
+import io.github.tst_038.minigami.itemrace.ItemRace;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -171,7 +172,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var sessions = new PlayerSessions(this, snapshots, getLogger(), presence);
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
-        BuiltIns.gametypes().forEach(gametypes::register);
+        BuiltIns.gametypes(ItemRace::obtainable).forEach(gametypes::register);
         BuiltIns.features(kits::find, () -> lootTables, savedItems::find, () -> terrainStyles,
                 task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), getLogger()::info,
                 () -> getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission("minigami.admin"))).forEach(features::register);

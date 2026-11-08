@@ -44,7 +44,9 @@ import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.bukkit.Material;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.inventory.ItemStack;
 
@@ -54,8 +56,9 @@ final class BuiltIns {
     private BuiltIns() {
     }
 
-    static List<GameType> gametypes() {
-        return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall(), new ShiftingMaze(), new PoleDuel(), new Paint(), new King(), new ItemRace());
+    /** @param isItem whether a material is an obtainable item; needs the server's registry, so tests pass a fake */
+    static List<GameType> gametypes(Predicate<Material> isItem) {
+        return List.of(new LastStanding(), new BuildBattle(), new TeamDeathmatch(), new HideAndSeek(), new Domination(), new TheWall(), new ShiftingMaze(), new PoleDuel(), new Paint(), new King(), new ItemRace(isItem));
     }
 
     /**

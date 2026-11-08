@@ -37,7 +37,7 @@ class BundledGamesTest {
     @Test
     void everyExampleGameLoadsOnTheFirstStart() throws Exception {
         var gametypes = new IdRegistry<GameType>(GameType::id);
-        BuiltIns.gametypes().forEach(gametypes::register);
+        BuiltIns.gametypes(material -> true).forEach(gametypes::register);
         var features = new IdRegistry<FeatureFactory>(FeatureFactory::id);
         for (var feature : BuiltIns.features(name -> Optional.empty(), () -> LootTables.NONE, name -> Optional.empty(),
                 () -> TerrainStyles.NONE, Runnable::run, message -> { }, Audience::empty)) {

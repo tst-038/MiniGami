@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.bukkit.Material;
 
 /**
@@ -22,7 +23,8 @@ import org.bukkit.Material;
  * dimensions: [overworld, nether]   # optional, default overworld and nether
  * exclude: [ cake ]                 # optional, items that may not be chosen
  * </pre>
- * Only items of the listed dimensions are kept, minus the excluded ones.
+ * Only items of the listed dimensions are kept, minus the excluded ones. What counts as an obtainable item is
+ * decided by the predicate given to {@link #read} (the server's registry, which unit tests do not have).
  */
 final class ItemPool {
 
@@ -65,7 +67,7 @@ final class ItemPool {
     }
 
     /** Empty when something is wrong, in which case the problems are on the reader. */
-    static Optional<ItemPool> read(ConfigReader config) {
+    static Optional<ItemPool> read(ConfigReader config, Predicate<Material> isItem) {
         var allowed = readDimensions(config);
         var excluded = new HashSet<Material>();
         if (config.has("exclude")) {
@@ -80,7 +82,7 @@ final class ItemPool {
                 continue;
             }
             for (ConfigReader item : items.sections(key, "item")) {
-                var entry = readEntry(item);
+                var entry = readEntry(item, isItem);
                 if (entry != null && allowed.contains(dimension) && !excluded.contains(entry.item())) {
                     entries.add(entry);
                 }
@@ -109,7 +111,7 @@ final class ItemPool {
         return allowed;
     }
 
-    private static Entry readEntry(ConfigReader config) {
+    private static Entry readEntry(ConfigReader config, Predicate<Material> isItem) {
         var name = config.string("item");
         int weight = config.has("weight") ? config.integer("weight", 1, MAX_WEIGHT) : 1;
         if (name.isEmpty()) {
@@ -118,6 +120,10 @@ final class ItemPool {
         var material = Material.matchMaterial(name);
         if (material == null) {
             config.problem("item", "unknown item '" + name + "'");
+            return null;
+        }
+        if (!isItem.test(material)) {
+            config.problem("item", "'" + name + "' is not an item a player can obtain");
             return null;
         }
         return new Entry(material, weight);

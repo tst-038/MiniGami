@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 
 /**
  * A survival scramble in one very large arena: everyone starts spread over the spawns, grabs what the loot
@@ -34,15 +36,23 @@ public final class ItemRace implements GameType {
     private final int playSeconds;
     private final Optional<ClosingBorder.Settings> border;
     private final Optional<ItemPool> pool;
+    private final Predicate<Material> isItem;
 
-    public ItemRace() {
-        this(3600, Optional.empty(), Optional.empty());
+    /** @param isItem whether a material is an item players can obtain; the server's registry decides, tests pass a fake */
+    public ItemRace(Predicate<Material> isItem) {
+        this(3600, Optional.empty(), Optional.empty(), isItem);
     }
 
-    private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool) {
+    private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool, Predicate<Material> isItem) {
+        this.isItem = isItem;
         this.playSeconds = playSeconds;
         this.border = border;
         this.pool = pool;
+    }
+
+    /** The real check for the server: a current item that is not air. Needs the server's registry. */
+    public static boolean obtainable(Material material) {
+        return material.isItem() && !material.isAir() && !material.isLegacy();
     }
 
     @Override
@@ -94,6 +104,7 @@ public final class ItemRace implements GameType {
         return new ItemRace(
                 config.has("play-seconds") ? config.integer("play-seconds", 60, 86400) : playSeconds,
                 config.has("border") ? Optional.of(ClosingBorder.Settings.read(config.section("border"))) : border,
-                ItemPool.read(config).or(() -> pool));
+                ItemPool.read(config, isItem).or(() -> pool),
+                isItem);
     }
 }
