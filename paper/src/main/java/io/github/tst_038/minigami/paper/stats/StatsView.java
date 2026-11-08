@@ -213,7 +213,7 @@ public final class StatsView {
 
     private static TagResolver totals(Totals totals) {
         var place = totals.averagePlace();
-        return TagResolver.resolver(Formatter.number("played", totals.played()), Formatter.number("wins", totals.wins()),
+        return TagResolver.resolver(Formatter.number("played", totals.played()), Formatter.number("wins", totals.wins()), Formatter.number("losses", totals.played() - totals.wins()),
                 Placeholder.unparsed("place", place.isPresent() ? "%.1f".formatted(place.getAsDouble()) : "-"),
                 Formatter.number("left", totals.left()), Formatter.number("minutes", totals.timePlayed().toMinutes()));
     }

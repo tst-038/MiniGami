@@ -109,6 +109,7 @@ final class Deposit implements Feature {
                     Placeholder.unparsed("done", String.valueOf(handed.size())),
                     Placeholder.unparsed("total", String.valueOf(chosen.size())));
             context.addPoints(id, 1);
+            context.count(id, ItemRace.ITEMS_HANDED_IN);
             return true;
         };
         if (mode == HandIn.DROP) {

@@ -59,3 +59,6 @@ hud:
     text:
       hiding: "<green>Scatter! <white>%time% <gray>until the infection spreads"
       seeking: "<red>Infection spreading! <white>%time% <gray>left"
+
+# Kills are the hiders found, deaths the times found.
+stats: [combat]

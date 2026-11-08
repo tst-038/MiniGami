@@ -53,3 +53,6 @@ hud:
     text:
       hiding: "<green>Hide! <white>%time% <gray>until the hunt starts"
       seeking: "<red>The hunt is on! <white>%time% <gray>left"
+
+# Kills are the hiders found, deaths the times found.
+stats: [combat]

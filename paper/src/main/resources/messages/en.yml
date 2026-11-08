@@ -274,11 +274,11 @@ stats:
   unknown-stat: "%prefix%<red>%game% <red>has no leaderboard called <white>%stat%</white>."
   header: "%prefix%<gold>%player%</gold><gray>'s stats:"
   none: "<gray> No matches played yet."
-  game: "<gray> - %game%<gray>: %played% played, %wins% won, average place %place%, %minutes% min"
+  game: "<gray> - %game%<gray>: %played% played, %wins% won, %losses% lost, average place %place%, %minutes% min"
   game-header: "%prefix%<gold>%player%</gold><gray> in %game%<gray>:"
-  game-totals: "<gray> %played% played, %wins% won, average place %place%, left %left%, %minutes% min"
+  game-totals: "<gray> %played% played, %wins% won, %losses% lost, average place %place%, left %left%, %minutes% min"
   # A line per variant played, under the game's totals and stats
-  variant: "<gray> - %variant%<gray>: %played% played, %wins% won, average place %place%, %minutes% min"
+  variant: "<gray> - %variant%<gray>: %played% played, %wins% won, %losses% lost, average place %place%, %minutes% min"
   # A game's kept stats on a line under it in /mg stats: %stats% is each stat-inline, between separators
   game-stats: "<gray>    %stats%"
   # %stat%, %amount%
@@ -305,6 +305,7 @@ stats:
     catches: "runners caught"
     blocks-painted: "blocks painted"
     blocks-stolen: "blocks stolen"
+    items-handed-in: "items handed in"
     king-kills: "kings killed"
 
 lobby:

@@ -6,11 +6,13 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -32,6 +34,13 @@ import org.bukkit.Material;
  * shrink-seconds: 300, damage: 1 }} that closes the {@code border} region in on its centre.
  */
 public final class ItemRace implements GameType {
+
+    static final Stat ITEMS_HANDED_IN = new Stat("items-handed-in");
+
+    @Override
+    public Set<Stat> stats() {
+        return Set.of(ITEMS_HANDED_IN);
+    }
 
     static final String PLAYING = "playing";
 
