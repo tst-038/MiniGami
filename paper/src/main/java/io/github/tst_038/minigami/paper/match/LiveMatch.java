@@ -856,6 +856,9 @@ public final class LiveMatch {
         new Freeze().enable(new PaperMatchContext(plugin, this, countdown));
         var early = variant.gametype().startsDuringCountdown();
         if (early) {
+            if (!variant.gametype().usesSpawns()) {
+                prepareInPlace(); // clears fire, health, effects before the game mode switches
+            }
             match.advancePhase();
         }
         var phases = variant.gametype().phases();
