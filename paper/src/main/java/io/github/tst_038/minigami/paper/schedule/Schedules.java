@@ -260,20 +260,25 @@ public final class Schedules {
      * opening its match again if everyone had left it.
      */
     public void join(Player player, Optional<String> id) {
-        if (id.isPresent() && find(player, id.get()).isEmpty()) {
+        join(player, player, id);
+    }
+
+    /** An admin puts another player in the call; the admin hears why if that can't be done. */
+    public void join(CommandSender sender, Player player, Optional<String> id) {
+        if (id.isPresent() && find(sender, id.get()).isEmpty()) {
             return;
         }
         var open = calls.reversed().stream().filter(call -> id.isEmpty() || call.schedule.id().equals(id.get()))
                 .filter(call -> call.match == null || call.match.match().isFinished() || call.match.isJoinable()).findFirst();
         if (open.isEmpty()) {
-            messages.send(player, "schedule.no-call");
+            messages.send(sender, "schedule.no-call");
             return;
         }
         var call = open.get();
         if (call.match == null || call.match.match().isFinished()) {
             var match = publicMatches.open(call.variant);
             if (match.isEmpty()) {
-                messages.send(player, "schedule.no-arena", Placeholder.parsed("game", call.variant.name()));
+                messages.send(sender, "schedule.no-arena", Placeholder.parsed("game", call.variant.name()));
                 return;
             }
             call.match = match.get();

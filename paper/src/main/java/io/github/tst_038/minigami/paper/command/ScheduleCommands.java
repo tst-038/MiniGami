@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.command;
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
 import static io.github.tst_038.minigami.paper.command.Nodes.HELPER;
 import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
+import static io.github.tst_038.minigami.paper.command.Nodes.player;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
@@ -18,13 +19,14 @@ import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.schedule.Schedules;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.Commands;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.bukkit.command.CommandSender;
 
 /**
- * {@code /mg schedule join [schedule]} for players (and admins), {@code list} for helpers, {@code now|pause|resume} for mods,
+ * {@code /mg schedule join [schedule] [player]} for players (admins can name another player), {@code list} for helpers, {@code now|pause|resume} for mods,
  * and {@code info|create|delete|edit} of the schedule files for admins.
  */
 final class ScheduleCommands {
@@ -40,7 +42,10 @@ final class ScheduleCommands {
                         .executes(byPlayer((player, context) -> schedules.join(player, Optional.empty())))
                         .then(Commands.argument("schedule", StringArgumentType.word())
                                 .suggests(suggest(schedules::ids))
-                                .executes(byPlayer((player, context) -> schedules.join(player, Optional.of(schedule(context)))))))
+                                .executes(byPlayer((player, context) -> schedules.join(player, Optional.of(schedule(context)))))
+                                // Admins put another player in the call.
+                                .then(Commands.argument("player", ArgumentTypes.player()).requires(ADMIN)
+                                        .executes(bySender((sender, context) -> schedules.join(sender, player(context), Optional.of(schedule(context))))))))
                 .then(Commands.literal("list").requires(HELPER).executes(bySender((sender, context) -> schedules.list(sender))))
                 .then(running("now", schedules, schedules::now))
                 .then(running("pause", schedules, schedules::pause))

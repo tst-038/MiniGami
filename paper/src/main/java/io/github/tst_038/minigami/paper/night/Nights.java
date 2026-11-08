@@ -199,20 +199,37 @@ public final class Nights implements Listener {
             messages.send(player, "night.party-too-big", Formatter.number("size", group.size()), Formatter.number("team", teams.size()));
             return;
         }
-        for (Player joining : group) {
-            if (!night.players().contains(joining.getUniqueId())) {
-                messages.send(audience(onlinePlayers(night)), "night.player-joined", Placeholder.component("player", joining.name()));
-                night.join(joining.getUniqueId());
-                enter(joining);
-                if (active.state != State.PLAYING) {
-                    showSidebar(night, List.of(joining));
-                }
-                messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
-                // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
-                night.teams().ifPresent(formed -> tellTeam(night, joining));
-            }
-        }
+        group.forEach(this::signUp);
         publish();
+    }
+
+    private void signUp(Player joining) {
+        var night = active.night;
+        if (!night.players().contains(joining.getUniqueId())) {
+            messages.send(audience(onlinePlayers(night)), "night.player-joined", Placeholder.component("player", joining.name()));
+            night.join(joining.getUniqueId());
+            enter(joining);
+            if (active.state != State.PLAYING) {
+                showSidebar(night, List.of(joining));
+            }
+            messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
+            // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
+            night.teams().ifPresent(formed -> tellTeam(night, joining));
+        }
+    }
+
+    /** A host signs a player up, whatever their party or permission. */
+    public void add(CommandSender host, Player player) {
+        if (!hasNight(host)) {
+            return;
+        }
+        if (active.night.players().contains(player.getUniqueId())) {
+            messages.send(host, "night.player-already-in-night", Placeholder.component("player", player.name()));
+            return;
+        }
+        signUp(player);
+        publish();
+        messages.send(host, "night.added", Placeholder.component("player", player.name()));
     }
 
     /** The player leaves the night, and its current game; their points stay. */

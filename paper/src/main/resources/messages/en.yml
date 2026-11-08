@@ -626,6 +626,8 @@ night:
   player-left: "%prefix%<white>%player%</white> <yellow>left the night."
   # %player%: who the host kicked
   kicked: "%prefix%<green>Kicked <white>%player%</white> from the night."
+  added: "%prefix%<green>Added <white>%player%</white> to the night."
+  player-already-in-night: "%prefix%<red><white>%player%</white> is already in the night."
   you-were-kicked: "%prefix%<red>You were kicked from the night."
   # begin
   already-begun: "%prefix%<red>The night has begun. Use <white>/mg night next</white>."
