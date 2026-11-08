@@ -125,4 +125,15 @@ class MostPointsTest {
     void pointsToWinCantBeNegative() {
         assertThrows(IllegalArgumentException.class, () -> new MostPoints(-1));
     }
+
+    @Test
+    void atTimeUpKeepsGoingWithOneTeamLeft() {
+        var soloRoster = new Roster();
+        soloRoster.add(alice);
+        scores.add(alice, 5);
+
+        assertTrue(MostPoints.atTimeUp().check(soloRoster, scores).isEmpty());
+        assertEquals(List.of(new Placement(1, List.of(alice))),
+                MostPoints.atTimeUp().finalResult(soloRoster, scores).placements());
+    }
 }

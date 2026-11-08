@@ -20,22 +20,36 @@ import java.util.TreeMap;
 public final class MostPoints implements WinCondition {
 
     private final int pointsToWin;
+    private final boolean atTimeUpOnly;
 
     /** Decided only by time, or by everyone else leaving. */
     public MostPoints() {
         this(0);
     }
 
+    /** Decided by time alone: it keeps running with one team left, however the points stand. */
+    public static MostPoints atTimeUp() {
+        return new MostPoints(0, true);
+    }
+
     /** @param pointsToWin ends the match as soon as a team has this many points; 0 for no such limit */
     public MostPoints(int pointsToWin) {
+        this(pointsToWin, false);
+    }
+
+    private MostPoints(int pointsToWin, boolean atTimeUpOnly) {
         if (pointsToWin < 0) {
             throw new IllegalArgumentException("Points to win can't be negative, got " + pointsToWin);
         }
         this.pointsToWin = pointsToWin;
+        this.atTimeUpOnly = atTimeUpOnly;
     }
 
     @Override
     public Optional<MatchResult> check(Roster roster, Scores scores) {
+        if (atTimeUpOnly) {
+            return Optional.empty();
+        }
         var left = roster.teamsLeft();
         var reached = pointsToWin > 0 && left.stream().anyMatch(team -> points(team, scores) >= pointsToWin);
         return left.size() > 1 && !reached ? Optional.empty() : Optional.of(finalResult(roster, scores));

@@ -81,7 +81,7 @@ public final class Paint implements GameType {
 
     @Override
     public WinCondition winCondition() {
-        return new MostPoints();
+        return MostPoints.atTimeUp();
     }
 
     @Override
