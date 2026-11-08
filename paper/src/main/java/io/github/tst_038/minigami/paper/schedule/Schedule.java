@@ -13,9 +13,10 @@ import java.util.Optional;
  * @param when the times, in server time
  * @param pick how the next game is chosen from {@code games}
  * @param joinSeconds how long players have to join before the call closes
+ * @param minOnline the time is skipped while fewer players than this could join
  * @param rewards what the players of its games may win
  */
-public record Schedule(String id, String name, Cron when, Pick pick, List<Entry> games, int joinSeconds, Rewards<Reward> rewards) {
+public record Schedule(String id, String name, Cron when, Pick pick, List<Entry> games, int joinSeconds, int minOnline, Rewards<Reward> rewards) {
 
     public Schedule {
         games = List.copyOf(games);

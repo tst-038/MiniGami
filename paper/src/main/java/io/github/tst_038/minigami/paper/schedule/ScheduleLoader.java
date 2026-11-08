@@ -65,8 +65,9 @@ public final class ScheduleLoader {
             games.add(new Schedule.Entry(game, variant.isEmpty() ? Optional.empty() : Optional.of(variant)));
         }
         var joinSeconds = root.has("join-seconds") ? root.integer("join-seconds", 10, 3600) : 120;
+        var minOnline = root.has("min-online") ? root.integer("min-online", 0, 1000) : 0;
         var rewards = root.has("rewards") ? RewardReader.read(root.section("rewards")) : Rewards.<Reward>none();
         // Only kept when the reader has no problems, so a missing cron line never reaches a schedule.
-        return new Schedule(id, name, when == null ? Cron.parse("* * * * *") : when, pick, games, joinSeconds, rewards);
+        return new Schedule(id, name, when == null ? Cron.parse("* * * * *") : when, pick, games, joinSeconds, minOnline, rewards);
     }
 }

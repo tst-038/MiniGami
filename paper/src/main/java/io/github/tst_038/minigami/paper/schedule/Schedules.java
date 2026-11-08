@@ -173,6 +173,9 @@ public final class Schedules {
             return Outcome.CALL_OPEN;
         }
         int players = couldJoin().size();
+        if (players < turn.schedule.minOnline()) {
+            return Outcome.NOTHING_FITS;
+        }
         var picked = turn.rotation.next(entry -> variant(entry).filter(variant -> fits(variant, players)).isPresent()).flatMap(this::variant);
         if (picked.isEmpty()) {
             return Outcome.NOTHING_FITS;

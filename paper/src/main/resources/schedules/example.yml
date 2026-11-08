@@ -20,6 +20,9 @@ games:
   - spleef
   - king-of-the-hill
   - { game: spleef, variant: decay }
+# Optional: the time is skipped while fewer players than this are online and could join (0 or left out: no limit).
+# Each game's own min-players still applies on top.
+min-online: 0
 # How long players have to join. A game that hasn't started by then is called off.
 join-seconds: 120
 # What the players may win, given once the game is over. Each list holds rewards with their chance in
