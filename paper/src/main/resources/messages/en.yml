@@ -182,13 +182,15 @@ shifting-maze:
   escaped: "%prefix%%team% <green>escaped the maze!"
 item-race:
   # When play starts. %item%: the item(s) every player is after
-  target: "%prefix%<gold>Find <white>%item%</white> <gold>and right click a deposit with it! <gray>The first to hand it in wins."
+  target: "%prefix%<gold>Find <white>%item%</white> <gold>and drop it inside a deposit! <gray>The first to hand it in wins."
   # Action bar every second
-  target-bar: "<gold>Find <white>%item%</white> <gray>and deposit it"
+  target-bar: "<gold>Find <white>%item%</white> <gray>and drop it in a deposit"
   # To a player who right clicks a deposit with something else. %item%: the item(s) the deposit still wants from their team
   wrong: "<red>The deposit wants <white>%item%"
   # To everyone, on every hand-in. %player%: who, %item%, %done% and %total%: the team's progress
   deposited: "%prefix%%player% <green>deposited <white>%item%</white> <gray>(%done%/%total%)"
+  # Action bar to a player whose team handed in too recently. %seconds%: how long until it counts again
+  cooldown: "<red>Your team must wait <white>%seconds%s</white> before the next hand-in"
   # HUD lines (%item%, %item1% to %item5%) for one target; handed in or still to find
   entry-done: "<green>✔ <strikethrough>%item%"
   entry-open: "<white>%item%"

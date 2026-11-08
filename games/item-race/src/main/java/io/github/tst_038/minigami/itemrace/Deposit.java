@@ -9,19 +9,23 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.event.block.Action;
+import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * Picks the match's target items when play starts and tells everyone, then repeats them on the action bar.
- * A player who right clicks a block of a {@code deposit} region while holding a target still to hand in gives
- * one in, which scores a point for their team (a team never scores the same item twice); {@link FirstDeposit}
+ * A player who drops a target still to hand in while standing in a {@code deposit} region (or, in click mode,
+ * right clicks a block of one while holding it) gives one in, then their team must wait out the delay before
+ * its next hand-in counts; which scores a point for their team (a team never scores the same item twice); {@link FirstDeposit}
  * decides when that wins. Any block of the region is a deposit, so the arena draws its deposits as regions
  * around whatever it builds there. The HUD gets {@code %item%} for a single target, else {@code %item1%} and
  * on, each ticked off for the viewer's team once handed in.
@@ -33,10 +37,20 @@ final class Deposit implements Feature {
 
     private final ItemPool pool;
     private final int targets;
+    private final HandIn mode;
+    private final long delayTicks;
 
-    Deposit(ItemPool pool, int targets) {
+    /** How an item is handed in: thrown down inside a deposit, or right clicked onto one. */
+    enum HandIn {
+        DROP, CLICK
+    }
+
+    /** @param delayTicks how long a team must wait after a hand-in before its next one counts */
+    Deposit(ItemPool pool, int targets, HandIn mode, long delayTicks) {
         this.pool = pool;
         this.targets = targets;
+        this.mode = mode;
+        this.delayTicks = delayTicks;
     }
 
     /** Whether a click hands an item in: a player still in, holding one of the items still wanted, on a deposit. */
@@ -64,6 +78,55 @@ final class Deposit implements Feature {
         var deposits = context.regions(REGION);
         context.messages().send(context.audience(), "item-race.target", Placeholder.component("item", all));
         context.scope().register(context.clock().repeat(20, () -> context.audience().sendActionBar(context.messages().render("item-race.target-bar", Placeholder.component("item", all)))));
+        var readyAt = new HashMap<String, Long>();
+        // Hands in one of the held item if it is still wanted; false means it did not count (the player heard why).
+        BiPredicate<Player, Material> handIn = (player, material) -> {
+            var id = player.getUniqueId();
+            boolean alive = context.roster().find(id).filter(Participant::isAlive).isPresent();
+            var wanted = new HashSet<>(chosen);
+            wanted.removeAll(done.apply(id));
+            if (!accepts(wanted, material, true, alive)) {
+                if (alive) {
+                    player.sendActionBar(context.messages().render("item-race.wrong", Placeholder.component("item", names(List.copyOf(wanted)))));
+                }
+                return false;
+            }
+            var side = sideOf.apply(id);
+            long wait = readyAt.getOrDefault(side, 0L) - context.clock().elapsedTicks();
+            if (wait > 0) {
+                player.sendActionBar(context.messages().render("item-race.cooldown", Placeholder.unparsed("seconds", String.valueOf((wait + 19) / 20))));
+                return false;
+            }
+            readyAt.put(side, context.clock().elapsedTicks() + delayTicks);
+            var handed = handedIn.computeIfAbsent(side, key -> new HashSet<>());
+            handed.add(material);
+            context.messages().send(context.audience(), "item-race.deposited",
+                    Placeholder.component("item", Component.translatable(material.translationKey())),
+                    Placeholder.component("player", context.playerName(player)),
+                    Placeholder.unparsed("done", String.valueOf(handed.size())),
+                    Placeholder.unparsed("total", String.valueOf(chosen.size())));
+            context.addPoints(id, 1);
+            return true;
+        };
+        if (mode == HandIn.DROP) {
+            context.on(PlayerDropItemEvent.class, event -> {
+                var player = event.getPlayer();
+                if (deposits.stream().noneMatch(region -> region.contains(player.getLocation()))) {
+                    return;
+                }
+                var drop = event.getItemDrop();
+                var stack = drop.getItemStack();
+                if (!handIn.test(player, stack.getType())) {
+                    event.setCancelled(true);
+                } else if (stack.getAmount() > 1) {
+                    stack.subtract();
+                    drop.setItemStack(stack);
+                } else {
+                    drop.remove();
+                }
+            });
+            return;
+        }
         context.on(PlayerInteractEvent.class, event -> {
             var block = event.getClickedBlock();
             if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK || block == null
@@ -72,29 +135,11 @@ final class Deposit implements Feature {
             }
             event.setCancelled(true);
             var player = event.getPlayer();
-            var id = player.getUniqueId();
-            var inventory = player.getInventory();
-            var held = inventory.getItemInMainHand();
-            boolean alive = context.roster().find(id).filter(Participant::isAlive).isPresent();
-            var wanted = new HashSet<>(chosen);
-            wanted.removeAll(done.apply(id));
-            if (!accepts(wanted, held.getType(), true, alive)) {
-                if (alive) {
-                    player.sendActionBar(context.messages().render("item-race.wrong", Placeholder.component("item", names(List.copyOf(wanted)))));
-                }
-                return;
+            var held = player.getInventory().getItemInMainHand();
+            if (handIn.test(player, held.getType())) {
+                held.subtract();
+                player.getInventory().setItemInMainHand(held);
             }
-            var material = held.getType();
-            held.subtract();
-            inventory.setItemInMainHand(held);
-            var side = handedIn.computeIfAbsent(sideOf.apply(id), key -> new HashSet<>());
-            side.add(material);
-            context.messages().send(context.audience(), "item-race.deposited",
-                    Placeholder.component("item", Component.translatable(material.translationKey())),
-                    Placeholder.component("player", context.playerName(player)),
-                    Placeholder.unparsed("done", String.valueOf(side.size())),
-                    Placeholder.unparsed("total", String.valueOf(chosen.size())));
-            context.addPoints(id, 1);
         });
     }
 

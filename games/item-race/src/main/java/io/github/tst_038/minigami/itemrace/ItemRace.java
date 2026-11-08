@@ -26,7 +26,7 @@ import org.bukkit.Material;
  * and, with a border, {@code border}.
  *
  * <p>Game settings: {@code items} (required), {@code dimensions} and {@code exclude} choose the target
- * (see {@link ItemPool}); {@code targets} (1 to 5, default 1: how many different items are asked for) and
+ * (see {@link ItemPool}); {@code hand-in} ({@code drop}, the default, or {@code click}), {@code hand-in-delay-seconds} (0) and {@code targets} (1 to 5, default 1: how many different items are asked for) and
  * {@code goal} ({@code all}, default: hand in every target; {@code any}: one of them is enough);
  * {@code play-seconds} (3600); and an optional {@code border: { end-size: 20,
  * shrink-seconds: 300, damage: 1 }} that closes the {@code border} region in on its centre.
@@ -43,6 +43,8 @@ public final class ItemRace implements GameType {
     private final Optional<ItemPool> pool;
     private final int targets;
     private final Goal goal;
+    private final Deposit.HandIn handIn;
+    private final int handInDelay;
     private final Predicate<Material> isItem;
 
     /** Whether a player (or team) must hand in all the targets or just any one. */
@@ -52,10 +54,12 @@ public final class ItemRace implements GameType {
 
     /** @param isItem whether a material is an item players can obtain; the server's registry decides, tests pass a fake */
     public ItemRace(Predicate<Material> isItem) {
-        this(3600, Optional.empty(), Optional.empty(), 1, Goal.ALL, isItem);
+        this(3600, Optional.empty(), Optional.empty(), 1, Goal.ALL, Deposit.HandIn.DROP, 0, isItem);
     }
 
-    private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool, int targets, Goal goal, Predicate<Material> isItem) {
+    private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool, int targets, Goal goal, Deposit.HandIn handIn, int handInDelay, Predicate<Material> isItem) {
+        this.handIn = handIn;
+        this.handInDelay = handInDelay;
         this.isItem = isItem;
         this.targets = targets;
         this.goal = goal;
@@ -88,7 +92,7 @@ public final class ItemRace implements GameType {
     public Map<String, List<Feature>> features() {
         var playing = new ArrayList<Feature>();
         // configure always runs for a game of this type, and a game without a pool fails its load.
-        playing.add(new Deposit(pool.orElseThrow(), targets));
+        playing.add(new Deposit(pool.orElseThrow(), targets, handIn, handInDelay * 20L));
         border.ifPresent(settings -> playing.add(new ClosingBorder(settings)));
         return Map.of(PLAYING, playing, "ending", List.of(new AnnounceWinner()));
     }
@@ -125,6 +129,8 @@ public final class ItemRace implements GameType {
                 config.has("border") ? Optional.of(ClosingBorder.Settings.read(config.section("border"))) : border,
                 read, count,
                 config.has("goal") ? config.choice("goal", Goal.class) : goal,
+                config.has("hand-in") ? config.choice("hand-in", Deposit.HandIn.class) : handIn,
+                config.has("hand-in-delay-seconds") ? config.integer("hand-in-delay-seconds", 0, 3600) : handInDelay,
                 isItem);
     }
 }

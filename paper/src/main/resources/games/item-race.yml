@@ -1,5 +1,5 @@
 # A long scramble in a very large arena. Everyone starts spread around its middle and loots the starter chests; the match
-# picks random items for the whole game, and the first player (or team) to right click a deposit while holding them wins.
+# picks random items for the whole game, and the first player (or team) to hand them in at a deposit wins.
 # If time runs out first, nobody wins. Deaths are final and players fight, mine and build freely.
 # The arena needs: spawns spread around the middle (/mg arena example spawn add), loot containers for the starter chests
 # (/mg arena example loot add chest), one or more regions called deposit or deposit-<anything> (any block inside one takes the
@@ -24,6 +24,11 @@ play-seconds: 3600
 # (goal: all, default; the sidebar ticks them off) or whether any one of them is enough (goal: any).
 # targets: 3
 # goal: all
+# How an item is handed in: drop it (Q) while standing inside a deposit (hand-in: drop, default), or right click a deposit
+# block with it (hand-in: click). A team must then wait this many seconds before its next hand-in counts, so a team that
+# found all its items still has to hand them in one by one (0 = no wait).
+# hand-in: drop
+# hand-in-delay-seconds: 30
 items:
   overworld:
     - { item: diamond, weight: 3 }
