@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
@@ -28,7 +29,7 @@ import org.bukkit.util.Vector;
  *
  * <p>Mobs are found again by a tag they carry rather than remembered, so the rules hold across phases:
  * enable the feature in every phase mobs should stay. They are removed when the phase that ends the match ends.
- * Minecarts and boats are kept in their plot the same way. Not covered: what a mob does inside its plot, such as arrows, creeper explosions or an enderman taking blocks.
+ * Minecarts and boats are kept in their plot and counted the same way. Not covered: what a mob does inside its plot, such as arrows, creeper explosions or an enderman taking blocks.
  */
 public final class PlotMobs implements Feature {
 
@@ -72,12 +73,9 @@ public final class PlotMobs implements Feature {
             throw new IllegalStateException("plot-mobs needs a game that gives every team a region");
         }
         var plots = context.teamRegions().stream().map(TeamRegion::region).toList();
-        context.on(CreatureSpawnEvent.class, event -> {
-            if (event.getEntity() instanceof ArmorStand) {
-                return;
-            }
+        Consumer<EntitySpawnEvent> admit = event -> {
             var plot = plotAt(plots, event.getLocation());
-            var verdict = verdict(plot, plot.map(region -> mobs(region, 0).stream().filter(Mob.class::isInstance).count()).orElse(0L), max);
+            var verdict = verdict(plot, plot.map(region -> (long) mobs(region, 0).size()).orElse(0L), max);
             if (verdict == Verdict.ALLOW) {
                 event.getEntity().addScoreboardTag(tag(plot.get()));
                 return;
@@ -87,11 +85,16 @@ public final class PlotMobs implements Feature {
                 nearest(context, event.getLocation()).ifPresent(player -> player.sendMessage(
                         context.messages().render("plot-mobs.limit", Formatter.number("max", max))));
             }
+        };
+        context.on(CreatureSpawnEvent.class, event -> {
+            if (!(event.getEntity() instanceof ArmorStand)) {
+                admit.accept(event);
+            }
         });
-        // Minecarts and boats ride off on their own, so they are kept in their plot like mobs (without counting towards the limit).
+        // Minecarts and boats ride off on their own, so they are kept in their plot and count towards the limit like mobs.
         context.on(EntitySpawnEvent.class, event -> {
             if (event.getEntity() instanceof Vehicle) {
-                plotAt(plots, event.getLocation()).ifPresentOrElse(plot -> event.getEntity().addScoreboardTag(tag(plot)), () -> event.setCancelled(true));
+                admit.accept(event);
             }
         });
         context.scope().register(context.clock().repeat(CHECK_TICKS, () -> plots.forEach(plot -> mobs(plot, SEARCH_MARGIN).stream()
