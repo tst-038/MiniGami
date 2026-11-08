@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.event.block.Action;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -23,8 +23,8 @@ import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * Picks the match's target items when play starts and tells everyone, then repeats them on the action bar.
- * A player who drops a target still to hand in while standing in a {@code deposit} region (or, in click mode,
- * right clicks a block of one while holding it) gives one in, then their team must wait out the delay before
+ * A target item a player drops that reaches a {@code deposit} region (say the bottom of a hole) gives one in
+ * for them (or, in click mode, right clicking a block of a deposit while holding it does), then their team must wait out the delay before
  * its next hand-in counts; which scores a point for their team (a team never scores the same item twice); {@link FirstDeposit}
  * decides when that wins. Any block of the region is a deposit, so the arena draws its deposits as regions
  * around whatever it builds there. The HUD gets {@code %item%} for a single target, else {@code %item1%} and
@@ -40,7 +40,7 @@ final class Deposit implements Feature {
     private final HandIn mode;
     private final long delayTicks;
 
-    /** How an item is handed in: thrown down inside a deposit, or right clicked onto one. */
+    /** How an item is handed in: dropped so that it reaches a deposit, or right clicked onto one. */
     enum HandIn {
         DROP, CLICK
     }
@@ -80,13 +80,13 @@ final class Deposit implements Feature {
         context.scope().register(context.clock().repeat(20, () -> context.audience().sendActionBar(context.messages().render("item-race.target-bar", Placeholder.component("item", all)))));
         var readyAt = new HashMap<String, Long>();
         // Hands in one of the held item if it is still wanted; false means it did not count (the player heard why).
-        BiPredicate<Player, Material> handIn = (player, material) -> {
+        HandInTest handIn = (player, material, quiet) -> {
             var id = player.getUniqueId();
             boolean alive = context.roster().find(id).filter(Participant::isAlive).isPresent();
             var wanted = new HashSet<>(chosen);
             wanted.removeAll(done.apply(id));
             if (!accepts(wanted, material, true, alive)) {
-                if (alive) {
+                if (alive && !quiet) {
                     player.sendActionBar(context.messages().render("item-race.wrong", Placeholder.component("item", names(List.copyOf(wanted)))));
                 }
                 return false;
@@ -94,7 +94,9 @@ final class Deposit implements Feature {
             var side = sideOf.apply(id);
             long wait = readyAt.getOrDefault(side, 0L) - context.clock().elapsedTicks();
             if (wait > 0) {
-                player.sendActionBar(context.messages().render("item-race.cooldown", Placeholder.unparsed("seconds", String.valueOf((wait + 19) / 20))));
+                if (!quiet) {
+                    player.sendActionBar(context.messages().render("item-race.cooldown", Placeholder.unparsed("seconds", String.valueOf((wait + 19) / 20))));
+                }
                 return false;
             }
             readyAt.put(side, context.clock().elapsedTicks() + delayTicks);
@@ -109,22 +111,29 @@ final class Deposit implements Feature {
             return true;
         };
         if (mode == HandIn.DROP) {
-            context.on(PlayerDropItemEvent.class, event -> {
-                var player = event.getPlayer();
-                if (deposits.stream().noneMatch(region -> region.contains(player.getLocation()))) {
-                    return;
+            // Thrown items are followed until they reach a deposit, then count for whoever threw them (the item remembers). One
+            // that is not accepted yet, such as during the wait, stays put and counts later.
+            // shortcut: stacked items keep only one thrower, so a stack formed by several players counts for that one; track amounts per thrower if that matters.
+            var falling = new HashSet<Item>();
+            context.on(PlayerDropItemEvent.class, event -> falling.add(event.getItemDrop()));
+            context.scope().register(context.clock().repeat(5, () -> falling.removeIf(item -> {
+                if (!item.isValid()) {
+                    return true;
                 }
-                var drop = event.getItemDrop();
-                var stack = drop.getItemStack();
-                if (!handIn.test(player, stack.getType())) {
-                    event.setCancelled(true);
-                } else if (stack.getAmount() > 1) {
+                var thrower = item.getThrower() == null ? null : item.getServer().getPlayer(item.getThrower());
+                var stack = item.getItemStack();
+                if (thrower == null || !chosen.contains(stack.getType()) || deposits.stream().noneMatch(region -> region.contains(item.getLocation()))
+                        || !handIn.test(thrower, stack.getType(), true)) {
+                    return false;
+                }
+                if (stack.getAmount() > 1) {
                     stack.subtract();
-                    drop.setItemStack(stack);
-                } else {
-                    drop.remove();
+                    item.setItemStack(stack);
+                    return false;
                 }
-            });
+                item.remove();
+                return true;
+            })));
             return;
         }
         context.on(PlayerInteractEvent.class, event -> {
@@ -136,11 +145,15 @@ final class Deposit implements Feature {
             event.setCancelled(true);
             var player = event.getPlayer();
             var held = player.getInventory().getItemInMainHand();
-            if (handIn.test(player, held.getType())) {
+            if (handIn.test(player, held.getType(), false)) {
                 held.subtract();
                 player.getInventory().setItemInMainHand(held);
             }
         });
+    }
+
+    private interface HandInTest {
+        boolean test(Player player, Material material, boolean quiet);
     }
 
     private static Component names(List<Material> materials) {

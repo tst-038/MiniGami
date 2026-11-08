@@ -24,8 +24,8 @@ play-seconds: 3600
 # (goal: all, default; the sidebar ticks them off) or whether any one of them is enough (goal: any).
 # targets: 3
 # goal: all
-# How an item is handed in: drop it (Q) while standing inside a deposit (hand-in: drop, default), or right click a deposit
-# block with it (hand-in: click). A team must then wait this many seconds before its next hand-in counts, so a team that
+# How an item is handed in: drop it (Q) so that it ends up inside a deposit region, such as the bottom of a hole (hand-in: drop, default), or right click a deposit
+# block with it (hand-in: click). A team must then wait this many seconds between hand-ins; dropped items just wait in the region. A team that
 # found all its items still has to hand them in one by one (0 = no wait).
 # hand-in: drop
 # hand-in-delay-seconds: 30

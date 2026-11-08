@@ -182,7 +182,7 @@ shifting-maze:
   escaped: "%prefix%%team% <green>escaped the maze!"
 item-race:
   # When play starts. %item%: the item(s) every player is after
-  target: "%prefix%<gold>Find <white>%item%</white> <gold>and drop it inside a deposit! <gray>The first to hand it in wins."
+  target: "%prefix%<gold>Find <white>%item%</white> <gold>and drop it so it lands in a deposit! <gray>The first to hand it in wins."
   # Action bar every second
   target-bar: "<gold>Find <white>%item%</white> <gray>and drop it in a deposit"
   # To a player who right clicks a deposit with something else. %item%: the item(s) the deposit still wants from their team
