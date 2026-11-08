@@ -36,14 +36,14 @@ class PlayAreaTest {
     private PlayArea perTeam() {
         match.teamRegions.add(new TeamRegion(own, Optional.empty(), List.of(id)));
         match.teamRegions.add(new TeamRegion(new Region("plot-2", world, 20, 60, 0, 29, 80, 9), Optional.empty(), List.of(UUID.randomUUID())));
-        var feature = new PlayArea(Optional.empty());
+        var feature = new PlayArea(Optional.empty(), false);
         feature.enable(match);
         return feature;
     }
 
     private PlayArea shared() {
         match.regions.put("fighting", new Region("fighting", world, 0, 60, 0, 9, 80, 9));
-        var feature = new PlayArea(Optional.of("fighting"));
+        var feature = new PlayArea(Optional.of("fighting"), false);
         feature.enable(match);
         return feature;
     }
@@ -94,7 +94,7 @@ class PlayAreaTest {
 
     @Test
     void theTeamRegionNeedsAGameWithRegionsPerTeam() {
-        assertThrows(IllegalStateException.class, () -> new PlayArea(Optional.empty()).enable(match));
+        assertThrows(IllegalStateException.class, () -> new PlayArea(Optional.empty(), false).enable(match));
     }
 
     @Test
@@ -125,12 +125,12 @@ class PlayAreaTest {
 
     @Test
     void aSharedRegionNeedsToExistInTheArena() {
-        assertThrows(IllegalStateException.class, () -> new PlayArea(Optional.of("missing")).enable(match));
+        assertThrows(IllegalStateException.class, () -> new PlayArea(Optional.of("missing"), false).enable(match));
     }
 
     @Test
     void onlyASharedRegionIsRelied() {
-        assertEquals(List.of("fighting"), new PlayArea(Optional.of("fighting")).regions());
-        assertEquals(List.of(), new PlayArea(Optional.empty()).regions());
+        assertEquals(List.of("fighting"), new PlayArea(Optional.of("fighting"), false).regions());
+        assertEquals(List.of(), new PlayArea(Optional.empty(), false).regions());
     }
 }

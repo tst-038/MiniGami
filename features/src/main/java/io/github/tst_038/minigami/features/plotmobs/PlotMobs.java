@@ -17,6 +17,8 @@ import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
@@ -29,7 +31,7 @@ import org.bukkit.util.Vector;
  *
  * <p>Mobs are found again by a tag they carry rather than remembered, so the rules hold across phases:
  * enable the feature in every phase mobs should stay. They are removed when the phase that ends the match ends.
- * Minecarts and boats are kept in their plot and counted the same way. Not covered: what a mob does inside its plot, such as arrows, creeper explosions or an enderman taking blocks.
+ * Minecarts and boats are kept in their plot and counted the same way. What a mob breaks, such as a wither's explosions, stays in its own plot. Not covered: what a mob does inside its plot, such as arrows or an enderman taking blocks.
  */
 public final class PlotMobs implements Feature {
 
@@ -95,6 +97,18 @@ public final class PlotMobs implements Feature {
         context.on(EntitySpawnEvent.class, event -> {
             if (event.getEntity() instanceof Vehicle) {
                 admit.accept(event);
+            }
+        });
+        // What a mob breaks, such as a wither's explosions or its body, stays in the plot it is in.
+        context.on(EntityExplodeEvent.class, event -> {
+            if (event.getEntity() instanceof Mob) {
+                var home = plotAt(plots, event.getLocation());
+                event.blockList().removeIf(block -> !plotAt(plots, block.getLocation()).equals(home));
+            }
+        });
+        context.on(EntityChangeBlockEvent.class, event -> {
+            if (event.getEntity() instanceof Mob && !plotAt(plots, event.getEntity().getLocation()).equals(plotAt(plots, event.getBlock().getLocation()))) {
+                event.setCancelled(true);
             }
         });
         context.scope().register(context.clock().repeat(CHECK_TICKS, () -> plots.forEach(plot -> mobs(plot, SEARCH_MARGIN).stream()

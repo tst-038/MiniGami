@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.feature.Feature;
+import io.github.tst_038.minigami.features.playarea.PlayAreaFactory;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.api.feature.PhaseFeatures;
 import io.github.tst_038.minigami.api.feature.RoleSwitchEvent;
@@ -232,6 +233,13 @@ public final class LiveMatch {
         for (var rank : variant.ranks()) {
             addWrapped(merged, rank.features(), participant -> participant.rank().equals(Optional.of(rank.id())));
         }
+        // Players stay in the saved map in every phase that has no play-area of its own.
+        variant.gametype().phases().forEach(phase -> {
+            var list = merged.computeIfAbsent(phase.id(), id -> new ArrayList<>());
+            if (list.stream().noneMatch(PlayAreaFactory::isPlayArea)) {
+                list.add(PlayAreaFactory.onMap());
+            }
+        });
         return merged;
     }
 

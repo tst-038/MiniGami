@@ -15,6 +15,6 @@ public final class TeamRegionFactory implements FeatureFactory {
 
     @Override
     public Feature create(ConfigReader config) {
-        return new PlayArea(Optional.empty());
+        return new PlayArea(Optional.empty(), false);
     }
 }

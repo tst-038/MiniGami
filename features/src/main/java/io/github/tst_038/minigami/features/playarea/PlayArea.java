@@ -36,19 +36,27 @@ import org.bukkit.event.world.StructureGrowEvent;
 final class PlayArea implements Feature {
 
     private final Optional<String> shared;
+    private final boolean optional;
 
-    /** @param shared the arena region everybody stays in; empty for the region of each player's own team */
-    PlayArea(Optional<String> shared) {
+    /**
+     * @param shared the arena region everybody stays in; empty for the region of each player's own team
+     * @param optional whether the feature does nothing, instead of failing, when the arena lacks the region
+     */
+    PlayArea(Optional<String> shared, boolean optional) {
         this.shared = shared;
+        this.optional = optional;
     }
 
     @Override
     public List<String> regions() {
-        return shared.stream().toList();
+        return optional ? List.of() : shared.stream().toList();
     }
 
     @Override
     public void enable(MatchContext context) {
+        if (optional && shared.flatMap(context::region).isEmpty()) {
+            return;
+        }
         if (shared.isPresent() ? context.region(shared.get()).isEmpty() : context.teamRegions().isEmpty()) {
             throw new IllegalStateException(shared.map(name -> "play-area needs the arena to have a region called " + name)
                     .orElse("play-area with the region of each team needs a game that gives every team a region"));

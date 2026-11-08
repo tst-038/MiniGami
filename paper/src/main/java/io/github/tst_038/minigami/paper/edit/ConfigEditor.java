@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
@@ -283,12 +284,26 @@ public final class ConfigEditor {
     /** A game that waits in the arena, for 2 to 8 players; change the rest with {@link #set}. */
     public void createGame(CommandSender sender, String id, String gametype, String arena) {
         edit(sender, Kind.GAME, id, true, config -> {
-            config.set("gametype", gametype);
-            config.set("min-players", 2);
-            config.set("max-players", 8);
-            config.set("waiting", "arena");
+            // A game named like a bundled one of the same type starts from it, so it is set up as shipped: some types need teams or ranks to be valid at all.
+            var example = bundledGame(id);
+            if (example.isPresent() && gametype.equals(example.get().getString("gametype"))) {
+                example.get().getKeys(false).forEach(key -> config.set(key, example.get().get(key)));
+            } else {
+                config.set("gametype", gametype);
+                config.set("min-players", 2);
+                config.set("max-players", 8);
+                config.set("waiting", "arena");
+            }
             config.set("arenas", List.of(arena));
         }, "edit.created");
+    }
+
+    private Optional<YamlConfiguration> bundledGame(String id) {
+        try (var in = plugin.getResource(Kind.GAME.file(id))) {
+            return in == null ? Optional.empty() : Optional.of(YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     /** A game night playing one game, for solo players; change the rest with {@link #set} and {@link #change}. */
