@@ -255,9 +255,16 @@ public final class Schedules {
         }
     }
 
-    /** {@code /mg schedule join}: joins the newest call that is open, opening its match again if everyone had left it. */
-    public void join(Player player) {
-        var open = calls.reversed().stream().filter(call -> call.match == null || call.match.match().isFinished() || call.match.isJoinable()).findFirst();
+    /**
+     * {@code /mg schedule join [schedule]}: joins the newest call that is open (of that schedule, when one is named),
+     * opening its match again if everyone had left it.
+     */
+    public void join(Player player, Optional<String> id) {
+        if (id.isPresent() && find(player, id.get()).isEmpty()) {
+            return;
+        }
+        var open = calls.reversed().stream().filter(call -> id.isEmpty() || call.schedule.id().equals(id.get()))
+                .filter(call -> call.match == null || call.match.match().isFinished() || call.match.isJoinable()).findFirst();
         if (open.isEmpty()) {
             messages.send(player, "schedule.no-call");
             return;
