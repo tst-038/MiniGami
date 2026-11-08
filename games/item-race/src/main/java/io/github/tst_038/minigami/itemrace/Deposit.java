@@ -17,6 +17,7 @@ import org.bukkit.Material;
 import org.bukkit.event.block.Action;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -113,9 +114,10 @@ final class Deposit implements Feature {
         if (mode == HandIn.DROP) {
             // Thrown items are followed until they reach a deposit, then count for whoever threw them (the item remembers). One
             // that is not accepted yet, such as during the wait, stays put and counts later.
-            // shortcut: stacked items keep only one thrower, so a stack formed by several players counts for that one; track amounts per thrower if that matters.
             var falling = new HashSet<Item>();
             context.on(PlayerDropItemEvent.class, event -> falling.add(event.getItemDrop()));
+            // A stack remembers one thrower, so thrown items must not merge or one team would be credited for another's.
+            context.on(ItemMergeEvent.class, event -> event.setCancelled(falling.contains(event.getEntity()) || falling.contains(event.getTarget())));
             context.scope().register(context.clock().repeat(5, () -> falling.removeIf(item -> {
                 if (!item.isValid()) {
                     return true;
