@@ -21,13 +21,13 @@ features:
   building:
     play-area: { region: team }
     plot-mobs: { max: 10 }
-  # Builders are still in the air when building ends and flying stops, so no fall damage afterwards.
+  # Builders are still in the air when building ends and flying stops, so nobody takes damage afterwards.
   voting:
     plot-mobs: { max: 10 }
-    no-damage: { causes: [fall] }
+    no-damage: { causes: [all] }
   ending:
     plot-mobs: { max: 10 }
-    no-damage: { causes: [fall] }
+    no-damage: { causes: [all] }
 hud:
   boss-bar:
     text:
