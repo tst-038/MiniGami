@@ -19,8 +19,8 @@ play-seconds: 3600
 # Play in teams to race as teams; without this everyone races for themselves.
 # teams: { count: 4 }
 # The target is picked at random from these, by weight (default 1), when play starts. Only the dimensions below are used.
-# Nether items work through the vanilla portals (the border follows players there); the End is left out because the
-# arena's world has no way to reach it.
+# Overworld only for now: the Nether is not reset between matches. Add nether to dimensions to use its items
+# (the border follows players through vanilla portals); the End is left out because the arena has no way to reach it.
 items:
   overworld:
     - { item: diamond, weight: 3 }
@@ -38,7 +38,7 @@ items:
     - quartz_block
   end:
     - ender_pearl
-dimensions: [overworld, nether]
+dimensions: [overworld]
 # Items that may never be picked, whatever the dimensions.
 exclude: []
 # Closes the border region in from its widest side to 200 blocks over 55 minutes; half a heart a second outside it.
