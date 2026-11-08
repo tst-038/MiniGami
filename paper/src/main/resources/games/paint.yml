@@ -11,8 +11,10 @@ waiting: arena
 play-seconds: 180
 # The item that paints; the kit below must hand it out.
 brush: blaze_rod
-# How far around the block aimed at the brush reaches, how far it can aim, and the rest between strokes.
-radius: 2
+# How far around the block aimed at the brush reaches (0 = just that block, 1 = a small ball, 2 = a bigger one ...), how far it can aim,
+# the rest between strokes, and whether the aimed block and the stroke's reach are outlined with particles for the painter.
+radius: 0
+highlight: true
 range: 30
 cooldown-ticks: 10
 # Blocks that can be painted over; painted blocks can always be painted over again.

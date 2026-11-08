@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.core.roster.MatchTeam;
 import io.github.tst_038.minigami.core.roster.Participant;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.territory.Territory;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,7 +16,9 @@ import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Color;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
@@ -26,7 +29,9 @@ import org.bukkit.inventory.EquipmentSlot;
  * Aiming the brush paints a ball of blocks around the one aimed at in the player's colour: only
  * blocks of the {@code canvas} regions that are paintable or already coloured. Each block is a point
  * for the painter and one less for whoever held it, all handed over once per stroke. The brush
- * rests a few ticks of the match clock between strokes.
+ * rests a few ticks of the match clock between strokes. Radius 0 paints only the block aimed at. With
+ * {@code highlight} a player holding the brush sees the aimed block and the stroke's reach outlined
+ * in their colour.
  */
 final class Brush implements Feature {
 
@@ -38,16 +43,21 @@ final class Brush implements Feature {
     /** Blocks a player painted over that another team held. */
     static final Stat STOLEN = new Stat("blocks-stolen");
 
+    /** Ticks between redrawing the aim outline; at most about 90 particles per player each time. */
+    private static final long HIGHLIGHT_TICKS = 3;
+
     private final Material item;
     private final int radius;
+    private final boolean highlight;
     private final int range;
     private final int cooldownTicks;
     private final Set<Material> canPaint;
     private final List<Material> colors;
 
-    Brush(Material item, int radius, int range, int cooldownTicks, Set<Material> paintable, List<Material> colors) {
+    Brush(Material item, int radius, boolean highlight, int range, int cooldownTicks, Set<Material> paintable, List<Material> colors) {
         this.item = item;
         this.radius = radius;
+        this.highlight = highlight;
         this.range = range;
         this.cooldownTicks = cooldownTicks;
         this.colors = List.copyOf(colors);
@@ -72,6 +82,9 @@ final class Brush implements Feature {
         var canvas = context.regions(CANVAS);
         var readyAt = new HashMap<UUID, Long>();
         var leader = new String[1];
+        if (highlight) {
+            context.scope().register(context.clock().repeat(HIGHLIGHT_TICKS, () -> context.players().forEach(player -> showAim(context, player))));
+        }
         context.on(PlayerInteractEvent.class, event -> {
             if (event.getHand() != EquipmentSlot.HAND || event.getAction() == Action.PHYSICAL
                     || event.getItem() == null || event.getItem().getType() != item) {
@@ -93,6 +106,29 @@ final class Brush implements Feature {
                 announceLeader(context, leader);
             }
         });
+    }
+
+    /** Outlines, for this player only, the block the brush aims at and, from radius 1 up, the cube a stroke reaches. */
+    private void showAim(MatchContext context, Player player) {
+        if (player.getInventory().getItemInMainHand().getType() != item) {
+            return;
+        }
+        var hit = player.rayTraceBlocks(range);
+        if (hit == null || hit.getHitBlock() == null) {
+            return;
+        }
+        var block = hit.getHitBlock();
+        var mapColor = colorOf(context, player.getUniqueId()).createBlockData().getMapColor();
+        var dust = new Particle.DustOptions(Color.fromRGB(mapColor.getRed(), mapColor.getGreen(), mapColor.getBlue()), 0.8f);
+        var points = BoxOutline.points(block.getX(), block.getY(), block.getZ(), block.getX() + 1, block.getY() + 1, block.getZ() + 1, 2);
+        if (radius > 0) {
+            points = new ArrayList<>(points);
+            points.addAll(BoxOutline.points(block.getX() - radius, block.getY() - radius, block.getZ() - radius,
+                    block.getX() + radius + 1, block.getY() + radius + 1, block.getZ() + radius + 1, Math.min(2 * radius + 1, 6)));
+        }
+        for (var p : points) {
+            player.spawnParticle(Particle.DUST, p[0], p[1], p[2], 1, 0, 0, 0, 0, dust);
+        }
     }
 
     /** @return whether any block changed hands */

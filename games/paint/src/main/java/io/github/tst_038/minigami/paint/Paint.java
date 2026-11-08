@@ -20,8 +20,8 @@ import org.bukkit.Material;
  * of their own.
  *
  * <p>Game settings, all optional: {@code play-seconds} (180); {@code brush} (blaze_rod), the item that
- * paints, which the game's kit must hand out; {@code radius} (2), how far around the block aimed at
- * the brush reaches; {@code range} (30), how far the brush can aim; {@code cooldown-ticks} (10);
+ * paints, which the game's kit must hand out; {@code radius} (0), how far around the block aimed at
+ * the brush reaches (0 is just that block); {@code highlight} (true), outline the aim with particles; {@code range} (30), how far the brush can aim; {@code cooldown-ticks} (10);
  * {@code paintable}, the blocks that can be painted over (white_concrete); {@code colors}, a block for
  * each team or player in turn.
  */
@@ -33,19 +33,21 @@ public final class Paint implements GameType {
     private final int playSeconds;
     private final Material brush;
     private final int radius;
+    private final boolean highlight;
     private final int range;
     private final int cooldownTicks;
     private final Set<Material> paintable;
     private final List<Material> colors;
 
     public Paint() {
-        this(180, Material.BLAZE_ROD, 2, 30, 10, Set.of(Material.WHITE_CONCRETE), DEFAULT_COLORS);
+        this(180, Material.BLAZE_ROD, 0, true, 30, 10, Set.of(Material.WHITE_CONCRETE), DEFAULT_COLORS);
     }
 
-    private Paint(int playSeconds, Material brush, int radius, int range, int cooldownTicks, Set<Material> paintable, List<Material> colors) {
+    private Paint(int playSeconds, Material brush, int radius, boolean highlight, int range, int cooldownTicks, Set<Material> paintable, List<Material> colors) {
         this.playSeconds = playSeconds;
         this.brush = brush;
         this.radius = radius;
+        this.highlight = highlight;
         this.range = range;
         this.cooldownTicks = cooldownTicks;
         this.paintable = paintable;
@@ -69,7 +71,7 @@ public final class Paint implements GameType {
 
     @Override
     public Map<String, List<Feature>> features() {
-        return Map.of("playing", List.of(new Brush(brush, radius, range, cooldownTicks, paintable, colors)), "ending", List.of(new AnnounceWinner()));
+        return Map.of("playing", List.of(new Brush(brush, radius, highlight, range, cooldownTicks, paintable, colors)), "ending", List.of(new AnnounceWinner()));
     }
 
     @Override
@@ -101,7 +103,8 @@ public final class Paint implements GameType {
         return new Paint(
                 config.has("play-seconds") ? config.integer("play-seconds", 10, 3600) : playSeconds,
                 brush,
-                config.has("radius") ? config.integer("radius", 1, 8) : radius,
+                config.has("radius") ? config.integer("radius", 0, 8) : radius,
+                config.has("highlight") ? config.bool("highlight") : highlight,
                 config.has("range") ? config.integer("range", 1, 100) : range,
                 config.has("cooldown-ticks") ? config.integer("cooldown-ticks", 0, 200) : cooldownTicks,
                 paintable,
