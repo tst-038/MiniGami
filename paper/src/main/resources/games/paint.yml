@@ -6,15 +6,17 @@
 gametype: paint
 name: "<light_purple>Paint"
 min-players: 2
-max-players: 8
+max-players: 16
 waiting: arena
 play-seconds: 180
 # Blocks that can be painted over; painted blocks can always be painted over again.
 paintable: [white_concrete]
-# One block per team (or player) in turn.
-colors: [red_concrete, blue_concrete, lime_concrete, yellow_concrete, orange_concrete, purple_concrete, cyan_concrete, pink_concrete]
-# Paint in teams; without this everyone paints for themselves.
-# teams: { count: 2 }
+# One block per team (or player) in turn, in the order of the team colours: red, blue, green, yellow, aqua, pink, orange, white,
+# dark green, dark blue, dark aqua, dark purple, gray, dark gray, black, dark red (the dark gray player paints white).
+# Names and name tags take the same colour.
+colors: [red_concrete, blue_concrete, lime_concrete, yellow_concrete, light_blue_concrete, pink_concrete, orange_concrete, light_gray_concrete, green_concrete, magenta_concrete, cyan_concrete, purple_concrete, gray_concrete, white_concrete, black_concrete, brown_concrete]
+# Everyone paints for themselves, in a colour each. Use teams: { count: 2 } to paint in teams.
+teams: { size: 1 }
 arenas: [example]
 # Play in the region canvas: its schematic (if any) is pasted when the match opens, and spawns must stand inside it.
 region: canvas

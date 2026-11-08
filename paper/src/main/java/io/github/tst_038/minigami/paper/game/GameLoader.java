@@ -320,10 +320,6 @@ public final class GameLoader {
         }
         var size = teams.integer("size", 1, Integer.MAX_VALUE);
         var roles = config.has("roles");
-        if (size == 1 && !roles) {
-            teams.problem("size", "teams of one are free for all; leave out teams instead");
-            return Optional.empty();
-        }
         var setup = TeamSetup.ofSize(size);
         // With a single team the match would be decided the moment it starts, unless roles play against it.
         if (!roles && minPlayers <= size) {

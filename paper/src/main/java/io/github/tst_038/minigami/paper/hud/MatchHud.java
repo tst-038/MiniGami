@@ -263,7 +263,7 @@ public final class MatchHud {
         if (!teams.isEmpty()) {
             return teams.stream()
                     .sorted(Comparator.comparingInt((MatchTeam team) -> team.ids().stream().mapToInt(scores::of).sum()).reversed())
-                    .map(team -> render(viewer, "hud.scores.team", Placeholder.component("team", match.teamName(team.id().orElseThrow())),
+                    .map(team -> render(viewer, "hud.scores.team", Placeholder.component("team", teamLabel(team)),
                             Formatter.number("points", team.ids().stream().mapToInt(scores::of).sum()),
                             Formatter.number("size", team.members().size()),
                             Formatter.number("alive", team.members().stream().filter(Participant::isAlive).count())))
@@ -278,6 +278,16 @@ public final class MatchHud {
                     Placeholder.unparsed("player", Objects.requireNonNullElse(name, "?")), Formatter.number("points", scores.of(best.get(i)))));
         }
         return lines;
+    }
+
+    /** The team's name, or for a team of one the player's own name in the team's colour. */
+    private Component teamLabel(MatchTeam team) {
+        var name = match.teamName(team.id().orElseThrow());
+        if (team.members().size() != 1) {
+            return name;
+        }
+        var player = server.getOfflinePlayer(team.ids().iterator().next()).getName();
+        return player == null ? name : Component.text(player, name.color());
     }
 
     /** A line per floor with members alive on it, the highest first, the viewer's own marked. */
