@@ -195,7 +195,7 @@ king:
   # When a King dies. %team%: their team, %king%: the King
   died: "%prefix%%team%<red>'s King %king% <red>has fallen!"
   # To the rest of that team
-  last-life: "%prefix%<red>Your King has fallen. <gray>You have one life left."
+  last-life: "%prefix%<red>Your King has fallen. <gray>Your deaths count from now on."
   # When time ran out with both teams still standing
   time-up: "%prefix%<gray>Time is up! <white>The King, the survivors and the kills decide."
 team-deathmatch:

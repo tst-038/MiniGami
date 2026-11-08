@@ -233,6 +233,20 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public void holdLives(UUID id) {
+        if (!scope.isClosed()) {
+            match.holdLives(id);
+        }
+    }
+
+    @Override
+    public void startLives(UUID id) {
+        if (!scope.isClosed()) {
+            match.startLives(id);
+        }
+    }
+
+    @Override
     public void endRespawns(UUID id) {
         if (!scope.isClosed()) {
             match.endRespawns(id);

@@ -198,6 +198,21 @@ public interface MatchContext {
      */
     void endRespawns(UUID id);
 
+    /**
+     * Keeps the participant's deaths from costing lives until {@link #startLives} is called, so a game can decide
+     * when the lives it is configured with begin to count. Their lives are not shown meanwhile.
+     */
+    default void holdLives(UUID id) {
+    }
+
+    /**
+     * Has the participant's deaths cost lives from now on, as many as the game is configured with. A participant with
+     * unlimited lives gets their last life instead, as with {@link #endRespawns}.
+     */
+    default void startLives(UUID id) {
+        endRespawns(id);
+    }
+
     /** Counts one more of the stat for the participant. */
     default void count(UUID id, Stat stat) {
         count(id, stat, 1);

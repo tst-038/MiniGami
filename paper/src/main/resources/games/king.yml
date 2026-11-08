@@ -1,6 +1,7 @@
 # Two teams, each with a King chosen at random. While the King lives, the team comes back after dying; once the King falls,
 # every death of that team is final. Last team standing wins; when time runs out, the team whose King lives, then the one
 # with more living members, then the one with more kills.
+# Optional `lives: 3`: deaths of a team only cost a life once its King has fallen, then each member has 3.
 gametype: king
 name: "<gold>King"
 min-players: 4

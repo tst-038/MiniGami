@@ -406,6 +406,24 @@ public final class LiveMatch {
         }
     }
 
+    /** Keeps the participant's deaths from costing lives until {@link #startLives}. */
+    void holdLives(UUID id) {
+        if (match.roster().find(id).isPresent()) {
+            lives.hold(id);
+        }
+    }
+
+    /** Has the participant's deaths cost lives from now on; with unlimited lives, one who waits to come back is out at once. */
+    void startLives(UUID id) {
+        if (match.roster().find(id).isPresent()) {
+            lives.start(id);
+            var waiting = respawning.containsKey(id) && lives.left(id).equals(OptionalInt.of(0)) ? plugin.getServer().getPlayer(id) : null;
+            if (waiting != null) {
+                eliminate(waiting);
+            }
+        }
+    }
+
     /** The lives a participant has left; empty when they are unlimited. */
     public OptionalInt livesLeft(UUID id) {
         return lives.left(id);

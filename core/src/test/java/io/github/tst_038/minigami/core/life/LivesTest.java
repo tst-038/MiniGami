@@ -25,6 +25,29 @@ class LivesTest {
     }
 
     @Test
+    void heldDeathsDoNotCountUntilStarted() {
+        livesOf.put(alice, 2);
+        lives.hold(alice);
+
+        assertFalse(lives.die(alice));
+        assertFalse(lives.die(alice));
+        assertEquals(OptionalInt.empty(), lives.left(alice));
+        lives.start(alice);
+
+        assertEquals(OptionalInt.of(2), lives.left(alice));
+        assertFalse(lives.die(alice));
+        assertTrue(lives.die(alice));
+    }
+
+    @Test
+    void startingUnlimitedLivesMakesTheNextDeathTheLast() {
+        lives.hold(alice);
+        lives.start(alice);
+
+        assertTrue(lives.die(alice));
+    }
+
+    @Test
     void livesLeftCountDownAndAreEmptyWhenUnlimited() {
         assertEquals(OptionalInt.empty(), lives.left(alice));
         livesOf.put(alice, 3);
