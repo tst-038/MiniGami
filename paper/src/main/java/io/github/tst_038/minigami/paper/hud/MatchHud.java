@@ -58,7 +58,7 @@ public final class MatchHud {
     public static final String CELEBRATION = "minigami.celebration";
 
     /** The match's values every HUD text can use, next to each stat the match keeps. */
-    static final List<String> VALUES = List.of("game", "arena", "players", "max", "alive", "time", "team", "lives", "points", "level", "levels", "on-level");
+    static final List<String> VALUES = List.of("game", "arena", "players", "max", "alive", "time", "team", "lives", "points", "level", "levels", "on-level", "rank");
 
     private static final long REFRESH_TICKS = 5;
     /** How often the floors are counted again; it reads every block of the region the game plays in. */
@@ -452,6 +452,7 @@ public final class MatchHud {
             empty.add("lives");
         }
         levels(viewer, participant.isPresent(), resolvers, empty);
+        ranks(participant, resolvers, empty);
         var kept = match.variant().stats();
         if (participant.isPresent()) {
             var id = viewer.getUniqueId();
@@ -468,6 +469,31 @@ public final class MatchHud {
         // An empty value still shows as nothing in a text that isn't left out, such as a title.
         empty.forEach(name -> resolvers.add(Placeholder.unparsed(name, "")));
         return new Values(TagResolver.resolver(resolvers), Set.copyOf(empty));
+    }
+
+    /**
+     * {@code %rank%}: the viewer's own rank; and per rank of the game, such as {@code %king%}, who holds it in the viewer's team,
+     * struck through once they are out.
+     */
+    private void ranks(Optional<Participant> participant, List<TagResolver> resolvers, Set<String> empty) {
+        participant.flatMap(Participant::rank).ifPresentOrElse(rank -> resolvers.add(Placeholder.unparsed("rank", rank)), () -> empty.add("rank"));
+        var team = participant.flatMap(Participant::team);
+        for (var rank : match.variant().ranks()) {
+            var holders = match.match().roster().teams().stream()
+                    .filter(candidate -> candidate.id().equals(team))
+                    .flatMap(candidate -> candidate.members().stream())
+                    .filter(member -> member.rank().equals(Optional.of(rank.id())))
+                    .map(member -> {
+                        var name = Component.text(Objects.requireNonNullElse(server.getOfflinePlayer(member.id()).getName(), "?"));
+                        return member.isAlive() ? name : name.decorate(net.kyori.adventure.text.format.TextDecoration.STRIKETHROUGH);
+                    })
+                    .toList();
+            if (holders.isEmpty()) {
+                empty.add(rank.id());
+            } else {
+                resolvers.add(Placeholder.component(rank.id(), Component.join(net.kyori.adventure.text.JoinConfiguration.commas(true), holders)));
+            }
+        }
     }
 
     /** {@code level}: the floor the viewer is on, {@code levels}: how many are left, {@code on-level}: the members alive on the viewer's floor. */

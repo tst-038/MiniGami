@@ -36,4 +36,4 @@ features:
 quit: { then: die, rejoin-seconds: 60 }
 hud:
   sidebar:
-    fighting: ["", "<gray>Time: <yellow>%time%", "<gray>Kills: <white>%points%"]
+    fighting: ["", "<gray>Time: <yellow>%time%", "<gray>You are: <white>%rank%", "<gray>Your King: <gold>%king%", "<gray>Kills: <white>%points%"]
