@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":games:pole-duel"))
     implementation(project(":games:paint"))
     implementation(project(":games:king"))
+    implementation(project(":games:item-race"))
     // Optional at runtime: arenas are reset from schematics only when WorldEdit or FAWE is installed.
     compileOnly(libs.worldedit.bukkit) { isTransitive = false }
     compileOnly(libs.worldedit.core) { isTransitive = false }

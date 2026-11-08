@@ -1,7 +1,7 @@
 # MiniGami
 
 A multi-game minigame engine for [Paper](https://papermc.io). One plugin runs many minigames: spleef, king of the hill,
-domination, team deathmatch, hide and seek, infection, build battle, the wall and paint. Each game is a YAML file you can copy,
+domination, team deathmatch, hide and seek, infection, build battle, the wall, paint and item race. Each game is a YAML file you can copy,
 change and combine. Add game nights with standings, scheduled games with rewards, parties, persistent stats and a HUD,
 all without writing code.
 
@@ -116,6 +116,7 @@ You can also copy one of the files in `games/`, edit it, and run `/mg reload`.
 | `pole-duel` | Everyone stands on a pole; bridge with slabs, knock the others off, last one up wins. | a `poles` region and a saved map |
 | `paint` | Paint the canvas with a brush: every block you hold is a point, painting over another team's block takes it from them. Most blocks wins. | a `canvas` region and a saved map |
 | `king` | Two teams, each with a King. While the King lives, the team respawns; when the King falls, deaths are final. Last team standing wins; at time-up a living King, then more living members, then more kills. | spawns |
+| `item-race` | A long scramble in a huge arena: loot the starter chests, then find the match's one random target item and right click a deposit with it. First player or team to hand it in wins; time up means nobody does. Deaths are final, PvP is on. | spawns, loot containers, a `deposit` region (any number, `deposit-…`), a `border` region if the game sets a border, and a saved map |
 | `the-wall` | Teams prepare behind walls; the walls drop and a border closes in. | team spawns, `quarter-1`…`quarter-4`, `fighting` and `border` regions, `wall…` regions and a saved map |
 
 `/mg gametype <id> info` lists a game type's phases, settings and what its arenas need.

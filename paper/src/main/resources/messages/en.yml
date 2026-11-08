@@ -180,6 +180,15 @@ shifting-maze:
   # Action bar when a Minotaur tries to enter the exit room
   # To everyone when the last free member of a team is out. %team%: the team
   escaped: "%prefix%%team% <green>escaped the maze!"
+item-race:
+  # When play starts. %item%: the item every player is after
+  target: "%prefix%<gold>Find <white>%item%</white> <gold>and right click a deposit with it! <gray>The first to hand it in wins."
+  # Action bar every second
+  target-bar: "<gold>Find <white>%item%</white> <gray>and deposit it"
+  # To a player who right clicks a deposit with something else. %item%: the item the deposit wants
+  wrong: "<red>The deposit wants <white>%item%"
+  # To everyone, when the winning item is handed in. %player%: who, %item%
+  deposited: "%prefix%%player% <green>deposited <white>%item%<green>!"
 king:
   # At the start, to the King's team. %king%: the King
   chosen: "%prefix%<gold>%king% <gray>is your King! Keep them alive: <white>while the King lives, you come back."
