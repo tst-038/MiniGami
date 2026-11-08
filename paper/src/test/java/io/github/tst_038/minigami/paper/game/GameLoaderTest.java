@@ -721,6 +721,18 @@ class GameLoaderTest {
     }
 
     @Test
+    void aGameCanPlayInSeveralRegionsAndUsesTheSpawnsInAnyOfThem() throws Exception {
+        arenas.register(new Arena("shared", null, List.of(new Arena.Spawn(new Location(null, 1, 64, 1), Optional.empty()), new Arena.Spawn(new Location(null, 50, 64, 50), Optional.empty()),
+                new Arena.Spawn(new Location(null, 90, 64, 90), Optional.empty())), Optional.empty(), Optional.empty(),
+                Map.of("tnt", new Region("tnt", null, 0, 60, 0, 10, 70, 10), "spleef", new Region("spleef", null, 40, 60, 40, 60, 70, 60)), Optional.empty()));
+
+        var loaded = load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [shared], region: [tnt, spleef]}");
+
+        assertEquals(List.of(), problems(loaded));
+        assertEquals(List.of(1, 50), loaded.entries().find("fall").orElseThrow().base().arenas().getFirst().spawns().stream().map(spawn -> spawn.location().getBlockX()).toList());
+    }
+
+    @Test
     void respawningOnTheHighestFloorNeedsTheRegionTheGamePlaysIn() throws Exception {
         var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills], respawn: highest-floor";
 

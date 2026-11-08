@@ -122,13 +122,13 @@ public final class ArenaMaps {
     }
 
     /**
-     * Sets the arena up for a game that plays in one of its regions: pastes that region's own schematic, if
+     * Sets the arena up for a game that plays in one of its regions: pastes the own schematic of each of those regions, if
      * it has one, so one arena can hold a different floor for each game. Does nothing for a game that
      * plays in the whole arena, a region without a schematic (it is never cleared) or without WorldEdit.
      * Queued behind the arena's earlier edits; the map reset after the match puts the arena back.
      */
     public void setUp(Arena arena) {
-        arena.playRegion().filter(region -> worldEdit.isPresent() && hasRegionSchematic(arena, region.id())).ifPresent(region -> replace(arena, region));
+        arena.playRegions().stream().filter(region -> worldEdit.isPresent() && hasRegionSchematic(arena, region.id())).forEach(region -> replace(arena, region));
     }
 
     /**

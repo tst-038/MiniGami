@@ -171,6 +171,11 @@ public final class ConfigReader {
         return list.stream().map(String::valueOf).toList();
     }
 
+    /** One text, or a list of them: {@code region: a} is {@code region: [a]}. */
+    public List<String> stringsOrOne(String key) {
+        return section.get(key) instanceof List<?> ? strings(key) : List.of(string(key));
+    }
+
     /** Item or block names such as {@code snow_block}; unknown names are problems and left out. */
     public List<Material> materials(String key) {
         var materials = new ArrayList<Material>();

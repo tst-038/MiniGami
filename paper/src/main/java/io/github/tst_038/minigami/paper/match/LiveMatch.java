@@ -1143,7 +1143,7 @@ public final class LiveMatch {
         var team = teamOf(id);
         var home = team.map(teamHomes::get).map(OptionalInt::of).orElse(OptionalInt.empty());
         var spots = SpawnPlan.respawnChoices(team, spawnTags, home).stream().map(i -> arena.spawns().get(i).location()).toList();
-        var candidates = variant.respawn() == Respawn.HIGHEST_FLOOR ? arena.playRegion().map(Standable::floors).filter(floors -> !floors.isEmpty()).map(floors -> floors.get(floors.lastKey())).orElseGet(() -> Standable.among(spots))
+        var candidates = variant.respawn() == Respawn.HIGHEST_FLOOR ? Optional.of(arena.playRegions()).filter(regions -> !regions.isEmpty()).map(LiveMatch::highestFloor).orElseGet(() -> Standable.among(spots))
                 : Standable.among(spots);
         var others = members.stream().filter(other -> !other.equals(id)).map(plugin.getServer()::getPlayer)
                 .filter(other -> other != null && match.roster().find(other.getUniqueId()).filter(Participant::isAlive).isPresent()).map(Player::getLocation).toList();
@@ -1154,9 +1154,17 @@ public final class LiveMatch {
         return candidates.get(Spread.farthest(candidates.stream().map(Standable::point).toList(), others.stream().map(Standable::point).toList()));
     }
 
-    /** The floors left in the region the game plays in, if it picked one; a scan of the whole region, so ask sparingly. */
+    /** The places on the highest floor over all the regions; empty if they are all gone, which the caller treats as no floor. */
+    private static List<Location> highestFloor(List<Region> regions) {
+        var merged = new java.util.TreeMap<Integer, List<Location>>();
+        regions.forEach(region -> Standable.floors(region).forEach((height, spots) -> merged.computeIfAbsent(height, h -> new ArrayList<>()).addAll(spots)));
+        return merged.isEmpty() ? List.of() : merged.get(merged.lastKey());
+    }
+
+    /** The floors left in the regions the game plays in, if it picked one; a scan of the whole region, so ask sparingly. */
     public Optional<Floors> floors() {
-        return arena.playRegion().map(region -> new Floors(Standable.floors(region).keySet()));
+        return Optional.of(arena.playRegions()).filter(regions -> !regions.isEmpty())
+                .map(regions -> new Floors(regions.stream().flatMap(region -> Standable.floors(region).keySet().stream()).toList()));
     }
 
     private void saveState(Player player) {
