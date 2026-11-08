@@ -11,11 +11,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The first team to hold a point wins; a deposit gives one. The match is also over when at most one team
+ * The first team to hold the needed points wins; a hand-in of a new item gives one (one point is enough when any item will do). The match is also over when at most one team
  * is left in, and that team wins. The other teams still in share the next place, those out follow in
  * reverse order of going out. When time is up and nobody deposited, there is no winner and no placement.
  */
 final class FirstDeposit implements WinCondition {
+
+    private final int needed;
+
+    FirstDeposit(int needed) {
+        this.needed = needed;
+    }
 
     @Override
     public Optional<MatchResult> check(Roster roster, Scores scores) {
@@ -42,9 +48,9 @@ final class FirstDeposit implements WinCondition {
     }
 
     /** The team that deposited, else the only one left in. */
-    private static Optional<MatchTeam> winner(Roster roster, Scores scores) {
+    private Optional<MatchTeam> winner(Roster roster, Scores scores) {
         var left = roster.teamsLeft();
-        var deposited = left.stream().filter(team -> team.ids().stream().mapToInt(scores::of).sum() > 0).findFirst();
+        var deposited = left.stream().filter(team -> team.ids().stream().mapToInt(scores::of).sum() >= needed).findFirst();
         return deposited.isPresent() || left.size() != 1 ? deposited : Optional.of(left.getFirst());
     }
 }

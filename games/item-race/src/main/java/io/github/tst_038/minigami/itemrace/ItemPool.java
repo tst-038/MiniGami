@@ -50,6 +50,29 @@ final class ItemPool {
         this.totalWeight = entries.stream().mapToInt(Entry::weight).sum();
     }
 
+    /** Up to {@code count} different items, each draw weighted among those left; the same random gives the same items. */
+    List<Material> pick(Random random, int count) {
+        var rest = new ArrayList<>(entries);
+        var picked = new ArrayList<Material>();
+        while (picked.size() < count && !rest.isEmpty()) {
+            int roll = random.nextInt(rest.stream().mapToInt(Entry::weight).sum());
+            for (Entry entry : rest) {
+                roll -= entry.weight();
+                if (roll < 0) {
+                    picked.add(entry.item());
+                    break;
+                }
+            }
+            rest.removeIf(entry -> entry.item() == picked.getLast());
+        }
+        return picked;
+    }
+
+    /** How many different items can be picked. */
+    int distinct() {
+        return (int) entries.stream().map(Entry::item).distinct().count();
+    }
+
     /** The same random gives the same item. */
     Material pick(Random random) {
         int roll = random.nextInt(totalWeight);

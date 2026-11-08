@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 class FirstDepositTest {
 
-    private final FirstDeposit win = new FirstDeposit();
+    private final FirstDeposit win = new FirstDeposit(1);
     private final Roster roster = new Roster();
     private final Scores scores = new Scores();
     private final UUID alice = UUID.randomUUID();
@@ -69,5 +69,14 @@ class FirstDepositTest {
 
         assertEquals(1, first.place());
         assertEquals(Set.of(alice, bob), Set.copyOf(first.participants()));
+    }
+
+    @Test
+    void severalItemsNeedThatManyPoints() {
+        var all = new FirstDeposit(3);
+        scores.add(bob, 2);
+        assertTrue(all.check(roster, scores).isEmpty());
+        scores.add(bob, 1);
+        assertEquals(1, all.check(roster, scores).orElseThrow().placements().getFirst().place());
     }
 }

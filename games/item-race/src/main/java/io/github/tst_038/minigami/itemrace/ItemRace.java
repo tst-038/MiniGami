@@ -17,7 +17,7 @@ import org.bukkit.Material;
 
 /**
  * A survival scramble in one very large arena: everyone starts spread over the spawns, grabs what the loot
- * containers hold, and races to find the match's one random target item and hand it in at a deposit.
+ * containers hold, and races to find the match's random target item(s) and hand them in at a deposit.
  * The first player (or team) to do so wins; if time runs out first, nobody does. Deaths are final, and
  * players fight, mine and build freely.
  *
@@ -26,25 +26,39 @@ import org.bukkit.Material;
  * and, with a border, {@code border}.
  *
  * <p>Game settings: {@code items} (required), {@code dimensions} and {@code exclude} choose the target
- * (see {@link ItemPool}); {@code play-seconds} (3600); and an optional {@code border: { end-size: 20,
+ * (see {@link ItemPool}); {@code targets} (1 to 5, default 1: how many different items are asked for) and
+ * {@code goal} ({@code all}, default: hand in every target; {@code any}: one of them is enough);
+ * {@code play-seconds} (3600); and an optional {@code border: { end-size: 20,
  * shrink-seconds: 300, damage: 1 }} that closes the {@code border} region in on its centre.
  */
 public final class ItemRace implements GameType {
 
     static final String PLAYING = "playing";
 
+    /** The HUD has a line per target ({@code %item1%} to {@code %item5%}). */
+    static final int MAX_TARGETS = 5;
+
     private final int playSeconds;
     private final Optional<ClosingBorder.Settings> border;
     private final Optional<ItemPool> pool;
+    private final int targets;
+    private final Goal goal;
     private final Predicate<Material> isItem;
+
+    /** Whether a player (or team) must hand in all the targets or just any one. */
+    enum Goal {
+        ALL, ANY
+    }
 
     /** @param isItem whether a material is an item players can obtain; the server's registry decides, tests pass a fake */
     public ItemRace(Predicate<Material> isItem) {
-        this(3600, Optional.empty(), Optional.empty(), isItem);
+        this(3600, Optional.empty(), Optional.empty(), 1, Goal.ALL, isItem);
     }
 
-    private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool, Predicate<Material> isItem) {
+    private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool, int targets, Goal goal, Predicate<Material> isItem) {
         this.isItem = isItem;
+        this.targets = targets;
+        this.goal = goal;
         this.playSeconds = playSeconds;
         this.border = border;
         this.pool = pool;
@@ -74,7 +88,7 @@ public final class ItemRace implements GameType {
     public Map<String, List<Feature>> features() {
         var playing = new ArrayList<Feature>();
         // configure always runs for a game of this type, and a game without a pool fails its load.
-        playing.add(new Deposit(pool.orElseThrow()));
+        playing.add(new Deposit(pool.orElseThrow(), targets));
         border.ifPresent(settings -> playing.add(new ClosingBorder(settings)));
         return Map.of(PLAYING, playing, "ending", List.of(new AnnounceWinner()));
     }
@@ -91,7 +105,7 @@ public final class ItemRace implements GameType {
 
     @Override
     public WinCondition winCondition() {
-        return new FirstDeposit();
+        return new FirstDeposit(goal == Goal.ALL ? targets : 1);
     }
 
     @Override
@@ -101,10 +115,16 @@ public final class ItemRace implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
+        var read = ItemPool.read(config, isItem).or(() -> pool);
+        int count = config.has("targets") ? config.integer("targets", 1, MAX_TARGETS) : targets;
+        if (read.isPresent() && count > read.get().distinct()) {
+            config.problem("targets", "more targets than there are different items to choose from (" + read.get().distinct() + ")");
+        }
         return new ItemRace(
                 config.has("play-seconds") ? config.integer("play-seconds", 60, 86400) : playSeconds,
                 config.has("border") ? Optional.of(ClosingBorder.Settings.read(config.section("border"))) : border,
-                ItemPool.read(config, isItem).or(() -> pool),
+                read, count,
+                config.has("goal") ? config.choice("goal", Goal.class) : goal,
                 isItem);
     }
 }

@@ -161,7 +161,7 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
-    public void showText(String name, net.kyori.adventure.text.Component text) {
+    public void showText(String name, java.util.function.Function<UUID, net.kyori.adventure.text.Component> text) {
         match.texts().put(name, text);
         scope.register(() -> match.texts().remove(name, text));
     }

@@ -49,4 +49,19 @@ class ItemRaceTest {
 
         assertThrows(InvalidConfigException.class, config::check);
     }
+
+    @Test
+    void moreTargetsThanDifferentItemsIsAConfigProblem() throws Exception {
+        var config = yaml("items:\n  overworld: [cake]\ntargets: 2\n");
+        new ItemRace(m -> true).configure(config);
+
+        assertThrows(InvalidConfigException.class, config::check);
+    }
+
+    @Test
+    void targetsAndGoalAreRead() throws Exception {
+        var config = yaml("items:\n  overworld: [cake, bread]\ntargets: 2\ngoal: any\n");
+        new ItemRace(m -> true).configure(config);
+        config.check();
+    }
 }

@@ -123,4 +123,15 @@ class ItemPoolTest {
         assertTrue(problem("dimensions: [overworld]\n").contains("items"));
         assertTrue(problem(ITEMS + "typo: 1\n").contains("unknown key"));
     }
+
+    @Test
+    void severalDifferentItemsCanBePickedAtOnce() throws Exception {
+        var pool = read(ITEMS);
+
+        var picked = pool.pick(new Random(1), 2);
+
+        assertEquals(2, picked.size());
+        assertEquals(2, new HashSet<>(picked).size());
+        assertEquals(3, pool.pick(new Random(1), 10).size());
+    }
 }

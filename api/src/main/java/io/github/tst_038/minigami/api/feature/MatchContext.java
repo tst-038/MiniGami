@@ -194,6 +194,11 @@ public interface MatchContext {
 
     /** Shows a text of the game in the HUD, as the value {@code %name%} that sidebar and boss bar texts can use, until this phase's features end. */
     default void showText(String name, Component text) {
+        showText(name, id -> text);
+    }
+
+    /** Like {@link #showText(String, Component)}, with a text that may differ per viewer (given by their id). */
+    default void showText(String name, java.util.function.Function<UUID, Component> text) {
     }
 
     /**

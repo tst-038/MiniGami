@@ -1,5 +1,5 @@
 # A long scramble in a very large arena. Everyone starts spread around its middle and loots the starter chests; the match
-# picks one random item for the whole game, and the first player (or team) to right click a deposit while holding it wins.
+# picks random items for the whole game, and the first player (or team) to right click a deposit while holding them wins.
 # If time runs out first, nobody wins. Deaths are final and players fight, mine and build freely.
 # The arena needs: spawns spread around the middle (/mg arena example spawn add), loot containers for the starter chests
 # (/mg arena example loot add chest), one or more regions called deposit or deposit-<anything> (any block inside one takes the
@@ -18,9 +18,12 @@ arenas: [example]
 play-seconds: 3600
 # Play in teams to race as teams; without this everyone races for themselves.
 # teams: { count: 4 }
-# The target is picked at random from these, by weight (default 1), when play starts. Only the dimensions below are used.
-# Overworld only for now: the Nether is not reset between matches. Add nether to dimensions to use its items
-# (the border follows players through vanilla portals); the End is left out because the arena has no way to reach it.
+# The targets are picked at random from these, by weight (default 1), when play starts. Only the dimensions below are used.
+# Portals don't work in matches, so keep this to the overworld unless the arena itself can reach the other dimensions.
+# How many different items are asked for (1 to 5, default 1), and whether a player (or team) must hand in all of them
+# (goal: all, default; the sidebar ticks them off) or whether any one of them is enough (goal: any).
+# targets: 3
+# goal: all
 items:
   overworld:
     - { item: diamond, weight: 3 }
@@ -53,4 +56,14 @@ stats: [combat]
 quit: { then: die, rejoin-seconds: 120 }
 hud:
   sidebar:
-    playing: ["", "<gray>Time: <yellow>%time%", "<gray>Find: <white>%item%", "<gray>Players: <white>%alive%"]
+    # %item% is the one target; with several targets the lines %item1% to %item5% list them (lines of unused ones are left out).
+    playing:
+      - ""
+      - "<gray>Time: <yellow>%time%"
+      - "<gray>Find: <white>%item%"
+      - "<gray>Find: %item1%"
+      - "<gray>and: %item2%"
+      - "<gray>and: %item3%"
+      - "<gray>and: %item4%"
+      - "<gray>and: %item5%"
+      - "<gray>Players: <white>%alive%"

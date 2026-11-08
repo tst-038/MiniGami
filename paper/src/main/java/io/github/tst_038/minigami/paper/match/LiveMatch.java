@@ -80,6 +80,7 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -250,6 +251,8 @@ public final class LiveMatch {
                 event.setCancelled(true);
             }
         });
+        // The arena is its own world: nobody travels between dimensions through a portal.
+        context.on(PlayerPortalEvent.class, event -> event.setCancelled(true));
         // Players gathering for the start don't fight.
         context.on(EntityDamageByEntityEvent.class, event -> {
             if (isJoinable() && event.getEntity() instanceof Player && event.getDamager() instanceof Player damager && isMember(damager.getUniqueId())) {
@@ -344,9 +347,9 @@ public final class LiveMatch {
     }
 
     /** Named texts of the game for the HUD. */
-    private final Map<String, net.kyori.adventure.text.Component> texts = new LinkedHashMap<>();
+    private final Map<String, java.util.function.Function<UUID, net.kyori.adventure.text.Component>> texts = new LinkedHashMap<>();
 
-    public Map<String, net.kyori.adventure.text.Component> texts() {
+    public Map<String, java.util.function.Function<UUID, net.kyori.adventure.text.Component>> texts() {
         return texts;
     }
 

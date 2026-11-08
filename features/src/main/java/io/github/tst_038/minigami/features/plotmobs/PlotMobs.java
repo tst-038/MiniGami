@@ -14,7 +14,9 @@ import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
@@ -26,7 +28,7 @@ import org.bukkit.util.Vector;
  *
  * <p>Mobs are found again by a tag they carry rather than remembered, so the rules hold across phases:
  * enable the feature in every phase mobs should stay. They are removed when the phase that ends the match ends.
- * Not covered: what a mob does inside its plot, such as arrows, creeper explosions or an enderman taking blocks.
+ * Minecarts and boats are kept in their plot the same way. Not covered: what a mob does inside its plot, such as arrows, creeper explosions or an enderman taking blocks.
  */
 public final class PlotMobs implements Feature {
 
@@ -75,7 +77,7 @@ public final class PlotMobs implements Feature {
                 return;
             }
             var plot = plotAt(plots, event.getLocation());
-            var verdict = verdict(plot, plot.map(region -> mobs(region, 0).size()).orElse(0), max);
+            var verdict = verdict(plot, plot.map(region -> mobs(region, 0).stream().filter(Mob.class::isInstance).count()).orElse(0L), max);
             if (verdict == Verdict.ALLOW) {
                 event.getEntity().addScoreboardTag(tag(plot.get()));
                 return;
@@ -84,6 +86,12 @@ public final class PlotMobs implements Feature {
             if (verdict == Verdict.FULL) {
                 nearest(context, event.getLocation()).ifPresent(player -> player.sendMessage(
                         context.messages().render("plot-mobs.limit", Formatter.number("max", max))));
+            }
+        });
+        // Minecarts and boats ride off on their own, so they are kept in their plot like mobs (without counting towards the limit).
+        context.on(EntitySpawnEvent.class, event -> {
+            if (event.getEntity() instanceof Vehicle) {
+                plotAt(plots, event.getLocation()).ifPresentOrElse(plot -> event.getEntity().addScoreboardTag(tag(plot)), () -> event.setCancelled(true));
             }
         });
         context.scope().register(context.clock().repeat(CHECK_TICKS, () -> plots.forEach(plot -> mobs(plot, SEARCH_MARGIN).stream()
@@ -110,7 +118,7 @@ public final class PlotMobs implements Feature {
     private static Collection<Entity> mobs(Region plot, double margin) {
         var box = new BoundingBox(plot.minX() - margin, plot.minY() - margin, plot.minZ() - margin,
                 plot.maxX() + 1 + margin, plot.maxY() + 1 + margin, plot.maxZ() + 1 + margin);
-        return plot.world().getNearbyEntities(box, entity -> entity instanceof Mob && entity.getScoreboardTags().contains(tag(plot)));
+        return plot.world().getNearbyEntities(box, entity -> (entity instanceof Mob || entity instanceof Vehicle) && entity.getScoreboardTags().contains(tag(plot)));
     }
 
     private static Optional<Player> nearest(MatchContext context, Location where) {
