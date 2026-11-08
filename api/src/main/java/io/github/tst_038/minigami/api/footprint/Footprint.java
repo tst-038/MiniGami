@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.features.footprint;
+package io.github.tst_038.minigami.api.footprint;
 
 import java.util.LinkedHashSet;
 import java.util.Set;

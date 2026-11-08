@@ -2,7 +2,7 @@ package io.github.tst_038.minigami.features.anticamping;
 
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
-import io.github.tst_038.minigami.features.footprint.Footprint;
+import io.github.tst_038.minigami.api.footprint.Footprint;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
