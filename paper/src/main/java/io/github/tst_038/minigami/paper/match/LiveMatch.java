@@ -80,6 +80,7 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
@@ -253,6 +254,8 @@ public final class LiveMatch {
         });
         // The arena is its own world: nobody travels between dimensions through a portal.
         context.on(PlayerPortalEvent.class, event -> event.setCancelled(true));
+        // Nothing earned in a match counts towards the server's advancements.
+        context.on(PlayerAdvancementCriterionGrantEvent.class, event -> event.setCancelled(true));
         // Players gathering for the start don't fight.
         context.on(EntityDamageByEntityEvent.class, event -> {
             if (isJoinable() && event.getEntity() instanceof Player && event.getDamager() instanceof Player damager && isMember(damager.getUniqueId())) {
