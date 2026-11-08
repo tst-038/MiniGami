@@ -78,7 +78,7 @@ class KitFactoryTest {
 
         read(root);
 
-        assertEquals(List.of("games/test.yml: kit.saved: no saved kit 'hider'; save one with /mg kit save hider"), problems(root));
+        assertEquals(List.of("games/test.yml: kit.saved: no saved kit 'hider'; save one with /mga kit save hider"), problems(root));
     }
 
     @Test

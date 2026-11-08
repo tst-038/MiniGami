@@ -14,7 +14,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-/** {@code /mg gametype list|<id> info} and {@code /mg feature list|<id> info}: what games can be made of. */
+/** {@code /mga gametype list|<id> info} and {@code /mga feature list|<id> info}: what games can be made of. */
 final class GameTypeCommands {
 
     private GameTypeCommands() {

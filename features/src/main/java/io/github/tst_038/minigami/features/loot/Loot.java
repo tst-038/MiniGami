@@ -47,7 +47,7 @@ public final class Loot implements Feature {
     /**
      * @param tables the tables as loaded when the game was
      * @param style the folder of tables to use in place of the plain ones, if any
-     * @param saved finds an item saved with {@code /mg loot save} by name
+     * @param saved finds an item saved with {@code /mga loot save} by name
      */
     public Loot(LootTables tables, Optional<String> style, Function<String, Optional<ItemStack>> saved) {
         this.tables = tables;

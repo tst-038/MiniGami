@@ -588,7 +588,7 @@ class GameLoaderTest {
         var yaml = "{gametype: test, min-players: 1, max-players: 1, waiting: lobby, arenas: [demo]}";
 
         assertEquals(List.of(), problems(load(yaml, true)));
-        assertEquals(List.of("games/fall.yml: waiting: no lobby is set; set one with /mg lobby set or in config.yml"),
+        assertEquals(List.of("games/fall.yml: waiting: no lobby is set; set one with /mga lobby set or in config.yml"),
                 problems(load(yaml, false)));
     }
 

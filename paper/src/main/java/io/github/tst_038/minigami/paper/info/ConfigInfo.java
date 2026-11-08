@@ -115,7 +115,7 @@ public final class ConfigInfo {
                     Formatter.number("variants", loaded.map(game -> game.variants().size()).orElse(0)),
                     Placeholder.component("status", config.getBoolean("enabled", true) ? status(Kind.GAME, id, loaded.isPresent(), status)
                             : status("info.status.disabled", Placeholder.unparsed("id", id))),
-                    infoClick("/mg game " + id + " info"));
+                    infoClick("/mga game " + id + " info"));
         });
     }
 
@@ -127,7 +127,7 @@ public final class ConfigInfo {
             messages.send(sender, "info.night-entry", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
                     Formatter.number("games", config.getList(PlaylistEdit.KEY, List.of()).size()),
                     Placeholder.component("status", status(Kind.NIGHT, id, loaded.isPresent(), null)),
-                    infoClick("/mg night info " + id));
+                    infoClick("/mga night info " + id));
         });
     }
 
@@ -142,7 +142,7 @@ public final class ConfigInfo {
                 Placeholder.component("status", status(Kind.NIGHT, id, nights.get().find(id).isPresent(), null)));
         var settings = YamlConfiguration.loadConfiguration(new StringReader(config.saveToString()));
         settings.set(PlaylistEdit.KEY, null);
-        var set = "/mg night edit " + id + " set ";
+        var set = "/mga night edit " + id + " set ";
         values(sender, settings, settings, set);
         unset(sender, editor.keys(Kind.NIGHT, id).stream().filter(key -> !key.startsWith(PlaylistEdit.KEY)).toList(), settings, set);
         nightPlaylist(sender, id);
@@ -180,7 +180,7 @@ public final class ConfigInfo {
                 Placeholder.parsed("name", config.getString("name", id)), Placeholder.unparsed("when", config.getString("when", "?")),
                 Formatter.number("games", config.getList("games", List.of()).size()),
                 Placeholder.component("status", status(Kind.SCHEDULE, id, schedules.get().find(id).isPresent(), null)),
-                infoClick("/mg schedule info " + id)));
+                infoClick("/mga schedule info " + id)));
     }
 
     /** The schedule's settings, games and rewards included, then what else can be set and any problems. */
@@ -192,7 +192,7 @@ public final class ConfigInfo {
         }
         messages.send(sender, "info.schedule", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
                 Placeholder.component("status", status(Kind.SCHEDULE, id, schedules.get().find(id).isPresent(), null)));
-        var set = "/mg schedule edit " + id + " set ";
+        var set = "/mga schedule edit " + id + " set ";
         values(sender, config, config, set);
         unset(sender, editor.keys(Kind.SCHEDULE, id), config, set);
         problems(sender, Kind.SCHEDULE, id);
@@ -207,20 +207,20 @@ public final class ConfigInfo {
             messages.send(sender, "info.arena-entry", Placeholder.unparsed("id", id),
                     Placeholder.unparsed("world", config.getString("world", "?")), Formatter.number("spawns", spawns),
                     Placeholder.component("status", status(Kind.ARENA, id, arenas.get().find(id).isPresent(), status)),
-                    infoClick("/mg arena " + id + " info"));
+                    infoClick("/mga arena " + id + " info"));
         });
     }
 
     public void listGametypes(CommandSender sender) {
         messages.send(sender, "info.gametypes", Formatter.number("count", gametypes.ids().size()));
         gametypes.ids().forEach(id -> messages.send(sender, "info.gametype-entry", Placeholder.unparsed("id", id),
-                Formatter.number("games", gamesOfType(id).size()), infoClick("/mg gametype " + id + " info")));
+                Formatter.number("games", gamesOfType(id).size()), infoClick("/mga gametype " + id + " info")));
     }
 
     public void listFeatures(CommandSender sender) {
         messages.send(sender, "info.features", Formatter.number("count", features.ids().size()));
         features.ids().forEach(id -> messages.send(sender, "info.feature-entry", Placeholder.unparsed("id", id),
-                Formatter.number("games", usesOfFeature(id).size()), infoClick("/mg feature " + id + " info")));
+                Formatter.number("games", usesOfFeature(id).size()), infoClick("/mga feature " + id + " info")));
     }
 
     /** The game's settings, variants included, then what else can be set and any problems. */
@@ -252,8 +252,8 @@ public final class ConfigInfo {
         });
         loaded.map(Variant::roles).filter(roles -> !roles.isEmpty()).ifPresent(roles -> messages.send(sender, "info.game-roles",
                 Placeholder.component("roles", Component.join(JoinConfiguration.commas(true), roles.stream().map(Role::displayName).toList()))));
-        values(sender, config, config, "/mg game " + id + " set ");
-        unset(sender, editor.keys(Kind.GAME, id), config, "/mg game " + id + " set ");
+        values(sender, config, config, "/mga game " + id + " set ");
+        unset(sender, editor.keys(Kind.GAME, id), config, "/mga game " + id + " set ");
         problems(sender, Kind.GAME, id);
     }
 
@@ -300,8 +300,8 @@ public final class ConfigInfo {
     public void config(CommandSender sender) {
         var current = files;
         messages.send(sender, "info.config", Placeholder.unparsed("file", SettingsLoader.FILE));
-        values(sender, current.config(), current.config(), "/mg config set ");
-        unset(sender, editor.keys(Kind.CONFIG, ""), current.config(), "/mg config set ");
+        values(sender, current.config(), current.config(), "/mga config set ");
+        unset(sender, editor.keys(Kind.CONFIG, ""), current.config(), "/mga config set ");
         problems(sender, Kind.CONFIG, "");
     }
 
@@ -353,7 +353,7 @@ public final class ConfigInfo {
             return;
         }
         var gameLinks = uses.stream().map(use -> Component.text(String.join(" ", use))
-                .clickEvent(ClickEvent.runCommand("/mg game " + use[0] + " info"))).toList();
+                .clickEvent(ClickEvent.runCommand("/mga game " + use[0] + " info"))).toList();
         messages.send(sender, "info.used-by", Placeholder.component("games", Component.join(JoinConfiguration.commas(true), gameLinks)));
     }
 

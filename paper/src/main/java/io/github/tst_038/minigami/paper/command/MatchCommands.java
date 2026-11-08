@@ -16,7 +16,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 
-/** {@code /mg match list} and {@code /mg match <id> info|start|end|pause|resume|stop|phase <phase>|add <player>|kick <player>}. */
+/** {@code /mga match list} and {@code /mga match <id> info|start|end|pause|resume|stop|phase <phase>|add <player>|kick <player>}. */
 final class MatchCommands {
 
     private MatchCommands() {

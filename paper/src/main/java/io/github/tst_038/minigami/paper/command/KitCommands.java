@@ -14,7 +14,7 @@ import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-/** {@code /mg kit save <name>|list|delete <name>}: inventories saved to give players in a game. */
+/** {@code /mga kit save <name>|list|delete <name>}: inventories saved to give players in a game. */
 final class KitCommands {
 
     private KitCommands() {

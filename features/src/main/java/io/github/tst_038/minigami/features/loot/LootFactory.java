@@ -20,7 +20,7 @@ public final class LootFactory implements FeatureFactory {
 
     /**
      * @param tables the tables as currently loaded; a game keeps the ones it was loaded with
-     * @param saved finds an item saved with {@code /mg loot save} by name
+     * @param saved finds an item saved with {@code /mga loot save} by name
      */
     public LootFactory(Supplier<LootTables> tables, Function<String, Optional<ItemStack>> saved) {
         this.tables = tables;

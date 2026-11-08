@@ -18,7 +18,7 @@ final class Stacks {
 
     private final Function<String, Optional<ItemStack>> saved;
 
-    /** @param saved finds an item saved with {@code /mg loot save} by name */
+    /** @param saved finds an item saved with {@code /mga loot save} by name */
     Stacks(Function<String, Optional<ItemStack>> saved) {
         this.saved = saved;
     }

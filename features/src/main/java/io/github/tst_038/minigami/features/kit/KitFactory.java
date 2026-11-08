@@ -14,7 +14,7 @@ import org.bukkit.Material;
 
 /**
  * {@code kit: { items: [iron_sword, arrow 16] }} gives vanilla items, each with an optional amount;
- * {@code kit: { saved: seeker }} gives an inventory saved with /mg kit save. Both may be set.
+ * {@code kit: { saved: seeker }} gives an inventory saved with /mga kit save. Both may be set.
  * An item can end in {@code unbreakable}, as in {@code diamond_shovel unbreakable}.
  * {@code respawn: false} gives the kit once, at the start, instead of topping it up after every respawn.
  */
@@ -56,7 +56,7 @@ public final class KitFactory implements FeatureFactory {
             var name = config.string("saved");
             var found = savedKits.apply(name);
             if (found.isEmpty()) {
-                config.problem("saved", "no saved kit '" + name + "'; save one with /mg kit save " + name);
+                config.problem("saved", "no saved kit '" + name + "'; save one with /mga kit save " + name);
             }
             saved = found.orElse(NONE);
         }

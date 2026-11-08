@@ -54,8 +54,8 @@ public record Hosting(Arena arena, GameType gametype, int mostTeams, boolean has
                 new LootCheck(lootTables, point -> LootContainers.isContainer(point.world().getBlockAt(point.x(), point.y(), point.z()).getType())));
     }
 
-    /** The {@code /mg arena <id> …} command that ends in {@code action}. */
+    /** The {@code /mga arena <id> …} command that ends in {@code action}. */
     String command(String action) {
-        return "/mg arena " + arena.id() + " " + action;
+        return "/mga arena " + arena.id() + " " + action;
     }
 }

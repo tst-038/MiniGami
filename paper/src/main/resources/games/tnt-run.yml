@@ -1,9 +1,9 @@
 # A game: what players join, with /mg join tnt-run, and see their stats of. The game type is the code it runs.
-# This example game plays in the example arena; give it spawns first (/mg arena example spawn add).
+# This example game plays in the example arena; give it spawns first (/mga arena example spawn add).
 #
 # TNT Run: keep running, the floor drops away under your feet; whoever falls through is out, the last one standing wins.
 # The arena floor is sand with TNT right under it (build one or more such layers), and a saved map
-# (/mg arena example map save) puts it back after each match. Nothing explodes: the TNT only falls away.
+# (/mga arena example map save) puts it back after each match. Nothing explodes: the TNT only falls away.
 gametype: last-standing
 name: "<red>TNT Run"
 min-players: 2

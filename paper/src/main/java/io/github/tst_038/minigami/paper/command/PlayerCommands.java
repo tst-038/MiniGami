@@ -10,7 +10,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 
-/** {@code /mg player <player> snapshot [restore]}. */
+/** {@code /mga player <player> snapshot [restore]}. */
 final class PlayerCommands {
 
     private PlayerCommands() {

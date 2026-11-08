@@ -129,7 +129,7 @@ class LootReaderTest {
                 "loot/test.yml: entries[8].enchants.sharpnes: unknown enchantment",
                 "loot/test.yml: entries[8].enchants.unbreaking: must be a number or a range like 2-4, from 1 to 255",
                 "loot/test.yml: entries[9].potion: unknown potion type 'harming'",
-                "loot/test.yml: entries[10].saved: no saved item 'nothing-here'; save the item you hold with /mg loot save nothing-here"),
+                "loot/test.yml: entries[10].saved: no saved item 'nothing-here'; save the item you hold with /mga loot save nothing-here"),
                 problems(root));
         assertTrue(table.isPresent());
     }

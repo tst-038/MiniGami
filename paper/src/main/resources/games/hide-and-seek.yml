@@ -3,7 +3,7 @@ gametype: hide-and-seek
 name: "<green>Hide and Seek"
 min-players: 2
 max-players: 12
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 # Only teammates see a hider's name tag, so nobody is found by their tag through a wall; seekers set their own below.
 name-tags: teammates
@@ -23,7 +23,7 @@ roles:
         freeze: {}
         effects: { blindness: 1 }
       seeking:
-        # Or an inventory saved with /mg kit save seeker: { saved: seeker }
+        # Or an inventory saved with /mga kit save seeker: { saved: seeker }
         kit: { items: [stone_sword] }
   hider:
     name: Hider

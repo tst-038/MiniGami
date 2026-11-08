@@ -99,7 +99,7 @@ class HostingChecksTest {
 
         assertEquals(List.of("no-spawns"), findings.stream().map(Finding::code).toList());
         assertTrue(findings.getFirst().isBlocking());
-        assertEquals(Optional.of("/mg arena example spawn add"), findings.getFirst().fix());
+        assertEquals(Optional.of("/mga arena example spawn add"), findings.getFirst().fix());
     }
 
     @Test
@@ -107,7 +107,7 @@ class HostingChecksTest {
         var findings = check(new RegionsCheck(), new Hosting(arena(1, List.of(), true), NEEDY, 1, false, false));
 
         assertEquals(Map.of("region", "hill"), findings.getFirst().values());
-        assertEquals(Optional.of("/mg arena example region hill set"), findings.getFirst().fix());
+        assertEquals(Optional.of("/mga arena example region hill set"), findings.getFirst().fix());
     }
 
     @Test
@@ -123,7 +123,7 @@ class HostingChecksTest {
 
         var findings = check(new RegionGroupsCheck(), new Hosting(arena(1, List.of("walls"), true), NEEDY, 1, false, false));
         assertEquals(Map.of("group", "wall"), findings.getFirst().values());
-        assertEquals(Optional.of("/mg arena example region wall-1 set"), findings.getFirst().fix());
+        assertEquals(Optional.of("/mga arena example region wall-1 set"), findings.getFirst().fix());
     }
 
     @Test
@@ -157,7 +157,7 @@ class HostingChecksTest {
         var findings = check(new TeamRegionsCheck(), new Hosting(arena(4, List.of("quarter-1", "quarter-2"), true), NEEDY, 4, true, false));
 
         assertEquals(List.of("quarter-3", "quarter-4"), findings.stream().map(finding -> finding.values().get("region")).toList());
-        assertEquals(Optional.of("/mg arena example region quarter-3 set"), findings.getFirst().fix());
+        assertEquals(Optional.of("/mga arena example region quarter-3 set"), findings.getFirst().fix());
     }
 
     @Test
@@ -176,7 +176,7 @@ class HostingChecksTest {
 
         assertEquals(List.of("fighting", "quarter-2"), findings.stream().map(finding -> finding.values().get("region")).toList());
         assertTrue(findings.getFirst().isBlocking());
-        assertEquals(Optional.of("/mg arena example map save"), findings.getFirst().fix());
+        assertEquals(Optional.of("/mga arena example map save"), findings.getFirst().fix());
         // Without block changes, or without a map (another finding), there is nothing to compare.
         assertEquals(List.of(), check(new MapCoversCheck(), new Hosting(inMap, NEEDY, 2, true, false)));
         assertEquals(List.of(), check(new MapCoversCheck(), new Hosting(arena(1, ALL_REGIONS, false), NEEDY, 2, true, true)));

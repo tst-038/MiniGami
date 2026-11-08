@@ -61,7 +61,7 @@ final class StatsCommands {
                                                 string(context, "stat"), Optional.of(string(context, "variant"))))))));
     }
 
-    /** {@code /mga stats add|set <player> <game> <stat> <amount>}, and {@code reset <player> [game]} and {@code reset-game <game> [variant]}, which ask for {@code confirm}. */
+    /** {@code /mg stats add|set <player> <game> <stat> <amount>}, and {@code reset <player> [game]} and {@code reset-game <game> [variant]}, which ask for {@code confirm}. */
     static ArgumentBuilder<CommandSourceStack, ?> admin(StatsAdmin admin, StatsView view, Messages messages) {
         return Commands.literal("stats")
                 .then(Commands.literal("add").then(edit(view, LongArgumentType.longArg(),

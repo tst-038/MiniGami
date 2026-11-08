@@ -1,7 +1,7 @@
-# A game night: a playlist of games the host plays one after the other with /mg night start example,
+# A game night: a playlist of games the host plays one after the other with /mga night start example,
 # with the points of each game adding up to a winner. The file name is the night's id.
-# Admins can make and change nights in game: /mg night create|list|info|delete, and
-# /mg night edit <id> set|unset|playlist add|remove|move|points|taking-part. Edits apply to the next night.
+# Admins can make and change nights in game: /mga night create|list|info|delete, and
+# /mga night edit <id> set|unset|playlist add|remove|move|points|taking-part. Edits apply to the next night.
 name: "<gold>Example Night"
 # solo: every player scores for themselves; or { size: 2 }, night teams of two that score together.
 # A party stays in one team, so one bigger than the team size can't join.

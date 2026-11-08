@@ -15,8 +15,8 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
 /**
- * {@code /mg loot list|info <table>|roll <table>|save <name>|delete <name>}: look at the loot tables, try one, and keep items
- * for tables to name. A table of a style is written {@code christmas/rare}; the containers themselves are set under {@code /mg arena}.
+ * {@code /mga loot list|info <table>|roll <table>|save <name>|delete <name>}: look at the loot tables, try one, and keep items
+ * for tables to name. A table of a style is written {@code christmas/rare}; the containers themselves are set under {@code /mga arena}.
  */
 final class LootCommands {
 

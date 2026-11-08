@@ -335,7 +335,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         });
     }
 
-    /** {@code /mg reload}: any problem in any file keeps the old config in use. */
+    /** {@code /mga reload}: any problem in any file keeps the old config in use. */
     private void loadStrict(Audience requester) {
         loadConfig(requester, true);
     }

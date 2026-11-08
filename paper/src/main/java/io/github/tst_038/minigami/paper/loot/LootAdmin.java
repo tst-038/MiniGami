@@ -20,7 +20,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-/** What the {@code /mg loot} commands do. Call the public methods from the server thread. */
+/** What the {@code /mga loot} commands do. Call the public methods from the server thread. */
 public final class LootAdmin {
 
     private final Plugin plugin;

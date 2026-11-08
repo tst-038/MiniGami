@@ -26,7 +26,7 @@ import org.bukkit.command.CommandSender;
 
 /**
  * Says why a game can't be played where: the findings the loaded games hold on their arenas, and the
- * problems of files that didn't load. Admins ask with {@code /mg doctor}; staff also hear the reasons
+ * problems of files that didn't load. Admins ask with {@code /mga doctor}; staff also hear the reasons
  * when a join fails, players only that the game isn't ready. Each config load logs the findings it
  * didn't log before, so reloading the same config stays quiet.
  *
@@ -87,7 +87,7 @@ public final class Doctor {
         return blocking;
     }
 
-    /** What can follow {@code /mg doctor}: the games and arenas, also those whose files didn't load. */
+    /** What can follow {@code /mga doctor}: the games and arenas, also those whose files didn't load. */
     public Collection<String> targets() {
         var targets = new TreeSet<>(games.get().ids());
         targets.addAll(gameFiles);
@@ -205,7 +205,7 @@ public final class Doctor {
     }
 
     private static TagResolver command(String game) {
-        var command = "/mg doctor " + game;
+        var command = "/mga doctor " + game;
         return TagResolver.resolver(Placeholder.unparsed("command", command), Placeholder.styling("suggest", ClickEvent.suggestCommand(command)));
     }
 

@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
-/** What the {@code /mg kit} commands do. Call the public methods from the server thread. */
+/** What the {@code /mga kit} commands do. Call the public methods from the server thread. */
 public final class KitAdmin {
 
     /** Hotbar and main inventory, boots to helmet, and offhand: the slots a player inventory addresses by index. */

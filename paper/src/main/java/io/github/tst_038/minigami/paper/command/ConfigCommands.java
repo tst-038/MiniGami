@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.bukkit.Location;
 
-/** {@code /mg config info|set|unset}, and {@code /mg lobby set|tp} for the one setting admins change most. */
+/** {@code /mga config info|set|unset}, and {@code /mga lobby set|tp} for the one setting admins change most. */
 final class ConfigCommands {
 
     private ConfigCommands() {

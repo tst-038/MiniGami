@@ -70,7 +70,7 @@ public final class ConfigEditor {
         }
     }
 
-    /** Taken by commands such as {@code /mg game list}, so an arena, game or game night with one of these ids couldn't be reached. */
+    /** Taken by commands such as {@code /mga game list}, so an arena, game or game night with one of these ids couldn't be reached. */
     private static final Set<String> RESERVED_IDS = Set.of("create", "list");
     private static final long CHECK_TIMEOUT_SECONDS = 10;
 

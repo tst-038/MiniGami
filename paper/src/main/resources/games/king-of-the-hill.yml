@@ -1,5 +1,5 @@
 # Everyone for themselves: hold the hill alone to score a point a second.
-# The arena needs a region called hill (/mg arena example region hill set).
+# The arena needs a region called hill (/mga arena example region hill set).
 gametype: domination
 name: "<gold>King of the Hill"
 capture-points: { hill: "<gold>the hill" }
@@ -9,7 +9,7 @@ capture-seconds: 3
 keep-captured: false
 min-players: 2
 max-players: 8
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 play-seconds: 180
 points-to-win: 60

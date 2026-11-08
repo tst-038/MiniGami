@@ -43,7 +43,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * The two commands. {@code /mg} is what players use: list, join, leave, stats, parties, nights and schedules.
+ * The two commands. {@code /mga} is what players use: list, join, leave, stats, parties, nights and schedules.
  * {@code /mga} is for staff and follows one pattern: {@code /mga <thing> create …} and {@code /mga <thing> <id> <action>};
  * typing a part without the rest lists what can follow. Its parts are hidden from players without the rank they need:
  * {@code minigami.helper}, {@code .mod} or {@code .admin}.
@@ -61,7 +61,7 @@ public final class GamesCommand {
         }
     }
 
-    /** {@code /mg}: everything a player may do. */
+    /** {@code /mga}: everything a player may do. */
     public static LiteralCommandNode<CommandSourceStack> playerRoot(Messages messages, PublicMatches publicMatches, RunningMatches running, PartyService parties, Nights nights,
             Schedules schedules, StatsView stats) {
         var help = Help.command(messages);

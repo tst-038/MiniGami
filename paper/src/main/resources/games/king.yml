@@ -6,7 +6,7 @@ gametype: king
 name: "<gold>King"
 min-players: 4
 max-players: 16
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 fight-seconds: 300
 # A fallen member of a team that still has its King comes back after this many seconds.

@@ -46,7 +46,7 @@ public final class MatchAdmin {
         for (var live : running) {
             messages.send(sender, "match.admin.entry", Placeholder.unparsed("match", live.arena().id()),
                     Placeholder.parsed("game", live.variant().name()), phase(live), Formatter.number("players", live.members().size()),
-                    Placeholder.styling("info", ClickEvent.runCommand("/mg match " + live.arena().id() + " info")));
+                    Placeholder.styling("info", ClickEvent.runCommand("/mga match " + live.arena().id() + " info")));
         }
     }
 
@@ -67,7 +67,7 @@ public final class MatchAdmin {
                         .orElse(Component.empty());
                 messages.send(sender, "match.admin.player", Placeholder.unparsed("player", name), Placeholder.component("team", team),
                         Placeholder.component("state", messages.render(state)), Formatter.number("points", match.scores().of(player)),
-                        Placeholder.styling("kick", ClickEvent.suggestCommand("/mg match " + id + " kick " + name)));
+                        Placeholder.styling("kick", ClickEvent.suggestCommand("/mga match " + id + " kick " + name)));
             });
         });
     }

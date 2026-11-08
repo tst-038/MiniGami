@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /mg arena list|create <id>} and {@code /mg arena <id> info|tp|set|unset|delete},
+ * {@code /mga arena list|create <id>} and {@code /mga arena <id> info|tp|set|unset|delete},
  * {@code spawn list|add [team]|remove <n>|waiting set|remove|spectator set|remove|respawning set|remove} (also {@code waiting} and {@code spectate} on the arena itself), {@code region list|<name> set|remove|show|schematic [load|paste]}. Points are where the
  * admin stands; regions and maps come from their WorldEdit selection.
  */

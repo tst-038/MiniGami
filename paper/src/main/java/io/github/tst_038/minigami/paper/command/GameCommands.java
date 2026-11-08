@@ -15,7 +15,7 @@ import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-/** {@code /mg game list|create <id> <gametype> <arena>} and {@code /mg game <id> info|enable|disable|set|unset|delete|variant ...}. */
+/** {@code /mga game list|create <id> <gametype> <arena>} and {@code /mga game <id> info|enable|disable|set|unset|delete|variant ...}. */
 final class GameCommands {
 
     private GameCommands() {

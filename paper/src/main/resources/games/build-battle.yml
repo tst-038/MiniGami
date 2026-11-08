@@ -1,11 +1,11 @@
 # Build on a theme in your own plot, then score each other's builds; the highest total wins.
-# The arena needs a region per player, plot-1 up to plot-6 (/mg arena example region plot-1 set), and a saved map
-# (/mg arena example map save) to clear the plots after each match.
+# The arena needs a region per player, plot-1 up to plot-6 (/mga arena example region plot-1 set), and a saved map
+# (/mga arena example map save) to clear the plots after each match.
 gametype: build-battle
 name: "<light_purple>Build Battle"
 min-players: 2
 max-players: 6
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 arenas: [example]
 build-seconds: 300

@@ -203,7 +203,7 @@ public final class GameLoader {
         }
         var waiting = config.choice("waiting", Waiting.class);
         if (waiting == Waiting.LOBBY && !hasLobby) {
-            config.problem("waiting", "no lobby is set; set one with /mg lobby set or in config.yml");
+            config.problem("waiting", "no lobby is set; set one with /mga lobby set or in config.yml");
         }
         var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
         var nameTags = config.has("name-tags") ? config.choice("name-tags", NameTags.class) : NameTags.EVERYONE;
@@ -227,6 +227,10 @@ public final class GameLoader {
         var mostTeams = roles.size() + teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(roles.isEmpty() ? maxPlayers : 0);
         var listed = arenas(config, arenas);
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
+        // Offer every feature in every phase for completion, also those the file doesn't use yet.
+        if (game != null) {
+            game.phases().forEach(phase -> this.features.ids().forEach(featureId -> config.suggest("features." + phase.id() + "." + featureId, List.of("{}"))));
+        }
         var stats = statGroups(config);
         var changesBlocks = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::changesBlocks);
         var usesLoot = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::usesLootPoints);

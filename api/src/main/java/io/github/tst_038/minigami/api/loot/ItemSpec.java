@@ -28,7 +28,7 @@ public sealed interface ItemSpec {
         }
     }
 
-    /** An item saved from a held stack with {@code /mg loot save}, for anything the other fields can't describe. */
+    /** An item saved from a held stack with {@code /mga loot save}, for anything the other fields can't describe. */
     record Saved(String name, IntRange amount) implements ItemSpec {
     }
 }

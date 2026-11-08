@@ -17,7 +17,7 @@ import org.bukkit.Material;
  * {@code rolls}, {@code chance} and {@code entries} at the top instead.
  *
  * <p>Each entry has a {@code weight} (default 1) and is one of: {@code item} with optional {@code amount},
- * {@code name}, {@code enchants} and {@code potion}; {@code saved} naming an item saved with {@code /mg loot save};
+ * {@code name}, {@code enchants} and {@code potion}; {@code saved} naming an item saved with {@code /mga loot save};
  * {@code table} naming another table; or {@code empty: true}. An entry written as plain text is an item.
  *
  * <p>Problems go to the {@link ConfigReader}, which the caller checks when done. Whether the tables an entry names
@@ -103,7 +103,7 @@ public final class LootReader {
     private Optional<Entry<ItemSpec>> saved(ConfigReader config, int weight) {
         var name = config.string("saved");
         if (!catalog.saved().test(name)) {
-            config.problem("saved", "no saved item '" + name + "'; save the item you hold with /mg loot save " + name);
+            config.problem("saved", "no saved item '" + name + "'; save the item you hold with /mga loot save " + name);
             return Optional.empty();
         }
         return Optional.of(new Entry.Item<>(new ItemSpec.Saved(name, amount(config, 99)), weight));

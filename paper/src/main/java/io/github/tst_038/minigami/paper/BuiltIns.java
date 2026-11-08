@@ -62,7 +62,7 @@ final class BuiltIns {
     }
 
     /**
-     * @param savedKits the kits saved with {@code /mg kit save}, by name
+     * @param savedKits the kits saved with {@code /mga kit save}, by name
      * @param lootTables the loot tables as currently loaded
      * @param savedItems the items loot tables name, by name
      * @param terrainStyles the terrain styles as currently loaded

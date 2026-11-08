@@ -1,15 +1,15 @@
 # A game: what players join, with /mg join spleef, and see their stats of. The game type is the code it runs.
-# These example games all play in the example arena; give it spawns first (/mg arena example spawn add).
-# What a game type or feature can be set to: /mg gametype <id> info and /mg feature <id> info.
-# Change a game by command with /mg game <id> set <key> <value>, or edit the file and /mg reload.
+# These example games all play in the example arena; give it spawns first (/mga arena example spawn add).
+# What a game type or feature can be set to: /mga gametype <id> info and /mga feature <id> info.
+# Change a game by command with /mga game <id> set <key> <value>, or edit the file and /mga reload.
 #
 # Spleef: dig the snow from under the others; whoever falls through is out, the last one standing wins.
-# The arena needs a snow_block floor to stand on, and a saved map (/mg arena example map save) to put it back after each match.
+# The arena needs a snow_block floor to stand on, and a saved map (/mga arena example map save) to put it back after each match.
 gametype: last-standing
 name: "<aqua>Spleef"
 min-players: 2
 max-players: 8
-# in-place: players stay where they are until the start; lobby: they wait in the lobby (/mg lobby set);
+# in-place: players stay where they are until the start; lobby: they wait in the lobby (/mga lobby set);
 # arena: they wait in the arena. In the lobby and the arena their own state is saved and cleared at once.
 waiting: arena
 # How many deaths put a player out; 0 means they always respawn. Without it, the game decides (last-standing: 1).
@@ -21,7 +21,7 @@ features:
   playing:
     # Nothing drops on death; without this items and XP drop as in vanilla.
     death-items: { items: vanish, xp: vanish }
-    # Items for every player, each with an optional amount ([iron_sword, arrow 16]), or an inventory saved with /mg kit save: { saved: <name> }
+    # Items for every player, each with an optional amount ([iron_sword, arrow 16]), or an inventory saved with /mga kit save: { saved: <name> }
     # 'unbreakable' makes an item never wear out.
     kit: { items: [diamond_shovel unbreakable] }
     # Only the shovel breaks snow (instantly); with a bare hand nothing breaks. Leave tools out to allow any hand.

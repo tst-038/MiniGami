@@ -3,7 +3,7 @@ gametype: hide-and-seek
 name: "<dark_green>Infection"
 min-players: 2
 max-players: 12
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 name-tags: teammates
 hide-seconds: 20

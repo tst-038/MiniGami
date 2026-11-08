@@ -1,6 +1,6 @@
 # Minotaurs hunt teams of runners through a maze built when the match starts. Find your team's keys, then reach the centre.
 # The arena needs: a region called maze (floor layer at its bottom, at least wall-height + 1 high, empty when the map is saved),
-# spawns, a saved map that covers the maze (/mg arena <id> map save) and WorldEdit (FastAsyncWorldEdit recommended).
+# spawns, a saved map that covers the maze (/mga arena <id> map save) and WorldEdit (FastAsyncWorldEdit recommended).
 gametype: shifting-maze
 name: "<gold>Shifting Maze"
 min-players: 2

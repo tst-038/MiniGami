@@ -1,17 +1,17 @@
 # A long scramble in a very large arena. Everyone starts spread around its middle and loots the starter chests; the match
 # picks random items for the whole game, and the first player (or team) to hand them in at a deposit wins.
 # If time runs out first, nobody wins. Deaths are final and players fight, mine and build freely.
-# The arena needs: spawns spread around the middle (/mg arena example spawn add), loot containers for the starter chests
-# (/mg arena example loot add chest), one or more regions called deposit or deposit-<anything> (any block inside one takes the
-# item; /mg arena example region deposit set), a region called border if border: is used below, and a saved map so the
-# arena is put back after each match (/mg arena example map save). Build it as big as you like: the map is saved and reset
+# The arena needs: spawns spread around the middle (/mga arena example spawn add), loot containers for the starter chests
+# (/mga arena example loot add chest), one or more regions called deposit or deposit-<anything> (any block inside one takes the
+# item; /mga arena example region deposit set), a region called border if border: is used below, and a saved map so the
+# arena is put back after each match (/mga arena example map save). Build it as big as you like: the map is saved and reset
 # like any other arena.
 # This is a long event; give it a bigger prize with a schedule's rewards (see schedules/example.yml), not here.
 gametype: item-race
 name: "<green>Item Race"
 min-players: 2
 max-players: 24
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 arenas: [example]
 # One hour. Time up without a deposit means no winner.

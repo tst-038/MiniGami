@@ -16,7 +16,7 @@ import org.bukkit.NamespacedKey;
  * @param maxStack the most of a material that fit in one stack
  * @param enchantment whether a name, such as {@code sharpness}, is an enchantment
  * @param potion whether a name, such as {@code strong_healing}, is a potion type
- * @param saved whether a name is an item saved with {@code /mg loot save}
+ * @param saved whether a name is an item saved with {@code /mga loot save}
  */
 public record ItemCatalog(
         Predicate<Material> isItem,

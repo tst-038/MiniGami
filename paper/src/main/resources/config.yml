@@ -1,6 +1,6 @@
 # MiniGami settings.
 
-# Where players wait for games with "waiting: lobby". Set it in-game with /mg lobby set, or here:
+# Where players wait for games with "waiting: lobby". Set it in-game with /mga lobby set, or here:
 # lobby: { world: world, x: 0.5, y: 64, z: 0.5, yaw: 0, pitch: 0 }
 
 # How many blocks a game may place per tick when it builds (terrain, walls) and FastAsyncWorldEdit is not

@@ -1,8 +1,8 @@
 # Walk over the canvas to paint the blocks under your feet in your colour. Every block you hold is a point and painting over
 # someone else's takes it from them. Most blocks when time is up wins.
-# The arena needs: a region group canvas (any number of regions, /mg arena example region canvas set) with white concrete
-# (or whatever paintable lists) inside, spawns, and a saved map so the paint is cleaned up (/mg arena example map save).
-# With a schematic saved for the region named canvas (/mg arena example region canvas schematic) it is pasted fresh before every match.
+# The arena needs: a region group canvas (any number of regions, /mga arena example region canvas set) with white concrete
+# (or whatever paintable lists) inside, spawns, and a saved map so the paint is cleaned up (/mga arena example map save).
+# With a schematic saved for the region named canvas (/mga arena example region canvas schematic) it is pasted fresh before every match.
 gametype: paint
 name: "<light_purple>Paint"
 min-players: 2

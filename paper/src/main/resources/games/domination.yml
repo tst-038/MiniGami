@@ -1,5 +1,5 @@
 # Three capture points; a team keeps a point until another takes it, and scores a point a second for each it owns.
-# The arena needs regions point-a, point-b and point-c (/mg arena example region point-a set).
+# The arena needs regions point-a, point-b and point-c (/mga arena example region point-a set).
 gametype: domination
 name: "<aqua>Domination"
 capture-points:
@@ -8,7 +8,7 @@ capture-points:
   point-c: "<white>point C"
 min-players: 4
 max-players: 8
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 teams: { count: 2 }
 # Players spread over all spawns instead of a team sharing one (the default is together).

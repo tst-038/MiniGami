@@ -3,7 +3,7 @@ gametype: team-deathmatch
 name: "<red>Team Deathmatch"
 min-players: 2
 max-players: 8
-# Players wait in the arena; set a lobby (/mg lobby set) and use "lobby" to keep them out of it until the start.
+# Players wait in the arena; set a lobby (/mga lobby set) and use "lobby" to keep them out of it until the start.
 waiting: arena
 fight-seconds: 180
 kills-to-win: 10

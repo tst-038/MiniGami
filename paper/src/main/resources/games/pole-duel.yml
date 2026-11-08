@@ -2,8 +2,8 @@
 #
 # Pole Duel: every player gets a pole of their own, set out at random. Bridge across with slabs, knock the others off,
 # and whoever touches the ground is out; the last one standing wins.
-# The arena needs a saved map (/mg arena example map save), which puts the ground back after each match, and a region called
-# poles (/mg arena example region poles set): its bottom layer is the ground (solid blocks), and it needs room above for the
+# The arena needs a saved map (/mga arena example map save), which puts the ground back after each match, and a region called
+# poles (/mga arena example region poles set): its bottom layer is the ground (solid blocks), and it needs room above for the
 # poles (pole-height + 3 blocks high) and room across for a pole each, min-distance blocks apart. No spawns are used.
 gametype: pole-duel
 name: "<aqua>Pole Duel"
@@ -27,7 +27,7 @@ features:
     break-blocks: { place: true }
     no-hunger: {}
     no-drop-items: {}
-    # A knockback stick: make one with /mg kit save, then give it here. The kit file cannot enchant by itself.
+    # A knockback stick: make one with /mga kit save, then give it here. The kit file cannot enchant by itself.
     # kit: { saved: pole-stick }
 stats: [combat]
 quit: { then: die, rejoin-seconds: 60 }
