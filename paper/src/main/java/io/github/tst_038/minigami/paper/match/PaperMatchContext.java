@@ -161,6 +161,12 @@ public final class PaperMatchContext implements MatchContext {
     }
 
     @Override
+    public void showText(String name, net.kyori.adventure.text.Component text) {
+        match.texts().put(name, text);
+        scope.register(() -> match.texts().remove(name, text));
+    }
+
+    @Override
     public void showTimer(String name, LongSupplier ticksLeft) {
         match.timers().put(name, ticksLeft);
         scope.register(() -> match.timers().remove(name, ticksLeft));

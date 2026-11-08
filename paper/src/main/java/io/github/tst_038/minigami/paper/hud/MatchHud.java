@@ -437,6 +437,7 @@ public final class MatchHud {
                 empty.add(name);
             }
         });
+        match.texts().forEach((name, text) -> resolvers.add(Placeholder.component(name, text)));
         var time = timeShown();
         if (time.isPresent()) {
             resolvers.add(clock(time.getAsLong()));

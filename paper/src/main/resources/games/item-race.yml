@@ -53,4 +53,4 @@ stats: [combat]
 quit: { then: die, rejoin-seconds: 120 }
 hud:
   sidebar:
-    playing: ["", "<gray>Time: <yellow>%time%", "<gray>Players: <white>%alive%"]
+    playing: ["", "<gray>Time: <yellow>%time%", "<gray>Find: <white>%item%", "<gray>Players: <white>%alive%"]

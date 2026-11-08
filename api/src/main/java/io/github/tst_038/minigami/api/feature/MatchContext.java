@@ -192,6 +192,10 @@ public interface MatchContext {
     default void showTimer(String name, LongSupplier ticksLeft) {
     }
 
+    /** Shows a text of the game in the HUD, as the value {@code %name%} that sidebar and boss bar texts can use, until this phase's features end. */
+    default void showText(String name, Component text) {
+    }
+
     /**
      * Makes the participant's next death their last, even if they have lives left or unlimited ones, so a game can take
      * away the comeback of someone it has decided is done. Does nothing for one who isn't in the match.

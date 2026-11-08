@@ -343,6 +343,13 @@ public final class LiveMatch {
         return timers;
     }
 
+    /** Named texts of the game for the HUD. */
+    private final Map<String, net.kyori.adventure.text.Component> texts = new LinkedHashMap<>();
+
+    public Map<String, net.kyori.adventure.text.Component> texts() {
+        return texts;
+    }
+
     /** Whether anyone may join it through public play; a private match only gets the players its opener puts in. */
     public boolean isPublic() {
         return opening.isPublic();

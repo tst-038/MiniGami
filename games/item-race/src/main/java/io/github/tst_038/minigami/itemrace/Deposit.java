@@ -43,6 +43,7 @@ final class Deposit implements Feature {
     public void enable(MatchContext context) {
         var target = pool.pick(new Random(context.random().nextLong()));
         var item = Placeholder.component("item", Component.translatable(target.translationKey()));
+        context.showText("item", Component.translatable(target.translationKey()));
         var deposits = context.regions(REGION);
         context.messages().send(context.audience(), "item-race.target", item);
         context.scope().register(context.clock().repeat(20, () -> context.audience().sendActionBar(context.messages().render("item-race.target-bar", item))));
