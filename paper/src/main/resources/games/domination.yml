@@ -1,5 +1,6 @@
 # Three capture points; a team keeps a point until another takes it, and scores a point a second for each it owns.
 # The arena needs regions point-a, point-b and point-c (/mga arena example region point-a set).
+# Glass inside a region (such as the glass over a beacon, which gives its beam its colour) takes the colour of the team that owns the point.
 gametype: domination
 name: "<aqua>Domination"
 capture-points:
