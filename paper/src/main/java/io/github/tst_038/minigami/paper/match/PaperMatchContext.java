@@ -132,7 +132,9 @@ public final class PaperMatchContext implements MatchContext {
 
     @Override
     public Optional<Region> region(String name) {
-        return Optional.ofNullable(match.arena().regions().get(name));
+        var arena = match.arena();
+        // "map" is the box of the saved map, unless the arena has a region of that name.
+        return Optional.ofNullable(arena.regions().get(name)).or(() -> name.equals("map") ? arena.map() : Optional.empty());
     }
 
     @Override

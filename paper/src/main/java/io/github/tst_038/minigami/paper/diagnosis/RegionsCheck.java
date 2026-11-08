@@ -10,7 +10,7 @@ final class RegionsCheck implements Check<Hosting> {
 
     @Override
     public void check(Hosting hosting, Diagnosis diagnosis) {
-        Stream.concat(hosting.gametype().regions().stream(), hosting.featureRegions().stream()).distinct().filter(region -> !hosting.arena().regions().containsKey(region))
+        Stream.concat(hosting.gametype().regions().stream(), hosting.featureRegions().stream()).distinct().filter(region -> !hosting.arena().regions().containsKey(region) && !(region.equals("map") && hosting.arena().map().isPresent()))
                 .forEach(region -> diagnosis.blocking("missing-region", Map.of("region", region), hosting.command("region " + region + " set")));
     }
 }

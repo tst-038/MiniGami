@@ -6,7 +6,7 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import java.util.Optional;
 
-/** {@code play-area: { region: fighting }} for a region everybody shares, or {@code region: team} for each team's own. */
+/** {@code play-area: { region: fighting }} for a region everybody shares ({@code map} is the box of the arena's saved map), or {@code region: team} for each team's own. */
 public final class PlayAreaFactory implements FeatureFactory {
 
     @Override
