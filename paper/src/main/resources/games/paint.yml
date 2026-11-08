@@ -2,6 +2,7 @@
 # someone else's takes it from them. Most blocks when time is up wins.
 # The arena needs: a region group canvas (any number of regions, /mg arena example region canvas set) with white concrete
 # (or whatever paintable lists) inside, spawns, and a saved map so the paint is cleaned up (/mg arena example map save).
+# With a schematic saved for the region named canvas (/mg arena example region canvas schematic) it is pasted fresh before every match.
 gametype: paint
 name: "<light_purple>Paint"
 min-players: 2
@@ -21,6 +22,8 @@ colors: [red_concrete, blue_concrete, lime_concrete, yellow_concrete, orange_con
 # Paint in teams; without this everyone paints for themselves.
 # teams: { count: 2 }
 arenas: [example]
+# Play in the region canvas: its schematic (if any) is pasted when the match opens, and spawns must stand inside it.
+region: canvas
 features:
   playing:
     kit: { items: [blaze_rod] }
