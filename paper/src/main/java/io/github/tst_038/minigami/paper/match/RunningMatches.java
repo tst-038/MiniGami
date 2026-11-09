@@ -88,6 +88,10 @@ public final class RunningMatches implements Listener {
         return running().stream().anyMatch(match -> match.arena().id().equals(arenaId));
     }
 
+    public boolean isGameInUse(String gameId) {
+        return running().stream().anyMatch(match -> match.variant().game().equals(gameId));
+    }
+
     public void leave(Player player) {
         leave(player, player);
     }

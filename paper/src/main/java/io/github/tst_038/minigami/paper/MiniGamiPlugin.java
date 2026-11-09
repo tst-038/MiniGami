@@ -26,6 +26,7 @@ import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.diagnosis.Hosting;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
+import io.github.tst_038.minigami.paper.edit.GameRenamer;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.match.ActiveMatches;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
@@ -205,9 +206,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
         info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         var statsView = new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger());
         var statsAdmin = new StatsAdmin(storage, profiles, leaderboards, statsView, serverThread, messages, getLogger());
+        var gameRenamer = new GameRenamer(this, messages, editor, running::isGameInUse, statsAdmin::renameGame, this::loadAfterEdit);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(GamesCommand.playerRoot(messages, publicMatches, running, parties, nights, scheduled, statsView), "Join, leave and see stats of minigames");
-            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, arenaSetup, lootSetup, terrainSetup, info,
+            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, gameRenamer, arenaSetup, lootSetup, terrainSetup, info,
                     gametypes.ids(), features.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), nights, scheduled,
                     statsView, statsAdmin, new PlaceholderGuide(statsView, messages), doctor, () -> settings.lobby(), this::loadStrict), "Manage minigames");
         });

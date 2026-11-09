@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -101,6 +102,26 @@ public final class StatsAdmin {
             leaderboards.refresh();
             messages.send(sender, "stats.admin.reset-game", Placeholder.unparsed("game", game + variant.map(name -> " (" + name + ")").orElse("")));
         });
+    }
+
+    /**
+     * Moves everything stored under one game id to another, the match history included, and reloads what is cached.
+     * The id must not have stats of its own yet.
+     */
+    public CompletableFuture<Void> renameGame(String from, String to) {
+        return storage.submit(connection -> {
+            for (var table : new String[] {"matches", "player_totals", "player_stat_totals"}) {
+                try (var update = connection.prepareStatement("UPDATE " + table + " SET game = ? WHERE game = ?")) {
+                    update.setString(1, to);
+                    update.setString(2, from);
+                    update.executeUpdate();
+                }
+            }
+            return null;
+        }).thenRunAsync(() -> {
+            profiles.reloadOnline();
+            leaderboards.refresh();
+        }, serverThread);
     }
 
     private interface Edit {

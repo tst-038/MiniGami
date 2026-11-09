@@ -510,6 +510,10 @@ edit:
   unset: "%prefix%<green>Removed <white>%key%</white> from <white>%file%</white>."
   created: "%prefix%<green>Created <white>%file%</white>. Change it with <white>set</white> and <white>unset</white>."
   deleted: "%prefix%<green>Deleted <white>%file%</white>. A copy is kept as <white>%file%.deleted</white> until the next delete of it."
+  # %game%: the old id, %to%: the new one
+  game-renamed: "%prefix%<green>Renamed game <white>%game%</white> to <white>%to%</white>, with its stats, game nights and schedules."
+  rename-in-use: "%prefix%<red>A match of <white>%game%</white> is running; rename it when that has ended."
+  rename-reference-failed: "%prefix%<red>Could not change <white>%file%</white> to the new id; replace <white>%game%</white> in it yourself."
   schedule-created: "%prefix%<green>Created <white>%file%</white>. Change its games, times and rewards with <white>set</white> and <white>unset</white>."
   night-created: "%prefix%<green>Created <white>%file%</white>. Add games with <white>playlist add</white>, and change the rest with <white>set</white> and <white>unset</white>."
   # %game%, %n%: the position of the entry, %to%: the position it moved to

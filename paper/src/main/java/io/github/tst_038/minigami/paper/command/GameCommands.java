@@ -10,18 +10,19 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
+import io.github.tst_038.minigami.paper.edit.GameRenamer;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-/** {@code /mga game list|create <id> <gametype> <arena>} and {@code /mga game <id> info|enable|disable|set|unset|delete|variant ...}. */
+/** {@code /mga game list|create <id> <gametype> <arena>} and {@code /mga game <id> info|enable|disable|set|unset|rename|delete|variant ...}. */
 final class GameCommands {
 
     private GameCommands() {
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> node(ConfigEditor editor, GameRenamer renamer, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("game")
                 .requires(ADMIN)
                 .executes(help)
@@ -43,6 +44,9 @@ final class GameCommands {
                         .then(Edits.set(editor, Kind.GAME, GameCommands::game))
                         .then(Edits.unset(editor, Kind.GAME, GameCommands::game))
                         .then(Edits.delete(editor, Kind.GAME, GameCommands::game))
+                        .then(Commands.literal("rename")
+                                .then(Commands.argument("new", StringArgumentType.word())
+                                        .executes(bySender((sender, context) -> renamer.rename(sender, game(context), string(context, "new"))))))
                         .then(variant(editor, help)));
     }
 
