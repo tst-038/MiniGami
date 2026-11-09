@@ -97,6 +97,16 @@ public final class Kind<T> {
         });
     }
 
+    /** A list of texts, with the values that may be offered for its entries. */
+    public static Kind<List<String>> strings(Collection<String> values) {
+        return plain(ConfigReader::strings, () -> values);
+    }
+
+    /** The inner kind when the key is there, else empty; for a setting without a fallback value. */
+    public static <T> Kind<Optional<T>> optional(Kind<T> inner) {
+        return plain((config, key) -> Optional.of(inner.read(config, key)), inner::values);
+    }
+
     /** Values that may be offered for this setting, such as {@code true} and {@code false}. */
     public List<String> values() {
         return List.copyOf(values.get());
