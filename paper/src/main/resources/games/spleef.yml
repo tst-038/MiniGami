@@ -1,5 +1,5 @@
 # A game: what players join, with /mg join spleef, and see their stats of. The game type is the code it runs.
-# These example games all play in the example arena; give it spawns first (/mga arena example spawn add).
+# These example games all play in the example arena; spawns are optional: without them players start on random places of the highest floor of its map (/mga arena example map save), or of its region.
 # What a game type or feature can be set to: /mga gametype <id> info and /mga feature <id> info.
 # Change a game by command with /mga game <id> set <key> <value>, or edit the file and /mga reload.
 #
@@ -14,7 +14,7 @@ max-players: 8
 waiting: arena
 # How many deaths put a player out; 0 means they always respawn. Without it, the game decides (last-standing: 1).
 # lives: 3
-# Free arenas are picked in this order; each must have spawns.
+# Free arenas are picked in this order; each needs a saved map or spawns.
 arenas: [example]
 # Features per phase of the game (last-standing has waiting, playing and ending).
 features:

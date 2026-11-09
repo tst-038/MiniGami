@@ -252,7 +252,7 @@ public final class GameLoader {
             // Without the region the check reports it missing; the arena stays whole for that.
             var played = region.stream().map(whole.regions()::get).filter(java.util.Objects::nonNull).toList();
             var arena = played.isEmpty() ? whole : whole.within(played);
-            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty(), usesLoot, allFeatures), checks);
+            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, !(game.spawnsAnywhere() && !arena.area().isEmpty()) && (game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty()), usesLoot, allFeatures), checks);
             if (diagnosis.isReady()) {
                 playable.add(arena);
             }

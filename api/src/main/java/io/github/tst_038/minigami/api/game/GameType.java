@@ -56,6 +56,14 @@ public interface GameType {
         return true;
     }
 
+    /**
+     * Whether an arena without spawns will do: players start, and come back, on random standable places of the
+     * highest floor in the area the game is played in. For games where every place on the floor is as good as the next.
+     */
+    default boolean spawnsAnywhere() {
+        return false;
+    }
+
     /** A fresh one per match. */
     WinCondition winCondition();
 

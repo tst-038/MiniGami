@@ -39,6 +39,11 @@ public final class LastStanding implements GameType {
     }
 
     @Override
+    public boolean spawnsAnywhere() {
+        return true;
+    }
+
+    @Override
     public int lives() {
         return 1;
     }

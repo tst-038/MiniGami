@@ -91,6 +91,11 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
                 lootPoints, played, respawningSpot);
     }
 
+    /** Where the game is played: the regions it plays in, else the saved map; empty if neither is set. */
+    public List<Region> area() {
+        return playRegions.isEmpty() ? map.stream().toList() : playRegions;
+    }
+
     @Override
     public List<Region> regions(String group) {
         return regions.values().stream().filter(region -> region.isIn(group)).toList();

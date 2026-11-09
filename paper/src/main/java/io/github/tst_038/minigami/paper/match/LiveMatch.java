@@ -171,7 +171,7 @@ public final class LiveMatch {
         this.waitingSpot = switch (variant.waiting()) {
             case IN_PLACE -> Optional.empty();
             case LOBBY -> Optional.of(lobby.orElseThrow(() -> new IllegalArgumentException(variant.key() + " waits in a lobby, but none is set")));
-            case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().getFirst().location()));
+            case ARENA -> Optional.of(arena.waitingSpot().orElseGet(() -> arena.spawns().isEmpty() ? arena.area().getFirst().standingSpot() : arena.spawns().getFirst().location()));
         };
         this.sessions = sessions;
         this.messages = messages.over(variant.messages());
@@ -841,8 +841,12 @@ public final class LiveMatch {
                 .orElse(List.of());
         var everyone = takingPart();
         var together = variant.teams().isPresent() && variant.teamSpawns() == TeamSpawns.TOGETHER;
-        var spots = SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together);
-        for (int i = 0; variant.gametype().usesSpawns() && i < everyone.size(); i++) {
+        var scattered = variant.gametype().usesSpawns() && arena.spawns().isEmpty();
+        if (scattered) {
+            scatter(everyone);
+        }
+        var spots = scattered ? List.<Integer>of() : SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together);
+        for (int i = 0; variant.gametype().usesSpawns() && !scattered && i < everyone.size(); i++) {
             var team = teamOf(everyone.get(i));
             if (together && team.isPresent() && !SpawnPlan.hasOwn(team.get(), spawnTags)) {
                 teamHomes.putIfAbsent(team.get(), spots.get(i));
@@ -889,6 +893,32 @@ public final class LiveMatch {
                 hud.started();
             }
         }));
+    }
+
+    /** Puts each player on a standable place of the highest floor, as far as it goes from those already placed; for a game that needs no spawns. */
+    private void scatter(List<UUID> everyone) {
+        var floor = highestFloor(arena.area());
+        var placed = new ArrayList<Location>();
+        for (var id : everyone) {
+            var player = plugin.getServer().getPlayer(id);
+            if (player != null) {
+                var spot = farthestFrom(floor, placed);
+                player.teleport(spot);
+                placed.add(spot);
+            }
+        }
+    }
+
+    /** The candidate farthest from {@code others}, a random one with nobody to keep away from, or the area's own standing place if no floor is left. */
+    private Location farthestFrom(List<Location> candidates, List<Location> others) {
+        if (candidates.isEmpty()) {
+            return arena.area().getFirst().standingSpot();
+        }
+        // With nobody to keep away from every candidate is as good as the next, so don't always take the first.
+        if (others.isEmpty()) {
+            return candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
+        }
+        return candidates.get(Spread.farthest(candidates.stream().map(Standable::point).toList(), others.stream().map(Standable::point).toList()));
     }
 
     /** A game that doesn't move players to spawns clears and prepares them only as play begins, as they stood where they waited until then. */
@@ -1136,22 +1166,23 @@ public final class LiveMatch {
      * and of those the one farthest from the other players, so nobody lands on a hole or on top of someone.
      */
     private Location spawnFor(UUID id) {
+        List<Location> candidates;
         if (arena.spawns().isEmpty()) {
-            // A game without spawns puts players on their own region; shortcut: a player without one gets the first, fine while teams always have one.
-            return teamRegions.stream().filter(plot -> plot.members().contains(id)).findFirst().orElse(teamRegions.getFirst()).region().standingSpot();
+            if (!teamRegions.isEmpty()) {
+                // A game without spawns puts players on their own region; shortcut: a player without one gets the first, fine while teams always have one.
+                return teamRegions.stream().filter(plot -> plot.members().contains(id)).findFirst().orElse(teamRegions.getFirst()).region().standingSpot();
+            }
+            candidates = highestFloor(arena.area());
+        } else {
+            var team = teamOf(id);
+            var home = team.map(teamHomes::get).map(OptionalInt::of).orElse(OptionalInt.empty());
+            var spots = SpawnPlan.respawnChoices(team, spawnTags, home).stream().map(i -> arena.spawns().get(i).location()).toList();
+            candidates = variant.respawn() == Respawn.HIGHEST_FLOOR ? Optional.of(arena.playRegions()).filter(regions -> !regions.isEmpty()).map(LiveMatch::highestFloor).orElseGet(() -> Standable.among(spots))
+                    : Standable.among(spots);
         }
-        var team = teamOf(id);
-        var home = team.map(teamHomes::get).map(OptionalInt::of).orElse(OptionalInt.empty());
-        var spots = SpawnPlan.respawnChoices(team, spawnTags, home).stream().map(i -> arena.spawns().get(i).location()).toList();
-        var candidates = variant.respawn() == Respawn.HIGHEST_FLOOR ? Optional.of(arena.playRegions()).filter(regions -> !regions.isEmpty()).map(LiveMatch::highestFloor).orElseGet(() -> Standable.among(spots))
-                : Standable.among(spots);
         var others = members.stream().filter(other -> !other.equals(id)).map(plugin.getServer()::getPlayer)
                 .filter(other -> other != null && match.roster().find(other.getUniqueId()).filter(Participant::isAlive).isPresent()).map(Player::getLocation).toList();
-        // With nobody to keep away from every candidate is as good as the next, so don't always take the first.
-        if (others.isEmpty()) {
-            return candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
-        }
-        return candidates.get(Spread.farthest(candidates.stream().map(Standable::point).toList(), others.stream().map(Standable::point).toList()));
+        return farthestFrom(candidates, others);
     }
 
     /** The places on the highest floor over all the regions; empty if they are all gone, which the caller treats as no floor. */

@@ -1,5 +1,5 @@
 # A game: what players join, with /mg join tnt-run, and see their stats of. The game type is the code it runs.
-# This example game plays in the example arena; give it spawns first (/mga arena example spawn add).
+# This example game plays in the example arena; spawns are optional: without them players start on random places of the highest floor of its map (/mga arena example map save), or of its region.
 #
 # TNT Run: keep running, the floor drops away under your feet; whoever falls through is out, the last one standing wins.
 # The arena floor is sand with TNT right under it (build one or more such layers), and a saved map
