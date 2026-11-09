@@ -1,7 +1,7 @@
 # Walk over the canvas to paint the blocks under your feet in your colour. Every block you hold is a point and painting over
 # someone else's takes it from them. Most blocks when time is up wins.
 # The arena needs: a region group canvas (any number of regions, /mga arena example region canvas set) with white concrete
-# (or whatever paintable lists) inside, spawns, and a saved map so the paint is cleaned up (/mga arena example map save).
+# (or whatever paintable lists) inside, and a saved map so the paint is cleaned up (/mga arena example map save).
 # With a schematic saved for the region named canvas (/mga arena example region canvas schematic) it is pasted fresh before every match.
 gametype: paint
 name: "<light_purple>Paint"
@@ -18,8 +18,10 @@ colors: [red_concrete, blue_concrete, lime_concrete, yellow_concrete, light_blue
 # Everyone paints for themselves, in a colour each. Use teams: { count: 2 } to paint in teams.
 teams: { size: 1 }
 arenas: [example]
-# Play in the region canvas: its schematic (if any) is pasted when the match opens, and spawns must stand inside it.
+# Play in the region canvas: its schematic (if any) is pasted when the match opens, and spawns, if any, must stand inside it.
 region: canvas
+# Spawns are optional: without them players start on random places of the canvas. random-spawns: false asks for spawns again.
+# random-spawns: true
 features:
   playing:
     no-hunger: {}

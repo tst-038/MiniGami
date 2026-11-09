@@ -34,12 +34,13 @@ import java.util.stream.Stream;
  * @param arenas the arenas it lists that can host it
  * @param findings what is wrong with the arenas it lists, also those left out of {@code arenas} for it
  * @param features feature instances are shared by every match of it, so they keep no match state themselves
+ * @param randomSpawns whether an arena without spawns will do, players starting and coming back on random places of its area
  * @param statGroups the stat groups it keeps, next to the stats of the game type itself
  * @param hud what players see of a match next to chat
  * @param advancements whether players can earn advancements in its matches
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, Respawn respawn, int respawnSeconds, List<Role> roles, List<Rank> ranks, Quit quit, List<Arena> arenas, List<Finding> findings,
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, boolean randomSpawns, Respawn respawn, int respawnSeconds, List<Role> roles, List<Rank> ranks, Quit quit, List<Arena> arenas, List<Finding> findings,
         Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud, boolean advancements) {
 
     public Variant {

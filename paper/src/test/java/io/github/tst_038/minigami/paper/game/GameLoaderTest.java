@@ -739,6 +739,7 @@ class GameLoaderTest {
         var variant = "{gametype: last-standing, min-players: 2, max-players: 8, waiting: arena, arenas: ";
 
         assertEquals(List.of("flat"), arenaIds(load(variant + "[flat]}")));
+        assertEquals(List.of(), arenaIds(load(variant + "[flat], random-spawns: false}")));
         // Without a map or region there is no floor to pick from.
         assertEquals(List.of(), arenaIds(load(variant + "[empty]}")));
     }

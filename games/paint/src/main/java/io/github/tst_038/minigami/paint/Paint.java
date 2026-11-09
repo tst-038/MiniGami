@@ -62,6 +62,11 @@ public final class Paint implements GameType {
     }
 
     @Override
+    public boolean spawnsAnywhere() {
+        return true;
+    }
+
+    @Override
     public List<String> regionGroups() {
         return List.of(Painter.CANVAS);
     }

@@ -44,6 +44,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
  * team-spawns: spread        # optional; together (the default): a team shares one spawn, or spread: every player takes the next one
+ * random-spawns: true        # optional; with no spawns set, players start and respawn on random places of the highest floor of the region or map; on by default for some games
  * respawn: highest-floor      # optional; spawns (the default), or the highest floor still standing in region, for games that break their floor
  * respawn-seconds: 5         # optional; how long a player who died waits to come back, at the arena's respawning spot; 0 (the default): at once
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
@@ -212,6 +213,7 @@ public final class GameLoader {
                 .forEach(key -> config.problem("messages." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
         var teamSpawns = config.has("team-spawns") ? config.choice("team-spawns", TeamSpawns.class) : TeamSpawns.TOGETHER;
+        var randomSpawns = config.has("random-spawns") ? config.bool("random-spawns") : game != null && game.spawnsAnywhere();
         var roles = roles(config, minPlayers, game, teams);
         // The roles take their players first; only the rest form teams.
         teams.filter(setup -> setup.size() > 0).ifPresent(setup -> {
@@ -252,14 +254,14 @@ public final class GameLoader {
             // Without the region the check reports it missing; the arena stays whole for that.
             var played = region.stream().map(whole.regions()::get).filter(java.util.Objects::nonNull).toList();
             var arena = played.isEmpty() ? whole : whole.within(played);
-            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, !(game.spawnsAnywhere() && !arena.area().isEmpty()) && (game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty()), usesLoot, allFeatures), checks);
+            var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, !(randomSpawns && !arena.area().isEmpty()) && (game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty()), usesLoot, allFeatures), checks);
             if (diagnosis.isReady()) {
                 playable.add(arena);
             }
             findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
                 features, stats, hud, config.has("advancements") && config.bool("advancements"));
     }
 

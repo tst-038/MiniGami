@@ -841,7 +841,7 @@ public final class LiveMatch {
                 .orElse(List.of());
         var everyone = takingPart();
         var together = variant.teams().isPresent() && variant.teamSpawns() == TeamSpawns.TOGETHER;
-        var scattered = variant.gametype().usesSpawns() && arena.spawns().isEmpty();
+        var scattered = variant.gametype().usesSpawns() && variant.randomSpawns() && arena.spawns().isEmpty();
         if (scattered) {
             scatter(everyone);
         }
