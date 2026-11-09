@@ -91,6 +91,11 @@ public record Arena(String id, World world, List<Spawn> spawns, Optional<Locatio
                 lootPoints, played, respawningSpot);
     }
 
+    /** The arena with its spawns left out, for a game that puts players on random places instead. */
+    public Arena withoutSpawns() {
+        return new Arena(id, world, List.of(), waitingSpot, spectatorSpot, regions, map, lootPoints, playRegions, respawningSpot);
+    }
+
     /** Where the game is played: the regions it plays in, else the saved map; empty if neither is set. */
     public List<Region> area() {
         return playRegions.isEmpty() ? map.stream().toList() : playRegions;

@@ -759,6 +759,16 @@ class GameLoaderTest {
     }
 
     @Test
+    void randomSpawnsWrittenOutIgnoresTheSpawnsOfTheArena() throws Exception {
+        arenas.register(new Arena("spawned", null, List.of(new Arena.Spawn(new Location(null, 1, 64, 1), Optional.empty())), Optional.empty(), Optional.empty(), Map.of(),
+                Optional.of(new Region("map", null, 0, 60, 0, 10, 70, 10))));
+        var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [spawned]";
+
+        assertEquals(1, load(variant + "}").entries().find("fall").orElseThrow().base().arenas().getFirst().spawns().size());
+        assertEquals(0, load(variant + ", random-spawns: true}").entries().find("fall").orElseThrow().base().arenas().getFirst().spawns().size());
+    }
+
+    @Test
     void respawningOnTheHighestFloorNeedsTheRegionTheGamePlaysIn() throws Exception {
         var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills], respawn: highest-floor";
 

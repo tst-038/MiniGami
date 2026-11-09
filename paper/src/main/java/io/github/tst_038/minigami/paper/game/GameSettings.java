@@ -46,7 +46,7 @@ final class GameSettings {
     static final Setting<TeamSpawns> TEAM_SPAWNS = Setting.of("team-spawns", Kind.choice(TeamSpawns.class),
             "together: a team shares one spawn; spread: every player takes the next one").orElse(TeamSpawns.TOGETHER);
     static final Setting<Optional<Boolean>> RANDOM_SPAWNS = Setting.of("random-spawns", Kind.optional(Kind.bool()),
-            "with no spawns set, players start on random places of the highest floor; left out, the game type's").orElse(Optional.empty());
+            "true: players start on random places of the highest floor of the region or map, whatever spawns the arena has; left out: only when it has none, for the game types that do so").orElse(Optional.empty());
     static final Setting<Respawn> RESPAWN = Setting.of("respawn", Kind.choice(Respawn.class),
             "where players come back: their spawns, or the highest floor still standing in region").orElse(Respawn.SPAWNS);
     static final Setting<Integer> RESPAWN_SECONDS = Setting.of("respawn-seconds", Kind.integer(0, 3600),

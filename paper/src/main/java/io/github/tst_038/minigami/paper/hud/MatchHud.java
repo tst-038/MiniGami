@@ -292,14 +292,14 @@ public final class MatchHud {
         return player == null ? name : Component.text(player, name.color());
     }
 
-    /** A line per floor with members alive on it, the highest first, the viewer's own marked. */
+    /** A line per floor with members alive on it, level 1 (the highest floor) first, the viewer's own marked. */
     private List<Component> floorLines(Player viewer) {
         var floors = this.floors.orElse(null);
         if (floors == null) {
             return List.of();
         }
         var own = viewer == null ? OptionalInt.empty() : floors.levelAt(viewer.getLocation().getY());
-        var perLevel = new java.util.TreeMap<Integer, Long>(Comparator.reverseOrder());
+        var perLevel = new java.util.TreeMap<Integer, Long>();
         match.match().roster().alive().stream().map(participant -> server.getPlayer(participant.id())).filter(Objects::nonNull)
                 .map(player -> floors.levelAt(player.getLocation().getY())).filter(OptionalInt::isPresent)
                 .forEach(level -> perLevel.merge(level.getAsInt(), 1L, Long::sum));
