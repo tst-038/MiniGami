@@ -42,15 +42,10 @@ public final class TheWall implements GameType {
     static final String WALLS = "wall";
     static final String QUARTER = "quarter";
 
-    private static final ConfigReader NO_BORDER = ConfigReader.of("", new MemoryConfiguration());
     private static final Setting<Integer> PREPARE_SECONDS = Setting.of("prepare-seconds", Kind.integer(10, 7200),
             "how long teams prepare behind their walls before the walls drop").orElse(900);
-    // The border's own keys, as ClosingBorder.Settings reads them.
-    private static final Setting<ConfigReader> BORDER = Setting.of("border", Kind.section(List.of(
-            Setting.of("end-size", Kind.integer(1, 10000), "blocks across the widest side once closed").orElse(20),
-            Setting.of("shrink-seconds", Kind.integer(1, 7200), "how long the border takes to close").orElse(300),
-            Setting.of("damage", Kind.integer(0, 40), "damage per second outside the border").orElse(1))),
-            "closes the arena's border region in on its centre during the fight; left out, there is none").orElse(NO_BORDER);
+    private static final Setting<Optional<ClosingBorder.Settings>> BORDER = ClosingBorder.Settings.setting(
+            "closes the arena's border region in on its centre during the fight; left out, there is none");
 
     private final int prepareSeconds;
     private final Optional<ClosingBorder.Settings> border;
@@ -61,7 +56,7 @@ public final class TheWall implements GameType {
 
     private TheWall(ConfigReader config) {
         this.prepareSeconds = config.read(PREPARE_SECONDS);
-        this.border = config.has(BORDER.key()) ? Optional.of(ClosingBorder.Settings.read(config.read(BORDER))) : Optional.empty();
+        this.border = config.read(BORDER);
     }
 
     @Override

@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * A survival scramble in one very large arena: everyone starts spread over the spawns, grabs what the loot
@@ -50,7 +49,6 @@ public final class ItemRace implements GameType {
     /** The HUD has a line per target ({@code %item1%} to {@code %item5%}). */
     static final int MAX_TARGETS = 5;
 
-    private static final ConfigReader NO_BORDER = ConfigReader.of("", new MemoryConfiguration());
     private static final Setting<Integer> PLAY_SECONDS = Setting.of("play-seconds", Kind.integer(60, 86400), "how long the race lasts").orElse(3600);
     private static final Setting<Integer> TARGETS = Setting.of("targets", Kind.integer(1, MAX_TARGETS), "how many different items are asked for").orElse(1);
     private static final Setting<Goal> GOAL = Setting.of("goal", Kind.choice(Goal.class), "hand in every target, or just any one of them").orElse(Goal.ALL);
@@ -58,12 +56,8 @@ public final class ItemRace implements GameType {
             "how an item is handed in: dropped on a deposit, or clicked into it").orElse(Deposit.HandIn.DROP);
     private static final Setting<Integer> HAND_IN_DELAY = Setting.of("hand-in-delay-seconds", Kind.integer(0, 3600),
             "how long an item must stay handed in to count").orElse(0);
-    // The border's own keys, as ClosingBorder.Settings reads them.
-    private static final Setting<ConfigReader> BORDER = Setting.of("border", Kind.section(List.of(
-            Setting.of("end-size", Kind.integer(1, 10000), "blocks across the widest side once closed").orElse(20),
-            Setting.of("shrink-seconds", Kind.integer(1, 7200), "how long the border takes to close").orElse(300),
-            Setting.of("damage", Kind.integer(0, 40), "damage per second outside the border").orElse(1))),
-            "closes the border region in on its centre; left out, there is none").orElse(NO_BORDER);
+    private static final Setting<Optional<ClosingBorder.Settings>> BORDER = ClosingBorder.Settings.setting(
+            "closes the border region in on its centre; left out, there is none");
 
     private final int playSeconds;
     private final Optional<ClosingBorder.Settings> border;
@@ -161,7 +155,7 @@ public final class ItemRace implements GameType {
         }
         return new ItemRace(
                 config.read(PLAY_SECONDS),
-                config.has(BORDER.key()) ? Optional.of(ClosingBorder.Settings.read(config.read(BORDER))) : border,
+                config.read(BORDER).or(() -> border),
                 read, count,
                 config.read(GOAL),
                 config.read(HAND_IN),

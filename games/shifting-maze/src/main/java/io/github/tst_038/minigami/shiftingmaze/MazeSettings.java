@@ -45,23 +45,22 @@ record MazeSettings(int cellWidth, int wallThickness, int wallHeight, int loops,
     private static final Setting<Integer> SHIFTS = Setting.of("shifts", Kind.integer(1, 50), "walls moved at each shift").orElse(3);
     private static final Setting<Integer> KEYS = Setting.of("keys", Kind.integer(0, 20), "keys a runner must find before the exit opens").orElse(3);
 
-    private static final ConfigReader NONE = ConfigReader.of("", new MemoryConfiguration());
     private static final Setting<Integer> WARNING_SECONDS = Setting.of("seconds", Kind.integer(1, 30), "how long before a shift it is announced").orElse(3);
     private static final Setting<Boolean> FLICKER = Setting.of("flicker", Kind.bool(), "the walls about to move flicker").orElse(true);
     private static final Setting<Boolean> PARTICLES = Setting.of("particles", Kind.bool(), "the walls about to move show particles").orElse(true);
     private static final Setting<String> SOUND = Setting.of("sound", Kind.text(), "the sound played when a shift is coming").orElse("block.grindstone.use");
     private static final Setting<ConfigReader> WARNING = Setting.of("warning", Kind.section(List.of(WARNING_SECONDS, FLICKER, PARTICLES, SOUND)),
-            "how a coming shift is announced; false turns the cues off").orElse(NONE);
+            "how a coming shift is announced; false turns the cues off");
 
     private static final Setting<Integer> RADIUS = Setting.of("radius", Kind.integer(0, 3), "cells around the exit where a runner with all its keys cannot be caught")
             .orElse(0);
     private static final Setting<ConfigReader> SAFE_ZONE = Setting.of("safe-zone", Kind.section(List.of(RADIUS)),
-            "the safe zone around the exit; false turns it off").orElse(NONE);
+            "the safe zone around the exit; false turns it off");
 
     private static final Setting<Integer> EVERY_SECONDS = Setting.of("every-seconds", Kind.integer(5, 600), "seconds between the minotaurs' sight").orElse(30);
     private static final Setting<Integer> SIGHT_SECONDS = Setting.of("seconds", Kind.integer(1, 30), "how long the minotaurs see the runners").orElse(3);
     private static final Setting<ConfigReader> SIGHT = Setting.of("sight", Kind.section(List.of(EVERY_SECONDS, SIGHT_SECONDS)),
-            "what the minotaurs are shown now and then; false turns it off").orElse(NONE);
+            "what the minotaurs are shown now and then; false turns it off");
 
     private static final Map<String, Integer> DUNGEON_FLOOR = Map.of("cobblestone", 35, "mossy_cobblestone", 20, "stone", 25, "gravel", 8, "andesite", 8,
             "water", 3, "shroomlight", 2);
@@ -71,12 +70,15 @@ record MazeSettings(int cellWidth, int wallThickness, int wallHeight, int loops,
             "a block, or blocks with their weights, each floor block picking one at random").orElse(DUNGEON_FLOOR);
     private static final Setting<Map<String, Integer>> WALL = Setting.of("wall", Kind.weighted("block", 1000), "the walls' blocks, as the floor's")
             .orElse(DUNGEON_WALL);
-    private static final Setting<String> CEILING = Setting.of("ceiling", Kind.text(), "a block to roof the maze with; left out, it is open").orElse("");
-    private static final Setting<String> WARNING_BLOCK = Setting.of("warning", Kind.text(), "block the walls about to move turn into").orElse("cracked_stone_bricks");
-    private static final Setting<String> EXIT = Setting.of("exit", Kind.text(), "block marking the exit").orElse("gold_block");
-    private static final Setting<String> KEY = Setting.of("key", Kind.text(), "the item a key is").orElse("tripwire_hook");
+    // shortcut: only the names are checked, since Material.isBlock/isSolid need a running server; a non-block fails when the fill runs
+    private static final Setting<Optional<Material>> CEILING = Setting.of("ceiling", Kind.optional(Kind.material()), "a block to roof the maze with; left out, it is open")
+            .orElse(Optional.empty());
+    private static final Setting<Material> WARNING_BLOCK = Setting.of("warning", Kind.material(), "block the walls about to move turn into")
+            .orElse(Material.CRACKED_STONE_BRICKS);
+    private static final Setting<Material> EXIT = Setting.of("exit", Kind.material(), "block marking the exit").orElse(Material.GOLD_BLOCK);
+    private static final Setting<Material> KEY = Setting.of("key", Kind.material(), "the item a key is").orElse(Material.TRIPWIRE_HOOK);
     private static final Setting<ConfigReader> BLOCKS = Setting.of("blocks", Kind.section(List.of(FLOOR, WALL, CEILING, WARNING_BLOCK, EXIT, KEY)),
-            "the blocks and items the maze is made of").orElse(NONE);
+            "the blocks and items the maze is made of");
 
     static final List<Setting<?>> ALL = List.of(CELL_WIDTH, WALL_THICKNESS, WALL_HEIGHT, LOOPS, HEAD_START_SECONDS, SAFE_ZONE, RUN_SECONDS, SHIFT_SECONDS,
             SHIFTS, WARNING, KEYS, SIGHT, BLOCKS);
@@ -122,10 +124,10 @@ record MazeSettings(int cellWidth, int wallThickness, int wallHeight, int loops,
         return new Blocks(
                 mix(config, FLOOR),
                 mix(config, WALL),
-                config.has(CEILING.key()) ? Optional.of(block(config, CEILING, Material.STONE_BRICKS)) : Optional.empty(),
-                block(config, WARNING_BLOCK, Material.CRACKED_STONE_BRICKS),
-                block(config, EXIT, Material.GOLD_BLOCK),
-                item(config));
+                config.read(CEILING),
+                config.read(WARNING_BLOCK),
+                config.read(EXIT),
+                config.read(KEY));
     }
 
     /** A block name, or a section of block names with their weights. */
@@ -149,24 +151,5 @@ record MazeSettings(int cellWidth, int wallThickness, int wallHeight, int loops,
                     .collect(java.util.stream.Collectors.toMap(entry -> Material.matchMaterial(entry.getKey()), Map.Entry::getValue));
         }
         return mix;
-    }
-
-    private static Material block(ConfigReader config, Setting<String> setting, Material fallback) {
-        var material = Material.matchMaterial(config.read(setting));
-        // shortcut: only the name is checked, since Material.isBlock/isSolid need a running server; a non-block fails when the fill runs
-        if (material == null) {
-            config.problem(setting.key(), "must be a block");
-            return fallback;
-        }
-        return material;
-    }
-
-    private static Material item(ConfigReader config) {
-        var material = Material.matchMaterial(config.read(KEY));
-        if (material == null) {
-            config.problem(KEY.key(), "must be an item");
-            return Material.TRIPWIRE_HOOK;
-        }
-        return material;
     }
 }

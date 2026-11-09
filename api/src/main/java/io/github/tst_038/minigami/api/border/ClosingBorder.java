@@ -2,12 +2,16 @@ package io.github.tst_038.minigami.api.border;
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent;
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
 import io.github.tst_038.minigami.core.border.BorderScale;
 import io.github.tst_038.minigami.core.border.BorderSize;
 import io.github.tst_038.minigami.core.roster.Participant;
+import java.util.List;
+import java.util.Optional;
 import org.bukkit.entity.Player;
 
 /**
@@ -31,10 +35,20 @@ public final class ClosingBorder implements Feature {
      */
     public record Settings(int endSize, long shrinkTicks, double damage) {
 
-        public static Settings read(ConfigReader config) {
-            return new Settings(config.has("end-size") ? config.integer("end-size", 1, 10000) : 20,
-                    (config.has("shrink-seconds") ? config.integer("shrink-seconds", 1, 7200) : 300) * 20L,
-                    config.has("damage") ? config.integer("damage", 0, 40) : 1);
+        private static final Setting<Integer> END_SIZE = Setting.of("end-size", Kind.integer(1, 10000), "blocks across the widest side once closed")
+                .orElse(20);
+        private static final Setting<Integer> SHRINK_SECONDS = Setting.of("shrink-seconds", Kind.integer(1, 7200), "how long the border takes to close")
+                .orElse(300);
+        private static final Setting<Integer> DAMAGE = Setting.of("damage", Kind.integer(0, 40), "damage per second outside the border").orElse(1);
+
+        /** The game file's {@code border} section; left out, the game has no closing border. */
+        public static Setting<Optional<Settings>> setting(String description) {
+            return Setting.of(REGION, Kind.optional(Kind.section(List.of(END_SIZE, SHRINK_SECONDS, DAMAGE)).map(Settings::read)), description)
+                    .orElse(Optional.empty());
+        }
+
+        private static Settings read(ConfigReader config) {
+            return new Settings(config.read(END_SIZE), config.read(SHRINK_SECONDS) * 20L, config.read(DAMAGE));
         }
     }
 

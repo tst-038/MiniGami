@@ -20,8 +20,9 @@ record PoleSettings(int height, int minDistance, Material pole, Material slab, i
 
     private static final Setting<Integer> HEIGHT = Setting.of("pole-height", Kind.integer(3, 60), "blocks of pole above the floor").orElse(6);
     private static final Setting<Integer> MIN_DISTANCE = Setting.of("min-distance", Kind.integer(2, 30), "least distance between two poles").orElse(4);
-    private static final Setting<String> POLE = Setting.of("pole-material", Kind.text(), "block the poles are built of").orElse("oak_log");
-    private static final Setting<String> SLAB = Setting.of("slab-material", Kind.text(), "block handed out to bridge with").orElse("oak_slab");
+    // shortcut: only the name is checked, since Material.isBlock needs a running server; a non-block fails when the fill runs
+    private static final Setting<Material> POLE = Setting.of("pole-material", Kind.material(), "block the poles are built of").orElse(Material.OAK_LOG);
+    private static final Setting<Material> SLAB = Setting.of("slab-material", Kind.material(), "block handed out to bridge with").orElse(Material.OAK_SLAB);
     private static final Setting<Integer> SLABS = Setting.of("slabs", Kind.integer(1, 64), "most slabs a player holds; resupplies stop there").orElse(64);
     private static final Setting<Integer> RESUPPLY_SECONDS = Setting.of("resupply-seconds", Kind.integer(1, 600), "seconds between the slabs handed out").orElse(5);
     private static final Setting<Integer> MAX_PLAYERS = Setting.of("max-players", Kind.integer(1, 1000),
@@ -37,21 +38,10 @@ record PoleSettings(int height, int minDistance, Material pole, Material slab, i
         return new PoleSettings(
                 config.read(HEIGHT),
                 config.read(MIN_DISTANCE),
-                material(config, POLE),
-                material(config, SLAB),
+                config.read(POLE),
+                config.read(SLAB),
                 config.read(SLABS),
                 config.read(RESUPPLY_SECONDS),
                 config.read(MAX_PLAYERS));
-    }
-
-    private static Material material(ConfigReader config, Setting<String> setting) {
-        var name = config.read(setting);
-        var material = Material.matchMaterial(name);
-        // shortcut: only the name is checked, since Material.isBlock needs a running server; a non-block fails when the fill runs
-        if (material == null) {
-            config.problem(setting.key(), "must be a block");
-            return Material.matchMaterial(setting.fallback().orElseThrow());
-        }
-        return material;
     }
 }
