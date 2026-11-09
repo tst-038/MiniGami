@@ -232,11 +232,13 @@ public final class GameLoader {
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         // Offer every feature in every phase for completion, also those the file doesn't use yet.
         if (game != null) {
-            game.phases().forEach(phase -> this.features.ids().forEach(featureId -> {
-                var path = "features." + phase.id() + "." + featureId;
-                config.suggest(path, List.of("{}"));
-                settingsOf(featureId).forEach((setting, values) -> config.suggest(path + "." + setting, values));
-            }));
+            suggestFeatures(config, "features", game);
+            for (var role : roles) {
+                suggestFeatures(config, "roles." + role.id() + ".features", game);
+            }
+            for (var rank : ranks) {
+                suggestFeatures(config, "ranks." + rank.id() + ".features", game);
+            }
         }
         var stats = statGroups(config);
         var changesBlocks = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::changesBlocks);
@@ -268,6 +270,15 @@ public final class GameLoader {
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
         return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
                 features, stats, hud, config.has("advancements") && config.bool("advancements"));
+    }
+
+    /** Offers every feature in every phase of the game under {@code prefix}, also those the file doesn't use yet. */
+    private void suggestFeatures(ConfigReader config, String prefix, GameType game) {
+        game.phases().forEach(phase -> this.features.ids().forEach(featureId -> {
+            var path = prefix + "." + phase.id() + "." + featureId;
+            config.suggest(path, List.of("{}"));
+            settingsOf(featureId).forEach((setting, values) -> config.suggest(path + "." + setting, values));
+        }));
     }
 
     /** What a feature reads, found by letting it read an empty section, so its settings can be completed before a file uses it. One that can't be made without settings offers none. */
