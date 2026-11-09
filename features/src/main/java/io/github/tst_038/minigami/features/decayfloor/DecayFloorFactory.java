@@ -1,9 +1,13 @@
 package io.github.tst_038.minigami.features.decayfloor;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.bukkit.Material;
 
 /**
@@ -14,21 +18,36 @@ import org.bukkit.Material;
  */
 public final class DecayFloorFactory implements FeatureFactory {
 
+    private static final Setting<Integer> DELAY = Setting.of("delay-ticks", Kind.integer(1, 200),
+            "ticks a block lasts once stood on; 20 is a second");
+    private static final Setting<List<Material>> BLOCKS = Setting.of("blocks", Kind.materials(), "the blocks that decay");
+    private static final Setting<List<Material>> BREAK_BELOW = Setting.of("break-below", Kind.materials(),
+            "blocks also removed right under a decayed one").orElse(List.of());
+    private static final Setting<Boolean> FALL = Setting.of("fall", Kind.bool(), "removed blocks drop away instead of vanishing").orElse(false);
+    private static final Setting<Boolean> LIT = Setting.of("lit", Kind.bool(), "falling blocks show as primed TNT that never explodes").orElse(false);
+    private static final Setting<Integer> RESPAWN_GRACE = Setting.of("respawn-grace-ticks", Kind.integer(0, 1200),
+            "ticks a respawned player's floor is left alone").orElse(0);
+
     @Override
     public String id() {
         return "decay-floor";
     }
 
     @Override
+    public List<Setting<?>> settings() {
+        return List.of(DELAY, BLOCKS, BREAK_BELOW, FALL, LIT, RESPAWN_GRACE);
+    }
+
+    @Override
     public Feature create(ConfigReader config) {
-        var delay = config.integer("delay-ticks", 1, 200);
-        var blocks = new HashSet<>(config.materials("blocks"));
+        return new DecayFloor(config.read(DELAY), blocks(config, BLOCKS), blocks(config, BREAK_BELOW), config.read(FALL), config.read(LIT),
+                config.read(RESPAWN_GRACE));
+    }
+
+    private static Set<Material> blocks(ConfigReader config, Setting<List<Material>> setting) {
+        var blocks = new HashSet<>(config.read(setting));
         blocks.stream().filter(block -> !block.isBlock())
-                .forEach(block -> config.problem("blocks", "'" + block.getKey().getKey() + "' is not a block"));
-        var below = config.has("break-below") ? new HashSet<>(config.materials("break-below")) : new HashSet<Material>();
-        below.stream().filter(block -> !block.isBlock())
-                .forEach(block -> config.problem("break-below", "'" + block.getKey().getKey() + "' is not a block"));
-        return new DecayFloor(delay, blocks, below, config.has("fall") && config.bool("fall"), config.has("lit") && config.bool("lit"),
-                config.has("respawn-grace-ticks") ? config.integer("respawn-grace-ticks", 0, 1200) : 0);
+                .forEach(block -> config.problem(setting.key(), "'" + block.getKey().getKey() + "' is not a block"));
+        return blocks;
     }
 }
