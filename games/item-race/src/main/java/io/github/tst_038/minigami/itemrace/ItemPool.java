@@ -1,11 +1,14 @@
 package io.github.tst_038.minigami.itemrace;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -89,28 +92,36 @@ final class ItemPool {
         return entries.size();
     }
 
+    private static final Setting<String> ITEM = Setting.of("item", Kind.text(), "the item, such as diamond_block");
+    private static final Setting<Integer> WEIGHT = Setting.of("weight", Kind.integer(1, MAX_WEIGHT), "how many times likelier than a weight of 1").orElse(1);
+    private static final Setting<Map<String, List<ConfigReader>>> ITEMS = Setting.of("items",
+            Kind.each("dimension", ItemPool::dimensionIds, Kind.sections(List.of(ITEM, WEIGHT), "item")),
+            "the items to ask for in each dimension, each an item name or an item with its weight");
+    private static final Setting<List<String>> DIMENSIONS = Setting.of("dimensions", Kind.strings(), "the dimensions to choose items from")
+            .orElse(List.of("overworld", "nether"));
+    private static final Setting<List<Material>> EXCLUDE = Setting.of("exclude", Kind.materials(), "items that may not be chosen").orElse(List.of());
+
+    /** The settings {@link #read} reads. */
+    static final List<Setting<?>> SETTINGS = List.of(ITEMS, DIMENSIONS, EXCLUDE);
+
     /** Empty when something is wrong, in which case the problems are on the reader. */
     static Optional<ItemPool> read(ConfigReader config, Predicate<Material> isItem) {
         var allowed = readDimensions(config);
-        var excluded = new HashSet<Material>();
-        if (config.has("exclude")) {
-            excluded.addAll(config.materials("exclude"));
-        }
+        var excluded = new HashSet<>(config.read(EXCLUDE));
         var entries = new ArrayList<Entry>();
-        var items = config.section("items");
-        for (String key : items.keys()) {
+        config.read(ITEMS).forEach((key, items) -> {
             var dimension = dimension(key);
             if (dimension == null) {
-                items.problem(key, "unknown dimension, must be one of: " + dimensionNames());
-                continue;
+                config.problem("items." + key, "unknown dimension, must be one of: " + dimensionNames());
+                return;
             }
-            for (ConfigReader item : items.sections(key, "item")) {
+            for (ConfigReader item : items) {
                 var entry = readEntry(item, isItem);
                 if (entry != null && allowed.contains(dimension) && !excluded.contains(entry.item())) {
                     entries.add(entry);
                 }
             }
-        }
+        });
         if (entries.isEmpty()) {
             config.problem("items", "no item is left to choose from after the dimensions and exclude are applied");
             return Optional.empty();
@@ -119,11 +130,8 @@ final class ItemPool {
     }
 
     private static Set<Dimension> readDimensions(ConfigReader config) {
-        if (!config.has("dimensions")) {
-            return EnumSet.of(Dimension.OVERWORLD, Dimension.NETHER);
-        }
         var allowed = EnumSet.noneOf(Dimension.class);
-        for (String name : config.strings("dimensions")) {
+        for (String name : config.read(DIMENSIONS)) {
             var dimension = dimension(name);
             if (dimension == null) {
                 config.problem("dimensions", "unknown dimension '" + name + "', must be one of: " + dimensionNames());
@@ -135,8 +143,8 @@ final class ItemPool {
     }
 
     private static Entry readEntry(ConfigReader config, Predicate<Material> isItem) {
-        var name = config.string("item");
-        int weight = config.has("weight") ? config.integer("weight", 1, MAX_WEIGHT) : 1;
+        var name = config.read(ITEM);
+        int weight = config.read(WEIGHT);
         if (name.isEmpty()) {
             return null;
         }
@@ -152,6 +160,10 @@ final class ItemPool {
         return new Entry(material, weight);
     }
 
+    private static List<String> dimensionIds() {
+        return java.util.Arrays.stream(Dimension.values()).map(d -> d.name().toLowerCase(Locale.ROOT)).toList();
+    }
+
     private static Dimension dimension(String name) {
         try {
             return Dimension.valueOf(name.toUpperCase(Locale.ROOT));
@@ -161,6 +173,6 @@ final class ItemPool {
     }
 
     private static String dimensionNames() {
-        return String.join(", ", java.util.Arrays.stream(Dimension.values()).map(d -> d.name().toLowerCase(Locale.ROOT)).toList());
+        return String.join(", ", dimensionIds());
     }
 }
