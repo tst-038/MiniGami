@@ -92,7 +92,7 @@ public final class PlayerSessions implements Listener {
                 if (park != null && online != null) {
                     park.accept(online);
                     // A teleport while quitting is lost, so they are parked again on their next join.
-                    if (quitting.contains(id)) {
+                    if (leaving(online)) {
                         parkOnJoin.add(id);
                     }
                 }
@@ -116,12 +116,17 @@ public final class PlayerSessions implements Listener {
             var online = plugin.getServer().getPlayer(id);
             if (online != null) {
                 restore(online, saved);
-                if (quitting.contains(id)) {
+                if (leaving(online)) {
                     homes.put(id, saved.location());
                 }
                 releaseState(id);
             }
         };
+    }
+
+    /** Quitting, or already disconnected (a dropped connection quits only after its timeout), so a teleport would be lost. */
+    private boolean leaving(Player player) {
+        return quitting.contains(player.getUniqueId()) || !player.isConnected();
     }
 
     /**
@@ -216,7 +221,6 @@ public final class PlayerSessions implements Listener {
     // Around the matches' own handler (normal priority), so their restore knows the player is quitting.
     @EventHandler(priority = EventPriority.LOW)
     public void onQuitStart(PlayerQuitEvent event) {
-        homes.remove(event.getPlayer().getUniqueId());
         quitting.add(event.getPlayer().getUniqueId());
     }
 
