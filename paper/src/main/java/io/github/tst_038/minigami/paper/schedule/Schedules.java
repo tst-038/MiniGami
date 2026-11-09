@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.paper.match.LiveMatch;
 import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.night.Nights;
+import io.github.tst_038.minigami.paper.click.Clicks;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -216,7 +217,11 @@ public final class Schedules {
         long seconds = Math.max(0, (Duration.between(clock.instant(), call.closesAt).toMillis() + 999) / 1000);
         messages.send(Audience.audience(couldJoin()), key, Placeholder.parsed("name", call.schedule.name()), Placeholder.parsed("game", call.variant.name()),
                 Formatter.number("seconds", seconds), Formatter.number("needed", call.variant.minPlayers()),
-                Placeholder.styling("join", ClickEvent.runCommand("/mg schedule join")));
+                Placeholder.styling("join", Clicks.by(player -> {
+                    if (player.hasPermission(JOIN_PERMISSION)) {
+                        join(player, Optional.empty());
+                    }
+                })));
     }
 
     private void tickCalls() {

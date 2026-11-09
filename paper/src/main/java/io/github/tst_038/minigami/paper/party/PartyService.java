@@ -5,6 +5,7 @@ import io.github.tst_038.minigami.core.party.Parties;
 import io.github.tst_038.minigami.core.party.Parties.Party;
 import io.github.tst_038.minigami.core.party.Parties.Result;
 import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.paper.click.Clicks;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.util.Collection;
 import java.util.Collections;
@@ -119,7 +120,7 @@ public final class PartyService {
         }
         messages.send(leader, "party.invited", Placeholder.unparsed("player", target.getName()));
         messages.send(target, "party.invite", Placeholder.unparsed("leader", leader.getName()),
-                Placeholder.styling("accept", ClickEvent.runCommand("/mg party accept " + leader.getName())));
+                Placeholder.styling("accept", Clicks.by(invitee -> accept(invitee, leader.getName()))));
     }
 
     /** @param leaderName who invited the player, as typed */

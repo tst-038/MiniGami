@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
+import io.github.tst_038.minigami.paper.click.Clicks;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -207,7 +208,7 @@ public final class PublicMatches {
                 var players = running.running().stream().filter(match -> match.variant().key().equals(variant.key()))
                         .mapToInt(match -> match.members().size()).sum();
                 messages.send(sender, variant.id().isEmpty() ? "list.game" : "list.variant", Placeholder.parsed("game", variant.name()),
-                        Formatter.number("players", players), Placeholder.styling("join", ClickEvent.runCommand("/mg join " + variant.key())));
+                        Formatter.number("players", players), Placeholder.styling("join", Clicks.by(player -> join(player, game.id(), variant.id()))));
             }
         }
     }

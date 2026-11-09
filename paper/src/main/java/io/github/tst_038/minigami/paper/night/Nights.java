@@ -18,6 +18,7 @@ import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
+import io.github.tst_038.minigami.paper.click.Clicks;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -164,7 +165,11 @@ public final class Nights implements Listener {
         var name = Placeholder.parsed("name", template.get().name());
         messages.send(host, "night.opened", name);
         var mayJoin = plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(PlayPermissions.NIGHTS));
-        messages.send(mayJoin, "night.open", name, Placeholder.styling("join", ClickEvent.runCommand("/mg night join")));
+        messages.send(mayJoin, "night.open", name, Placeholder.styling("join", Clicks.by(player -> {
+            if (player.hasPermission(PlayPermissions.NIGHTS)) {
+                join(player);
+            }
+        })));
     }
 
     /**
