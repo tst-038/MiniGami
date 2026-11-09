@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.shiftingmaze;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -100,6 +101,11 @@ public final class ShiftingMaze implements GameType {
     @Override
     public WinCondition winCondition() {
         return new Escape(MINOTAUR);
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return MazeSettings.ALL;
     }
 
     @Override
