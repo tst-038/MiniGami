@@ -2,6 +2,8 @@ package io.github.tst_038.minigami.thewall;
 
 import io.github.tst_038.minigami.api.border.ClosingBorder;
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import org.bukkit.GameMode;
 import java.util.Optional;
+import org.bukkit.configuration.MemoryConfiguration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 
 /**
@@ -39,16 +42,31 @@ public final class TheWall implements GameType {
     static final String WALLS = "wall";
     static final String QUARTER = "quarter";
 
+    private static final ConfigReader NO_BORDER = ConfigReader.of("", new MemoryConfiguration());
+    private static final Setting<Integer> PREPARE_SECONDS = Setting.of("prepare-seconds", Kind.integer(10, 7200),
+            "how long teams prepare behind their walls before the walls drop").orElse(900);
+    // The border's own keys, as ClosingBorder.Settings reads them.
+    private static final Setting<ConfigReader> BORDER = Setting.of("border", Kind.section(List.of(
+            Setting.of("end-size", Kind.integer(1, 10000), "blocks across the widest side once closed").orElse(20),
+            Setting.of("shrink-seconds", Kind.integer(1, 7200), "how long the border takes to close").orElse(300),
+            Setting.of("damage", Kind.integer(0, 40), "damage per second outside the border").orElse(1))),
+            "closes the arena's border region in on its centre during the fight; left out, there is none").orElse(NO_BORDER);
+
     private final int prepareSeconds;
     private final Optional<ClosingBorder.Settings> border;
 
     public TheWall() {
-        this(900, Optional.empty());
+        this(ConfigReader.of("", new MemoryConfiguration()));
     }
 
-    private TheWall(int prepareSeconds, Optional<ClosingBorder.Settings> border) {
-        this.prepareSeconds = prepareSeconds;
-        this.border = border;
+    private TheWall(ConfigReader config) {
+        this.prepareSeconds = config.read(PREPARE_SECONDS);
+        this.border = config.has(BORDER.key()) ? Optional.of(ClosingBorder.Settings.read(config.read(BORDER))) : Optional.empty();
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return List.of(PREPARE_SECONDS, BORDER);
     }
 
     @Override
@@ -115,8 +133,6 @@ public final class TheWall implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
-        var closing = config.has("border") ? Optional.of(ClosingBorder.Settings.read(config.section("border"))) : border;
-        return new TheWall(                config.has("prepare-seconds") ? config.integer("prepare-seconds", 10, 7200) : prepareSeconds,
-                closing);
+        return new TheWall(config);
     }
 }
