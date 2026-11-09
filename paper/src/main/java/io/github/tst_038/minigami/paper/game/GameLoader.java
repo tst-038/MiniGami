@@ -88,6 +88,7 @@ public final class GameLoader {
 
     private final IdRegistry<GameType> gametypes;
     private final IdRegistry<FeatureFactory> features;
+    private final Map<String, Map<String, List<String>>> featureSettings = new java.util.concurrent.ConcurrentHashMap<>();
     private final IdRegistry<StatGroup> statGroups;
     private final List<Check<Hosting>> checks;
 
@@ -231,7 +232,11 @@ public final class GameLoader {
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         // Offer every feature in every phase for completion, also those the file doesn't use yet.
         if (game != null) {
-            game.phases().forEach(phase -> this.features.ids().forEach(featureId -> config.suggest("features." + phase.id() + "." + featureId, List.of("{}"))));
+            game.phases().forEach(phase -> this.features.ids().forEach(featureId -> {
+                var path = "features." + phase.id() + "." + featureId;
+                config.suggest(path, List.of("{}"));
+                settingsOf(featureId).forEach((setting, values) -> config.suggest(path + "." + setting, values));
+            }));
         }
         var stats = statGroups(config);
         var changesBlocks = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::changesBlocks);
@@ -263,6 +268,19 @@ public final class GameLoader {
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
         return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
                 features, stats, hud, config.has("advancements") && config.bool("advancements"));
+    }
+
+    /** What a feature reads, found by letting it read an empty section, so its settings can be completed before a file uses it. One that can't be made without settings offers none. */
+    private Map<String, List<String>> settingsOf(String featureId) {
+        return featureSettings.computeIfAbsent(featureId, id -> {
+            try {
+                var reader = ConfigReader.of("", new org.bukkit.configuration.MemoryConfiguration());
+                features.find(id).orElseThrow().create(reader);
+                return reader.askedKeys();
+            } catch (RuntimeException e) {
+                return Map.of();
+            }
+        });
     }
 
     /** Every stat a game or stat group keeps. */

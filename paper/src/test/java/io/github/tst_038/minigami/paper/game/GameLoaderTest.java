@@ -531,7 +531,8 @@ class GameLoaderTest {
                 """);
 
         assertEquals(List.of(), problems(game));
-        assertEquals(List.of("1,2", "1,5"), read);
+        // Besides the two real reads, the loader lets the feature read an empty section once to learn its settings.
+        assertEquals(List.of("1,2", "1,5"), read.stream().filter(values -> !values.equals("0,0")).toList());
         var fall = game.entries().find("fall").orElseThrow();
         var changed = fall.variants().get("changed");
         assertEquals(1, changed.minPlayers());
