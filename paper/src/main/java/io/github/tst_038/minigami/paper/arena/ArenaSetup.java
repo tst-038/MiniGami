@@ -96,6 +96,17 @@ public final class ArenaSetup {
         region(player, id, name).ifPresent(region -> maps.saveRegionSchematic(player, arenas.get().find(id).orElseThrow(), name));
     }
 
+    /** Loads the region into the player's WorldEdit selection, doing nothing else. */
+    public void selectRegion(Player player, String id, String name) {
+        region(player, id, name).ifPresent(region -> maps.select(player, arenas.get().find(id).orElseThrow(), region));
+    }
+
+    /** Loads the arena's saved map box into the player's WorldEdit selection. */
+    public void selectMap(Player player, String id) {
+        find(player, id).ifPresent(arena -> arena.map().ifPresentOrElse(map -> maps.select(player, arena, map),
+                () -> messages.send(player, "arena.map.none", Placeholder.unparsed("arena", id))));
+    }
+
     /** Puts the region's schematic on the player's WorldEdit clipboard. */
     public void loadRegionSchematic(Player player, String id, String name) {
         region(player, id, name).ifPresent(region -> {

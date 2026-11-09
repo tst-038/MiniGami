@@ -242,6 +242,14 @@ public final class ArenaMaps {
         return plugin.getDataPath().resolve("arenas").resolve(arena.id()).resolve("map.schem");
     }
 
+    /** Makes the box the player's WorldEdit selection; they must be in the arena's world. */
+    void select(Player player, Arena arena, Region box) {
+        if (canSelect(player, arena)) {
+            worldEdit.get().select(player, box);
+            messages.send(player, "arena.region.selected", Placeholder.unparsed("region", box.id()));
+        }
+    }
+
     /** Puts the region's schematic on the player's WorldEdit clipboard. */
     void loadRegionSchematic(Player player, Arena arena, String region) {
         onServerThread(worldEdit.get().load(player, regionFile(arena, region)), problem -> {

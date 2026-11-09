@@ -113,6 +113,15 @@ final class WorldEditMaps {
         }
     }
 
+    /** Makes the box the player's WorldEdit selection, so it needn't be selected by hand again. */
+    void select(Player player, Region box) {
+        var world = BukkitAdapter.adapt(box.world());
+        var session = WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player));
+        session.setRegionSelector(world, new com.sk89q.worldedit.regions.selector.CuboidRegionSelector(world,
+                BlockVector3.at(box.minX(), box.minY(), box.minZ()), BlockVector3.at(box.maxX(), box.maxY(), box.maxZ())));
+        session.dispatchCUISelection(BukkitAdapter.adapt(player));
+    }
+
     private static Region box(String id, Player player, com.sk89q.worldedit.regions.Region selection) {
         var min = selection.getMinimumPoint();
         var max = selection.getMaximumPoint();
