@@ -1,8 +1,6 @@
 package io.github.tst_038.minigami.paper.info;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
-import io.github.tst_038.minigami.api.config.ConfigReader;
-import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -22,12 +20,10 @@ import io.github.tst_038.minigami.paper.schedule.Schedule;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -40,7 +36,6 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
@@ -57,7 +52,7 @@ public final class ConfigInfo {
             SortedMap<String, YamlConfiguration> schedules, List<ConfigProblem> problems) {
     }
 
-    /** A setting a game or feature reads; required ones have no default. The description is empty for settings found by probing. */
+    /** A setting a game or feature declares; required ones have no default. Keys inside a setting have no description of their own. */
     private record SettingLine(String key, List<String> values, boolean required, String description) {
     }
 
@@ -283,7 +278,7 @@ public final class ConfigInfo {
         }
         game.regionPerTeam().ifPresent(region -> messages.send(sender, "info.gametype-region-per-team", Placeholder.unparsed("region", region)));
         game.regionGroups().forEach(group -> messages.send(sender, "info.gametype-region-group", Placeholder.unparsed("group", group)));
-        settings(sender, game.settings().isEmpty() ? settingsRead(game::configure) : declared(game.settings()));
+        settings(sender, declared(game.settings()));
         usedBy(sender, gamesOfType(id));
     }
 
@@ -294,7 +289,7 @@ public final class ConfigInfo {
             return;
         }
         messages.send(sender, "info.feature", Placeholder.unparsed("id", id));
-        settings(sender, factory.get().settings().isEmpty() ? settingsRead(factory.get()::create) : declared(factory.get().settings()));
+        settings(sender, declared(factory.get().settings()));
         usedBy(sender, usesOfFeature(id));
     }
 
@@ -426,30 +421,6 @@ public final class ConfigInfo {
             return new SettingLine(entry.getKey(), entry.getValue(), top.map(Setting::required).orElse(false),
                     top.map(Setting::description).orElse(""));
         }).toList();
-    }
-
-    /**
-     * shortcut: probing misses conditional keys and shows nothing for what can't be made without settings; remove once
-     * every game type and feature declares its settings.
-     *
-     * <p>What a game or feature reads, found by letting it read an empty section: every key it asks for,
-     * and as required the ones it reports missing. One that can't be made without settings shows none.
-     */
-    private static List<SettingLine> settingsRead(Consumer<ConfigReader> read) {
-        var reader = ConfigReader.of("", new MemoryConfiguration());
-        try {
-            read.accept(reader);
-        } catch (RuntimeException e) {
-            return List.of();
-        }
-        var required = new HashSet<String>();
-        try {
-            reader.check();
-        } catch (InvalidConfigException e) {
-            e.problems().forEach(problem -> required.add(problem.key()));
-        }
-        return new TreeMap<>(reader.askedKeys()).entrySet().stream()
-                .map(entry -> new SettingLine(entry.getKey(), entry.getValue(), required.contains(entry.getKey()), "")).toList();
     }
 
     /** A value as YAML would write it inline, so it can be pasted back into {@code set}. */
