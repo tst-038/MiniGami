@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.buildbattle;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.GameMode;
+import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * Every team builds on a theme in its own plot, then everyone scores the other teams' builds; the
@@ -26,18 +29,28 @@ public final class BuildBattle implements GameType {
 
     static final String PLOT = "plot";
 
+    private static final Setting<Integer> BUILD_SECONDS = Setting.of("build-seconds", Kind.integer(10, 3600), "how long the teams build").orElse(300);
+    private static final Setting<Integer> VOTE_SECONDS = Setting.of("vote-seconds", Kind.integer(3, 120), "how long each build is shown to be scored").orElse(15);
+    private static final Setting<List<String>> THEMES = Setting.of("themes", Kind.strings(), "themes to build on, one picked at random; none is a free build")
+            .orElse(List.of());
+
     private final int buildSeconds;
     private final int voteSeconds;
     private final List<String> themes;
 
     public BuildBattle() {
-        this(300, 15, List.of());
+        this(ConfigReader.of("", new MemoryConfiguration()));
     }
 
-    private BuildBattle(int buildSeconds, int voteSeconds, List<String> themes) {
-        this.buildSeconds = buildSeconds;
-        this.voteSeconds = voteSeconds;
-        this.themes = List.copyOf(themes);
+    private BuildBattle(ConfigReader config) {
+        this.buildSeconds = config.read(BUILD_SECONDS);
+        this.voteSeconds = config.read(VOTE_SECONDS);
+        this.themes = List.copyOf(config.read(THEMES));
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return List.of(BUILD_SECONDS, VOTE_SECONDS, THEMES);
     }
 
     @Override
@@ -83,9 +96,6 @@ public final class BuildBattle implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
-        return new BuildBattle(
-                config.has("build-seconds") ? config.integer("build-seconds", 10, 3600) : buildSeconds,
-                config.has("vote-seconds") ? config.integer("vote-seconds", 3, 120) : voteSeconds,
-                config.has("themes") ? config.strings("themes") : themes);
+        return new BuildBattle(config);
     }
 }
