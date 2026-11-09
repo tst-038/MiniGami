@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.game;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -281,12 +282,18 @@ public final class GameLoader {
         }));
     }
 
-    /** What a feature reads, found by letting it read an empty section, so its settings can be completed before a file uses it. One that can't be made without settings offers none. */
+    /** The keys a feature declares, with the values to offer, so its settings can be completed before a file uses it. */
     private Map<String, List<String>> settingsOf(String featureId) {
         return featureSettings.computeIfAbsent(featureId, id -> {
+            var factory = features.find(id).orElseThrow();
+            if (!factory.settings().isEmpty()) {
+                return Setting.keys(factory.settings(), true);
+            }
+            // shortcut: features that don't declare their settings yet are probed by reading an empty section, which misses
+            // conditional keys and fails for features that can't be made without settings; remove once all declare them.
             try {
                 var reader = ConfigReader.of("", new org.bukkit.configuration.MemoryConfiguration());
-                features.find(id).orElseThrow().create(reader);
+                factory.create(reader);
                 return reader.askedKeys();
             } catch (RuntimeException e) {
                 return Map.of();

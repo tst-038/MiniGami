@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.info;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
@@ -56,8 +57,8 @@ public final class ConfigInfo {
             SortedMap<String, YamlConfiguration> schedules, List<ConfigProblem> problems) {
     }
 
-    /** A setting a game or feature reads; required ones have no default. */
-    private record Setting(String key, List<String> values, boolean required) {
+    /** A setting a game or feature reads; required ones have no default. The description is empty for settings found by probing. */
+    private record SettingLine(String key, List<String> values, boolean required, String description) {
     }
 
     private final Messages messages;
@@ -282,7 +283,7 @@ public final class ConfigInfo {
         }
         game.regionPerTeam().ifPresent(region -> messages.send(sender, "info.gametype-region-per-team", Placeholder.unparsed("region", region)));
         game.regionGroups().forEach(group -> messages.send(sender, "info.gametype-region-group", Placeholder.unparsed("group", group)));
-        settings(sender, settingsRead(game::configure));
+        settings(sender, game.settings().isEmpty() ? settingsRead(game::configure) : declared(game.settings()));
         usedBy(sender, gamesOfType(id));
     }
 
@@ -293,7 +294,7 @@ public final class ConfigInfo {
             return;
         }
         messages.send(sender, "info.feature", Placeholder.unparsed("id", id));
-        settings(sender, settingsRead(factory.get()::create));
+        settings(sender, factory.get().settings().isEmpty() ? settingsRead(factory.get()::create) : declared(factory.get().settings()));
         usedBy(sender, usesOfFeature(id));
     }
 
@@ -335,14 +336,14 @@ public final class ConfigInfo {
                 .forEach(problem -> messages.send(sender, "reload.problem", Placeholder.unparsed("problem", problem.toString())));
     }
 
-    private void settings(CommandSender sender, List<Setting> settings) {
+    private void settings(CommandSender sender, List<SettingLine> settings) {
         if (settings.isEmpty()) {
             messages.send(sender, "info.no-settings");
         }
         for (var setting : settings) {
             var values = setting.values().isEmpty() ? messages.render("info.any-value") : Component.text(String.join(" | ", setting.values()));
             messages.send(sender, setting.required() ? "info.setting-required" : "info.setting", Placeholder.unparsed("key", setting.key()),
-                    Placeholder.component("values", values));
+                    Placeholder.component("values", values), Placeholder.unparsed("description", setting.description()));
         }
     }
 
@@ -418,11 +419,23 @@ public final class ConfigInfo {
         return Placeholder.styling("info", ClickEvent.runCommand(command));
     }
 
+    /** The keys a game or feature declares, dynamic ones as patterns such as {@code <block>}. */
+    private static List<SettingLine> declared(List<Setting<?>> settings) {
+        return Setting.keys(settings, false).entrySet().stream().map(entry -> {
+            var top = settings.stream().filter(setting -> setting.key().equals(entry.getKey())).findFirst();
+            return new SettingLine(entry.getKey(), entry.getValue(), top.map(Setting::required).orElse(false),
+                    top.map(Setting::description).orElse(""));
+        }).toList();
+    }
+
     /**
-     * What a game or feature reads, found by letting it read an empty section: every key it asks for,
+     * shortcut: probing misses conditional keys and shows nothing for what can't be made without settings; remove once
+     * every game type and feature declares its settings.
+     *
+     * <p>What a game or feature reads, found by letting it read an empty section: every key it asks for,
      * and as required the ones it reports missing. One that can't be made without settings shows none.
      */
-    private static List<Setting> settingsRead(Consumer<ConfigReader> read) {
+    private static List<SettingLine> settingsRead(Consumer<ConfigReader> read) {
         var reader = ConfigReader.of("", new MemoryConfiguration());
         try {
             read.accept(reader);
@@ -436,7 +449,7 @@ public final class ConfigInfo {
             e.problems().forEach(problem -> required.add(problem.key()));
         }
         return new TreeMap<>(reader.askedKeys()).entrySet().stream()
-                .map(entry -> new Setting(entry.getKey(), entry.getValue(), required.contains(entry.getKey()))).toList();
+                .map(entry -> new SettingLine(entry.getKey(), entry.getValue(), required.contains(entry.getKey()), "")).toList();
     }
 
     /** A value as YAML would write it inline, so it can be pasted back into {@code set}. */

@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.game;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.stat.Stat;
@@ -45,6 +46,14 @@ public interface GameType {
      */
     default GameType configure(ConfigReader config) {
         return this;
+    }
+
+    /**
+     * Every key {@link #configure} reads, so commands can complete and explain them without reading a file.
+     * Empty for a game type that doesn't declare its settings yet.
+     */
+    default List<Setting<?>> settings() {
+        return List.of();
     }
 
     /**

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.List;
 import java.util.Optional;
@@ -179,5 +181,56 @@ class ConfigReaderTest {
         assertEquals(Optional.empty(), reader.range("e", 0, 100));
         assertEquals(Optional.empty(), reader.range("f", 0, 10));
         assertEquals(3, problems(reader).size());
+    }
+
+    private static final Setting<Integer> DELAY = Setting.of("delay", Kind.integer(1, 20), "ticks to wait");
+    private static final Setting<Boolean> FALL = Setting.of("fall", Kind.bool(), "blocks fall").orElse(false);
+    private static final Setting<java.util.Map<String, Integer>> LEVELS = Setting.of("levels", Kind.each("effect", List::of, Kind.integer(1, 5)), "per effect");
+
+    @Test
+    void readsThroughSettingsWithTheirFallbacks() throws Exception {
+        var reader = read("delay: 4\nlevels: { speed: 2 }");
+
+        assertEquals(4, reader.read(DELAY));
+        assertEquals(false, reader.read(FALL));
+        assertEquals(java.util.Map.of("speed", 2), reader.read(LEVELS));
+        assertEquals(List.of("true", "false"), reader.askedKeys().get("fall"));
+        assertDoesNotThrow(reader::check);
+    }
+
+    @Test
+    void aRequiredSettingThatIsMissingIsAProblem() throws Exception {
+        var reader = read("");
+
+        reader.read(DELAY);
+
+        assertEquals(List.of("modes/test.yml: delay: is missing"), problems(reader));
+    }
+
+    private static ConfigReader strict(String yaml) throws InvalidConfigurationException {
+        var config = new YamlConfiguration();
+        config.loadFromString(yaml);
+        return ConfigReader.strict("modes/test.yml", config, List.of(DELAY, FALL, LEVELS));
+    }
+
+    @Test
+    void strictReaderAllowsDeclaredKeysAndAnyIdOfDynamicOnes() throws Exception {
+        var reader = strict("delay: 4\nfall: true\nlevels: { speed: 2, jump: 1 }");
+
+        assertDoesNotThrow(() -> {
+            reader.read(DELAY);
+            reader.has("fall");
+            reader.read(FALL);
+            reader.read(LEVELS);
+        });
+    }
+
+    @Test
+    void strictReaderFailsOnAnUndeclaredKey() throws Exception {
+        var reader = strict("delay: 4\nradius: 3");
+
+        assertThrows(IllegalStateException.class, () -> reader.integer("radius", 0, 10));
+        assertThrows(IllegalStateException.class, () -> reader.read(Setting.of("radius", Kind.integer(0, 10), "")));
+        assertThrows(IllegalStateException.class, () -> reader.section("levels").section("speed").bool("x"));
     }
 }

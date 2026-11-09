@@ -478,8 +478,8 @@ info:
   phase-untimed: "<gray> - <white>%phase%</white> until it ends"
   feature: "%prefix%<gold>%id%</gold><gray>, set per phase under <white>features.%phase%.%id%</white>:"
   # %key%, %values%: what it can be
-  setting: "<gray> - <white>%key%</white>: %values%"
-  setting-required: "<gray> - <white>%key%</white> <red>(required)</red>: %values%"
+  setting: "<gray> - <white>%key%</white>: %values% <dark_gray>%description%"
+  setting-required: "<gray> - <white>%key%</white> <red>(required)</red>: %values% <dark_gray>%description%"
   any-value: "<dark_gray>any value"
   no-settings: "<gray> No settings of its own."
   # %games%: clickable

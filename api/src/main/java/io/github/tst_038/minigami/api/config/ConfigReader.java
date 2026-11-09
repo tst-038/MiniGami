@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.config;
 
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +46,25 @@ public final class ConfigReader {
 
     /** @param file the file's name in problem messages, e.g. {@code games/spleef.yml} */
     public static ConfigReader of(String file, ConfigurationSection section) {
-        return new ConfigReader(new Shared(file), "", section);
+        return new ConfigReader(new Shared(file, null), "", section);
+    }
+
+    /**
+     * For tests: a reader that throws as soon as a key is asked for that isn't among the declared settings, so a
+     * component's {@code settings()} can't miss a key it reads. Dynamic keys match any id.
+     */
+    public static ConfigReader strict(String file, ConfigurationSection section, List<Setting<?>> declared) {
+        var patterns = Setting.keys(declared, false).keySet().stream().map(key -> key.split("\\.")).toList();
+        return new ConfigReader(new Shared(file, patterns), "", section);
+    }
+
+    /** The setting's value, or its fallback when the key is left out; a required one that is missing is a problem. */
+    public <T> T read(Setting<T> setting) {
+        if (setting.fallback().isPresent() && !section.contains(setting.key())) {
+            suggest(setting.key(), setting.kind().values());
+            return setting.fallback().get();
+        }
+        return setting.kind().read(this, setting.key());
     }
 
     public boolean has(String key) {
@@ -260,6 +279,9 @@ public final class ConfigReader {
 
     /** Values a command may offer for this key, such as the games a {@code game} key can name. */
     public void suggest(String key, Collection<String> values) {
+        if (shared.declared != null && shared.declared.stream().noneMatch(pattern -> matches(pattern, childPath(key)))) {
+            throw new IllegalStateException("'" + childPath(key) + "' is read but not declared in the settings");
+        }
         shared.asked.computeIfAbsent(childPath(key), path -> new LinkedHashSet<>()).addAll(values);
     }
 
@@ -308,6 +330,19 @@ public final class ConfigReader {
         return path.isEmpty() ? key : path + "." + key;
     }
 
+    private static boolean matches(String[] pattern, String path) {
+        var parts = path.split("\\.");
+        if (parts.length != pattern.length) {
+            return false;
+        }
+        for (int i = 0; i < parts.length; i++) {
+            if (!pattern[i].startsWith("<") && !pattern[i].equals(parts[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static String configName(Enum<?> constant) {
         return constant.name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
@@ -317,9 +352,12 @@ public final class ConfigReader {
         final List<ConfigProblem> problems = new ArrayList<>();
         final List<ConfigReader> readers = new ArrayList<>();
         final Map<String, Set<String>> asked = new HashMap<>();
+        /** The declared keys split at dots, of a strict reader; null when any key may be read. */
+        final List<String[]> declared;
 
-        Shared(String file) {
+        Shared(String file, List<String[]> declared) {
             this.file = file;
+            this.declared = declared;
         }
     }
 }

@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.api.feature;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Setting;
+import java.util.List;
 
 /** Creates a {@link Feature} from its section in a game's config, e.g. {@code void-kills: { y: 0 }}. */
 public interface FeatureFactory {
@@ -13,4 +15,12 @@ public interface FeatureFactory {
      * the whole file turned out valid.
      */
     Feature create(ConfigReader config);
+
+    /**
+     * Every key {@link #create} reads, so commands can complete and explain them without making the feature.
+     * Empty for a feature that doesn't declare its settings yet.
+     */
+    default List<Setting<?>> settings() {
+        return List.of();
+    }
 }
