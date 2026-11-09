@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.king;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -12,6 +14,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import org.bukkit.GameMode;
+import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * Two teams, each with a King chosen at random and guards for the rest. While their King lives a team's members
@@ -29,14 +32,21 @@ public final class King implements GameType {
     /** Times a player killed the other team's King. */
     static final Stat KING_KILLS = new Stat("king-kills");
 
+    private static final Setting<Integer> FIGHT_SECONDS = Setting.of("fight-seconds", Kind.integer(10, 3600), "how long the fight lasts").orElse(300);
+
     private final int fightSeconds;
 
     public King() {
-        this(300);
+        this(ConfigReader.of("", new MemoryConfiguration()));
     }
 
-    private King(int fightSeconds) {
-        this.fightSeconds = fightSeconds;
+    private King(ConfigReader config) {
+        this.fightSeconds = config.read(FIGHT_SECONDS);
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return List.of(FIGHT_SECONDS);
     }
 
     @Override
@@ -81,6 +91,6 @@ public final class King implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
-        return new King(config.has("fight-seconds") ? config.integer("fight-seconds", 10, 3600) : fightSeconds);
+        return new King(config);
     }
 }
