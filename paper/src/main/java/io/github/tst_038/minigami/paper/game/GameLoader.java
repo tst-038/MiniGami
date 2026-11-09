@@ -233,6 +233,7 @@ public final class GameLoader {
         var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
         // Offer every feature in every phase for completion, also those the file doesn't use yet.
         if (game != null) {
+            Setting.keys(game.settings(), true).forEach(config::suggest);
             suggestFeatures(config, "features", game);
             for (var role : roles) {
                 suggestFeatures(config, "roles." + role.id() + ".features", game);
