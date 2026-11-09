@@ -1,5 +1,5 @@
 # A game: what players join, with /mg join spleef, and see their stats of. The game type is the code it runs.
-# These example games all play in the example arena; spawns are optional (random-spawns: false asks for them): without them players start on random places of the highest floor of its map (/mga arena example map save), or of its region.
+# These example games all play in the example arena; spawns are optional (spawns: { mode: arena } asks for them): without them players start on random places of the highest floor of its map (/mga arena example map save), or of its region.
 # What a game type or feature can be set to: /mga gametype <id> info and /mga feature <id> info.
 # Change a game by command with /mga game <id> set <key> <value>, or edit the file and /mga reload.
 #
@@ -43,7 +43,7 @@ variants:
     name: "<aqua>Spleef Duos"
     min-players: 4
     teams: { size: 2 }
-    team-spawns: spread   # players spread over all spawns instead of a team sharing one
+    spawns: { teams: spread }   # players spread over all spawns instead of a team sharing one
   lives:
     # A fall sends you back to a spawn until your last life is gone.
     name: "<aqua>Spleef <gray>(3 lives)"

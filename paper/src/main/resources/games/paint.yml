@@ -20,8 +20,8 @@ teams: { size: 1 }
 arenas: [example]
 # Play in the region canvas: its schematic (if any) is pasted when the match opens, and spawns, if any, must stand inside it.
 region: canvas
-# Spawns are optional: without them players start on random places of the canvas. random-spawns: false asks for spawns again.
-# random-spawns: true
+# Spawns are optional: without them players start on random places of the canvas. spawns: { mode: arena } asks for spawns again.
+# spawns: { mode: random }   # also ignores the spawns the arena has
 features:
   playing:
     no-hunger: {}

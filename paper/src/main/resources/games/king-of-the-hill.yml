@@ -27,4 +27,4 @@ variants:
     name: "<gold>King of the Hill <gray>(2v2)"
     min-players: 4
     teams: { size: 2 }
-    team-spawns: spread   # players spread over all spawns instead of a team sharing one
+    spawns: { teams: spread }   # players spread over all spawns instead of a team sharing one

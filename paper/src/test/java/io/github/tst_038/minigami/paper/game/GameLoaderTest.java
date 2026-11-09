@@ -753,7 +753,7 @@ class GameLoaderTest {
         var variant = "{gametype: last-standing, min-players: 2, max-players: 8, waiting: arena, arenas: ";
 
         assertEquals(List.of("flat"), arenaIds(load(variant + "[flat]}")));
-        assertEquals(List.of(), arenaIds(load(variant + "[flat], random-spawns: false}")));
+        assertEquals(List.of(), arenaIds(load(variant + "[flat], spawns: { mode: arena }}")));
         // Without a map or region there is no floor to pick from.
         assertEquals(List.of(), arenaIds(load(variant + "[empty]}")));
     }
@@ -765,15 +765,15 @@ class GameLoaderTest {
         var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [spawned]";
 
         assertEquals(1, load(variant + "}").entries().find("fall").orElseThrow().base().arenas().getFirst().spawns().size());
-        assertEquals(0, load(variant + ", random-spawns: true}").entries().find("fall").orElseThrow().base().arenas().getFirst().spawns().size());
+        assertEquals(0, load(variant + ", spawns: { mode: random }}").entries().find("fall").orElseThrow().base().arenas().getFirst().spawns().size());
     }
 
     @Test
     void respawningOnTheHighestFloorNeedsTheRegionTheGamePlaysIn() throws Exception {
-        var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills], respawn: highest-floor";
+        var variant = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills], spawns: { respawn: highest-floor }";
 
         assertEquals(Respawn.HIGHEST_FLOOR, load(variant + ", region: hill}").entries().find("fall").orElseThrow().base().respawn());
-        assertEquals(List.of("games/fall.yml: respawn: highest-floor needs the region the game plays in; set region"), problems(load(variant + "}")));
+        assertEquals(List.of("games/fall.yml: spawns.respawn: highest-floor needs the region the game plays in; set region"), problems(load(variant + "}")));
         assertEquals(Respawn.SPAWNS, load("{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills]}").entries().find("fall").orElseThrow().base().respawn());
     }
 

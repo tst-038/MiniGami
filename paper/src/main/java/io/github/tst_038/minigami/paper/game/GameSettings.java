@@ -43,12 +43,14 @@ final class GameSettings {
     static final Setting<Integer> TEAM_SIZE = Setting.of("size", Kind.integer(1, Integer.MAX_VALUE), "players per team; instead of count");
     static final Setting<ConfigReader> TEAMS = Setting.of("teams", Kind.section(List.of(TEAM_COUNT, TEAM_SIZE)),
             "splits the players into teams, by count or by size");
-    static final Setting<TeamSpawns> TEAM_SPAWNS = Setting.of("team-spawns", Kind.choice(TeamSpawns.class),
+    static final Setting<Optional<SpawnMode>> SPAWN_MODE = Setting.of("mode", Kind.optional(Kind.choice(SpawnMode.class)),
+            "arena: the arena's spawns, which it must have; random: random places of the highest floor of the region or map, whatever spawns the arena has; left out: the arena's, or random if it has none and the game type allows").orElse(Optional.empty());
+    static final Setting<TeamSpawns> TEAM_SPAWNS = Setting.of("teams", Kind.choice(TeamSpawns.class),
             "together: a team shares one spawn; spread: every player takes the next one").orElse(TeamSpawns.TOGETHER);
-    static final Setting<Optional<Boolean>> RANDOM_SPAWNS = Setting.of("random-spawns", Kind.optional(Kind.bool()),
-            "true: players start on random places of the highest floor of the region or map, whatever spawns the arena has; left out: only when it has none, for the game types that do so").orElse(Optional.empty());
     static final Setting<Respawn> RESPAWN = Setting.of("respawn", Kind.choice(Respawn.class),
             "where players come back: their spawns, or the highest floor still standing in region").orElse(Respawn.SPAWNS);
+    static final Setting<ConfigReader> SPAWNS = Setting.of("spawns", Kind.section(List.of(SPAWN_MODE, TEAM_SPAWNS, RESPAWN)),
+            "where players start and come back");
     static final Setting<Integer> RESPAWN_SECONDS = Setting.of("respawn-seconds", Kind.integer(0, 3600),
             "how long a player who died waits to come back; 0: at once").orElse(0);
     static final Setting<List<String>> REGION = Setting.of("region", Kind.stringsOrOne(),
@@ -93,7 +95,7 @@ final class GameSettings {
         var phases = game.map(type -> type.phases().stream().map(Phase::id).toList()).orElse(List.of());
         var perPhase = features(phases);
         var all = new ArrayList<Setting<?>>(List.of(gametype(), NAME, MIN_PLAYERS, MAX_PLAYERS, WAITING, LIVES, NAME_TAGS, messages(), TEAMS,
-                TEAM_SPAWNS, RANDOM_SPAWNS, RESPAWN, RESPAWN_SECONDS, REGION, ARENAS, stats(), ADVANCEMENTS, QUIT, HudSettings.setting(phases),
+                SPAWNS, RESPAWN_SECONDS, REGION, ARENAS, stats(), ADVANCEMENTS, QUIT, HudSettings.setting(phases),
                 Setting.of(ROLES, Kind.each("role", () -> game.map(GameType::roles).orElse(List.of()), Kind.section(RoleSettings.role(perPhase))),
                         "the roles, handed out in this order").orElse(Map.of()),
                 Setting.of(RANKS, Kind.each("rank", () -> game.map(GameType::ranks).orElse(List.of()), Kind.section(RoleSettings.rank(perPhase))),

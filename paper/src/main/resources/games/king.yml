@@ -12,7 +12,7 @@ fight-seconds: 300
 # A fallen member of a team that still has its King comes back after this many seconds.
 respawn-seconds: 5
 teams: { count: 2 }
-team-spawns: spread
+spawns: { teams: spread }
 # One King per team, the rest are guards. Each rank gets its own kit; armor in a kit is worn.
 ranks:
   king:

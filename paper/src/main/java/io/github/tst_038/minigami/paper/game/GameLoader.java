@@ -46,9 +46,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * max-players: 8
  * waiting: arena              # in-place, lobby or arena
  * teams: { count: 2 }         # optional; or { size: 2 }, teams of two
- * team-spawns: spread        # optional; together (the default): a team shares one spawn, or spread: every player takes the next one
- * random-spawns: true        # optional; true written here ignores the arena's spawns; with no spawns set (or left out), players start and respawn on random places of the highest floor of the region or map; on by default for some games
- * respawn: highest-floor      # optional; spawns (the default), or the highest floor still standing in region, for games that break their floor
+ * spawns:                   # optional; where players start and come back
+ *   mode: random             # arena: the arena's spawns, which it must have; random: random places of the highest floor of the region or map, whatever spawns the arena has; left out: the arena's, or random if it has none and the game type allows
+ *   teams: spread            # together (the default): a team shares one spawn, or spread: every player takes the next one
+ *   respawn: highest-floor   # spawns (the default), or the highest floor still standing in region, for games that break their floor
  * respawn-seconds: 5         # optional; how long a player who died waits to come back, at the arena's respawning spot; 0 (the default): at once
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
@@ -243,9 +244,11 @@ public final class GameLoader {
         messages.keySet().stream().filter(knownMessage.negate())
                 .forEach(key -> config.problem(messagesSetting.key() + "." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
-        var teamSpawns = config.read(GameSettings.TEAM_SPAWNS);
-        var forcedRandom = config.read(GameSettings.RANDOM_SPAWNS).orElse(false);
-        var randomSpawns = config.read(GameSettings.RANDOM_SPAWNS).orElse(type.map(GameType::spawnsAnywhere).orElse(false));
+        var spawns = Optional.of(GameSettings.SPAWNS.key()).filter(config::has).map(config::section);
+        var teamSpawns = spawns.map(section -> section.read(GameSettings.TEAM_SPAWNS)).orElse(TeamSpawns.TOGETHER);
+        var spawnMode = spawns.flatMap(section -> section.read(GameSettings.SPAWN_MODE));
+        var forcedRandom = spawnMode.filter(mode -> mode == SpawnMode.RANDOM).isPresent();
+        var randomSpawns = spawnMode.map(mode -> mode == SpawnMode.RANDOM).orElse(type.map(GameType::spawnsAnywhere).orElse(false));
         var roles = roles(config, minPlayers, game, teams);
         // The roles take their players first; only the rest form teams.
         teams.filter(setup -> setup.size() > 0).ifPresent(setup -> {
@@ -265,9 +268,9 @@ public final class GameLoader {
         var changesBlocks = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::changesBlocks);
         var usesLoot = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::usesLootPoints);
         var region = config.read(GameSettings.REGION);
-        var respawn = config.read(GameSettings.RESPAWN);
+        var respawn = spawns.map(section -> section.read(GameSettings.RESPAWN)).orElse(Respawn.SPAWNS);
         if (respawn == Respawn.HIGHEST_FLOOR && region.isEmpty()) {
-            config.problem(GameSettings.RESPAWN.key(), "highest-floor needs the region the game plays in; set region");
+            config.problem(GameSettings.SPAWNS.key() + "." + GameSettings.RESPAWN.key(), "highest-floor needs the region the game plays in; set region");
         }
         var respawnSeconds = config.read(GameSettings.RESPAWN_SECONDS);
         var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles, ranks).flatMap(feature -> feature.regions().stream())).distinct().toList();
@@ -281,7 +284,7 @@ public final class GameLoader {
             // Without the region the check reports it missing; the arena stays whole for that.
             var played = region.stream().map(whole.regions()::get).filter(java.util.Objects::nonNull).toList();
             var inRegion = played.isEmpty() ? whole : whole.within(played);
-            // Written out, random-spawns beats the arena's spawns (made for other games); by default it only stands in for missing ones.
+            // Written out, spawns.mode random beats the arena's spawns (made for other games); by default it only stands in for missing ones.
             var arena = forcedRandom && !inRegion.area().isEmpty() ? inRegion.withoutSpawns() : inRegion;
             var diagnosis = Diagnosis.run(Variant.key(id, variant), arena.id(), new Hosting(arena, game, mostTeams, teams.isPresent(), changesBlocks, featureRegions, !(randomSpawns && !arena.area().isEmpty()) && (game.usesSpawns() || waiting == Waiting.ARENA && arena.waitingSpot().isEmpty()), usesLoot, allFeatures), checks);
             if (diagnosis.isReady()) {
