@@ -53,6 +53,6 @@ class PlotMobsTest {
 
     @Test
     void needsAGameWithRegionsPerTeam() {
-        assertThrows(IllegalStateException.class, () -> new PlotMobs(10).enable(new FakeMatch()));
+        assertThrows(IllegalStateException.class, () -> new PlotMobs(10, true).enable(new FakeMatch()));
     }
 }

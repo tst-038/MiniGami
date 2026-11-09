@@ -17,12 +17,12 @@ class PlotMobsFactoryTest {
     void declaredSettingsCompleteWithoutMakingTheFeature() {
         var keys = Setting.keys(factory.settings(), false);
 
-        assertEquals(List.of("max"), List.copyOf(keys.keySet()));
+        assertEquals(List.of("max", "break-blocks"), List.copyOf(keys.keySet()));
     }
 
     @Test
     void readsOnlyDeclaredKeys() throws Exception {
-        read("{ max: 4 }");
+        read("{ max: 4, break-blocks: false }");
     }
 
     @Test

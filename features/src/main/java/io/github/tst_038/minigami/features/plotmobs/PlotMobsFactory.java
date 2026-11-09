@@ -12,6 +12,8 @@ public final class PlotMobsFactory implements FeatureFactory {
 
     private static final Setting<Integer> MAX = Setting.of("max", Kind.integer(1, 1000), "most mobs a team region may hold").orElse(10);
 
+    private static final Setting<Boolean> BREAK_BLOCKS = Setting.of("break-blocks", Kind.bool(), "whether mobs may break blocks inside their own plot; false keeps a finished build whole").orElse(true);
+
     @Override
     public String id() {
         return "plot-mobs";
@@ -19,11 +21,11 @@ public final class PlotMobsFactory implements FeatureFactory {
 
     @Override
     public List<Setting<?>> settings() {
-        return List.of(MAX);
+        return List.of(MAX, BREAK_BLOCKS);
     }
 
     @Override
     public Feature create(ConfigReader config) {
-        return new PlotMobs(config.read(MAX));
+        return new PlotMobs(config.read(MAX), config.read(BREAK_BLOCKS));
     }
 }

@@ -33,7 +33,7 @@ import org.bukkit.util.Vector;
  *
  * <p>Mobs are found again by a tag they carry rather than remembered, so the rules hold across phases:
  * enable the feature in every phase mobs should stay. They are removed when the phase that ends the match ends.
- * Minecarts and boats are kept in their plot and counted the same way. What a mob breaks, such as a wither's explosions, stays in its own plot. Not covered: what a mob does inside its plot, such as arrows or an enderman taking blocks.
+ * Minecarts and boats are kept in their plot and counted the same way. What a mob breaks, such as a wither's explosions, stays in its own plot, or with {@code break-blocks: false} nothing is broken at all. Not covered: what a mob does inside its plot, such as arrows or an enderman taking blocks.
  */
 public final class PlotMobs implements Feature {
 
@@ -43,9 +43,11 @@ public final class PlotMobs implements Feature {
     private static final double TELL_RANGE = 12;
 
     private final int max;
+    private final boolean breakBlocks;
 
-    public PlotMobs(int max) {
+    public PlotMobs(int max, boolean breakBlocks) {
         this.max = max;
+        this.breakBlocks = breakBlocks;
     }
 
     enum Verdict { ALLOW, NO_PLOT, FULL }
@@ -104,7 +106,9 @@ public final class PlotMobs implements Feature {
         // flies on past the plot, so it counts as its shooter: it may only blow up inside the shooter's plot, and
         // anywhere else it explodes without harming a thing.
         context.on(EntityExplodeEvent.class, event -> {
-            if (event.getEntity() instanceof Mob mob) {
+            if (!breakBlocks && (event.getEntity() instanceof Mob || event.getEntity() instanceof Projectile projectile && projectile.getShooter() instanceof Mob)) {
+                event.blockList().clear();
+            } else if (event.getEntity() instanceof Mob mob) {
                 var home = homeOf(plots, mob).or(() -> plotAt(plots, event.getLocation()));
                 event.blockList().removeIf(block -> !plotAt(plots, block.getLocation()).equals(home));
             } else if (event.getEntity() instanceof Projectile projectile && projectile.getShooter() instanceof Mob shooter) {
@@ -127,7 +131,7 @@ public final class PlotMobs implements Feature {
             }
         });
         context.on(EntityChangeBlockEvent.class, event -> {
-            if (event.getEntity() instanceof Mob mob && !homeOf(plots, mob).or(() -> plotAt(plots, mob.getLocation())).equals(plotAt(plots, event.getBlock().getLocation()))) {
+            if (event.getEntity() instanceof Mob mob && (!breakBlocks || !homeOf(plots, mob).or(() -> plotAt(plots, mob.getLocation())).equals(plotAt(plots, event.getBlock().getLocation())))) {
                 event.setCancelled(true);
             }
         });
