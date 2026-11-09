@@ -29,6 +29,7 @@ import io.github.tst_038.minigami.paper.night.Nights;
 import io.github.tst_038.minigami.paper.schedule.Schedules;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
+import io.github.tst_038.minigami.paper.stats.PlaceholderGuide;
 import io.github.tst_038.minigami.paper.stats.StatsAdmin;
 import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -101,7 +102,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> adminRoot(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor,
-            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mga")
                 .requires(HELPER)
@@ -138,6 +139,10 @@ public final class GamesCommand {
                         .then(Commands.argument("target", StringArgumentType.word()).suggests(suggest(doctor::targets))
                                 .executes(bySender((sender, context) -> doctor.show(sender, string(context, "target"))))))
                 .then(Commands.literal("debug").requires(ADMIN).executes(bySender((sender, context) -> running.debug(sender))))
+                .then(Commands.literal("placeholders")
+                        .executes(bySender((sender, context) -> placeholders.show(sender, Optional.empty())))
+                        .then(Commands.argument("game", StringArgumentType.word()).suggests(suggest(context -> stats.gameIds()))
+                                .executes(bySender((sender, context) -> placeholders.show(sender, Optional.of(string(context, "game")))))))
                 .then(StatsCommands.admin(statsAdmin, stats, messages))
                 .build();
     }

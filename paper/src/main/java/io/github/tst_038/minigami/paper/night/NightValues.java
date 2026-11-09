@@ -18,6 +18,9 @@ import java.util.regex.Pattern;
  */
 public final class NightValues {
 
+    /** Every value, with the standings' places as {@code <n>}. */
+    public static final List<String> NAMES = List.of("name", "game", "games", "current", "points", "place", "team", "top_<n>_name", "top_<n>_points");
+
     private static final Pattern TOP = Pattern.compile("top_([1-9][0-9]*)_(name|points)");
 
     /** One line of the standings. */

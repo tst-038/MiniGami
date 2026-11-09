@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.hud;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,6 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * any thread without touching the match.
  */
 public final class MatchValues {
+
+    /** The values every match has; a game adds its own stats, roles and timers. */
+    public static List<String> builtIn() {
+        return MatchHud.VALUES;
+    }
 
     private final Map<UUID, Map<String, String>> byPlayer = new ConcurrentHashMap<>();
 

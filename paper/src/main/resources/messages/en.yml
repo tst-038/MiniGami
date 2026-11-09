@@ -747,6 +747,19 @@ debug:
   summary: "%prefix%<gray>MiniGami <white>%version%</white>, matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"
   match: "%prefix%<gray>%game% on %arena%: phase <white>%phase%</white>, <white>%members%</white> in match, <white>%alive%</white> alive, tick <white>%tick%</white>"
 
+# /mga placeholders: what PlaceholderAPI text can show. %placeholder% is shown as typed; %values% a comma list.
+placeholders:
+  header: "%prefix%<gold>Placeholders</gold> <gray>for PlaceholderAPI:"
+  line: "<gray> <white>%placeholder%</white> <dark_gray>-</dark_gray> %what%"
+  own: "<gray>your own amount"
+  top: "<gray>the name on a leaderboard place"
+  top-value: "<gray>the amount on a leaderboard place"
+  match: "<gray>your match, with \\<value> one of: <white>%values%</white><gray>; a game adds its own stats, roles and timers"
+  night: "<gray>the game night, with \\<value> one of: <white>%values%</white>"
+  hint: "<gray>/mga placeholders <white>\\<game></white> lists the ones that exist for a game."
+  game-header: "%prefix%<gold>%game%</gold> <gray>variants: <white>%variants%</white><gray>; leave the variant out to add them up:"
+  unknown-game: "%prefix%<red>No game <white>%game%</white><red>."
+
 # /mga doctor: why games can't be played where. Also shown to staff when a join fails, and logged at each load.
 doctor:
   header: "%prefix%<gold>Doctor</gold> <gray>what keeps games out of arenas:"
