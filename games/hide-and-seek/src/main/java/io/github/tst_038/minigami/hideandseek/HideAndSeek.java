@@ -2,6 +2,8 @@ package io.github.tst_038.minigami.hideandseek;
 
 import org.bukkit.GameMode;
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -10,6 +12,7 @@ import io.github.tst_038.minigami.core.win.Survival;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * Hiders get a head start to hide, then the seekers hunt them. A hider who dies is caught and out.
@@ -24,16 +27,24 @@ import java.util.Map;
  */
 public final class HideAndSeek implements GameType {
 
+    private static final Setting<Integer> HIDE_SECONDS = Setting.of("hide-seconds", Kind.integer(5, 600), "head start the hiders get to hide").orElse(30);
+    private static final Setting<Integer> SEEK_SECONDS = Setting.of("seek-seconds", Kind.integer(10, 3600), "how long the seekers hunt").orElse(300);
+
     private final int hideSeconds;
     private final int seekSeconds;
 
     public HideAndSeek() {
-        this(30, 300);
+        this(ConfigReader.of("", new MemoryConfiguration()));
     }
 
-    private HideAndSeek(int hideSeconds, int seekSeconds) {
-        this.hideSeconds = hideSeconds;
-        this.seekSeconds = seekSeconds;
+    private HideAndSeek(ConfigReader config) {
+        this.hideSeconds = config.read(HIDE_SECONDS);
+        this.seekSeconds = config.read(SEEK_SECONDS);
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return List.of(HIDE_SECONDS, SEEK_SECONDS);
     }
 
     @Override
@@ -78,8 +89,6 @@ public final class HideAndSeek implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
-        return new HideAndSeek(
-                config.has("hide-seconds") ? config.integer("hide-seconds", 5, 600) : hideSeconds,
-                config.has("seek-seconds") ? config.integer("seek-seconds", 10, 3600) : seekSeconds);
+        return new HideAndSeek(config);
     }
 }
