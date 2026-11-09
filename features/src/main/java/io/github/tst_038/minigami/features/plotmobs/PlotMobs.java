@@ -15,6 +15,7 @@ import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
@@ -99,11 +100,20 @@ public final class PlotMobs implements Feature {
                 admit.accept(event);
             }
         });
-        // What a mob breaks, such as a wither's explosions or its body, stays in the plot it is in.
+        // What a mob breaks, such as a wither's explosions or its body, stays in the plot it is in. A wither skull
+        // flies on past the plot, so it counts as its shooter: it may only blow up inside the shooter's plot, and
+        // anywhere else it explodes without harming a thing.
         context.on(EntityExplodeEvent.class, event -> {
             if (event.getEntity() instanceof Mob) {
                 var home = plotAt(plots, event.getLocation());
                 event.blockList().removeIf(block -> !plotAt(plots, block.getLocation()).equals(home));
+            } else if (event.getEntity() instanceof Projectile projectile && projectile.getShooter() instanceof Mob shooter) {
+                var home = plotAt(plots, shooter.getLocation());
+                if (home.isEmpty() || !home.equals(plotAt(plots, event.getLocation()))) {
+                    event.setCancelled(true);
+                } else {
+                    event.blockList().removeIf(block -> !plotAt(plots, block.getLocation()).equals(home));
+                }
             }
         });
         context.on(EntityChangeBlockEvent.class, event -> {
