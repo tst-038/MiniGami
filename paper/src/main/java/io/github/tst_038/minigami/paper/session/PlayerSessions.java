@@ -49,11 +49,8 @@ public final class PlayerSessions implements Listener {
     private final Map<UUID, Consumer<Player>> held = new HashMap<>();
     /** Holds on players whose snapshot hasn't been given back yet, released once it has, so also across a restore that waits for the next login. Server thread only. */
     private final Map<UUID, Presence.Claim> stateClaims = new HashMap<>();
-    /** Where players who quit with their state restored belong; read off the server thread at their next login. */
-    private final Map<UUID, PlayerSnapshot.SavedLocation> homes = new ConcurrentHashMap<>();
     /** Players whose quit is being handled: their restore can't be trusted to move them, as the connection is going away. */
     private final Set<UUID> quitting = new HashSet<>();
-    private final Set<UUID> parkOnJoin = new HashSet<>();
 
     /** The loaded worlds, for the login, which runs off the server thread and mustn't ask the server. */
     private final Map<UUID, World> worlds = new ConcurrentHashMap<>();
@@ -91,19 +88,10 @@ public final class PlayerSessions implements Listener {
                 var online = plugin.getServer().getPlayer(id);
                 if (park != null && online != null) {
                     park.accept(online);
-                    // A teleport while quitting is lost, so they are parked again on their next join.
-                    if (leaving(online)) {
-                        parkOnJoin.add(id);
-                    }
                 }
             };
         }
         var snapshot = PlayerSnapshot.capture(player);
-        // A player who came back after quitting a match may have been moved on joining; where they belong is where they were before the match.
-        var home = homes.remove(id);
-        if (home != null) {
-            snapshot = snapshot.withLocation(home);
-        }
         var saved = snapshot;
         active.put(id, saved);
         store.save(id, saved);
@@ -115,9 +103,11 @@ public final class PlayerSessions implements Listener {
             }
             var online = plugin.getServer().getPlayer(id);
             if (online != null) {
-                restore(online, saved);
                 if (leaving(online)) {
-                    homes.put(id, saved.location());
+                    // A teleport now is lost, so the snapshot stays on disk and puts them back where they belong at their next join, even after a restart.
+                    apply(online, saved);
+                } else {
+                    restore(online, saved);
                 }
                 releaseState(id);
             }
@@ -229,18 +219,15 @@ public final class PlayerSessions implements Listener {
         quitting.remove(event.getPlayer().getUniqueId());
     }
 
-    /** Players who quit, or whose state is waiting on disk, log in where they belong. */
+    /** Players whose state is waiting on disk, also after a quit or a restart, log in where they belong. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSpawnLocation(AsyncPlayerSpawnLocationEvent event) {
         var id = event.getConnection().getProfile().getId();
         if (id == null) {
             return;
         }
-        var home = homes.get(id);
-        if (home == null) {
-            var snapshot = recovered.get(id);
-            home = snapshot == null ? null : snapshot.location();
-        }
+        var snapshot = recovered.get(id);
+        var home = snapshot == null ? null : snapshot.location();
         // A world that is gone leaves the server's own choice of spawn.
         var world = home == null ? null : worlds.get(home.world());
         if (world != null) {
@@ -256,17 +243,6 @@ public final class PlayerSessions implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldUnload(WorldUnloadEvent event) {
         worlds.remove(event.getWorld().getUID());
-    }
-
-    // Once a rejoin has had its say, where they belong is no longer needed.
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onJoinEnd(PlayerJoinEvent event) {
-        var id = event.getPlayer().getUniqueId();
-        homes.remove(id);
-        var park = parkOnJoin.remove(id) ? held.get(id) : null;
-        if (park != null) {
-            park.accept(event.getPlayer());
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
