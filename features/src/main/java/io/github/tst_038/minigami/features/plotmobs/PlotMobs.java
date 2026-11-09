@@ -21,6 +21,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
@@ -113,6 +114,16 @@ public final class PlotMobs implements Feature {
                     event.setCancelled(true);
                 } else {
                     event.blockList().removeIf(block -> !plotAt(plots, block.getLocation()).equals(home));
+                }
+            }
+        });
+        // Nor may it hurt anyone past the plot: it is stopped before it hits.
+        context.on(ProjectileHitEvent.class, event -> {
+            if (event.getEntity().getShooter() instanceof Mob shooter) {
+                var home = plotAt(plots, shooter.getLocation());
+                if (home.isEmpty() || !home.equals(plotAt(plots, event.getEntity().getLocation()))) {
+                    event.setCancelled(true);
+                    event.getEntity().remove();
                 }
             }
         });

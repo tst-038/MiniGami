@@ -4,7 +4,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.bukkit.Location;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
@@ -59,7 +61,7 @@ final class EventOwnership {
         return BlockFromToEvent.class.isAssignableFrom(type) || StructureGrowEvent.class.isAssignableFrom(type)
                 || BlockSpreadEvent.class.isAssignableFrom(type) || BlockPistonEvent.class.isAssignableFrom(type)
                 || BlockExplodeEvent.class.isAssignableFrom(type) || EntityExplodeEvent.class.isAssignableFrom(type)
-                || CreatureSpawnEvent.class.isAssignableFrom(type) || EntityChangeBlockEvent.class.isAssignableFrom(type);
+                || CreatureSpawnEvent.class.isAssignableFrom(type) || ProjectileHitEvent.class.isAssignableFrom(type) || EntityChangeBlockEvent.class.isAssignableFrom(type);
     }
 
     /** Where a block change that no player made starts; empty for any other event. */
@@ -70,7 +72,10 @@ final class EventOwnership {
             case BlockSpreadEvent e -> Optional.of(e.getSource().getLocation());
             case BlockPistonEvent e -> Optional.of(e.getBlock().getLocation());
             case BlockExplodeEvent e -> Optional.of(e.getBlock().getLocation());
+            // A mob's projectile, such as a wither skull, belongs to where the mob is, however far it flew.
+            case EntityExplodeEvent e when e.getEntity() instanceof Projectile p && p.getShooter() instanceof Mob shooter -> Optional.of(shooter.getLocation());
             case EntityExplodeEvent e -> Optional.of(e.getLocation());
+            case ProjectileHitEvent e when e.getEntity().getShooter() instanceof Mob shooter -> Optional.of(shooter.getLocation());
             case CreatureSpawnEvent e -> Optional.of(e.getLocation());
             // A player trampling farmland stays the player's own event.
             case EntityChangeBlockEvent e when !(e.getEntity() instanceof Player) -> Optional.of(e.getBlock().getLocation());
