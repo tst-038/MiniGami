@@ -33,8 +33,9 @@ public record Setting<T>(String key, Kind<T> kind, Optional<T> fallback, String 
         return new Setting<>(key, kind, Optional.of(fallback), description);
     }
 
+    /** Whether the file must have it: there is no fallback, and left out it isn't simply empty, as a section is. */
     public boolean required() {
-        return fallback.isEmpty();
+        return fallback.isEmpty() && !kind.readsMissing();
     }
 
     /**

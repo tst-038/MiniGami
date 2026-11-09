@@ -54,7 +54,7 @@ public final class ConfigReader {
      * component's {@code settings()} can't miss a key it reads. Dynamic keys match any id.
      */
     public static ConfigReader strict(String file, ConfigurationSection section, List<Setting<?>> declared) {
-        var patterns = Setting.keys(declared, false).keySet().stream().map(key -> key.split("\\.")).toList();
+        var patterns = Setting.keys(declared, false).keySet().stream().map(key -> key.split("\\.(?![^<>]*>)")).toList();
         return new ConfigReader(new Shared(file, patterns), "", section);
     }
 
@@ -209,6 +209,40 @@ public final class ConfigReader {
         return materials;
     }
 
+    /** One item or block name such as {@code oak_log}; an unknown name is a problem, read as air. */
+    public Material material(String key) {
+        var name = string(key);
+        if (name.isEmpty()) {
+            return Material.AIR;
+        }
+        var material = Material.matchMaterial(name);
+        if (material == null) {
+            problem(key, "unknown item or block '" + name + "'");
+            return Material.AIR;
+        }
+        return material;
+    }
+
+    /** Like {@link #section}, but a left-out key is an empty section rather than a missing one. */
+    public ConfigReader sectionOrEmpty(String key) {
+        if (section.contains(key)) {
+            return section(key);
+        }
+        suggest(key, List.of());
+        return new ConfigReader(shared, childPath(key), new MemoryConfiguration());
+    }
+
+    /**
+     * A key that is no longer a setting, such as one an older version read: when the file has it, the message says what
+     * to do instead. It isn't offered for completion.
+     */
+    public void refuse(String key, String message) {
+        if (section.contains(key)) {
+            read.add(key);
+            problem(key, message);
+        }
+    }
+
     public ConfigReader section(String key) {
         var value = value(key);
         if (value != null && !(value instanceof ConfigurationSection)) {
@@ -330,17 +364,18 @@ public final class ConfigReader {
         return path.isEmpty() ? key : path + "." + key;
     }
 
+    /** Whether the path, list items such as {@code [0]} left out, fits the pattern: {@code <id>} is any key, {@code <id...>} any keys. */
     private static boolean matches(String[] pattern, String path) {
-        var parts = path.split("\\.");
-        if (parts.length != pattern.length) {
-            return false;
-        }
-        for (int i = 0; i < parts.length; i++) {
-            if (!pattern[i].startsWith("<") && !pattern[i].equals(parts[i])) {
+        var parts = path.replaceAll("\\[\\d+]", "").split("\\.");
+        for (int i = 0; i < pattern.length; i++) {
+            if (pattern[i].endsWith("...>")) {
+                return parts.length > i;
+            }
+            if (i >= parts.length || !pattern[i].startsWith("<") && !pattern[i].equals(parts[i])) {
                 return false;
             }
         }
-        return true;
+        return parts.length == pattern.length;
     }
 
     private static String configName(Enum<?> constant) {

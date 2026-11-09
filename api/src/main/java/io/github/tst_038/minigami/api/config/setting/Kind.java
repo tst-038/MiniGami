@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.bukkit.Material;
 
@@ -22,11 +23,17 @@ public final class Kind<T> {
     private final BiFunction<ConfigReader, String, T> reader;
     private final Supplier<? extends Collection<String>> values;
     private final Layout layout;
+    private final boolean readsMissing;
 
-    private Kind(BiFunction<ConfigReader, String, T> reader, Supplier<? extends Collection<String>> values, Layout layout) {
+    private Kind(BiFunction<ConfigReader, String, T> reader, Supplier<? extends Collection<String>> values, Layout layout, boolean readsMissing) {
         this.reader = reader;
         this.values = values;
         this.layout = layout;
+        this.readsMissing = readsMissing;
+    }
+
+    private Kind(BiFunction<ConfigReader, String, T> reader, Supplier<? extends Collection<String>> values, Layout layout) {
+        this(reader, values, layout, false);
     }
 
     private static <T> Kind<T> plain(BiFunction<ConfigReader, String, T> reader, Supplier<? extends Collection<String>> values) {
@@ -35,6 +42,46 @@ public final class Kind<T> {
 
     public static Kind<String> text() {
         return plain(ConfigReader::string, List::of);
+    }
+
+    /** A text, offering these values, such as the ids it may name. */
+    public static Kind<String> text(Supplier<? extends Collection<String>> values) {
+        return plain(ConfigReader::string, values);
+    }
+
+    /** One item or block name such as {@code oak_log}; every current one is offered. */
+    public static Kind<Material> material() {
+        return plain(ConfigReader::material, () -> Arrays.stream(Material.values()).filter(material -> !material.isLegacy())
+                .map(material -> material.name().toLowerCase(Locale.ROOT)).toList());
+    }
+
+    /** One text, or a list of them: {@code region: a} is {@code region: [a]}. */
+    public static Kind<List<String>> stringsOrOne() {
+        return plain(ConfigReader::stringsOrOne, List::of);
+    }
+
+    /**
+     * A section of texts nested to any depth, by full key such as {@code hide-and-seek.hiding}, which the ids offer.
+     * Shown as {@code <idName...>}, which matches a key of any depth.
+     */
+    public static Kind<Map<String, String>> texts(String idName, Supplier<? extends Collection<String>> ids) {
+        return new Kind<>(ConfigReader::texts, List::of, (path, expandIds, out) -> {
+            put(path, List.of(), out);
+            for (String id : expandIds ? ids.get() : List.of("<" + idName + "...>")) {
+                put(join(path, id), List.of(), out);
+            }
+        });
+    }
+
+    /**
+     * A section of known ids, each with a kind of its own, such as the features of a phase; read the returned section
+     * key by key. Unlike {@link #each}, the ids are listed in patterns too, since each has keys of its own.
+     */
+    public static Kind<ConfigReader> named(Supplier<? extends Map<String, ? extends Kind<?>>> kinds) {
+        return new Kind<>(ConfigReader::section, List::of, (path, expandIds, out) -> {
+            put(path, List.of(), out);
+            kinds.get().forEach((id, kind) -> kind.keys(join(path, id), expandIds, out));
+        });
     }
 
     public static Kind<Integer> integer(int min, int max) {
@@ -89,12 +136,15 @@ public final class Kind<T> {
         });
     }
 
-    /** A section of settings of its own; read them from the returned reader with {@link ConfigReader#read}. */
+    /**
+     * A section of settings of its own; read them from the returned reader with {@link ConfigReader#read}. Left out, it is
+     * an empty section, so its settings take their fallbacks.
+     */
     public static Kind<ConfigReader> section(List<Setting<?>> settings) {
-        return new Kind<>(ConfigReader::section, List::of, (path, expandIds, out) -> {
+        return new Kind<>(ConfigReader::sectionOrEmpty, List::of, (path, expandIds, out) -> {
             put(path, List.of(), out);
             settings.forEach(setting -> setting.kind().keys(join(path, setting.key()), expandIds, out));
-        });
+        }, true);
     }
 
     /** A list of texts, with the values that may be offered for its entries. */
@@ -104,12 +154,27 @@ public final class Kind<T> {
 
     /** The inner kind when the key is there, else empty; for a setting without a fallback value. */
     public static <T> Kind<Optional<T>> optional(Kind<T> inner) {
-        return plain((config, key) -> Optional.of(inner.read(config, key)), inner::values);
+        return inner.map(Optional::of);
+    }
+
+    /** This kind with its value turned into another, such as a section into the record it describes. */
+    public <R> Kind<R> map(Function<? super T, ? extends R> mapper) {
+        return new Kind<>((config, key) -> mapper.apply(reader.apply(config, key)), values, layout, readsMissing);
+    }
+
+    /** This kind, offering these values instead, such as {@code {}} for a section that is fine with its fallbacks. */
+    public Kind<T> offering(String... offered) {
+        return new Kind<>(reader, () -> List.of(offered), layout, readsMissing);
     }
 
     /** Values that may be offered for this setting, such as {@code true} and {@code false}. */
     public List<String> values() {
         return List.copyOf(values.get());
+    }
+
+    /** Whether a left-out key reads as an empty value rather than a missing one, as a section does. */
+    boolean readsMissing() {
+        return readsMissing;
     }
 
     /** Reads the value under the key, offering its values for completion like every other read. */
@@ -123,11 +188,10 @@ public final class Kind<T> {
      * {@link #each} are those of its source, else written as {@code <idName>}, which matches any id.
      */
     void keys(String path, boolean expandIds, Map<String, List<String>> out) {
-        if (layout == null) {
-            put(path, values(), out);
-        } else {
+        if (layout != null) {
             layout.keys(path, expandIds, out);
         }
+        put(path, values(), out);
     }
 
     private static void put(String path, List<String> values, Map<String, List<String>> out) {
@@ -137,7 +201,7 @@ public final class Kind<T> {
     }
 
     private static String join(String path, String key) {
-        return path.isEmpty() ? key : path + "." + key;
+        return path.isEmpty() || key.isEmpty() ? path + key : path + "." + key;
     }
 
     private interface Layout {

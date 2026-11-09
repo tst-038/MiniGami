@@ -233,4 +233,28 @@ class ConfigReaderTest {
         assertThrows(IllegalStateException.class, () -> reader.read(Setting.of("radius", Kind.integer(0, 10), "")));
         assertThrows(IllegalStateException.class, () -> reader.section("levels").section("speed").bool("x"));
     }
+
+    @Test
+    void strictReaderMatchesListItemsAndKeysOfAnyDepth() throws Exception {
+        var config = new YamlConfiguration();
+        config.loadFromString("spawns: [{ x: 1 }]\nmessages: { a: { b: hi } }");
+        var reader = ConfigReader.strict("modes/test.yml", config, List.of(
+                Setting.of("spawns", Kind.sections(List.of(Setting.of("x", Kind.integer(0, 9), "")), null), ""),
+                Setting.of("messages", Kind.texts("message", List::of), "")));
+
+        assertDoesNotThrow(() -> reader.suggest("spawns[0].x", List.of()));
+        assertDoesNotThrow(() -> reader.suggest("messages.a.b", List.of()));
+        assertThrows(IllegalStateException.class, () -> reader.suggest("spawns[0].y", List.of()));
+    }
+
+    @Test
+    void materialReadsANameAndReportsAnUnknownOne() throws Exception {
+        var config = new YamlConfiguration();
+        config.loadFromString("a: oak_log\nb: not_a_block");
+        var reader = ConfigReader.of("modes/test.yml", config);
+
+        assertEquals(Material.OAK_LOG, reader.material("a"));
+        reader.material("b");
+        assertThrows(InvalidConfigException.class, reader::check);
+    }
 }
