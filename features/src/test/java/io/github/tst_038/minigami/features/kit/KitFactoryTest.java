@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -111,5 +112,34 @@ class KitFactoryTest {
         read(root);
 
         assertEquals(List.of("games/test.yml: kit.items: is missing; or name a saved kit with saved: <name>"), problems(root));
+    }
+
+    @Test
+    void declaredSettingsCompleteWithoutMakingTheFeature() {
+        var keys = Setting.keys(factory.settings(), true);
+
+        assertEquals(List.of("items", "saved", "respawn"), List.copyOf(keys.keySet()));
+        assertEquals(List.of("true", "false"), keys.get("respawn"));
+    }
+
+    @Test
+    void readsOnlyDeclaredKeys() {
+        assertDoesNotThrow(() -> readStrict(factory, "{ items: [bow, arrow 16], saved: seeker, respawn: false }"));
+    }
+
+    @Test
+    void leftOutOptionalSettingsKeepTheirDefaults() {
+        assertDoesNotThrow(() -> readStrict(factory, "{ items: [bow] }"));
+        assertDoesNotThrow(() -> readStrict(factory, "{ saved: seeker }"));
+    }
+
+    private void readStrict(KitFactory factory, String yaml) throws Exception {
+        var config = new YamlConfiguration();
+        config.loadFromString(yaml);
+        var reader = ConfigReader.strict("games/test.yml", config, factory.settings());
+
+        factory.create(reader);
+
+        reader.check();
     }
 }
