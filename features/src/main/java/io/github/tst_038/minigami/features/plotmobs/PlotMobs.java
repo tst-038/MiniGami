@@ -29,7 +29,7 @@ import org.bukkit.util.Vector;
  * Lets mobs be part of a build: each may only appear inside a team's region (a plot), at most
  * {@code max} per plot, and stays there. Spawns outside every plot or over the limit are cancelled and
  * the nearest player is told. A mob that gets out anyway, pushed, knocked back or teleporting like an
- * enderman, is put back at the plot's edge within half a second.
+ * enderman, is put back at the plot's edge within a tenth of a second.
  *
  * <p>Mobs are found again by a tag they carry rather than remembered, so the rules hold across phases:
  * enable the feature in every phase mobs should stay. They are removed when the phase that ends the match ends.
@@ -37,7 +37,7 @@ import org.bukkit.util.Vector;
  */
 public final class PlotMobs implements Feature {
 
-    static final long CHECK_TICKS = 10;
+    static final long CHECK_TICKS = 2;
     /** Far enough to catch an enderman's teleport; a mob that got further is gone for good. */
     private static final double SEARCH_MARGIN = 64;
     private static final double TELL_RANGE = 12;
@@ -105,11 +105,11 @@ public final class PlotMobs implements Feature {
         // flies on past the plot, so it counts as its shooter: it may only blow up inside the shooter's plot, and
         // anywhere else it explodes without harming a thing.
         context.on(EntityExplodeEvent.class, event -> {
-            if (event.getEntity() instanceof Mob) {
-                var home = plotAt(plots, event.getLocation());
+            if (event.getEntity() instanceof Mob mob) {
+                var home = homeOf(plots, mob).or(() -> plotAt(plots, event.getLocation()));
                 event.blockList().removeIf(block -> !plotAt(plots, block.getLocation()).equals(home));
             } else if (event.getEntity() instanceof Projectile projectile && projectile.getShooter() instanceof Mob shooter) {
-                var home = plotAt(plots, shooter.getLocation());
+                var home = homeOf(plots, shooter);
                 if (home.isEmpty() || !home.equals(plotAt(plots, event.getLocation()))) {
                     event.setCancelled(true);
                 } else {
@@ -120,7 +120,7 @@ public final class PlotMobs implements Feature {
         // Nor may it hurt anyone past the plot: it is stopped before it hits.
         context.on(ProjectileHitEvent.class, event -> {
             if (event.getEntity().getShooter() instanceof Mob shooter) {
-                var home = plotAt(plots, shooter.getLocation());
+                var home = homeOf(plots, shooter);
                 if (home.isEmpty() || !home.equals(plotAt(plots, event.getEntity().getLocation()))) {
                     event.setCancelled(true);
                     event.getEntity().remove();
@@ -128,7 +128,7 @@ public final class PlotMobs implements Feature {
             }
         });
         context.on(EntityChangeBlockEvent.class, event -> {
-            if (event.getEntity() instanceof Mob && !plotAt(plots, event.getEntity().getLocation()).equals(plotAt(plots, event.getBlock().getLocation()))) {
+            if (event.getEntity() instanceof Mob mob && !homeOf(plots, mob).or(() -> plotAt(plots, mob.getLocation())).equals(plotAt(plots, event.getBlock().getLocation()))) {
                 event.setCancelled(true);
             }
         });
@@ -146,6 +146,11 @@ public final class PlotMobs implements Feature {
         mob.eject();
         mob.teleport(nearestInside(plot, mob.getLocation()));
         mob.setVelocity(new Vector());
+    }
+
+    /** The plot the mob was admitted to, wherever it is now: a fast mob can be outside before it is put back. */
+    private static Optional<Region> homeOf(List<Region> plots, Entity mob) {
+        return plots.stream().filter(plot -> mob.getScoreboardTags().contains(tag(plot))).findFirst();
     }
 
     private static String tag(Region plot) {
