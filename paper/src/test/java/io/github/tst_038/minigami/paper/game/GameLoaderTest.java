@@ -208,7 +208,7 @@ class GameLoaderTest {
     private YamlFiles.Loaded<Game> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE)).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
     }
 
     private YamlFiles.Loaded<Game> loadAll(Map<String, String> yamlById) throws Exception {
@@ -218,7 +218,21 @@ class GameLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE)).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
+    }
+
+    @Test
+    void offersEveryKeyAGameOfItsTypeCanHave() {
+        var loader = new GameLoader(games, features, statGroups, List.of(), () -> Set.of("match.joined"));
+
+        var keys = loader.keys("hide").keySet();
+
+        assertTrue(keys.containsAll(List.of("gametype", "min-players", "messages.match.joined", "roles.seeker.color", "roles.hider.features.playing.void-kills",
+                "ranks", "features.waiting.void-kills.y", "hud.sidebar.playing", "hud.boss-bar.text.starting", "quit.then", "teams.count", "variants")),
+                keys.toString());
+        assertFalse(keys.contains("extends"));
+        assertEquals(List.of("true", "false"), loader.keys("hide").get("advancements"));
+        assertFalse(loader.keys("unknown").containsKey("roles.seeker"));
     }
 
     private static List<String> problems(YamlFiles.Loaded<Game> loaded) {
@@ -531,8 +545,7 @@ class GameLoaderTest {
                 """);
 
         assertEquals(List.of(), problems(game));
-        // Besides the two real reads, the loader lets the feature read an empty section once to learn its settings.
-        assertEquals(List.of("1,2", "1,5"), read.stream().filter(values -> !values.equals("0,0")).toList());
+        assertEquals(List.of("1,2", "1,5"), read);
         var fall = game.entries().find("fall").orElseThrow();
         var changed = fall.variants().get("changed");
         assertEquals(1, changed.minPlayers());

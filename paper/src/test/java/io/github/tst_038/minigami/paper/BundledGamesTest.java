@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.bukkit.configuration.file.YamlConfiguration;
 import net.kyori.adventure.audience.Audience;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ class BundledGamesTest {
         }
         var messages = resource("messages/en.yml");
 
-        var loaded = new GameLoader(gametypes, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE))
+        var loaded = new GameLoader(gametypes, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of)
                 .load(new YamlFiles("games", files, List.of()), arenas, false, resource("config.yml").getConfigurationSection("hud"), messages::isString);
 
         assertEquals(List.of(), loaded.problems());

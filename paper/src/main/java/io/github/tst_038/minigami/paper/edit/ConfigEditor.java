@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -84,11 +86,22 @@ public final class ConfigEditor {
     private final Supplier<Settings> settings;
     private final Predicate<String> arenaInUse;
     private final Consumer<Audience> reload;
-    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of(), Map.of(), Map.of());
+    private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
+    /**
+     * @param games the keys each game file has or its loader asked for
+     * @param gametypes each game's game type, for the keys it can have
+     * @param declared per game, its keys together with every key it can have; made when first completed
+     */
     private record Keys(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights,
-            Map<String, SortedMap<String, List<String>>> schedules) {
+            Map<String, SortedMap<String, List<String>>> games, Map<String, String> gametypes, Map<String, SortedMap<String, List<String>>> nights,
+            Map<String, SortedMap<String, List<String>>> schedules, Map<String, SortedMap<String, List<String>>> declared) {
+
+        Keys(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
+                Map<String, SortedMap<String, List<String>>> games, Map<String, String> gametypes, Map<String, SortedMap<String, List<String>>> nights,
+                Map<String, SortedMap<String, List<String>>> schedules) {
+            this(config, Map.copyOf(arenas), Map.copyOf(games), Map.copyOf(gametypes), Map.copyOf(nights), Map.copyOf(schedules), new ConcurrentHashMap<>());
+        }
     }
 
     /**
@@ -111,11 +124,15 @@ public final class ConfigEditor {
         this.reload = reload;
     }
 
-    /** Takes the keys of every file from a config load, valid files or not, for completion. Any thread. */
+    /**
+     * Takes the keys of every file from a config load, valid files or not, for completion. Any thread.
+     *
+     * @param gametypes each game's game type as its file names it, empty when it names none
+     */
     public void keysLoaded(SortedMap<String, List<String>> config, Map<String, SortedMap<String, List<String>>> arenas,
-            Map<String, SortedMap<String, List<String>>> games, Map<String, SortedMap<String, List<String>>> nights,
+            Map<String, SortedMap<String, List<String>>> games, Map<String, String> gametypes, Map<String, SortedMap<String, List<String>>> nights,
             Map<String, SortedMap<String, List<String>>> schedules) {
-        keys = new Keys(config, Map.copyOf(arenas), Map.copyOf(games), Map.copyOf(nights), Map.copyOf(schedules));
+        keys = new Keys(config, arenas, games, gametypes, nights, schedules);
     }
 
     /** Ids of the files in the folder, including those that failed to load. Any thread. */
@@ -144,7 +161,11 @@ public final class ConfigEditor {
         return switch (kind) {
             case CONFIG -> current.config();
             case ARENA -> current.arenas().getOrDefault(id, Collections.emptySortedMap());
-            case GAME -> current.games().getOrDefault(id, Collections.emptySortedMap());
+            case GAME -> current.games().containsKey(id) ? current.declared().computeIfAbsent(id, game -> {
+                var all = new TreeMap<>(current.games().get(game));
+                all.putAll(gameLoader.keys(current.gametypes().getOrDefault(game, "")));
+                return Collections.unmodifiableSortedMap(all);
+            }) : Collections.emptySortedMap();
             case NIGHT -> current.nights().getOrDefault(id, Collections.emptySortedMap());
             case SCHEDULE -> current.schedules().getOrDefault(id, Collections.emptySortedMap());
         };

@@ -75,13 +75,14 @@ public final class Kind<T> {
 
     /**
      * A section of known ids, each with a kind of its own, such as the features of a phase; read the returned section
-     * key by key. Unlike {@link #each}, the ids are listed in patterns too, since each has keys of its own.
+     * key by key. Unlike {@link #each}, the ids are listed in patterns too, since each has keys of its own. Left out, it is
+     * an empty section.
      */
     public static Kind<ConfigReader> named(Supplier<? extends Map<String, ? extends Kind<?>>> kinds) {
-        return new Kind<>(ConfigReader::section, List::of, (path, expandIds, out) -> {
+        return new Kind<>(ConfigReader::sectionOrEmpty, List::of, (path, expandIds, out) -> {
             put(path, List.of(), out);
             kinds.get().forEach((id, kind) -> kind.keys(join(path, id), expandIds, out));
-        });
+        }, true);
     }
 
     public static Kind<Integer> integer(int min, int max) {

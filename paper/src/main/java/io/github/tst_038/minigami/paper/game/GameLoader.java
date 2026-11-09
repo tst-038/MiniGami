@@ -14,19 +14,21 @@ import io.github.tst_038.minigami.core.diagnosis.Diagnosis;
 import io.github.tst_038.minigami.core.diagnosis.Finding;
 import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.stat.Stat;
-import io.github.tst_038.minigami.core.team.RoleShare;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.diagnosis.Hosting;
 import io.github.tst_038.minigami.paper.hud.Hud;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -89,17 +91,47 @@ public final class GameLoader {
 
     private final IdRegistry<GameType> gametypes;
     private final IdRegistry<FeatureFactory> features;
-    private final Map<String, Map<String, List<String>>> featureSettings = new java.util.concurrent.ConcurrentHashMap<>();
     private final IdRegistry<StatGroup> statGroups;
     private final List<Check<Hosting>> checks;
+    private final GameSettings settings;
+    private final boolean strict;
 
-    /** @param checks what every arena a game lists goes through; it plays only in those with nothing blocking */
+    /**
+     * @param checks what every arena a game lists goes through; it plays only in those with nothing blocking
+     * @param messageKeys every message key, which a game may give its own wording for
+     */
     public GameLoader(IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups,
-            List<Check<Hosting>> checks) {
+            List<Check<Hosting>> checks, Supplier<? extends Collection<String>> messageKeys) {
+        this(gametypes, features, statGroups, checks, new GameSettings(gametypes, features, statGroups, messageKeys), false);
+    }
+
+    private GameLoader(IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features, IdRegistry<StatGroup> statGroups,
+            List<Check<Hosting>> checks, GameSettings settings, boolean strict) {
         this.gametypes = gametypes;
         this.features = features;
         this.statGroups = statGroups;
         this.checks = List.copyOf(checks);
+        this.settings = settings;
+        this.strict = strict;
+    }
+
+    /** For tests: this loader, failing as soon as a game, a game type or a feature reads a key that isn't declared. */
+    public GameLoader strict() {
+        return new GameLoader(gametypes, features, statGroups, checks, settings, true);
+    }
+
+    /** Every key a file of the game type can have; with an unknown game type, those that don't depend on it. */
+    public List<Setting<?>> settings(String gametype) {
+        return settings.of(gametypes.find(gametype));
+    }
+
+    /** The keys {@link #settings} offers for completion, every id spelled out, with their values. */
+    public SortedMap<String, List<String>> keys(String gametype) {
+        return new TreeMap<>(Setting.keys(settings(gametype), true));
+    }
+
+    private ConfigReader reader(String file, YamlConfiguration config) {
+        return strict ? ConfigReader.strict(file, config, settings(config.getString(GameSettings.GAMETYPE, ""))) : ConfigReader.of(file, config);
     }
 
     /**
@@ -113,14 +145,12 @@ public final class GameLoader {
         var withHud = new TreeMap<String, YamlConfiguration>();
         // enabled: false keeps a file (documentation, work in progress) out of the games without deleting it.
         files.files().forEach((id, own) -> {
-            if (own.getBoolean("enabled", true)) {
-                var merged = withHud(hud, own, null);
-                merged.set("enabled", null);
-                withHud.put(id, merged);
+            if (own.getBoolean(GameSettings.ENABLED.key(), true)) {
+                withHud.put(id, withHud(hud, own, null));
             }
         });
         return new YamlFiles(files.folder(), withHud, files.problems())
-                .parse(Game::id, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud, knownMessage));
+                .parse(Game::id, this::reader, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud, knownMessage));
     }
 
     /** The HUD defaults, the game's own settings over them, and the variant's over those if one is given. */
@@ -130,6 +160,7 @@ public final class GameLoader {
             YamlFiles.overlay(merged.createSection("hud"), hud);
         }
         YamlFiles.overlay(merged, own);
+        merged.set(GameSettings.ENABLED.key(), null);
         if (variant != null) {
             merged.set(VARIANTS, null);
             YamlFiles.overlay(merged, variant);
@@ -139,10 +170,7 @@ public final class GameLoader {
 
     private Game parseGame(String id, ConfigReader config, String file, YamlConfiguration own, IdRegistry<Arena> arenas, boolean hasLobby,
             ConfigurationSection hud, Predicate<String> knownMessage) {
-        if (config.has("extends")) {
-            config.string("extends");
-            config.problem("extends", "games don't extend each other; put what differs under variants, or copy the other game's file");
-        }
+        config.refuse("extends", "games don't extend each other; put what differs under variants, or copy the other game's file");
         var base = parse(id, Optional.empty(), config, arenas, hasLobby, knownMessage);
         // Each variant is checked on its own below; here they only count as read.
         var section = config.has(VARIANTS) ? Optional.of(config.section(VARIANTS)) : Optional.<ConfigReader>empty();
@@ -167,15 +195,15 @@ public final class GameLoader {
                 config.problem(key, "must be the settings that differ from the game, such as { name: ..., lives: 3 }");
                 continue;
             }
-            if (!settings.isString("name")) {
+            if (!settings.isString(GameSettings.NAME.key())) {
                 config.problem(key, "needs a name, so players can tell it from the game itself");
             }
-            if (settings.contains("gametype")) {
+            if (settings.contains(GameSettings.GAMETYPE)) {
                 // Its stats count as the game's, so it has to be the same kind of game.
-                config.problem(key + ".gametype", "a variant plays its game's game type; make another game for another type");
+                config.problem(key + "." + GameSettings.GAMETYPE, "a variant plays its game's game type; make another game for another type");
                 continue;
             }
-            var reader = ConfigReader.of(file, withHud(hud, own, settings));
+            var reader = reader(file, withHud(hud, own, settings));
             variants.put(variant, parse(id, Optional.of(variant), reader, arenas, hasLobby, knownMessage));
             try {
                 reader.check();
@@ -189,33 +217,34 @@ public final class GameLoader {
     /** @param variant empty for the game itself */
     private Variant parse(String id, Optional<String> variant, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby,
             Predicate<String> knownMessage) {
-        config.suggest("gametype", gametypes.ids());
-        var gametypeId = config.string("gametype");
+        var gametypeId = config.read(settings.gametype());
         var game = gametypes.find(gametypeId).orElse(null);
         if (!gametypeId.isEmpty() && game == null) {
-            config.problem("gametype", "unknown game type '" + gametypeId + "'; known: " + String.join(", ", gametypes.ids()));
+            config.problem(GameSettings.GAMETYPE, "unknown game type '" + gametypeId + "'; known: " + String.join(", ", gametypes.ids()));
         }
         if (game != null) {
             game = game.configure(config);
         }
-        var name = config.has("name") ? config.string("name") : id;
-        var minPlayers = config.integer("min-players", 1, Integer.MAX_VALUE);
-        var maxPlayers = config.integer("max-players", 1, Integer.MAX_VALUE);
+        var type = Optional.ofNullable(game);
+        var name = config.read(GameSettings.NAME).orElse(id);
+        var minPlayers = config.read(GameSettings.MIN_PLAYERS);
+        var maxPlayers = config.read(GameSettings.MAX_PLAYERS);
         if (maxPlayers < minPlayers) {
-            config.problem("max-players", "must be at least min-players (" + minPlayers + ")");
+            config.problem(GameSettings.MAX_PLAYERS.key(), "must be at least min-players (" + minPlayers + ")");
         }
-        var waiting = config.choice("waiting", Waiting.class);
+        var waiting = config.read(GameSettings.WAITING);
         if (waiting == Waiting.LOBBY && !hasLobby) {
-            config.problem("waiting", "no lobby is set; set one with /mga lobby set or in config.yml");
+            config.problem(GameSettings.WAITING.key(), "no lobby is set; set one with /mga lobby set or in config.yml");
         }
-        var lives = config.has("lives") ? config.integer("lives", 0, Integer.MAX_VALUE) : game == null ? 0 : game.lives();
-        var nameTags = config.has("name-tags") ? config.choice("name-tags", NameTags.class) : NameTags.EVERYONE;
-        var messages = config.has("messages") ? config.texts("messages") : Map.<String, String>of();
+        var lives = config.read(GameSettings.LIVES).orElse(type.map(GameType::lives).orElse(0));
+        var nameTags = config.read(GameSettings.NAME_TAGS);
+        var messagesSetting = settings.messages();
+        var messages = config.read(messagesSetting);
         messages.keySet().stream().filter(knownMessage.negate())
-                .forEach(key -> config.problem("messages." + key, "unknown message"));
+                .forEach(key -> config.problem(messagesSetting.key() + "." + key, "unknown message"));
         var teams = teams(config, minPlayers, maxPlayers);
-        var teamSpawns = config.has("team-spawns") ? config.choice("team-spawns", TeamSpawns.class) : TeamSpawns.TOGETHER;
-        var randomSpawns = config.has("random-spawns") ? config.bool("random-spawns") : game != null && game.spawnsAnywhere();
+        var teamSpawns = config.read(GameSettings.TEAM_SPAWNS);
+        var randomSpawns = config.read(GameSettings.RANDOM_SPAWNS).orElse(type.map(GameType::spawnsAnywhere).orElse(false));
         var roles = roles(config, minPlayers, game, teams);
         // The roles take their players first; only the rest form teams.
         teams.filter(setup -> setup.size() > 0).ifPresent(setup -> {
@@ -230,28 +259,16 @@ public final class GameLoader {
         var quit = quit(config);
         var mostTeams = roles.size() + teams.map(setup -> setup.teamsFor(maxPlayers)).orElse(roles.isEmpty() ? maxPlayers : 0);
         var listed = arenas(config, arenas);
-        var features = config.has("features") ? features(config.section("features"), game) : Map.<String, List<Feature>>of();
-        // Offer every feature in every phase for completion, also those the file doesn't use yet.
-        if (game != null) {
-            Setting.keys(game.settings(), true).forEach(config::suggest);
-            suggestFeatures(config, "features", game);
-            for (var role : roles) {
-                suggestFeatures(config, "roles." + role.id() + ".features", game);
-            }
-            for (var rank : ranks) {
-                suggestFeatures(config, "ranks." + rank.id() + ".features", game);
-            }
-        }
+        var features = features(config, game);
         var stats = statGroups(config);
         var changesBlocks = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::changesBlocks);
         var usesLoot = Variant.allFeatures(game, features, roles, ranks).anyMatch(Feature::usesLootPoints);
-        var region = config.has("region") ? config.stringsOrOne("region") : List.<String>of();
-        config.suggest("respawn", List.of("spawns", "highest-floor"));
-        var respawn = config.has("respawn") ? config.choice("respawn", Respawn.class) : Respawn.SPAWNS;
+        var region = config.read(GameSettings.REGION);
+        var respawn = config.read(GameSettings.RESPAWN);
         if (respawn == Respawn.HIGHEST_FLOOR && region.isEmpty()) {
-            config.problem("respawn", "highest-floor needs the region the game plays in; set region");
+            config.problem(GameSettings.RESPAWN.key(), "highest-floor needs the region the game plays in; set region");
         }
-        var respawnSeconds = config.has("respawn-seconds") ? config.integer("respawn-seconds", 0, 3600) : 0;
+        var respawnSeconds = config.read(GameSettings.RESPAWN_SECONDS);
         var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles, ranks).flatMap(feature -> feature.regions().stream())).distinct().toList();
         var allFeatures = Variant.allFeatures(game, features, roles, ranks).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
@@ -271,35 +288,7 @@ public final class GameLoader {
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
         return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
-                features, stats, hud, config.has("advancements") && config.bool("advancements"));
-    }
-
-    /** Offers every feature in every phase of the game under {@code prefix}, also those the file doesn't use yet. */
-    private void suggestFeatures(ConfigReader config, String prefix, GameType game) {
-        game.phases().forEach(phase -> this.features.ids().forEach(featureId -> {
-            var path = prefix + "." + phase.id() + "." + featureId;
-            config.suggest(path, List.of("{}"));
-            settingsOf(featureId).forEach((setting, values) -> config.suggest(path + "." + setting, values));
-        }));
-    }
-
-    /** The keys a feature declares, with the values to offer, so its settings can be completed before a file uses it. */
-    private Map<String, List<String>> settingsOf(String featureId) {
-        return featureSettings.computeIfAbsent(featureId, id -> {
-            var factory = features.find(id).orElseThrow();
-            if (!factory.settings().isEmpty()) {
-                return Setting.keys(factory.settings(), true);
-            }
-            // shortcut: features that don't declare their settings yet are probed by reading an empty section, which misses
-            // conditional keys and fails for features that can't be made without settings; remove once all declare them.
-            try {
-                var reader = ConfigReader.of("", new org.bukkit.configuration.MemoryConfiguration());
-                factory.create(reader);
-                return reader.askedKeys();
-            } catch (RuntimeException e) {
-                return Map.of();
-            }
-        });
+                features, stats, hud, config.read(GameSettings.ADVANCEMENTS));
     }
 
     /** Every stat a game or stat group keeps. */
@@ -310,107 +299,87 @@ public final class GameLoader {
     }
 
     private List<StatGroup> statGroups(ConfigReader config) {
-        config.suggest("stats", statGroups.ids());
+        var setting = settings.stats();
         var groups = new ArrayList<StatGroup>();
-        if (!config.has("stats")) {
-            return groups;
-        }
-        for (String id : config.strings("stats")) {
+        for (String id : config.read(setting)) {
             statGroups.find(id).ifPresentOrElse(groups::add,
-                    () -> config.problem("stats", "unknown stat group '" + id + "'; known: " + String.join(", ", statGroups.ids())));
+                    () -> config.problem(setting.key(), "unknown stat group '" + id + "'; known: " + String.join(", ", statGroups.ids())));
         }
         return groups;
     }
 
     private static Quit quit(ConfigReader config) {
-        config.suggest("quit.then", List.of("stay", "die", "out"));
-        config.suggest("quit.rejoin-seconds", List.of("60"));
-        if (!config.has("quit")) {
-            return Quit.OUT;
-        }
-        var quit = config.section("quit");
-        var then = quit.has("then") ? quit.choice("then", Quit.Then.class) : Quit.Then.OUT;
-        var seconds = quit.has("rejoin-seconds") ? quit.integer("rejoin-seconds", 0, 3600) : 0;
+        var quit = config.read(GameSettings.QUIT);
+        var then = quit.read(GameSettings.QUIT_THEN);
+        var seconds = quit.read(GameSettings.QUIT_REJOIN_SECONDS);
         if (then == Quit.Then.STAY && seconds == 0) {
-            quit.problem("then", "stay needs rejoin-seconds above 0; without a way back quitting puts them out");
+            quit.problem(GameSettings.QUIT_THEN.key(), "stay needs rejoin-seconds above 0; without a way back quitting puts them out");
         }
         return new Quit(then, seconds);
     }
 
     private static Optional<TeamSetup> teams(ConfigReader config, int minPlayers, int maxPlayers) {
-        config.suggest("teams.count", List.of("2"));
-        config.suggest("teams.size", List.of("2"));
-        if (!config.has("teams")) {
+        if (!config.has(GameSettings.TEAMS.key())) {
             return Optional.empty();
         }
-        var teams = config.section("teams");
-        if (teams.has("count") == teams.has("size")) {
-            config.problem("teams", "set either count or size");
+        var teams = config.read(GameSettings.TEAMS);
+        var countKey = GameSettings.TEAM_COUNT.key();
+        if (teams.has(countKey) == teams.has(GameSettings.TEAM_SIZE.key())) {
+            config.problem(GameSettings.TEAMS.key(), "set either count or size");
             teams.keys();
             return Optional.empty();
         }
-        var most = TeamSetup.IDS.size();
-        if (teams.has("count")) {
-            // Beside roles one team is a match: the roles are the other side.
-            var count = teams.integer("count", config.has("roles") ? 1 : 2, most);
+        var roles = config.has(GameSettings.ROLES);
+        if (teams.has(countKey)) {
+            // Beside roles one team is a match: the roles are the other side, so the least count depends on them.
+            var count = teams.integer(countKey, roles ? 1 : 2, TeamSetup.IDS.size());
             if (minPlayers < count) {
-                config.problem("min-players", "must be at least the number of teams (" + count + ")");
+                config.problem(GameSettings.MIN_PLAYERS.key(), "must be at least the number of teams (" + count + ")");
             }
             return Optional.of(TeamSetup.ofCount(count));
         }
-        var size = teams.integer("size", 1, Integer.MAX_VALUE);
-        var roles = config.has("roles");
-        var setup = TeamSetup.ofSize(size);
+        var size = teams.read(GameSettings.TEAM_SIZE);
         // With a single team the match would be decided the moment it starts, unless roles play against it.
         if (!roles && minPlayers <= size) {
-            config.problem("min-players", "must be more than the team size (" + size + "), so there are at least two teams");
+            config.problem(GameSettings.MIN_PLAYERS.key(), "must be more than the team size (" + size + "), so there are at least two teams");
         }
-        return Optional.of(setup);
+        return Optional.of(TeamSetup.ofSize(size));
     }
 
     private List<Role> roles(ConfigReader config, int minPlayers, GameType game, Optional<TeamSetup> teams) {
         var needed = game == null ? List.<String>of() : game.roles();
-        needed.forEach(id -> config.suggest("roles." + id, List.of()));
-        if (!config.has("roles")) {
+        if (!config.has(GameSettings.ROLES)) {
             if (!needed.isEmpty()) {
-                config.problem("roles", game.id() + " needs the roles " + String.join(", ", needed));
+                config.problem(GameSettings.ROLES, game.id() + " needs the roles " + String.join(", ", needed));
             }
             return List.of();
         }
-        var section = config.section("roles");
+        var section = config.section(GameSettings.ROLES);
         var roles = new ArrayList<Role>();
         for (String id : section.keys()) {
             if (!IdRegistry.isValid(id)) {
                 section.problem(id, "use lower case letters, digits and dashes");
             }
             var role = section.section(id);
-            var name = role.has("name") ? role.string("name") : id;
-            role.suggest("color", NamedTextColor.NAMES.keys());
+            var name = role.read(RoleSettings.NAME).orElse(id);
             var color = NamedTextColor.NAMES.valueOrThrow(TeamSetup.IDS.get(roles.size() % TeamSetup.IDS.size()));
-            if (role.has("color")) {
-                var text = role.string("color");
-                var named = NamedTextColor.NAMES.value(text);
+            var text = role.read(RoleSettings.COLOR);
+            if (text.isPresent()) {
+                var named = NamedTextColor.NAMES.value(text.get());
                 if (named == null) {
-                    role.problem("color", "unknown colour '" + text + "'; colours: " + String.join(", ", NamedTextColor.NAMES.keys()));
+                    role.problem(RoleSettings.COLOR.key(), "unknown colour '" + text.get() + "'; colours: " + String.join(", ", NamedTextColor.NAMES.keys()));
                 } else {
                     color = named;
                 }
             }
-            if (role.has("players") && role.has("per")) {
-                role.problem("per", "set either players or per");
-                role.keys();
-            }
-            var share = role.has("players") ? RoleShare.of(role.integer("players", 1, Integer.MAX_VALUE))
-                    : role.has("per") ? RoleShare.onePer(role.integer("per", 2, Integer.MAX_VALUE))
-                    : RoleShare.rest();
-            var lives = role.has("lives") ? OptionalInt.of(role.integer("lives", 0, Integer.MAX_VALUE)) : OptionalInt.empty();
-            var onOut = role.has("on-out") ? Optional.of(role.string("on-out")) : Optional.<String>empty();
+            var share = RoleSettings.share(role);
+            var lives = role.read(RoleSettings.LIVES).map(OptionalInt::of).orElse(OptionalInt.empty());
+            var onOut = role.read(RoleSettings.ON_OUT);
             var others = section.keys().stream().filter(other -> !other.equals(id)).toList();
             if (onOut.isPresent() && !others.contains(onOut.get())) {
-                role.problem("on-out", "must be one of the other roles: " + String.join(", ", others));
+                role.problem(RoleSettings.ON_OUT.key(), "must be one of the other roles: " + String.join(", ", others));
             }
-            var nameTags = role.has("name-tags") ? Optional.of(role.choice("name-tags", NameTags.class)) : Optional.<NameTags>empty();
-            roles.add(new Role(id, name, color, share, lives, onOut, nameTags, role.has("features") ? features(role.section("features"), game) : Map.of()));
+            roles.add(new Role(id, name, color, share, lives, onOut, role.read(RoleSettings.NAME_TAGS), features(role, game)));
         }
         var ids = roles.stream().map(Role::id).toList();
         if (!needed.isEmpty() && !Set.copyOf(ids).equals(Set.copyOf(needed))) {
@@ -467,31 +436,23 @@ public final class GameLoader {
      */
     private List<Rank> ranks(ConfigReader config, GameType game, boolean hasTeams) {
         var needed = game == null ? List.<String>of() : game.ranks();
-        needed.forEach(id -> config.suggest("ranks." + id, List.of()));
-        if (!config.has("ranks")) {
+        if (!config.has(GameSettings.RANKS)) {
             if (!needed.isEmpty()) {
-                config.problem("ranks", game.id() + " needs the ranks " + String.join(", ", needed));
+                config.problem(GameSettings.RANKS, game.id() + " needs the ranks " + String.join(", ", needed));
             }
             return List.of();
         }
         if (!hasTeams) {
-            config.problem("ranks", "ranks split a team; set teams or roles");
+            config.problem(GameSettings.RANKS, "ranks split a team; set teams or roles");
         }
-        var section = config.section("ranks");
+        var section = config.section(GameSettings.RANKS);
         var ranks = new ArrayList<Rank>();
         for (String id : section.keys()) {
             if (!IdRegistry.isValid(id)) {
                 section.problem(id, "use lower case letters, digits and dashes");
             }
             var rank = section.section(id);
-            if (rank.has("players") && rank.has("per")) {
-                rank.problem("per", "set either players or per");
-                rank.keys();
-            }
-            var share = rank.has("players") ? RoleShare.of(rank.integer("players", 1, Integer.MAX_VALUE))
-                    : rank.has("per") ? RoleShare.onePer(rank.integer("per", 2, Integer.MAX_VALUE))
-                    : RoleShare.rest();
-            ranks.add(new Rank(id, share, rank.has("features") ? features(rank.section("features"), game) : Map.of()));
+            ranks.add(new Rank(id, RoleSettings.share(rank), features(rank, game)));
         }
         var ids = ranks.stream().map(Rank::id).toList();
         var missing = needed.stream().filter(id -> !ids.contains(id)).toList();
@@ -508,19 +469,25 @@ public final class GameLoader {
 
     /** The listed arenas that loaded, ready or not. */
     private static List<Arena> arenas(ConfigReader config, IdRegistry<Arena> registry) {
-        var ids = config.strings("arenas");
-        if (ids.isEmpty() && config.has("arenas")) {
-            config.problem("arenas", "needs at least one arena");
+        var key = GameSettings.ARENAS.key();
+        var ids = config.read(GameSettings.ARENAS);
+        if (ids.isEmpty() && config.has(key)) {
+            config.problem(key, "needs at least one arena");
         }
         var arenas = new ArrayList<Arena>();
         for (String id : ids) {
             registry.find(id).ifPresentOrElse(arenas::add,
-                    () -> config.problem("arenas", "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids())));
+                    () -> config.problem(key, "no valid arena '" + id + "'; arenas: " + String.join(", ", registry.ids())));
         }
         return arenas;
     }
 
-    private Map<String, List<Feature>> features(ConfigReader config, GameType game) {
+    /** The {@code features} of the game, a role or a rank, by phase. */
+    private Map<String, List<Feature>> features(ConfigReader owner, GameType game) {
+        if (!owner.has(GameSettings.FEATURES)) {
+            return Map.of();
+        }
+        var config = owner.section(GameSettings.FEATURES);
         var phases = game == null ? null : game.phases().stream().map(Phase::id).toList();
         var byPhase = new HashMap<String, List<Feature>>();
         for (String phase : config.keys()) {

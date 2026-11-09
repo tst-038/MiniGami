@@ -72,6 +72,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -179,7 +180,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 () -> getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission("minigami.admin"))).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
         maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick());
-        gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables));
+        gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables), messages::keys);
         doctor = new Doctor(messages, getLogger(), () -> games);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
         getServer().getPluginManager().registerEvents(running, this);
@@ -286,7 +287,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 problems.addAll(loadedGames.problems());
                 problems.addAll(loadedNights.problems());
                 problems.addAll(loadedSchedules.problems());
-                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys(), loadedNights.keys(), loadedSchedules.keys());
+                var gametypeOf = new HashMap<String, String>();
+                gameFiles.files().forEach((id, file) -> gametypeOf.put(id, file.getString("gametype", "")));
+                editor.keysLoaded(loadedSettings.keys(), loadedArenas.keys(), loadedGames.keys(), gametypeOf, loadedNights.keys(), loadedSchedules.keys());
                 info.loaded(settingsText, arenaFiles.files(), gameFiles.files(), nightFiles.files(), scheduleFiles.files(), problems);
                 var waiting = new ArrayList<Audience>();
                 for (Audience next; (next = requesters.poll()) != null; ) {

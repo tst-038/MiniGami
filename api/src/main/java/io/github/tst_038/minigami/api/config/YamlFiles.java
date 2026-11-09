@@ -121,12 +121,18 @@ public record YamlFiles(String folder, String layout, Map<String, YamlConfigurat
      * effort; an entry whose file had any problem is left out.
      */
     public <T> Loaded<T> parse(Function<T, String> idOf, BiFunction<String, ConfigReader, T> parser) {
+        return parse(idOf, ConfigReader::of, parser);
+    }
+
+    /** As {@link #parse(Function, BiFunction)}, with the reader of each file's name and contents, such as a strict one in tests. */
+    public <T> Loaded<T> parse(Function<T, String> idOf, BiFunction<String, YamlConfiguration, ConfigReader> readers,
+            BiFunction<String, ConfigReader, T> parser) {
         var entries = new IdRegistry<>(idOf);
         var allProblems = new ArrayList<>(problems);
         var keys = new TreeMap<String, SortedMap<String, List<String>>>();
         files.forEach((id, config) -> {
             var file = fileName(id);
-            var reader = ConfigReader.of(file, config);
+            var reader = readers.apply(file, config);
             var entry = parser.apply(id, reader);
             keys.put(id, keys(config, reader));
             try {

@@ -2,8 +2,11 @@ package io.github.tst_038.minigami.api.message;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.logging.Logger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -65,6 +68,13 @@ public final class Messages {
     /** Whether there is a text for the key, for something that falls back to a general text when it has none of its own. */
     public boolean has(String key) {
         return text(key) != null;
+    }
+
+    /** Every key with a text, such as for completing the keys a game may give its own wording for. */
+    public SortedSet<String> keys() {
+        var keys = base != null ? base.keys() : texts.getKeys(true).stream().filter(texts::isString).collect(Collectors.toCollection(TreeSet::new));
+        keys.addAll(own.keySet());
+        return keys;
     }
 
     /** A missing key renders as the key itself, so the gap is visible in game and reported once in the log. */
