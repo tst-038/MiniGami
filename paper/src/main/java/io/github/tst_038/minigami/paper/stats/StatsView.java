@@ -165,7 +165,7 @@ public final class StatsView {
             var totals = profile.game(game.get().id());
             messages.send(sender, "stats.game-header", player, Placeholder.parsed("game", game.get().name()));
             if (only.isEmpty()) {
-                messages.send(sender, "stats.game-totals", totals(totals));
+                sendRecord(sender, totals, true);
             }
             var stats = statIds(game.get());
             totals.stats().keySet().forEach(stat -> stats.add(stat.id()));
@@ -180,7 +180,8 @@ public final class StatsView {
                 game.get().all().forEach(variant -> {
                     var played = profile.variant(variant.game(), variant.id());
                     if (played.played() > 0) {
-                        messages.send(sender, "stats.variant", Placeholder.parsed("variant", variant.name()), totals(played));
+                        messages.send(sender, "stats.variant", Placeholder.parsed("variant", variant.name()));
+                        sendRecord(sender, played, false);
                     }
                 });
             }
@@ -192,15 +193,22 @@ public final class StatsView {
         }
         profile.games().forEach(id -> {
             var totals = profile.game(id);
-            messages.send(sender, "stats.game",
-                    games.get().find(id).map(played -> Placeholder.parsed("game", played.name())).orElseGet(() -> Placeholder.unparsed("game", id)),
-                    totals(totals));
+            messages.send(sender, "stats.game-name",
+                    games.get().find(id).map(played -> Placeholder.parsed("game", played.name())).orElseGet(() -> Placeholder.unparsed("game", id)));
+            sendRecord(sender, totals, false);
             var kept = totals.stats().keySet().stream().map(Stat::id).sorted().map(stat -> messages.render("stats.stat-inline",
                     Placeholder.component("stat", statName(stat)), Formatter.number("amount", totals.stat(new Stat(stat))))).toList();
             if (!kept.isEmpty()) {
                 messages.send(sender, "stats.game-stats", Placeholder.component("stats", Component.join(JoinConfiguration.separator(messages.render("stats.separator")), kept)));
             }
         });
+    }
+
+    private void sendRecord(CommandSender sender, Totals totals, boolean withLeft) {
+        messages.send(sender, "stats.record", totals(totals));
+        if (withLeft && totals.left() > 0) {
+            messages.send(sender, "stats.left", totals(totals));
+        }
     }
 
     private static long amount(Totals totals, String stat) {

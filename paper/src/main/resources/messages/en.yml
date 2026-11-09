@@ -272,23 +272,28 @@ stats:
   unknown-game: "%prefix%<red>There is no game called <white>%game%</white>."
   unknown-variant: "%prefix%<red>%game% <red>has no variant called <white>%variant%</white>; it has: <white>%variants%</white>."
   unknown-stat: "%prefix%<red>%game% <red>has no leaderboard called <white>%stat%</white>."
-  header: "%prefix%<gold>%player%</gold><gray>'s stats:"
+  header: "<dark_gray><strikethrough>      </strikethrough> <gold><bold>%player%</bold></gold><gray>'s stats <dark_gray><strikethrough>      </strikethrough>"
   none: "<gray> No matches played yet."
-  game: "<gray> - %game%<gray>: %played% played, %wins% won, %losses% lost, average place %place%, %minutes% min"
-  game-header: "%prefix%<gold>%player%</gold><gray> in %game%<gray>:"
-  game-totals: "<gray> %played% played, %wins% won, %losses% lost, average place %place%, left %left%, %minutes% min"
-  # A line per variant played, under the game's totals and stats
-  variant: "<gray> - %variant%<gray>: %played% played, %wins% won, %losses% lost, average place %place%, %minutes% min"
+  # /mg stats: a game's name, then its record and kept stats indented under it
+  game-name: "<gold> %game%"
+  # The record line, for a game and each of its variants: %played%, %wins%, %losses%, %place%, %left%, %minutes%
+  record: "<gray>   <white>%played%</white> played <dark_gray>|</dark_gray> <green>%wins%</green> won <dark_gray>|</dark_gray> <red>%losses%</red> lost <dark_gray>|</dark_gray> place <white>%place%</white> <dark_gray>|</dark_gray> <white>%minutes%</white> min"
+  # %left% matches left early, only shown when there are any
+  left: "<gray>   Left early <white>%left%</white>"
+  # /mg stats <player> <game>
+  game-header: "<dark_gray><strikethrough>      </strikethrough> <gold><bold>%player%</bold></gold><gray> in %game% <dark_gray><strikethrough>      </strikethrough>"
+  # A line per variant played, under the game's stats: its name, then the record
+  variant: "<yellow> %variant%"
   # A game's kept stats on a line under it in /mg stats: %stats% is each stat-inline, between separators
-  game-stats: "<gray>    %stats%"
+  game-stats: "<gray>   %stats%"
   # %stat%, %amount%
   stat-inline: "<gray>%stat% <white>%amount%"
   separator: "<dark_gray> | "
   # %amount%
-  stat: "<gray> - %stat%: <white>%amount%"
-  top-header: "%prefix%<gold>Top %stat%</gold> <gray>in %game%<gray>:"
+  stat: "<gray>   %stat%: <white>%amount%"
+  top-header: "<dark_gray><strikethrough>      </strikethrough> <gold><bold>Top %stat%</bold></gold><gray> in %game% <dark_gray><strikethrough>      </strikethrough>"
   # %position%, %amount%
-  top-entry: "<gray> %position%. <white>%player%</white>: <gold>%amount%"
+  top-entry: "<gold> %position%. <white>%player%</white> <dark_gray>-</dark_gray> <yellow>%amount%"
   top-none: "<gray> Nobody yet."
   # On a board, for a player whose name isn't known
   unknown-name: "<dark_gray>unknown player"
