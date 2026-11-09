@@ -9,17 +9,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.ArenaLayout;
 import io.github.tst_038.minigami.api.feature.FakeMatch;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.core.diagnosis.Diagnosis;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -145,5 +146,33 @@ class TerrainTest {
 
         assertEquals(List.of("anchor-outside-area", "anchor-below-sea"), findings.stream().map(finding -> finding.code()).toList());
         assertFalse(findings.isEmpty());
+    }
+
+    @Test
+    void declaredSettingsCompleteWithoutMakingTheFeature() throws Exception {
+        var keys = Setting.keys(factory(new ArrayList<>()).settings(), false);
+
+        assertEquals(List.of("style", "regions", "max-attempts", "quota", "quota.<id>"), List.copyOf(keys.keySet()));
+    }
+
+    @Test
+    void readsOnlyDeclaredKeys() throws Exception {
+        assertDoesNotThrow(() -> readStrict("{ style: plains, regions: quarter, max-attempts: 3, quota: { diamond: 5-7, trees: 6- } }"));
+    }
+
+    @Test
+    void leftOutOptionalSettingsKeepTheirDefaults() throws Exception {
+        assertDoesNotThrow(() -> readStrict("{ style: plains, regions: quarter }"));
+    }
+
+    private void readStrict(String yaml) throws Exception {
+        var factory = factory(new ArrayList<>());
+        var section = new YamlConfiguration();
+        section.loadFromString(yaml);
+        var reader = ConfigReader.strict("games/test.yml", section, factory.settings());
+
+        factory.create(reader);
+
+        reader.check();
     }
 }

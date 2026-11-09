@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.features.kit;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import java.util.ArrayList;
@@ -21,6 +23,12 @@ import org.bukkit.Material;
 public final class KitFactory implements FeatureFactory {
 
     private static final String UNBREAKABLE = "unbreakable";
+    private static final Setting<List<String>> ITEMS = Setting.of("items", Kind.strings(),
+            "vanilla items to give, each with an optional amount and unbreakable, like 'arrow 16'; needed unless saved is set").orElse(List.of());
+    private static final Setting<String> SAVED = Setting.of("saved", Kind.text(),
+            "the name of an inventory saved with /mga kit save; needed unless items is set").orElse("");
+    private static final Setting<Boolean> RESPAWN = Setting.of("respawn", Kind.bool(),
+            "top the kit up after every respawn; false gives it once, at the start").orElse(true);
     private static final SavedKit NONE = new SavedKit(Map.of());
 
     private final Function<String, Optional<SavedKit>> savedKits;
@@ -45,6 +53,11 @@ public final class KitFactory implements FeatureFactory {
     }
 
     @Override
+    public List<Setting<?>> settings() {
+        return List.of(ITEMS, SAVED, RESPAWN);
+    }
+
+    @Override
     public Feature create(ConfigReader config) {
         if (!config.has("items") && !config.has("saved")) {
             config.problem("items", "is missing; or name a saved kit with saved: <name>");
@@ -53,19 +66,19 @@ public final class KitFactory implements FeatureFactory {
         var items = config.has("items") ? items(config) : List.<Kit.Item>of();
         var saved = NONE;
         if (config.has("saved")) {
-            var name = config.string("saved");
+            var name = config.read(SAVED);
             var found = savedKits.apply(name);
             if (found.isEmpty()) {
                 config.problem("saved", "no saved kit '" + name + "'; save one with /mga kit save " + name);
             }
             saved = found.orElse(NONE);
         }
-        return new Kit(items, saved, !config.has("respawn") || config.bool("respawn"));
+        return new Kit(items, saved, config.read(RESPAWN));
     }
 
     private List<Kit.Item> items(ConfigReader config) {
         var items = new ArrayList<Kit.Item>();
-        for (String entry : config.strings("items")) {
+        for (String entry : config.read(ITEMS)) {
             var parts = entry.strip().split("\\s+");
             var material = Material.matchMaterial(parts[0]);
             if (material == null) {

@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import java.nio.file.Files;
@@ -67,5 +68,30 @@ class LootFactoryTest {
         var problems = assertThrows(InvalidConfigException.class, root::check).problems().stream().map(ConfigProblem::toString).toList();
         assertEquals(1, problems.size());
         assertTrue(problems.getFirst().contains("no loot style 'easter'") && problems.getFirst().contains("[christmas]"), problems.toString());
+    }
+
+    @Test
+    void declaredSettingsCompleteWithoutMakingTheFeature() throws Exception {
+        assertEquals(List.of("style"), List.copyOf(Setting.keys(factory().settings(), true).keySet()));
+    }
+
+    @Test
+    void readsOnlyDeclaredKeys() throws Exception {
+        assertDoesNotThrow(() -> readStrict(factory(), "{ style: christmas }"));
+    }
+
+    @Test
+    void leftOutOptionalSettingsKeepTheirDefaults() throws Exception {
+        assertDoesNotThrow(() -> readStrict(factory(), "{}"));
+    }
+
+    private void readStrict(LootFactory factory, String yaml) throws Exception {
+        var config = new YamlConfiguration();
+        config.loadFromString(yaml);
+        var reader = ConfigReader.strict("games/test.yml", config, factory.settings());
+
+        factory.create(reader);
+
+        reader.check();
     }
 }
