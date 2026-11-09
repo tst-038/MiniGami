@@ -133,4 +133,26 @@ public final class Kind<T> {
     private interface Layout {
         void keys(String path, boolean expandIds, Map<String, List<String>> out);
     }
+
+    /**
+     * A list of sections, each holding the given settings; read them from each returned reader with
+     * {@link ConfigReader#read}. With a shorthand key an item written as plain text counts as a section holding just
+     * that text under the key. Problems in an item are reported as {@code key[index].field}.
+     */
+    public static Kind<List<ConfigReader>> sections(List<Setting<?>> item, String shorthandKey) {
+        return new Kind<>((config, key) -> config.sections(key, shorthandKey), List::of, (path, expandIds, out) -> {
+            put(path, List.of(), out);
+            item.forEach(setting -> setting.kind().keys(join(path, setting.key()), expandIds, out));
+        });
+    }
+
+    /**
+     * A single name, or a section of names each with a weight from 1 to the maximum: {@code stone} means
+     * {@code { stone: 1 }}. Shown as {@code <idName>}, like {@link #each}.
+     */
+    public static Kind<Map<String, Integer>> weighted(String idName, int max) {
+        var weights = each(idName, List::of, integer(1, max));
+        return new Kind<>((config, key) -> config.isSection(key) ? weights.read(config, key) : Map.of(config.string(key), 1), List::of,
+                weights.layout);
+    }
 }
