@@ -2,6 +2,8 @@ package io.github.tst_038.minigami.itemrace;
 
 import io.github.tst_038.minigami.api.border.ClosingBorder;
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -16,6 +18,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * A survival scramble in one very large arena: everyone starts spread over the spawns, grabs what the loot
@@ -47,6 +50,21 @@ public final class ItemRace implements GameType {
     /** The HUD has a line per target ({@code %item1%} to {@code %item5%}). */
     static final int MAX_TARGETS = 5;
 
+    private static final ConfigReader NO_BORDER = ConfigReader.of("", new MemoryConfiguration());
+    private static final Setting<Integer> PLAY_SECONDS = Setting.of("play-seconds", Kind.integer(60, 86400), "how long the race lasts").orElse(3600);
+    private static final Setting<Integer> TARGETS = Setting.of("targets", Kind.integer(1, MAX_TARGETS), "how many different items are asked for").orElse(1);
+    private static final Setting<Goal> GOAL = Setting.of("goal", Kind.choice(Goal.class), "hand in every target, or just any one of them").orElse(Goal.ALL);
+    private static final Setting<Deposit.HandIn> HAND_IN = Setting.of("hand-in", Kind.choice(Deposit.HandIn.class),
+            "how an item is handed in: dropped on a deposit, or clicked into it").orElse(Deposit.HandIn.DROP);
+    private static final Setting<Integer> HAND_IN_DELAY = Setting.of("hand-in-delay-seconds", Kind.integer(0, 3600),
+            "how long an item must stay handed in to count").orElse(0);
+    // The border's own keys, as ClosingBorder.Settings reads them.
+    private static final Setting<ConfigReader> BORDER = Setting.of("border", Kind.section(List.of(
+            Setting.of("end-size", Kind.integer(1, 10000), "blocks across the widest side once closed").orElse(20),
+            Setting.of("shrink-seconds", Kind.integer(1, 7200), "how long the border takes to close").orElse(300),
+            Setting.of("damage", Kind.integer(0, 40), "damage per second outside the border").orElse(1))),
+            "closes the border region in on its centre; left out, there is none").orElse(NO_BORDER);
+
     private final int playSeconds;
     private final Optional<ClosingBorder.Settings> border;
     private final Optional<ItemPool> pool;
@@ -63,7 +81,8 @@ public final class ItemRace implements GameType {
 
     /** @param isItem whether a material is an item players can obtain; the server's registry decides, tests pass a fake */
     public ItemRace(Predicate<Material> isItem) {
-        this(3600, Optional.empty(), Optional.empty(), 1, Goal.ALL, Deposit.HandIn.DROP, 0, isItem);
+        this(PLAY_SECONDS.fallback().orElseThrow(), Optional.empty(), Optional.empty(), TARGETS.fallback().orElseThrow(), GOAL.fallback().orElseThrow(),
+                HAND_IN.fallback().orElseThrow(), HAND_IN_DELAY.fallback().orElseThrow(), isItem);
     }
 
     private ItemRace(int playSeconds, Optional<ClosingBorder.Settings> border, Optional<ItemPool> pool, int targets, Goal goal, Deposit.HandIn handIn, int handInDelay, Predicate<Material> isItem) {
@@ -127,19 +146,26 @@ public final class ItemRace implements GameType {
     }
 
     @Override
+    public List<Setting<?>> settings() {
+        var all = new ArrayList<>(ItemPool.SETTINGS);
+        all.addAll(List.of(PLAY_SECONDS, TARGETS, GOAL, HAND_IN, HAND_IN_DELAY, BORDER));
+        return all;
+    }
+
+    @Override
     public GameType configure(ConfigReader config) {
         var read = ItemPool.read(config, isItem).or(() -> pool);
-        int count = config.has("targets") ? config.integer("targets", 1, MAX_TARGETS) : targets;
+        int count = config.read(TARGETS);
         if (read.isPresent() && count > read.get().distinct()) {
             config.problem("targets", "more targets than there are different items to choose from (" + read.get().distinct() + ")");
         }
         return new ItemRace(
-                config.has("play-seconds") ? config.integer("play-seconds", 60, 86400) : playSeconds,
-                config.has("border") ? Optional.of(ClosingBorder.Settings.read(config.section("border"))) : border,
+                config.read(PLAY_SECONDS),
+                config.has(BORDER.key()) ? Optional.of(ClosingBorder.Settings.read(config.read(BORDER))) : border,
                 read, count,
-                config.has("goal") ? config.choice("goal", Goal.class) : goal,
-                config.has("hand-in") ? config.choice("hand-in", Deposit.HandIn.class) : handIn,
-                config.has("hand-in-delay-seconds") ? config.integer("hand-in-delay-seconds", 0, 3600) : handInDelay,
+                config.read(GOAL),
+                config.read(HAND_IN),
+                config.read(HAND_IN_DELAY),
                 isItem);
     }
 }

@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.paint;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.bukkit.Material;
+import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * Paint the arena's canvas by walking over it: every block you colour is a point, every block of
@@ -27,18 +30,32 @@ public final class Paint implements GameType {
     private static final List<Material> DEFAULT_COLORS = List.of(Material.RED_CONCRETE, Material.BLUE_CONCRETE, Material.LIME_CONCRETE,
             Material.YELLOW_CONCRETE, Material.ORANGE_CONCRETE, Material.PURPLE_CONCRETE, Material.CYAN_CONCRETE, Material.PINK_CONCRETE);
 
+    private static final Setting<Integer> PLAY_SECONDS = Setting.of("play-seconds", Kind.integer(10, 3600), "how long the painting lasts").orElse(180);
+    private static final Setting<List<Material>> PAINTABLE = Setting.of("paintable", Kind.materials(), "blocks that can be painted over")
+            .orElse(List.of(Material.WHITE_CONCRETE));
+    private static final Setting<List<Material>> COLORS = Setting.of("colors", Kind.materials(), "a block for each team or player in turn")
+            .orElse(DEFAULT_COLORS);
+
     private final int playSeconds;
     private final Set<Material> paintable;
     private final List<Material> colors;
 
     public Paint() {
-        this(180, Set.of(Material.WHITE_CONCRETE), DEFAULT_COLORS);
+        this(ConfigReader.of("", new MemoryConfiguration()));
     }
 
-    private Paint(int playSeconds, Set<Material> paintable, List<Material> colors) {
-        this.playSeconds = playSeconds;
-        this.paintable = paintable;
-        this.colors = colors;
+    private Paint(ConfigReader config) {
+        this.playSeconds = config.read(PLAY_SECONDS);
+        this.paintable = Set.copyOf(config.read(PAINTABLE));
+        this.colors = config.read(COLORS);
+        if (colors.isEmpty()) {
+            config.problem(COLORS.key(), "needs at least one block");
+        }
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return List.of(PLAY_SECONDS, PAINTABLE, COLORS);
     }
 
     @Override
@@ -78,14 +95,6 @@ public final class Paint implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
-        var colors = config.has("colors") ? config.materials("colors") : this.colors;
-        if (colors.isEmpty()) {
-            config.problem("colors", "needs at least one block");
-        }
-        var paintable = config.has("paintable") ? Set.copyOf(config.materials("paintable")) : this.paintable;
-        return new Paint(
-                config.has("play-seconds") ? config.integer("play-seconds", 10, 3600) : playSeconds,
-                paintable,
-                colors);
+        return new Paint(config);
     }
 }

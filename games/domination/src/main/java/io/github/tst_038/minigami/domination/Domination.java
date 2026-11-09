@@ -2,6 +2,8 @@ package io.github.tst_038.minigami.domination;
 
 import org.bukkit.GameMode;
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -12,6 +14,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.bukkit.configuration.MemoryConfiguration;
 
 /**
  * Hold the capture points: each is an arena region, taken by a team that stands on it alone, and
@@ -27,6 +30,16 @@ import java.util.Set;
  */
 public final class Domination implements GameType {
 
+    private static final Setting<Map<String, String>> CAPTURE_POINTS = Setting.of("capture-points",
+            Kind.each("region", List::of, Kind.text()), "the regions to capture, each with its name");
+    private static final Setting<Integer> CAPTURE_SECONDS = Setting.of("capture-seconds", Kind.integer(1, 600),
+            "how long a team must stand on a point alone to take it").orElse(5);
+    private static final Setting<Boolean> KEEP_CAPTURED = Setting.of("keep-captured", Kind.bool(),
+            "a point stays its owner's once they step off, until another team takes it").orElse(true);
+    private static final Setting<Integer> PLAY_SECONDS = Setting.of("play-seconds", Kind.integer(10, 3600), "how long the match lasts").orElse(300);
+    private static final Setting<Integer> POINTS_TO_WIN = Setting.of("points-to-win", Kind.integer(1, 10000),
+            "points that end the match at once; 0 plays the full time").orElse(0);
+
     private final Map<String, String> points;
     private final int captureSeconds;
     private final boolean keepCaptured;
@@ -34,15 +47,20 @@ public final class Domination implements GameType {
     private final int pointsToWin;
 
     public Domination() {
-        this(Map.of(), 5, true, 300, 0);
+        this(Map.of(), ConfigReader.of("", new MemoryConfiguration()));
     }
 
-    private Domination(Map<String, String> points, int captureSeconds, boolean keepCaptured, int playSeconds, int pointsToWin) {
+    private Domination(Map<String, String> points, ConfigReader config) {
         this.points = points;
-        this.captureSeconds = captureSeconds;
-        this.keepCaptured = keepCaptured;
-        this.playSeconds = playSeconds;
-        this.pointsToWin = pointsToWin;
+        this.captureSeconds = config.read(CAPTURE_SECONDS);
+        this.keepCaptured = config.read(KEEP_CAPTURED);
+        this.playSeconds = config.read(PLAY_SECONDS);
+        this.pointsToWin = config.read(POINTS_TO_WIN);
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return List.of(CAPTURE_POINTS, CAPTURE_SECONDS, KEEP_CAPTURED, PLAY_SECONDS, POINTS_TO_WIN);
     }
 
     @Override
@@ -83,14 +101,10 @@ public final class Domination implements GameType {
 
     @Override
     public GameType configure(ConfigReader config) {
-        var named = config.texts("capture-points");
-        if (named.isEmpty() && config.has("capture-points")) {
-            config.problem("capture-points", "needs at least one region, with its name");
+        var named = config.read(CAPTURE_POINTS);
+        if (named.isEmpty() && config.has(CAPTURE_POINTS.key())) {
+            config.problem(CAPTURE_POINTS.key(), "needs at least one region, with its name");
         }
-        return new Domination(named,
-                config.has("capture-seconds") ? config.integer("capture-seconds", 1, 600) : captureSeconds,
-                config.has("keep-captured") ? config.bool("keep-captured") : keepCaptured,
-                config.has("play-seconds") ? config.integer("play-seconds", 10, 3600) : playSeconds,
-                config.has("points-to-win") ? config.integer("points-to-win", 1, 10000) : pointsToWin);
+        return new Domination(named, config);
     }
 }

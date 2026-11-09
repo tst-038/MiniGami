@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.poleduel;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -82,6 +83,11 @@ public final class PoleDuel implements GameType {
     @Override
     public int lives() {
         return 1;
+    }
+
+    @Override
+    public List<Setting<?>> settings() {
+        return PoleSettings.ALL;
     }
 
     @Override
