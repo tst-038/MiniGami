@@ -53,6 +53,7 @@ public final class PlayerSessions implements Listener {
     private final Map<UUID, PlayerSnapshot.SavedLocation> homes = new ConcurrentHashMap<>();
     /** Players whose quit is being handled: their restore can't be trusted to move them, as the connection is going away. */
     private final Set<UUID> quitting = new HashSet<>();
+    private final Set<UUID> parkOnJoin = new HashSet<>();
 
     /** The loaded worlds, for the login, which runs off the server thread and mustn't ask the server. */
     private final Map<UUID, World> worlds = new ConcurrentHashMap<>();
@@ -90,6 +91,10 @@ public final class PlayerSessions implements Listener {
                 var online = plugin.getServer().getPlayer(id);
                 if (park != null && online != null) {
                     park.accept(online);
+                    // A teleport while quitting is lost, so they are parked again on their next join.
+                    if (quitting.contains(id)) {
+                        parkOnJoin.add(id);
+                    }
                 }
             };
         }
@@ -252,7 +257,12 @@ public final class PlayerSessions implements Listener {
     // Once a rejoin has had its say, where they belong is no longer needed.
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoinEnd(PlayerJoinEvent event) {
-        homes.remove(event.getPlayer().getUniqueId());
+        var id = event.getPlayer().getUniqueId();
+        homes.remove(id);
+        var park = parkOnJoin.remove(id) ? held.get(id) : null;
+        if (park != null) {
+            park.accept(event.getPlayer());
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
