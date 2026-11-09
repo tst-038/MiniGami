@@ -41,7 +41,7 @@ import org.bukkit.util.BoundingBox;
 
 /**
  * Everything that touches WorldEdit's classes, so the plugin still loads without it. Blocks are
- * copied and pasted on the server thread; the file is read and written off it.
+ * copied on the server thread, and pasted there too unless FastAsyncWorldEdit is installed; the file is read and written off it.
  *
  * <p>Where a map goes is kept by the caller, not taken from the file: FastAsyncWorldEdit reads a
  * schematic whose origin is its corner as if it lay at 0, 0, 0.
@@ -133,8 +133,7 @@ final class WorldEditMaps {
      * in the box, players aside.
      */
     CompletableFuture<Void> paste(Region box, Path file) {
-        return CompletableFuture.supplyAsync(() -> read(file), offThread)
-                .thenAcceptAsync(clipboard -> paste(box, clipboard), serverThread);
+        return CompletableFuture.supplyAsync(() -> read(file), offThread).thenCompose(clipboard -> place(box, clipboard));
     }
 
     /**
@@ -142,7 +141,22 @@ final class WorldEditMaps {
      */
     CompletableFuture<Void> replace(Region box, Path file) {
         return CompletableFuture.supplyAsync(() -> Files.exists(file) ? Optional.of(read(file)) : Optional.<Clipboard>empty(), offThread)
-                .thenAcceptAsync(clipboard -> clipboard.ifPresentOrElse(found -> paste(box, found), () -> clear(box)), serverThread);
+                .thenCompose(clipboard -> clipboard.map(found -> place(box, found)).orElseGet(() -> fawe
+                        ? CompletableFuture.runAsync(() -> clear(box), offThread) : CompletableFuture.runAsync(() -> clear(box), serverThread)));
+    }
+
+    /**
+     * With FastAsyncWorldEdit the blocks are pasted off the server thread, which queues them chunk by chunk itself, so a huge
+     * region doesn't stall the server; only removing the entities needs the server thread. Without it, all on the server thread.
+     */
+    private CompletableFuture<Void> place(Region box, Clipboard clipboard) {
+        if (!fawe) {
+            return CompletableFuture.runAsync(() -> {
+                removeEntities(box);
+                paste(box, clipboard);
+            }, serverThread);
+        }
+        return CompletableFuture.runAsync(() -> removeEntities(box), serverThread).thenRunAsync(() -> paste(box, clipboard), offThread);
     }
 
     /**
@@ -290,10 +304,13 @@ final class WorldEditMaps {
         }
     }
 
+    private static void removeEntities(Region box) {
+        box.world().getNearbyEntities(new BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX() + 1, box.maxY() + 1, box.maxZ() + 1),
+                entity -> !(entity instanceof Player)).forEach(Entity::remove);
+    }
+
     private static void paste(Region box, Clipboard clipboard) {
         var world = box.world();
-        world.getNearbyEntities(new BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX() + 1, box.maxY() + 1, box.maxZ() + 1),
-                entity -> !(entity instanceof Player)).forEach(Entity::remove);
         // A block at p in the clipboard lands at to + (p - origin), so this puts its lowest corner on the box's.
         var to = BlockVector3.at(box.minX(), box.minY(), box.minZ())
                 .add(clipboard.getOrigin().subtract(clipboard.getRegion().getMinimumPoint()));
