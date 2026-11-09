@@ -29,4 +29,13 @@ class FloorsTest {
         assertEquals(OptionalInt.empty(), floors.levelAt(59.5));
         assertEquals(OptionalInt.empty(), new Floors(List.of()).levelAt(64));
     }
+
+    @Test
+    void aLevelKeepsItsNumberWhenTheFloorsAboveItAreGone() {
+        var later = floors.recount(new Floors(List.of(60, 65)));
+
+        assertEquals(2, later.count());
+        assertEquals(OptionalInt.of(2), later.levelAt(65));
+        assertEquals(OptionalInt.of(3), later.levelAt(60));
+    }
 }

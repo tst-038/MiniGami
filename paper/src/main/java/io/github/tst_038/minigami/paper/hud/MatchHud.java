@@ -84,7 +84,7 @@ public final class MatchHud {
     private final Map<UUID, Scoreboard> previous = new HashMap<>();
     /** What each sidebar shows, so unchanged lines aren't sent again. */
     private final Map<UUID, List<Component>> shown = new HashMap<>();
-    /** The floors as last counted; empty while the game has no region to play in, or before the first count. */
+    /** The floors as last counted, numbered from the highest there was since the start; empty while the game has no region to play in, or before the first count. */
     private Optional<Floors> floors = Optional.empty();
     private long lastCountdown = -1;
 
@@ -104,7 +104,7 @@ public final class MatchHud {
     public void start() {
         var scope = match.match().scope();
         scope.register(match.match().clock().repeat(REFRESH_TICKS, this::refresh));
-        scope.register(match.match().clock().repeat(FLOORS_TICKS, () -> floors = match.isJoinable() ? Optional.empty() : match.floors()));
+        scope.register(match.match().clock().repeat(FLOORS_TICKS, () -> floors = match.isJoinable() ? Optional.empty() : match.floors().map(counted -> floors.map(before -> before.recount(counted)).orElse(counted))));
         scope.register(() -> List.copyOf(boards.keySet()).forEach(this::hide));
     }
 

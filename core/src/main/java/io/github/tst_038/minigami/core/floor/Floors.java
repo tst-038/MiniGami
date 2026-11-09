@@ -6,20 +6,34 @@ import java.util.OptionalInt;
 
 /**
  * The floors of a place that stack on top of each other, as the heights players can stand at. Levels are
- * numbered from the highest floor that is left, starting at 1, so the top is always level 1 and the rest renumber as floors break away.
+ * numbered from the highest floor there was, starting at 1, so a level keeps its number when a floor above it breaks away.
  */
 public final class Floors {
 
     private final List<Integer> heights;
+    private final int standing;
 
     /** @param heights the height of each floor, in any order */
     public Floors(Collection<Integer> heights) {
-        this.heights = heights.stream().distinct().sorted().toList();
+        this(heights.stream().distinct().sorted().toList(), (int) heights.stream().distinct().count());
     }
 
-    /** How many floors there are. */
+    private Floors(List<Integer> heights, int standing) {
+        this.heights = heights;
+        this.standing = standing;
+    }
+
+    /** How many floors are still standing. */
     public int count() {
-        return heights.size();
+        return standing;
+    }
+
+    /**
+     * The floors as counted later: the levels stay numbered as they were, with any new height added, and the
+     * count is of what stands now.
+     */
+    public Floors recount(Floors later) {
+        return new Floors(java.util.stream.Stream.concat(heights.stream(), later.heights.stream()).distinct().sorted().toList(), later.standing);
     }
 
     /**
