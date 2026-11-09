@@ -11,6 +11,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -91,6 +92,11 @@ public final class ShiftingMaze implements GameType {
     @Override
     public List<String> regions() {
         return List.of(REGION);
+    }
+
+    @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.empty();
     }
 
     @Override

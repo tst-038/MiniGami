@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.bukkit.configuration.MemoryConfiguration;
 
@@ -80,8 +81,13 @@ public final class Domination implements GameType {
     }
 
     @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.of(CapturePoints.SCORED);
+    }
+
+    @Override
     public Set<Stat> stats() {
-        return Set.of(CapturePoints.POINT_SECONDS);
+        return Set.of(CapturePoints.POINT_SECONDS, CapturePoints.SCORED);
     }
 
     @Override

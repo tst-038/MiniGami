@@ -8,10 +8,12 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.bukkit.configuration.MemoryConfiguration;
 
 /**
@@ -48,6 +50,12 @@ public final class TeamDeathmatch implements GameType {
     @Override
     public String id() {
         return "team-deathmatch";
+    }
+
+    /** The score is kills, which the combat stats already keep. */
+    @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.empty();
     }
 
     @Override

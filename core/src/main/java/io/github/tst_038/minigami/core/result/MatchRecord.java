@@ -41,24 +41,25 @@ public record MatchRecord(String gametype, String game, Optional<String> variant
     }
 
     /**
-     * Records a match that has its result: its counted stats, and each participant's points as
-     * {@link Stat#POINTS}.
+     * Records a match that has its result: its counted stats, and each participant's points under
+     * {@code pointsStat}, which the game picks since "points" means something else in each of them.
      *
+     * @param pointsStat the stat the points are kept as; empty when they only repeat a stat the game already counts
      * @param left the participants who left before the end
      * @throws IllegalStateException if the match has no result yet
      */
-    public static MatchRecord of(Match match, String gametype, String game, Optional<String> variant, String arena, Instant start, Instant end, Set<UUID> left) {
+    public static MatchRecord of(Match match, String gametype, String game, Optional<String> variant, String arena, Instant start, Instant end, Set<UUID> left, Optional<Stat> pointsStat) {
         var result = match.result().orElseThrow(() -> new IllegalStateException("The match has no result yet"));
-        var participants = match.roster().teams().stream().flatMap(team -> entries(match, team, left).stream()).toList();
+        var participants = match.roster().teams().stream().flatMap(team -> entries(match, team, left, pointsStat).stream()).toList();
         return new MatchRecord(gametype, game, variant, arena, start, end, result, participants);
     }
 
-    private static List<Entry> entries(Match match, MatchTeam team, Set<UUID> left) {
+    private static List<Entry> entries(Match match, MatchTeam team, Set<UUID> left, Optional<Stat> pointsStat) {
         return team.ids().stream().map(id -> {
             var stats = new HashMap<>(match.stats().of(id));
             var points = match.scores().of(id);
             if (points != 0) {
-                stats.put(Stat.POINTS, (long) points);
+                pointsStat.ifPresent(stat -> stats.put(stat, (long) points));
             }
             return new Entry(id, team.id(), left.contains(id), stats);
         }).toList();

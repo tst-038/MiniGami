@@ -48,7 +48,7 @@ class MatchRecordTest {
         match.addPoints(alice, 3);
         match.endNow();
 
-        var record = MatchRecord.of(match, "team-deathmatch", "tdm", Optional.of("duos"), "hills", start, end, Set.of(bob));
+        var record = MatchRecord.of(match, "team-deathmatch", "tdm", Optional.of("duos"), "hills", start, end, Set.of(bob), Optional.of(Stat.POINTS));
 
         assertEquals(List.of("team-deathmatch", "tdm", Optional.of("duos"), "hills"), List.of(record.gametype(), record.game(), record.variant(), record.arena()));
         assertEquals(match.result().orElseThrow(), record.result());
@@ -60,6 +60,6 @@ class MatchRecordTest {
 
     @Test
     void aMatchWithoutAResultCantBeRecorded() {
-        assertThrows(IllegalStateException.class, () -> MatchRecord.of(match(), "team-deathmatch", "tdm", Optional.empty(), "hills", start, end, Set.of()));
+        assertThrows(IllegalStateException.class, () -> MatchRecord.of(match(), "team-deathmatch", "tdm", Optional.empty(), "hills", start, end, Set.of(), Optional.of(Stat.POINTS)));
     }
 }

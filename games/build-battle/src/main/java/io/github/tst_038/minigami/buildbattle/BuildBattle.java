@@ -7,11 +7,13 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.AnnounceWinner;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.core.phase.Phase;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.bukkit.GameMode;
 import org.bukkit.configuration.MemoryConfiguration;
 
@@ -56,6 +58,19 @@ public final class BuildBattle implements GameType {
     @Override
     public String id() {
         return "build-battle";
+    }
+
+    /** What a player's score is here: the votes their plot got, so lifetime stats say so instead of "points". */
+    static final Stat VOTES = new Stat("votes");
+
+    @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.of(VOTES);
+    }
+
+    @Override
+    public Set<Stat> stats() {
+        return Set.of(VOTES);
     }
 
     @Override

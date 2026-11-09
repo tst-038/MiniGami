@@ -305,6 +305,8 @@ stats:
     kills: "kills"
     deaths: "deaths"
     point-seconds: "seconds on a capture point"
+    capture-points: "points scored for the team"
+    votes: "votes received"
     keys: "keys found"
     escapes: "escapes"
     catches: "runners caught"

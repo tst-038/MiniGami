@@ -135,6 +135,15 @@ public interface GameType {
     }
 
     /**
+     * The stat each participant's points are kept as when the match ends. Plain {@link Stat#POINTS} by default;
+     * a game whose points mean something specific names that (votes, say), and one whose points only repeat a
+     * stat it already counts returns empty so the lifetime stats don't show the same number twice.
+     */
+    default Optional<Stat> pointsStat() {
+        return Optional.of(Stat.POINTS);
+    }
+
+    /**
      * The game mode players still in the match are put in when the phase starts, and when they come back to it.
      * Adventure keeps blocks as they are, so a game that lets players dig or build asks for survival or creative
      * here, and the features of the phase say what they may break. Not applied to the first phase, where players

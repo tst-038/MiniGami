@@ -40,6 +40,11 @@ public final class ItemRace implements GameType {
     static final Stat ITEMS_HANDED_IN = new Stat("items-handed-in");
 
     @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.empty();
+    }
+
+    @Override
     public Set<Stat> stats() {
         return Set.of(ITEMS_HANDED_IN);
     }

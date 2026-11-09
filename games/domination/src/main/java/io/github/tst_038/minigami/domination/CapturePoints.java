@@ -31,6 +31,8 @@ final class CapturePoints implements Feature {
 
     /** Seconds each player stood on a point their team owned. */
     static final Stat POINT_SECONDS = new Stat("point-seconds");
+    /** The points a player scored for their team by holding a capture point alone. */
+    static final Stat SCORED = new Stat("capture-points");
 
     /** The stained glass that looks like each team colour. */
     private static final Map<TextColor, Material> GLASS = Map.ofEntries(

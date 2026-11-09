@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.core.win.MostPoints;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.configuration.MemoryConfiguration;
@@ -66,6 +67,11 @@ public final class Paint implements GameType {
     @Override
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed("playing", playSeconds * 20L), Phase.timed("ending", 5 * 20));
+    }
+
+    @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.empty();
     }
 
     @Override

@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.core.win.WinCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Optional;
 import java.util.Set;
 import org.bukkit.GameMode;
 import org.bukkit.configuration.MemoryConfiguration;
@@ -82,6 +83,11 @@ public final class King implements GameType {
     @Override
     public OptionalInt requiredTeams() {
         return OptionalInt.of(2);
+    }
+
+    @Override
+    public Optional<Stat> pointsStat() {
+        return Optional.empty();
     }
 
     @Override
