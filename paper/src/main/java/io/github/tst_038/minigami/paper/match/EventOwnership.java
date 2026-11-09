@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -61,7 +62,7 @@ final class EventOwnership {
         return BlockFromToEvent.class.isAssignableFrom(type) || StructureGrowEvent.class.isAssignableFrom(type)
                 || BlockSpreadEvent.class.isAssignableFrom(type) || BlockPistonEvent.class.isAssignableFrom(type)
                 || BlockExplodeEvent.class.isAssignableFrom(type) || EntityExplodeEvent.class.isAssignableFrom(type)
-                || CreatureSpawnEvent.class.isAssignableFrom(type) || ProjectileHitEvent.class.isAssignableFrom(type) || EntityChangeBlockEvent.class.isAssignableFrom(type);
+                || CreatureSpawnEvent.class.isAssignableFrom(type) || EntityChangeBlockEvent.class.isAssignableFrom(type);
     }
 
     /** Where a block change that no player made starts; empty for any other event. */
@@ -72,10 +73,8 @@ final class EventOwnership {
             case BlockSpreadEvent e -> Optional.of(e.getSource().getLocation());
             case BlockPistonEvent e -> Optional.of(e.getBlock().getLocation());
             case BlockExplodeEvent e -> Optional.of(e.getBlock().getLocation());
-            // A mob's projectile, such as a wither skull, belongs to where the mob is, however far it flew.
-            case EntityExplodeEvent e when e.getEntity() instanceof Projectile p && p.getShooter() instanceof Mob shooter -> Optional.of(shooter.getLocation());
             case EntityExplodeEvent e -> Optional.of(e.getLocation());
-            case ProjectileHitEvent e when e.getEntity().getShooter() instanceof Mob shooter -> Optional.of(shooter.getLocation());
+
             case CreatureSpawnEvent e -> Optional.of(e.getLocation());
             // A player trampling farmland stays the player's own event.
             case EntityChangeBlockEvent e when !(e.getEntity() instanceof Player) -> Optional.of(e.getBlock().getLocation());
@@ -83,11 +82,33 @@ final class EventOwnership {
         };
     }
 
+    /** The mob behind an event, however far it has flown: the mob itself, or the one that shot the projectile. */
+    static Optional<Entity> mobOf(Event event) {
+        return switch (event) {
+            case EntityExplodeEvent e when e.getEntity() instanceof Projectile p && p.getShooter() instanceof Mob shooter -> Optional.of(shooter);
+            case EntityExplodeEvent e when e.getEntity() instanceof Mob mob -> Optional.of(mob);
+            case EntityChangeBlockEvent e when e.getEntity() instanceof Mob mob -> Optional.of(mob);
+            case ProjectileHitEvent e when e.getEntity().getShooter() instanceof Mob shooter -> Optional.of(shooter);
+            default -> Optional.empty();
+        };
+    }
+
+    static boolean belongsTo(Event event, Predicate<UUID> isMember, Predicate<Location> isInside) {
+        return belongsTo(event, isMember, isInside, mob -> false);
+    }
+
     /**
+     * A mob's doing belongs to the match that marked the mob, wherever it is, since a fast mob or its projectile
+     * can be outside the arena by the time it acts. Otherwise as the place or the player says.
+     *
      * @param isMember whether a player is in the match
      * @param isInside whether a place is in the match's arena
+     * @param isMarked whether the match marked this mob as its own
      */
-    static boolean belongsTo(Event event, Predicate<UUID> isMember, Predicate<Location> isInside) {
+    static boolean belongsTo(Event event, Predicate<UUID> isMember, Predicate<Location> isInside, Predicate<Entity> isMarked) {
+        if (mobOf(event).filter(isMarked).isPresent()) {
+            return true;
+        }
         return placeOf(event).map(isInside::test).orElseGet(() -> playerOf(event).filter(isMember).isPresent());
     }
 }

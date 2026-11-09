@@ -15,6 +15,11 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
         }
     }
 
+    /** The scoreboard tag of what belongs to this region as its own, such as a mob admitted to a plot. */
+    public String plotTag() {
+        return "minigami-plot:" + id;
+    }
+
     /** The box spanned by two opposite corners, in either order. */
     public static Region between(String id, World world, int x1, int y1, int z1, int x2, int y2, int z2) {
         return new Region(id, world, Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2),

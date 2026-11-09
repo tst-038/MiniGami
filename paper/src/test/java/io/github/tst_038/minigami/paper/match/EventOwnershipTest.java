@@ -142,4 +142,15 @@ class EventOwnershipTest {
 
         assertTrue(EventOwnership.belongsTo(change, id::equals, place -> false));
     }
+
+    @Test
+    void aMarkedMobsProjectileBelongsToTheMatchWhereverItHits() {
+        var mob = entity(org.bukkit.entity.Mob.class, UUID.randomUUID());
+        var skull = org.bukkit.entity.Projectile.class.cast(Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {org.bukkit.entity.Projectile.class},
+                (proxy, method, args) -> method.getName().equals("getShooter") ? mob : null));
+        var hit = new org.bukkit.event.entity.ProjectileHitEvent(skull);
+
+        assertTrue(EventOwnership.belongsTo(hit, id -> false, place -> false, shooter -> shooter == mob));
+        assertFalse(EventOwnership.belongsTo(hit, id -> false, place -> false, shooter -> false));
+    }
 }

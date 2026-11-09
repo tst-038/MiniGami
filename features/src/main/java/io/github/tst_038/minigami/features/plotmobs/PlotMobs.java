@@ -41,7 +41,6 @@ public final class PlotMobs implements Feature {
     /** Far enough to catch an enderman's teleport; a mob that got further is gone for good. */
     private static final double SEARCH_MARGIN = 64;
     private static final double TELL_RANGE = 12;
-    private static final String TAG = "minigami-plot:";
 
     private final int max;
 
@@ -154,7 +153,7 @@ public final class PlotMobs implements Feature {
     }
 
     private static String tag(Region plot) {
-        return TAG + plot.id();
+        return plot.plotTag();
     }
 
     /** The plot's mobs within the margin around it. */

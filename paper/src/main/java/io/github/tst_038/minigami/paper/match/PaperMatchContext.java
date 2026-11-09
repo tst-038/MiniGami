@@ -63,6 +63,11 @@ public final class PaperMatchContext implements MatchContext {
         return match.isActive(id) && members.map(filter -> roster().find(id).filter(filter).isPresent()).orElse(true);
     }
 
+    /** Whether the entity carries the tag of one of the arena's plots, which marks it as this match's wherever it goes. */
+    private boolean marked(Entity entity) {
+        return match.arena().regions().values().stream().anyMatch(region -> entity.getScoreboardTags().contains(region.plotTag()));
+    }
+
     private boolean inArena(Location location) {
         return match.arena().regions().values().stream().anyMatch(region -> region.contains(location));
     }
@@ -86,7 +91,7 @@ public final class PaperMatchContext implements MatchContext {
         var listener = new Listener() {};
         plugin.getServer().getPluginManager().registerEvent(type, listener, priority, (ignored, event) -> {
             // Bukkit also calls the executor for subclasses of type; isInstance keeps the cast safe.
-            if (type.isInstance(event) && EventOwnership.belongsTo(event, this::covers, this::inArena)) {
+            if (type.isInstance(event) && EventOwnership.belongsTo(event, this::covers, this::inArena, this::marked)) {
                 handler.accept(type.cast(event));
             }
         }, plugin);
