@@ -104,7 +104,9 @@ public final class MatchHud {
     public void start() {
         var scope = match.match().scope();
         scope.register(match.match().clock().repeat(REFRESH_TICKS, this::refresh));
-        scope.register(match.match().clock().repeat(FLOORS_TICKS, () -> floors = match.isJoinable() ? Optional.empty() : match.floors().map(counted -> floors.map(before -> before.recount(counted)).orElse(counted))));
+        if (showsFloors()) {
+            scope.register(match.match().clock().repeat(FLOORS_TICKS, () -> floors = match.isJoinable() ? Optional.empty() : match.floors().map(counted -> floors.map(before -> before.recount(counted)).orElse(counted))));
+        }
         scope.register(() -> List.copyOf(boards.keySet()).forEach(this::hide));
     }
 
@@ -413,6 +415,12 @@ public final class MatchHud {
         boolean hides(String line) {
             return empty.stream().anyMatch(name -> line.contains("%" + name + "%") || line.contains("<" + name + ">"));
         }
+    }
+
+    /** Whether any HUD text shows floors or levels; if none does, the region is never scanned for them. */
+    private boolean showsFloors() {
+        var texts = Stream.concat(hud.sidebar().values().stream().flatMap(List::stream), hud.bossBar().stream().flatMap(bar -> bar.texts().values().stream()));
+        return texts.anyMatch(text -> text.contains("floors") || text.contains("level"));
     }
 
     /** Every {@code %name%} the sidebar and boss bar texts of the game use. */
