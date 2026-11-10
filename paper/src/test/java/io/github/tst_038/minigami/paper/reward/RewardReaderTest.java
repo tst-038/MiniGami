@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.core.reward.Rewards;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.Material;
@@ -76,5 +77,13 @@ class RewardReaderTest {
                 """);
 
         assertEquals(4, problems.size(), problems.toString());
+    }
+
+    @Test
+    void drawIsTeamUnlessSetToPlayer() throws Exception {
+        assertEquals(Rewards.Draw.TEAM, RewardReader.read(root("taking-part: []")).draw());
+        var root = root("draw: player");
+        assertEquals(Rewards.Draw.PLAYER, RewardReader.read(root).draw());
+        assertDoesNotThrow(root::check);
     }
 }

@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
  * places:
  *   1: [ { chance: 60, item: diamond, amount: 3 }, { chance: 40, command: "eco give %player% 100", name: "100 coins" } ]
  * taking-part: [ { chance: 25, item: cookie } ]
+ * draw: team   # or player: teammates each draw their own
  * </pre>
  */
 public final class RewardReader {
@@ -47,7 +48,8 @@ public final class RewardReader {
             }
         }
         var takingPart = section.has("taking-part") ? table(section, "taking-part") : RewardTable.<Reward>empty();
-        return new Rewards<>(places, takingPart);
+        var draw = section.has("draw") ? section.choice("draw", Rewards.Draw.class) : Rewards.Draw.TEAM;
+        return new Rewards<>(places, takingPart, draw);
     }
 
     private static RewardTable<Reward> table(ConfigReader section, String key) {

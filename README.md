@@ -284,10 +284,12 @@ rewards:
       - { chance: 50, command: "eco give %player% 100", name: "<gold>100 coins" }
   taking-part:
     - { chance: 25, item: cookie, amount: 4 }
+  draw: team                      # or player
 ```
 
 Each place draws at most one reward. Chances are percentages, and whatever is left over to 100% wins nothing. Players
-who leave early win nothing.
+who leave early win nothing. With `draw: team` (the default) a team shares one draw, so its members all win the same;
+with `draw: player` each member draws their own.
 
 ## Stats and placeholders
 

@@ -211,10 +211,10 @@ public final class LiveMatch {
         }
     }
 
-    /** Tells whoever keeps track of matches how this one went. Those still away when it is decided count as having left. */
+    /** Tells whoever keeps track of matches how this one went. Those still away and alive when it is decided count as having left. */
     private void recordEnd() {
         var gone = new HashSet<>(left);
-        gone.addAll(away.keySet());
+        away.keySet().stream().filter(id -> match.roster().find(id).filter(Participant::isAlive).isPresent()).forEach(gone::add);
         var record = MatchRecord.of(match, variant.gametype().id(), variant.game(), variant.id(), arena.id(), start, Instant.now(), gone, variant.gametype().pointsStat());
         plugin.getServer().getPluginManager().callEvent(new MatchEndEvent(record));
     }
@@ -522,7 +522,10 @@ public final class LiveMatch {
         if (isJoinable()) {
             unjoin(id);
         } else {
-            left.add(id);
+            // Already out, they lost with their team rather than left it, and keep their place and rewards.
+            if (match.roster().find(id).filter(Participant::isAlive).isPresent()) {
+                left.add(id);
+            }
             match.eliminate(id);
         }
         restore(id);

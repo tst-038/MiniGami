@@ -2,11 +2,14 @@ package io.github.tst_038.minigami.paper.schedule;
 
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.paper.match.LiveMatch;
 import io.github.tst_038.minigami.paper.reward.Reward;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.random.RandomGenerator;
@@ -59,8 +62,19 @@ public final class ScheduleRewards implements Listener {
             // One match plays in an arena at a time.
             if (match.match.arena().id().equals(event.record().arena()) && !match.match.match().isFinished()) {
                 match.won = match.schedule.rewards().draw(event.record(), random);
+                logDraw(match.schedule.id(), event.record(), match.won);
             }
         }
+    }
+
+    /** One line per participant, so a missing reward can be traced to its place, team or having left. */
+    private void logDraw(String schedule, MatchRecord record, Map<UUID, Reward> won) {
+        var placeOf = new HashMap<UUID, Integer>();
+        record.result().placements().forEach(placement -> placement.participants().forEach(id -> placeOf.putIfAbsent(id, placement.place())));
+        record.participants().forEach(participant -> plugin.getLogger().info("Rewards of " + schedule + ": "
+                + Optional.ofNullable(plugin.getServer().getOfflinePlayer(participant.id()).getName()).orElse(participant.id().toString())
+                + " place " + placeOf.getOrDefault(participant.id(), 0) + " team " + participant.team().orElse("-")
+                + (participant.left() ? " left" : " stayed") + ": " + Optional.ofNullable(won.get(participant.id())).map(Reward::name).orElse("nothing")));
     }
 
     /** Gives the rewards of the matches that let go of their players; once a second. */

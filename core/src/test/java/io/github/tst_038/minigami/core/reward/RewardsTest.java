@@ -7,6 +7,9 @@ import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
 import io.github.tst_038.minigami.core.reward.RewardTable.Chance;
+import io.github.tst_038.minigami.core.roster.Roster;
+import io.github.tst_038.minigami.core.score.Scores;
+import io.github.tst_038.minigami.core.win.LastManStanding;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -57,5 +60,56 @@ class RewardsTest {
     void noneIsEmptyAndWinsNothing() {
         assertTrue(Rewards.none().isEmpty());
         assertTrue(Rewards.none().draw(record(), new Random(1)).isEmpty());
+    }
+
+    @Test
+    void aTeamDrawsOnceSoItsMembersWinTheSame() {
+        var a = UUID.randomUUID();
+        var b = UUID.randomUUID();
+        var result = new MatchResult(List.of(new Placement(1, List.of(a, b))));
+        var members = List.of(new MatchRecord.Entry(a, Optional.of("red"), false, Map.of()), new MatchRecord.Entry(b, Optional.of("red"), false, Map.of()));
+        var record = new MatchRecord("test", "test", Optional.empty(), "arena", Instant.EPOCH, Instant.EPOCH, result, members);
+        var coin = new RewardTable<>(List.of(new Chance<>("diamond", 50)));
+        for (long seed = 0; seed < 50; seed++) {
+            var won = new Rewards<>(Map.of(1, coin), RewardTable.empty()).draw(record, new Random(seed));
+            assertEquals(won.containsKey(a), won.containsKey(b));
+        }
+    }
+
+    @Test
+    void withPlayerDrawsTeammatesDrawTheirOwn() {
+        var a = UUID.randomUUID();
+        var b = UUID.randomUUID();
+        var result = new MatchResult(List.of(new Placement(1, List.of(a, b))));
+        var members = List.of(new MatchRecord.Entry(a, Optional.of("red"), false, Map.of()), new MatchRecord.Entry(b, Optional.of("red"), false, Map.of()));
+        var record = new MatchRecord("test", "test", Optional.empty(), "arena", Instant.EPOCH, Instant.EPOCH, result, members);
+        var coin = new RewardTable<>(List.of(new Chance<>("diamond", 50)));
+        var differed = false;
+        for (long seed = 0; seed < 50 && !differed; seed++) {
+            var won = new Rewards<>(Map.of(1, coin), RewardTable.empty(), Rewards.Draw.PLAYER).draw(record, new Random(seed));
+            differed = won.containsKey(a) != won.containsKey(b);
+        }
+        assertTrue(differed);
+    }
+
+    @Test
+    void everyMemberOfAPlacedTeamDrawsFromThePlacesTable() {
+        var roster = new Roster();
+        var a1 = UUID.randomUUID();
+        var a2 = UUID.randomUUID();
+        var b1 = UUID.randomUUID();
+        var b2 = UUID.randomUUID();
+        List.of(a1, a2).forEach(id -> roster.assignTeam(roster.add(id).id(), "a"));
+        List.of(b1, b2).forEach(id -> roster.assignTeam(roster.add(id).id(), "b"));
+        roster.eliminate(b1);
+        roster.eliminate(a2);
+        roster.eliminate(b2);
+        var result = new LastManStanding().finalResult(roster, new Scores());
+        var participants = List.of(entry(a1, false), entry(a2, false), entry(b1, false), entry(b2, false));
+        var record = new MatchRecord("test", "test", Optional.empty(), "arena", Instant.EPOCH, Instant.EPOCH, result, participants);
+
+        var won = new Rewards<>(Map.of(1, sure("crown"), 2, sure("medal")), RewardTable.<String>empty()).draw(record, new Random(1));
+
+        assertEquals(Map.of(a1, "crown", a2, "crown", b1, "medal", b2, "medal"), won);
     }
 }

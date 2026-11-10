@@ -29,6 +29,8 @@ join-seconds: 120
 # percent; a player wins at most one of them, and the chance left over to 100 wins nothing.
 # places: a list per place (1 wins); everyone else who played to the end draws from taking-part.
 # Who left the game wins nothing. Leave rewards out for none.
+# draw: team (the default) gives a team's members one shared draw, so they all win the same;
+# player lets each of them draw their own.
 # A reward is one of:
 #   item: <item>, with amount (1 if left out) and name (the amount and item if left out)
 #   command: run from the console, %player% being the winner, with a name telling players what they won
@@ -42,3 +44,4 @@ rewards:
   taking-part:
     - { chance: 25, item: cookie, amount: 4 }
     # - { chance: 10, command: "eco give %player% 100", name: "<gold>100 coins" }
+  draw: team
