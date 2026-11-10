@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.info;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
+import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -291,6 +292,29 @@ public final class ConfigInfo {
             messages.send(sender, "info.options-feature", Placeholder.unparsed("id", id));
             grouped(sender, declared(features.find(id).orElseThrow().settings()));
         }
+    }
+
+    /** The variant's settings as the game plays them: its own in yellow, what it inherits from the game in gray. */
+    public void variant(CommandSender sender, String id, String variant) {
+        var config = files.games().get(id);
+        if (config == null) {
+            messages.send(sender, "join.unknown-game", Placeholder.unparsed("game", id));
+            return;
+        }
+        var own = config.getConfigurationSection(GameLoader.VARIANTS + "." + variant);
+        if (own == null) {
+            var variants = config.getConfigurationSection(GameLoader.VARIANTS);
+            messages.send(sender, "join.unknown-variant", Placeholder.parsed("game", config.getString("name", id)), Placeholder.unparsed("variant", variant),
+                    Placeholder.unparsed("variants", variants == null ? "-" : String.join(", ", variants.getKeys(false))));
+            return;
+        }
+        var merged = new YamlConfiguration();
+        YamlFiles.overlay(merged, config);
+        merged.set(GameLoader.VARIANTS, null);
+        merged.set("enabled", null);
+        YamlFiles.overlay(merged, own);
+        messages.send(sender, "info.variant", Placeholder.unparsed("game", id), Placeholder.unparsed("variant", variant));
+        values(sender, merged, own, "/mga game " + id + " variant " + variant + " set ");
     }
 
     public void config(CommandSender sender) {

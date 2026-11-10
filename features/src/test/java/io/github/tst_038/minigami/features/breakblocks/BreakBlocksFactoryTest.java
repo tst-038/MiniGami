@@ -27,6 +27,11 @@ class BreakBlocksFactoryTest {
     }
 
     @Test
+    void whitelistAllIsNotReadAsABlockName() {
+        assertDoesNotThrow(() -> read("{ whitelist: [all] }"));
+    }
+
+    @Test
     void leftOutOptionalSettingsKeepTheirDefaults() {
         assertDoesNotThrow(() -> read("{}"));
     }

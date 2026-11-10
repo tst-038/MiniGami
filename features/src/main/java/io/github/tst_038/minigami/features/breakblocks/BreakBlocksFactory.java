@@ -15,14 +15,17 @@ import org.bukkit.Material;
  * {@code break-blocks: { whitelist: [snow_block], blacklist: [bedrock], instant: true, drops: false, place: true }}.
  * A block may be broken if there is no {@code whitelist} or it is on it, and it is not on the {@code blacklist};
  * with neither list every block is breakable, and an empty {@code whitelist} breaks nothing.
+ * {@code whitelist: [all]} is the same as leaving it out, to override a whitelist that the game sets.
  * {@code instant} is off, {@code drops} on and {@code place} off unless set.
  * {@code tools: [diamond_shovel]} lets only players holding one of them break blocks at all, and instantly.
  * {@code place} lets players place any block; the lists never restrict placing.
  */
 public final class BreakBlocksFactory implements FeatureFactory {
 
+    /** {@code whitelist: [all]}: no whitelist, so a variant can lift a game's own whitelist and keep the blacklist. */
+    private static final String ALL = "all";
     private static final Setting<List<Material>> WHITELIST = Setting.of("whitelist", Kind.materials(),
-            "the only blocks that may be broken; every block when left out, none when empty").orElse(List.of());
+            "the only blocks that may be broken; every block when left out or [all], none when empty").orElse(List.of());
     private static final Setting<List<Material>> BLACKLIST = Setting.of("blacklist", Kind.materials(),
             "blocks that may not be broken").orElse(List.of());
     private static final Setting<Boolean> INSTANT = Setting.of("instant", Kind.bool(), "blocks break at once when hit").orElse(false);
@@ -43,7 +46,8 @@ public final class BreakBlocksFactory implements FeatureFactory {
 
     @Override
     public Feature create(ConfigReader config) {
-        var whitelist = config.has("whitelist") ? Optional.of(blocks(config, WHITELIST)) : Optional.<Set<Material>>empty();
+        var everything = config.has("whitelist") && config.strings("whitelist").equals(List.of(ALL));
+        var whitelist = config.has("whitelist") && !everything ? Optional.of(blocks(config, WHITELIST)) : Optional.<Set<Material>>empty();
         var blacklist = config.has("blacklist") ? blocks(config, BLACKLIST) : Set.<Material>of();
         var breakable = new Breakable(whitelist, blacklist);
         var instant = config.read(INSTANT);

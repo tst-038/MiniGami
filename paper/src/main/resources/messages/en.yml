@@ -458,6 +458,8 @@ info:
   game: "%prefix%<gold>%id%</gold> <gray>(%name%<gray>) plays <white>%gametype%</white>, %status%"
   # %variants%: each a game-variant
   game-variants: "<gray> Variants: %variants%"
+  # %game%, %variant%
+  variant: "%prefix%<gold>%game%</gold> <gray>variant <white>%variant%</white>: <yellow>its own</yellow>, <dark_gray>inherited from the game"
   # %id%, %name%: the variant's
   game-variant: "<white>%id%</white> <gray>(%name%<gray>)"
   game-arenas: "<gray> Playable arenas: <white>%arenas%"

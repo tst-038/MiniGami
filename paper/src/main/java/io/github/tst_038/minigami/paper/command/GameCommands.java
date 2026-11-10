@@ -47,11 +47,11 @@ final class GameCommands {
                         .then(Commands.literal("rename")
                                 .then(Commands.argument("new", StringArgumentType.word())
                                         .executes(bySender((sender, context) -> renamer.rename(sender, game(context), string(context, "new"))))))
-                        .then(variant(editor, help)));
+                        .then(variant(editor, info, help)));
     }
 
-    /** {@code variant create <variant> <name>} and {@code variant <variant> set|unset|delete}. */
-    private static ArgumentBuilder<CommandSourceStack, ?> variant(ConfigEditor editor, Command<CommandSourceStack> help) {
+    /** {@code variant create <variant> <name>} and {@code variant <variant> info|set|unset|delete}. */
+    private static ArgumentBuilder<CommandSourceStack, ?> variant(ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
         var key = Commands.argument("key", StringArgumentType.word()).suggests(suggest(context -> editor.variantKeys(game(context))));
         return Commands.literal("variant")
                 .executes(help)
@@ -63,6 +63,7 @@ final class GameCommands {
                 .then(Commands.argument("variant", StringArgumentType.word())
                         .suggests(suggest(context -> editor.variantIds(game(context))))
                         .executes(help)
+                        .then(Commands.literal("info").executes(bySender((sender, context) -> info.variant(sender, game(context), variant(context)))))
                         .then(Commands.literal("set")
                                 .then(key.then(Commands.argument("value", StringArgumentType.greedyString())
                                         .suggests(suggest(context -> editor.values(Kind.GAME, game(context), string(context, "key"))))

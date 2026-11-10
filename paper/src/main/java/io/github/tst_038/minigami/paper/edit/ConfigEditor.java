@@ -278,9 +278,29 @@ public final class ConfigEditor {
                 messages.send(sender, "edit.bad-value", Placeholder.unparsed("value", text));
                 return;
             }
-            change = config -> config.set(key, value);
+            change = config -> config.set(key, forKey(kind, id, config, key, value));
         }
         edit(sender, kind, id, false, change, "edit.set", Placeholder.unparsed("key", key));
+    }
+
+    /**
+     * A single value typed for a key that wants a list, such as {@code all} for {@code causes}, becomes a list of
+     * one, so values can be completed and typed without brackets. Found by trying it: runs off the server thread.
+     */
+    private Object forKey(Kind kind, String id, YamlConfiguration config, String key, Object value) {
+        if (value instanceof List<?> || value instanceof Map<?, ?>) {
+            return value;
+        }
+        var probe = new YamlConfiguration();
+        try {
+            probe.loadFromString(config.saveToString());
+        } catch (InvalidConfigurationException e) {
+            return value;
+        }
+        probe.set(key, value);
+        var wantsList = onServerThread(() -> check(kind, id, probe)).stream()
+                .anyMatch(problem -> problem.toString().contains(key + ": must be a list"));
+        return wantsList ? List.of(value) : value;
     }
 
     public void unset(CommandSender sender, Kind kind, String id, String key) {
