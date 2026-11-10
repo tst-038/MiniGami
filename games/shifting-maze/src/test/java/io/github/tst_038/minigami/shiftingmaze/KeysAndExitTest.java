@@ -143,7 +143,7 @@ class KeysAndExitTest {
         match.tick(5);
 
         assertEquals(1, match.scores.of(red.id()));
-        assertEquals(List.of(GameMode.SPECTATOR), red.modes());
+        assertEquals(List.of(GameMode.ADVENTURE), red.modes());
         assertEquals(List.of("shifting-maze.member-out"), red.told());
         assertEquals(List.of("shifting-maze.member-out"), other.told());
         assertTrue(match.chat.stream().noneMatch(message -> text(message).equals("shifting-maze.escaped")));

@@ -280,16 +280,26 @@ public final class LiveMatch {
                 event.setCancelled(true);
             }
         });
-        if (arena.spectatorSpot().isPresent() || variant.respawnSeconds() > 0) {
-            protectSpectators(context);
-        }
+        protectSpectators(context);
         hud.start();
         match.start();
     }
 
-    /** Those who are out and watch from the spectator spot, or wait to respawn, can't touch the match, nor be touched. */
+    /**
+     * Those who are out or wait to respawn can't touch the match, nor be touched. They walk in adventure mode, so the
+     * map's walls and borders hold them; one who falls into the void is brought back up instead of falling forever.
+     */
     private void protectSpectators(PaperMatchContext context) {
-        context.on(EntityDamageEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getEntity())));
+        context.on(EntityDamageEvent.class, event -> {
+            if (!isWatching(event.getEntity())) {
+                return;
+            }
+            event.setCancelled(true);
+            if (event.getCause() == EntityDamageEvent.DamageCause.VOID && event.getEntity() instanceof Player player) {
+                var id = player.getUniqueId();
+                player.teleport(respawning.containsKey(id) ? arena.respawningSpot().orElseGet(() -> spawnFor(id)) : arena.spectatorSpot().orElseGet(() -> spawnFor(id)));
+            }
+        });
         context.on(EntityDamageByEntityEvent.class, event -> event.setCancelled(event.isCancelled() || isWatching(event.getDamager())));
         context.on(PlayerInteractEvent.class, event -> {
             if (isWatching(event.getPlayer())) {
@@ -644,7 +654,7 @@ public final class LiveMatch {
             var out = match.roster().find(id).filter(Participant::isAlive).isEmpty();
             player.teleport(out ? arena.spectatorSpot().orElseGet(() -> spawnFor(id)) : spawnFor(id));
             if (out) {
-                setSpectating(player);
+                setWatching(player);
             } else {
                 setGameMode(player);
             }
@@ -1111,14 +1121,19 @@ public final class LiveMatch {
         event.setRespawnLocation(where);
         if (out) {
             // The game variant is reset during the respawn, so it is set right after.
-            player.getScheduler().run(plugin, task -> setSpectating(player), null);
+            // Not if the match let go of them in the meantime, or it would undo the game mode it gave back.
+            player.getScheduler().run(plugin, task -> {
+                if (isActive(player.getUniqueId())) {
+                    setWatching(player);
+                }
+            }, null);
         }
     }
 
     /**
-     * Holds a participant who died but is still in at the arena's respawning spot, protected like a spectator, or
-     * spectating at the spawn they will get when the arena has none. When the time is up they are put at a spawn
-     * and play on in the phase's game mode.
+     * Holds a participant who died but is still in at the arena's respawning spot, or at the spawn they will get when
+     * the arena has none, protected like a spectator. When the time is up they are put at a spawn and play
+     * on in the phase's game mode.
      */
     private void waitToRespawn(PlayerRespawnEvent event) {
         var player = event.getPlayer();
@@ -1130,7 +1145,7 @@ public final class LiveMatch {
         // The game mode is reset during the respawn, so it is set right after.
         player.getScheduler().run(plugin, task -> {
             if (respawning.containsKey(id)) {
-                player.setGameMode(spot.isPresent() ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+                setWatching(player);
                 player.sendActionBar(messages.render("match.respawning", Formatter.number("seconds", variant.respawnSeconds())));
             }
         }, null);
@@ -1153,14 +1168,15 @@ public final class LiveMatch {
         }
     }
 
-    /** Out of the game: watching from the arena's spectator spot, else flying free in spectator mode. */
+    /** Out of the game: watching from the arena's spectator spot, else from where they are. */
     private void spectate(Player player) {
         arena.spectatorSpot().ifPresent(player::teleport);
-        setSpectating(player);
+        setWatching(player);
     }
 
-    private void setSpectating(Player player) {
-        player.setGameMode(arena.spectatorSpot().isPresent() ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+    /** Never spectator mode, which would let them fly through the map and out of its borders. */
+    private void setWatching(Player player) {
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     /**

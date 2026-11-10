@@ -243,7 +243,7 @@ hud:
     start: "<green><bold>GO!"
     start-subtitle: "<gray>Good luck!"
     out: "<red><bold>ELIMINATED"
-    out-subtitle: "<gray>You're spectating now"
+    out-subtitle: "<gray>You're out; watch the rest of the match"
     win: "<gold><bold>VICTORY!"
     win-subtitle: "<yellow>You won the match"
     # 2nd and 3rd place. %place%

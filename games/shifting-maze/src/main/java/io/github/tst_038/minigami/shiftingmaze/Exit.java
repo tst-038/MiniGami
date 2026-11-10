@@ -63,7 +63,8 @@ final class Exit implements Feature {
         var members = run.alive(context, team);
         var out = members.stream().filter(member -> member.equals(id) || context.scores().of(member) > 0).toList();
         run.markEscaped(id);
-        player.setGameMode(GameMode.SPECTATOR);
+        // Never spectator mode: still walking, so the map's walls and borders hold them.
+        player.setGameMode(GameMode.ADVENTURE);
         run.tell(context, team, "shifting-maze.member-out", Placeholder.component("player", context.playerName(player)),
                 Formatter.number("out", out.size()), Formatter.number("free", members.size()));
         // The counts come before the point, because the last point may decide the match and settle the record.
