@@ -5,7 +5,7 @@ import io.github.tst_038.minigami.core.terrain.Volume;
 
 /**
  * Blocks worked out in memory, to put into a box of the arena: every block of the box becomes the
- * volume's cell, air included, so what was there before is replaced.
+ * volume's cell, air included, so what was there before is replaced; barrier blocks already there are kept.
  *
  * @param box where the lowest corner of the volume goes; must be as big as the volume
  */

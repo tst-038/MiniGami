@@ -441,7 +441,7 @@ public final class MatchHud {
         var roster = match.match().roster();
         var resolvers = new ArrayList<TagResolver>(List.of(
                 Placeholder.parsed("game", match.variant().name()),
-                Placeholder.unparsed("arena", match.arena().id()),
+                Placeholder.parsed("arena", match.arena().name()),
                 Formatter.number("players", roster.size()),
                 Formatter.number("max", match.variant().maxPlayers()),
                 Formatter.number("alive", roster.alive().size())));

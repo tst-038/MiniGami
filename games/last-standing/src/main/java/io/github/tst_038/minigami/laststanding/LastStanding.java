@@ -20,7 +20,7 @@ public final class LastStanding implements GameType {
 
     @Override
     public List<Phase> phases() {
-        return List.of(Phase.untimed("waiting"), Phase.untimed("playing"), Phase.timed("ending", 5 * 20));
+        return List.of(Phase.untimed("waiting"), Phase.untimed("playing"), Phase.timed("ending", 10 * 20));
     }
 
     @Override

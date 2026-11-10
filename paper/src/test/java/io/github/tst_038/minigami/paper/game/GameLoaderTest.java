@@ -788,6 +788,16 @@ class GameLoaderTest {
         assertEquals(List.of("games/fall.yml: respawn-seconds: must be between 0 and 3600"), problems(load(base + ", respawn-seconds: -1}")));
     }
 
+    @Test
+    void endingSecondsIsReadAndLeftAloneWithoutAnEndingPhase() throws Exception {
+        var base = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills]";
+
+        assertEquals(0, load(base + "}").entries().find("fall").orElseThrow().base().endingSeconds());
+        var longer = load(base + ", ending-seconds: 10}").entries().find("fall").orElseThrow().base();
+        assertEquals(10, longer.endingSeconds());
+        assertEquals(longer.gametype().phases(), longer.phases());
+    }
+
     private static List<String> arenaIds(YamlFiles.Loaded<Game> loaded) {
         return loaded.entries().find("fall").orElseThrow().base().arenas().stream().map(Arena::id).toList();
     }

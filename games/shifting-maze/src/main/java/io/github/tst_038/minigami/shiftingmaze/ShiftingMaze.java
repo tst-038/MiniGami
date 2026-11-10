@@ -61,7 +61,7 @@ public final class ShiftingMaze implements GameType {
     public List<Phase> phases() {
         // The maze is built, and everyone put in it, while the start countdown holds them frozen; the cap only guards against a build that never finishes.
         return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 60 * 20L), Phase.timed(HEAD_START, Math.max(1, settings.headStartSeconds() * 20L)),
-                Phase.timed(RUNNING, settings.runSeconds() * 20L), Phase.timed("ending", 5 * 20));
+                Phase.timed(RUNNING, settings.runSeconds() * 20L), Phase.timed("ending", 10 * 20));
     }
 
     @Override

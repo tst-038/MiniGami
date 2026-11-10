@@ -55,7 +55,7 @@ public final class HideAndSeek implements GameType {
     @Override
     public List<Phase> phases() {
         return List.of(Phase.untimed("waiting"), Phase.timed("hiding", hideSeconds * 20L), Phase.timed("seeking", seekSeconds * 20L),
-                Phase.timed("ending", 5 * 20));
+                Phase.timed("ending", 10 * 20));
     }
 
     /** Players may fight and, where the variant allows it, dig and build. */

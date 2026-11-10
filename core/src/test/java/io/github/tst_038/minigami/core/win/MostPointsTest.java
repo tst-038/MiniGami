@@ -136,4 +136,15 @@ class MostPointsTest {
         assertEquals(List.of(new Placement(1, List.of(alice))),
                 MostPoints.atTimeUp().finalResult(soloRoster, scores).placements());
     }
+
+    @Test
+    void atTimeUpEndsWhenTheOthersGoOut() {
+        var roster = new Roster();
+        roster.add(alice);
+        roster.add(bob);
+        roster.eliminate(bob);
+
+        assertEquals(List.of(new Placement(1, List.of(alice)), new Placement(2, List.of(bob))),
+                MostPoints.atTimeUp().check(roster, scores).orElseThrow().placements());
+    }
 }

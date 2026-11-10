@@ -45,7 +45,7 @@ public final class PoleDuel implements GameType {
     @Override
     public List<Phase> phases() {
         // The poles go up while the start countdown holds everyone frozen; the cap only guards against a build that never finishes.
-        return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 60 * 20L), Phase.untimed(PLAYING), Phase.timed("ending", 5 * 20));
+        return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 60 * 20L), Phase.untimed(PLAYING), Phase.timed("ending", 10 * 20));
     }
 
     /** Players are put on their poles, frozen there, while the start countdown runs. */

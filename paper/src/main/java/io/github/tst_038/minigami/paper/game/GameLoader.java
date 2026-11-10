@@ -273,6 +273,7 @@ public final class GameLoader {
             config.problem(GameSettings.SPAWNS.key() + "." + GameSettings.RESPAWN.key(), "highest-floor needs the region the game plays in; set region");
         }
         var respawnSeconds = config.read(GameSettings.RESPAWN_SECONDS);
+        var endingSeconds = config.read(GameSettings.ENDING_SECONDS);
         var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles, ranks).flatMap(feature -> feature.regions().stream())).distinct().toList();
         var allFeatures = Variant.allFeatures(game, features, roles, ranks).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
@@ -293,7 +294,7 @@ public final class GameLoader {
             findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, roles, ranks, quit, playable, findings,
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, endingSeconds, roles, ranks, quit, playable, findings,
                 features, stats, hud, config.read(GameSettings.ADVANCEMENTS));
     }
 

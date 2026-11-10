@@ -27,7 +27,7 @@ public final class MostPoints implements WinCondition {
         this(0);
     }
 
-    /** Decided by time alone: it keeps running with one team left, however the points stand. */
+    /** Decided by time, or by every other team going out; a lone team from the start keeps playing until time is up. */
     public static MostPoints atTimeUp() {
         return new MostPoints(0, true);
     }
@@ -47,10 +47,11 @@ public final class MostPoints implements WinCondition {
 
     @Override
     public Optional<MatchResult> check(Roster roster, Scores scores) {
-        if (atTimeUpOnly) {
-            return Optional.empty();
-        }
         var left = roster.teamsLeft();
+        if (atTimeUpOnly) {
+            // A team that started alone plays on; one left by the others going out has won.
+            return left.size() <= 1 && !roster.teamsOut().isEmpty() ? Optional.of(finalResult(roster, scores)) : Optional.empty();
+        }
         var reached = pointsToWin > 0 && left.stream().anyMatch(team -> points(team, scores) >= pointsToWin);
         return left.size() > 1 && !reached ? Optional.empty() : Optional.of(finalResult(roster, scores));
     }

@@ -178,7 +178,7 @@ public final class LiveMatch {
         var phaseFeatures = features(variant);
         starting = phaseFeatures.getOrDefault(GameType.STARTING, List.of());
         var features = new PhaseFeatures(phaseFeatures, (phase, scope) -> new PaperMatchContext(plugin, this, scope));
-        this.match = new Match(variant.gametype().phases(), variant.gametype().winCondition(), new PhaseListener() {
+        this.match = new Match(variant.phases(), variant.gametype().winCondition(), new PhaseListener() {
             @Override
             public void onEnter(Phase phase, Scope scope) {
                 setGameModes(phase);
@@ -198,7 +198,7 @@ public final class LiveMatch {
      * about them changes between phases. The first phase is left alone, as players may be waiting in place.
      */
     private void setGameModes(Phase phase) {
-        if (phase.equals(variant.gametype().phases().getFirst())) {
+        if (phase.equals(variant.phases().getFirst())) {
             return;
         }
         takingPart().stream().map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(this::setGameMode);
@@ -234,7 +234,7 @@ public final class LiveMatch {
             addWrapped(merged, rank.features(), participant -> participant.rank().equals(Optional.of(rank.id())));
         }
         // Players stay in the saved map in every phase that has no play-area of its own.
-        variant.gametype().phases().forEach(phase -> {
+        variant.phases().forEach(phase -> {
             var list = merged.computeIfAbsent(phase.id(), id -> new ArrayList<>());
             if (list.stream().noneMatch(PlayAreaFactory::isPlayArea)) {
                 list.add(PlayAreaFactory.onMap());
@@ -408,7 +408,7 @@ public final class LiveMatch {
 
     /** Whether the match is still gathering players: in its first phase, and nobody was brought to their spawn yet. */
     public boolean isJoinable() {
-        var first = variant.gametype().phases().getFirst();
+        var first = variant.phases().getFirst();
         return countdown == null && !match.isFinished() && match.currentPhase().filter(first::equals).isPresent();
     }
 
@@ -797,7 +797,7 @@ public final class LiveMatch {
     }
 
     /**
-     * Prepares everyone for play, forms the teams or hands out the roles if the variant has them, and brings each to their spawns, round robin.
+     * Prepares everyone for play, forms the teams or hands out the roles if the variant has them, and brings each to their spawns, in random order.
      *
      * @param countDown whether they first stand frozen at their spawns for the countdown, or play begins at once
      */
@@ -845,7 +845,7 @@ public final class LiveMatch {
         if (scattered) {
             scatter(everyone);
         }
-        var spots = scattered ? List.<Integer>of() : SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together);
+        var spots = scattered ? List.<Integer>of() : SpawnPlan.assign(everyone.stream().map(this::teamOf).toList(), spawnTags, together, ThreadLocalRandom.current());
         for (int i = 0; variant.gametype().usesSpawns() && !scattered && i < everyone.size(); i++) {
             var team = teamOf(everyone.get(i));
             if (together && team.isPresent() && !SpawnPlan.hasOwn(team.get(), spawnTags)) {
@@ -873,7 +873,7 @@ public final class LiveMatch {
             }
             match.advancePhase();
         }
-        var phases = variant.gametype().phases();
+        var phases = variant.phases();
         countdown.register(match.clock().repeat(1, () -> {
             if (match.clock().elapsedTicks() < goAt) {
                 return;
@@ -1079,7 +1079,7 @@ public final class LiveMatch {
 
     /** Whether the match is in or past the phase from which deaths cost a life. */
     private boolean livesCount() {
-        var phases = variant.gametype().phases().stream().map(Phase::id).toList();
+        var phases = variant.phases().stream().map(Phase::id).toList();
         return variant.gametype().livesFrom().map(from -> match.currentPhase().map(phase -> phases.indexOf(phase.id()) >= phases.indexOf(from)).orElse(false)).orElse(true);
     }
 

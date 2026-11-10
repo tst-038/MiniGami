@@ -153,7 +153,7 @@ features:
 | `play-area` | Keeps players inside a region: no building, breaking, moving, spreading or explosions across its edge. `region: team` is the region of each team (`plot-N`, `quarter-N`), any other name is one arena region everybody shares (`region: fighting`). `team` can't be a region name. `team-region` is the old name for `region: team` |
 | `effects` | Potion effects |
 
-`/mg feature list` and `/mg feature <id> info` show every feature with all its settings.
+`/mga options [gametype]` shows every option of a game file and of each feature, grouped by section.
 
 ## Commands
 
@@ -184,7 +184,7 @@ way through. The tables below give an overview.
 | `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `team`, `kick` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
-| `/mg gametype list\|<id> info` · `/mg feature list\|<id> info` | admin |
+| `/mg gametype list\|<id> info` · `/mga options [gametype]` | admin |
 | `/mg kit list\|save <name>\|delete <name>` | admin |
 | `/mg night list\|info\|create\|delete\|edit` | admin |
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |

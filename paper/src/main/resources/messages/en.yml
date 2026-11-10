@@ -331,6 +331,9 @@ arena:
   in-use: "%prefix%<red>A match is running in <white>%arena%</white>; change it once the match has ended."
   other-world: "%prefix%<red><white>%arena%</white> is in world <white>%world%</white>; go there to set its points."
   no-spawn: "%prefix%<red><white>%arena%</white> has no spawn <white>%number%</white>."
+  # %arena%: the old id, %to%: the new one
+  renamed: "%prefix%<green>Renamed arena <white>%arena%</white> to <white>%to%</white>, with its map and the games that use it."
+  rename-reference-failed: "%prefix%<red>Could not change <white>%file%</white> to the new id; replace <white>%arena%</white> in it yourself."
   created: "%prefix%<green>Created arena <white>%arena%</white> in <white>%world%</white>. Add spawns with <white>/mga arena %arena% spawn add</white>."
   spawn-added: "%prefix%<green>Added spawn <white>%number%</white> to <white>%arena%</white>."
   spawn-removed: "%prefix%<green>Removed spawn <white>%number%</white> from <white>%arena%</white>."
@@ -429,8 +432,6 @@ info:
   arena-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>in %world%, %spawns% spawns, %status%"
   gametypes: "%prefix%<gold>Game types</gold> <gray>(%count%):"
   gametype-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>used by %games% game(s)"
-  features: "%prefix%<gold>Features</gold> <gray>(%count%):"
-  feature-entry: "<gray> - <info><hover:show_text:'Show details'><white>%id%</white></hover></info> <gray>used by %games% game(s)"
   status:
     ok: "<green>ready"
     # %problems%: how many
@@ -470,7 +471,6 @@ info:
   value: "<set><hover:show_text:'Click to change'><gray> - <white>%key%</white>: <yellow>%value%</yellow></hover></set>"
   value-inherited: "<set><hover:show_text:'Click to change'><dark_gray> - %key%: %value%</hover></set>"
   # %keys%: clickable
-  unset: "<gray> Not set: <white>%keys%"
   config: "%prefix%<gold>%file%</gold><gray>:"
   # %win-condition%, %lives%: default lives, 0 means always respawn
   gametype: "%prefix%<gold>%id%</gold> <gray>is won by <white>%win-condition%</white>; lives: <white>%lives%</white>. Phases:"
@@ -483,7 +483,11 @@ info:
   gametype-region-group: "<gray> Its arenas need one or more <white>%group%</white> regions, each named <white>%group%</white> or <white>%group%-</white>anything, such as <white>%group%-north</white>."
   phase-timed: "<gray> - <white>%phase%</white> for %seconds% s"
   phase-untimed: "<gray> - <white>%phase%</white> until it ends"
-  feature: "%prefix%<gold>%id%</gold><gray>, set per phase under <white>features.%phase%.%id%</white>:"
+  # /mga options. %gametype%: the game type, or - for any
+  options: "%prefix%<gold>All options</gold> <gray>of a game file (game type: <white>%gametype%</white>), also allowed in each variant:"
+  options-feature: "<gold>%id%</gold><gray>, set per phase under <white>features.<phase>.%id%</white>:"
+  # %group%: the section the following keys are in
+  options-group: "<aqua> %group%.</aqua>"
   # %key%, %values%: what it can be
   setting: "<gray> - <white>%key%</white>: %values% <dark_gray>%description%"
   setting-required: "<gray> - <white>%key%</white> <red>(required)</red>: %values% <dark_gray>%description%"
@@ -493,12 +497,10 @@ info:
   used-by: "<gray> Used by: <white>%games%"
   used-by-none: "<gray> Not used by any game."
   unknown-gametype: "%prefix%<red>There is no game type called <white>%id%</white>."
-  unknown-feature: "%prefix%<red>There is no feature called <white>%id%</white>."
 
 # %matches%, %listeners%, %snapshots%; per match: %gametype%, %game%, %arena%, %phase%, %members%, %alive%, %tick%
 reload:
   done: "%prefix%<green>Config loaded: <white>%arenas%</white> arenas, <white>%games%</white> games, <white>%nights%</white> game nights."
-  failed: "%prefix%<red>Config not loaded, the old one stays in use. <white>%problems%</white> problem(s):"
   problem: "<red> - %problem%"
   skipped: "%prefix%<yellow><white>%problems%</white> file(s) have problems and were left out. <white>/mga reload</white> shows them again:"
   # %findings%: how many arena problems leave an arena out of a game
@@ -514,7 +516,6 @@ edit:
   problem: "<red> - %problem%"
   save-failed: "%prefix%<red>Could not save <white>%file%</white>; see the server log."
   set: "%prefix%<green>Set <white>%key%</white> in <white>%file%</white>."
-  unset: "%prefix%<green>Removed <white>%key%</white> from <white>%file%</white>."
   created: "%prefix%<green>Created <white>%file%</white>. Change it with <white>set</white> and <white>unset</white>."
   deleted: "%prefix%<green>Deleted <white>%file%</white>. A copy is kept as <white>%file%.deleted</white> until the next delete of it."
   # %game%: the old id, %to%: the new one

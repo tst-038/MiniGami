@@ -51,6 +51,8 @@ final class GameSettings {
             "where players come back: their spawns, or the highest floor still standing in region").orElse(Respawn.SPAWNS);
     static final Setting<ConfigReader> SPAWNS = Setting.of("spawns", Kind.section(List.of(SPAWN_MODE, TEAM_SPAWNS, RESPAWN)),
             "where players start and come back");
+    static final Setting<Integer> ENDING_SECONDS = Setting.of("ending-seconds", Kind.integer(0, 3600),
+            "how long the ending (winner announcement, fireworks) lasts before everyone is sent back; 0 means the game type's own").orElse(0);
     static final Setting<Integer> RESPAWN_SECONDS = Setting.of("respawn-seconds", Kind.integer(0, 3600),
             "how long a player who died waits to come back; 0: at once").orElse(0);
     static final Setting<List<String>> REGION = Setting.of("region", Kind.stringsOrOne(),
@@ -95,7 +97,7 @@ final class GameSettings {
         var phases = game.map(type -> type.phases().stream().map(Phase::id).toList()).orElse(List.of());
         var perPhase = features(phases);
         var all = new ArrayList<Setting<?>>(List.of(gametype(), NAME, MIN_PLAYERS, MAX_PLAYERS, WAITING, LIVES, NAME_TAGS, messages(), TEAMS,
-                SPAWNS, RESPAWN_SECONDS, REGION, ARENAS, stats(), ADVANCEMENTS, QUIT, HudSettings.setting(phases),
+                SPAWNS, RESPAWN_SECONDS, ENDING_SECONDS, REGION, ARENAS, stats(), ADVANCEMENTS, QUIT, HudSettings.setting(phases),
                 Setting.of(ROLES, Kind.each("role", () -> game.map(GameType::roles).orElse(List.of()), Kind.section(RoleSettings.role(perPhase))),
                         "the roles, handed out in this order").orElse(Map.of()),
                 Setting.of(RANKS, Kind.each("rank", () -> game.map(GameType::ranks).orElse(List.of()), Kind.section(RoleSettings.rank(perPhase))),

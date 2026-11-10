@@ -98,12 +98,11 @@ public final class GamesCommand {
      * {@code /mga}: everything for staff.
      *
      * @param games ids of the registered games
-     * @param features ids of the registered features
      * @param lobby the lobby currently loaded
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> adminRoot(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor, GameRenamer gameRenamer,
-            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, Collection<String> features, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mga")
                 .requires(HELPER)
@@ -127,7 +126,7 @@ public final class GamesCommand {
                 .then(GameCommands.node(editor, gameRenamer, info, help))
                 .then(ArenaCommands.node(editor, arenas, loot, terrain, info, help))
                 .then(GameTypeCommands.game(info, () -> games, help))
-                .then(GameTypeCommands.feature(info, () -> features, help))
+                .then(GameTypeCommands.options(info, () -> games))
                 .then(ConfigCommands.lobby(editor, lobby, messages, help))
                 .then(ConfigCommands.config(editor, info, help))
                 .then(PlayerCommands.node(snapshots))

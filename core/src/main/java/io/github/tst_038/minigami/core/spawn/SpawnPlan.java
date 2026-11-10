@@ -2,9 +2,11 @@ package io.github.tst_038.minigami.core.spawn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Random;
 import java.util.function.Predicate;
 
 /**
@@ -18,7 +20,7 @@ public final class SpawnPlan {
 
     /**
      * A spawn for each player, in order. A team with spawns of its own spreads over them. Otherwise
-     * the spawns without a team (all of them if every spawn has one) are handed out round robin:
+     * the spawns without a team (all of them if every spawn has one) are handed out in random order, one each, wrapping round when there are fewer spawns than players:
      * with {@code together} each team gets one spawn for all its members, so teams don't mix, and
      * teams take the spawns in the order they first appear; players without a team, and everyone
      * when not {@code together}, take the next spawn each.
@@ -29,7 +31,17 @@ public final class SpawnPlan {
      * @return an index into {@code tags} for each player
      */
     public static List<Integer> assign(List<Optional<String>> teams, List<Optional<String>> tags, boolean together) {
-        var shared = shared(tags);
+        return assign(teams, tags, together, shared(tags));
+    }
+
+    /** Like {@link #assign(List, List, boolean)}, but the shared spawns are handed out in a random order. */
+    public static List<Integer> assign(List<Optional<String>> teams, List<Optional<String>> tags, boolean together, Random random) {
+        var shuffled = new ArrayList<>(shared(tags));
+        Collections.shuffle(shuffled, random);
+        return assign(teams, tags, together, shuffled);
+    }
+
+    private static List<Integer> assign(List<Optional<String>> teams, List<Optional<String>> tags, boolean together, List<Integer> shared) {
         var used = new HashMap<String, Integer>();
         var homes = new HashMap<String, Integer>();
         int next = 0;

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,13 @@ class SpawnPlanTest {
     private static final Optional<String> BLUE = Optional.of("blue");
 
     private static final List<Optional<String>> FOUR_SHARED = List.of(NONE, NONE, NONE, NONE);
+
+    @Test
+    void randomOrderStillGivesEveryoneTheirOwnSpawn() {
+        var spawns = SpawnPlan.assign(FOUR_SHARED, FOUR_SHARED, false, new Random(7));
+        assertEquals(List.of(0, 1, 2, 3), spawns.stream().sorted().toList());
+        assertTrue(!spawns.equals(List.of(0, 1, 2, 3)) || !SpawnPlan.assign(FOUR_SHARED, FOUR_SHARED, false, new Random(8)).equals(spawns));
+    }
 
     @Test
     void playersWithoutTeamsSpreadOverTheSpawns() {

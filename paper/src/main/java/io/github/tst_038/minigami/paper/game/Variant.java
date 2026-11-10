@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.core.diagnosis.Finding;
+import io.github.tst_038.minigami.core.phase.Phase;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.hud.Hud;
@@ -30,6 +31,7 @@ import java.util.stream.Stream;
  * @param ranks in the order they are handed out within each team; empty when it has none
  * @param respawn where a player who comes back is put down
  * @param respawnSeconds how long a player who died but is still in waits before they are put at a spawn; 0 means at once
+ * @param endingSeconds how long the ending phase lasts; 0 means the game type's own
  * @param quit what quitting a running match does to a player still in it
  * @param arenas the arenas it lists that can host it
  * @param findings what is wrong with the arenas it lists, also those left out of {@code arenas} for it
@@ -40,7 +42,7 @@ import java.util.stream.Stream;
  * @param advancements whether players can earn advancements in its matches
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, boolean randomSpawns, Respawn respawn, int respawnSeconds, List<Role> roles, List<Rank> ranks, Quit quit, List<Arena> arenas, List<Finding> findings,
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, boolean randomSpawns, Respawn respawn, int respawnSeconds, int endingSeconds, List<Role> roles, List<Rank> ranks, Quit quit, List<Arena> arenas, List<Finding> findings,
         Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud, boolean advancements) {
 
     public Variant {
@@ -62,6 +64,12 @@ public record Variant(String game, Optional<String> id, GameType gametype, Strin
         return Stream.of(Stream.of(features, gametype == null ? Map.<String, List<Feature>>of() : gametype.features()), roles.stream().map(Role::features),
                         ranks.stream().map(Rank::features)).flatMap(stream -> stream)
                 .flatMap(byPhase -> byPhase.values().stream()).flatMap(List::stream);
+    }
+
+    /** The game type's phases, with the ending as long as {@code ending-seconds} says. */
+    public List<Phase> phases() {
+        return gametype.phases().stream()
+                .map(phase -> endingSeconds > 0 && phase.id().equals("ending") ? Phase.timed("ending", endingSeconds * 20L) : phase).toList();
     }
 
     /** For logs and admins: the game's id, then the variant's if it is one, such as {@code spleef duos}. */

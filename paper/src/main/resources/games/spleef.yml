@@ -1,6 +1,6 @@
 # A game: what players join, with /mg join spleef, and see their stats of. The game type is the code it runs.
 # These example games all play in the example arena; spawns are optional (spawns: { mode: arena } asks for them): without them players start on random places of the highest floor of its map (/mga arena example map save), or of its region.
-# What a game type or feature can be set to: /mga gametype <id> info and /mga feature <id> info.
+# What a game type or feature can be set to: /mga gametype <id> info and /mga options.
 # Change a game by command with /mga game <id> set <key> <value>, or edit the file and /mga reload.
 #
 # Spleef: dig the snow from under the others; whoever falls through is out, the last one standing wins.

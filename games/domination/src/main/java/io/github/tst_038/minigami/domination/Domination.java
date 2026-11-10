@@ -71,7 +71,7 @@ public final class Domination implements GameType {
 
     @Override
     public List<Phase> phases() {
-        return List.of(Phase.untimed("waiting"), Phase.timed("playing", playSeconds * 20L), Phase.timed("ending", 5 * 20));
+        return List.of(Phase.untimed("waiting"), Phase.timed("playing", playSeconds * 20L), Phase.timed("ending", 10 * 20));
     }
 
     /** Players may fight and, where the variant allows it, dig and build. */

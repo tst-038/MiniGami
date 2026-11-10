@@ -12,9 +12,10 @@ import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.Supplier;
 
-/** {@code /mga gametype list|<id> info} and {@code /mga feature list|<id> info}: what games can be made of. */
+/** {@code /mga gametype list|<id> info} and {@code /mga options [gametype]}: what games can be made of. */
 final class GameTypeCommands {
 
     private GameTypeCommands() {
@@ -31,14 +32,12 @@ final class GameTypeCommands {
                         .then(Commands.literal("info").executes(bySender((sender, context) -> info.gametype(sender, string(context, "game"))))));
     }
 
-    static ArgumentBuilder<CommandSourceStack, ?> feature(ConfigInfo info, Supplier<Collection<String>> ids, Command<CommandSourceStack> help) {
-        return Commands.literal("feature")
+    static ArgumentBuilder<CommandSourceStack, ?> options(ConfigInfo info, Supplier<Collection<String>> gametypes) {
+        return Commands.literal("options")
                 .requires(ADMIN)
-                .executes(help)
-                .then(Commands.literal("list").executes(bySender((sender, context) -> info.listFeatures(sender))))
-                .then(Commands.argument("feature", StringArgumentType.word())
-                        .suggests(suggest(ids))
-                        .executes(help)
-                        .then(Commands.literal("info").executes(bySender((sender, context) -> info.feature(sender, string(context, "feature"))))));
+                .executes(bySender((sender, context) -> info.options(sender, Optional.empty())))
+                .then(Commands.argument("gametype", StringArgumentType.word())
+                        .suggests(suggest(gametypes))
+                        .executes(bySender((sender, context) -> info.options(sender, Optional.of(string(context, "gametype"))))));
     }
 }

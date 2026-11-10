@@ -13,11 +13,14 @@ import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.game.Game;
+import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
 import io.github.tst_038.minigami.paper.schedule.ScheduleLoader;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -149,6 +152,11 @@ public final class ConfigEditor {
     /** The keys a file has or its loader asked for. Any thread. */
     public Collection<String> keys(Kind kind, String id) {
         return keysOf(kind, id).keySet();
+    }
+
+    /** Every setting a game file of the game type can have; see {@link GameLoader#settings}. */
+    public List<Setting<?>> settings(String gametype) {
+        return gameLoader.settings(gametype);
     }
 
     /** Values that make sense for the key, such as {@code true} and {@code false}; none if anything goes. Any thread. */
@@ -366,6 +374,74 @@ public final class ConfigEditor {
             messages.send(sender, "edit.deleted", fileTag);
             reload.accept(sender);
         });
+    }
+
+    /**
+     * Gives an arena another id: its folder (file, saved map and region schematics) and the games that list it.
+     * A game file that can't be changed is named, to be fixed by hand.
+     */
+    public void renameArena(CommandSender sender, String from, String to) {
+        if (!IdRegistry.isValid(to) || RESERVED_IDS.contains(to)) {
+            messages.send(sender, "edit.invalid-id", Placeholder.unparsed("id", to));
+            return;
+        }
+        if (!ids(Kind.ARENA).contains(from)) {
+            messages.send(sender, "edit.unknown", Placeholder.unparsed("file", Kind.ARENA.file(from)));
+            return;
+        }
+        if (from.equals(to) || ids(Kind.ARENA).contains(to)) {
+            messages.send(sender, "edit.exists", Placeholder.unparsed("file", Kind.ARENA.file(to)));
+            return;
+        }
+        if (arenaInUse.test(from)) {
+            messages.send(sender, "arena.in-use", Placeholder.unparsed("arena", from));
+            return;
+        }
+        plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
+            var arenas = plugin.getDataPath().resolve("arenas");
+            try {
+                Files.move(arenas.resolve(from), arenas.resolve(to), StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "Could not move arena " + from + " to " + to, e);
+                messages.send(sender, "edit.save-failed", Placeholder.unparsed("file", Kind.ARENA.file(to)));
+                return;
+            }
+            var failed = new ArrayList<String>();
+            var games = plugin.getDataPath().resolve("games");
+            if (Files.isDirectory(games)) {
+                try (var files = Files.list(games)) {
+                    for (var path : files.filter(name -> name.toString().endsWith(".yml")).sorted().toList()) {
+                        try {
+                            if (Files.readString(path).contains(from)) {
+                                ConfigFiles.update(path, config -> renameArenaIn(config, from, to));
+                            }
+                        } catch (Exception e) {
+                            plugin.getLogger().log(Level.WARNING, "Could not change " + path + " to use arena " + to, e);
+                            failed.add("games/" + path.getFileName());
+                        }
+                    }
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.WARNING, "Could not list " + games, e);
+                    failed.add("games");
+                }
+            }
+            plugin.getLogger().info(sender.getName() + " renamed arena " + from + " to " + to);
+            messages.send(sender, "arena.renamed", Placeholder.unparsed("arena", from), Placeholder.unparsed("to", to));
+            failed.forEach(name -> messages.send(sender, "arena.rename-reference-failed", Placeholder.unparsed("file", name), Placeholder.unparsed("arena", from)));
+            reload.accept(sender);
+        });
+    }
+
+    /** Replaces the id in every {@code arenas} list of the game file, variants included. */
+    private static void renameArenaIn(ConfigurationSection section, String from, String to) {
+        if (section.isList("arenas")) {
+            section.set("arenas", section.getStringList("arenas").stream().map(id -> id.equals(from) ? to : id).toList());
+        }
+        for (var key : section.getKeys(false)) {
+            if (section.isConfigurationSection(key)) {
+                renameArenaIn(section.getConfigurationSection(key), from, to);
+            }
+        }
     }
 
     private boolean editable(CommandSender sender, Kind kind, String id) {

@@ -261,7 +261,12 @@ final class WorldEditMaps {
                     int x = i % sizeX;
                     int z = i / sizeX % sizeZ;
                     int y = i / (sizeX * sizeZ);
-                    edit.setBlock(BlockVector3.at(box.minX() + x, box.minY() + y, box.minZ() + z), states[cells[i]]);
+                    var at = BlockVector3.at(box.minX() + x, box.minY() + y, box.minZ() + z);
+                    // Invisible barriers (such as a spectating area's) must survive the land being made around them.
+                    if (edit.getBlock(at).getBlockType().equals(BlockTypes.BARRIER)) {
+                        continue;
+                    }
+                    edit.setBlock(at, states[cells[i]]);
                 }
             } catch (WorldEditException e) {
                 throw new CompletionException(e);

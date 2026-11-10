@@ -1,7 +1,7 @@
 # An arena: a place in an existing world where matches of a game are played.
 # It can only host matches once it has at least one spawn.
 world: world
-# Where players start, handed out round robin. yaw and pitch are optional.
+# Where players start, handed out at random. yaw and pitch are optional.
 spawns: []
 #  - { x: 0.5, y: 100, z: 0.5, yaw: 0, pitch: 0 }
 # Where players wait before the start in games with "waiting: arena"; the first spawn if left out.

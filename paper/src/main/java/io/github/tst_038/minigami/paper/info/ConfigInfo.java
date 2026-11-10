@@ -19,10 +19,10 @@ import io.github.tst_038.minigami.paper.game.Role;
 import io.github.tst_038.minigami.paper.schedule.Schedule;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -140,7 +140,6 @@ public final class ConfigInfo {
         settings.set(PlaylistEdit.KEY, null);
         var set = "/mga night edit " + id + " set ";
         values(sender, settings, settings, set);
-        unset(sender, editor.keys(Kind.NIGHT, id).stream().filter(key -> !key.startsWith(PlaylistEdit.KEY)).toList(), settings, set);
         nightPlaylist(sender, id);
         problems(sender, Kind.NIGHT, id);
     }
@@ -190,7 +189,6 @@ public final class ConfigInfo {
                 Placeholder.component("status", status(Kind.SCHEDULE, id, schedules.get().find(id).isPresent(), null)));
         var set = "/mga schedule edit " + id + " set ";
         values(sender, config, config, set);
-        unset(sender, editor.keys(Kind.SCHEDULE, id), config, set);
         problems(sender, Kind.SCHEDULE, id);
     }
 
@@ -211,12 +209,6 @@ public final class ConfigInfo {
         messages.send(sender, "info.gametypes", Formatter.number("count", gametypes.ids().size()));
         gametypes.ids().forEach(id -> messages.send(sender, "info.gametype-entry", Placeholder.unparsed("id", id),
                 Formatter.number("games", gamesOfType(id).size()), infoClick("/mga gametype " + id + " info")));
-    }
-
-    public void listFeatures(CommandSender sender) {
-        messages.send(sender, "info.features", Formatter.number("count", features.ids().size()));
-        features.ids().forEach(id -> messages.send(sender, "info.feature-entry", Placeholder.unparsed("id", id),
-                Formatter.number("games", usesOfFeature(id).size()), infoClick("/mga feature " + id + " info")));
     }
 
     /** The game's settings, variants included, then what else can be set and any problems. */
@@ -249,7 +241,6 @@ public final class ConfigInfo {
         loaded.map(Variant::roles).filter(roles -> !roles.isEmpty()).ifPresent(roles -> messages.send(sender, "info.game-roles",
                 Placeholder.component("roles", Component.join(JoinConfiguration.commas(true), roles.stream().map(Role::displayName).toList()))));
         values(sender, config, config, "/mga game " + id + " set ");
-        unset(sender, editor.keys(Kind.GAME, id), config, "/mga game " + id + " set ");
         problems(sender, Kind.GAME, id);
     }
 
@@ -282,22 +273,30 @@ public final class ConfigInfo {
         usedBy(sender, gamesOfType(id));
     }
 
-    public void feature(CommandSender sender, String id) {
-        var factory = features.find(id);
-        if (factory.isEmpty()) {
-            messages.send(sender, "info.unknown-feature", Placeholder.unparsed("id", id));
+    /**
+     * Every option a game file can have, grouped by the section it lives in ({@code effect.<effect>} and so on), then what each
+     * feature takes per phase. A game type adds its own options.
+     */
+    public void options(CommandSender sender, Optional<String> gametype) {
+        if (gametype.isPresent() && gametypes.find(gametype.get()).isEmpty()) {
+            messages.send(sender, "info.unknown-gametype", Placeholder.unparsed("id", gametype.get()));
             return;
         }
-        messages.send(sender, "info.feature", Placeholder.unparsed("id", id));
-        settings(sender, declared(factory.get().settings()));
-        usedBy(sender, usesOfFeature(id));
+        messages.send(sender, "info.options", Placeholder.unparsed("gametype", gametype.orElse("-")));
+        // Variants take the same keys, and features are shown once below instead of under every phase and role.
+        grouped(sender, declared(editor.settings(gametype.orElse(""))).stream()
+                .filter(line -> !line.key().startsWith("variants.") && !line.key().startsWith("features.") && !line.key().contains(".features."))
+                .toList());
+        for (var id : features.ids()) {
+            messages.send(sender, "info.options-feature", Placeholder.unparsed("id", id));
+            grouped(sender, declared(features.find(id).orElseThrow().settings()));
+        }
     }
 
     public void config(CommandSender sender) {
         var current = files;
         messages.send(sender, "info.config", Placeholder.unparsed("file", SettingsLoader.FILE));
         values(sender, current.config(), current.config(), "/mga config set ");
-        unset(sender, editor.keys(Kind.CONFIG, ""), current.config(), "/mga config set ");
         problems(sender, Kind.CONFIG, "");
     }
 
@@ -316,15 +315,6 @@ public final class ConfigInfo {
         }
     }
 
-    /** The keys the loader asked for that aren't set, each clickable to set it. */
-    private void unset(CommandSender sender, Collection<String> keys, ConfigurationSection config, String set) {
-        var missing = keys.stream().filter(key -> !config.contains(key))
-                .map(key -> Component.text(key).clickEvent(ClickEvent.suggestCommand(set + key + " "))).toList();
-        if (!missing.isEmpty()) {
-            messages.send(sender, "info.unset", Placeholder.component("keys", Component.join(JoinConfiguration.commas(true), missing)));
-        }
-    }
-
     private void problems(CommandSender sender, Kind kind, String id) {
         var file = kind.file(id);
         files.problems().stream().filter(problem -> problem.file().equals(file))
@@ -340,6 +330,22 @@ public final class ConfigInfo {
             messages.send(sender, setting.required() ? "info.setting-required" : "info.setting", Placeholder.unparsed("key", setting.key()),
                     Placeholder.component("values", values), Placeholder.unparsed("description", setting.description()));
         }
+    }
+
+    /** Settings one per line; those inside a section such as {@code effect.<effect>} follow its heading, with the key relative to it. */
+    private void grouped(CommandSender sender, List<SettingLine> lines) {
+        var groups = new TreeMap<String, List<SettingLine>>();
+        for (var line : lines) {
+            var dot = line.key().lastIndexOf('.');
+            groups.computeIfAbsent(dot < 0 ? "" : line.key().substring(0, dot), group -> new ArrayList<>())
+                    .add(new SettingLine(line.key().substring(dot + 1), line.values(), line.required(), line.description()));
+        }
+        groups.forEach((group, members) -> {
+            if (!group.isEmpty()) {
+                messages.send(sender, "info.options-group", Placeholder.unparsed("group", group));
+            }
+            settings(sender, members);
+        });
     }
 
     /** @param uses a game id, or a game id and what it uses there; each clickable to that game's info */
@@ -361,36 +367,6 @@ public final class ConfigInfo {
             }
         });
         return uses;
-    }
-
-    /** Per game, the phases it, or one of its variants, turns the feature on in. */
-    private List<String[]> usesOfFeature(String feature) {
-        var uses = new ArrayList<String[]>();
-        files.games().forEach((id, config) -> {
-            usesOfFeature(feature, config, id, "", uses);
-            var variants = config.getConfigurationSection(GameLoader.VARIANTS);
-            if (variants != null) {
-                for (String variant : variants.getKeys(false)) {
-                    if (variants.isConfigurationSection(variant)) {
-                        usesOfFeature(feature, variants.getConfigurationSection(variant), id, variant + " ", uses);
-                    }
-                }
-            }
-        });
-        return uses;
-    }
-
-    private static void usesOfFeature(String feature, ConfigurationSection config, String id, String variant, List<String[]> uses) {
-        var phases = config.getConfigurationSection("features");
-        if (phases == null) {
-            return;
-        }
-        for (String phase : phases.getKeys(false)) {
-            var value = phases.get(phase + "." + feature);
-            if (value != null && !Boolean.FALSE.equals(value)) {
-                uses.add(new String[] {id, "(" + variant + phase + ")"});
-            }
-        }
     }
 
     /** The status of a file: its problems first, then whether it is loaded, then the given status, else fine. */

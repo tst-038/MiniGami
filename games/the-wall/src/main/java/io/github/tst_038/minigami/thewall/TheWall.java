@@ -72,7 +72,7 @@ public final class TheWall implements GameType {
     @Override
     public List<Phase> phases() {
         // The land is made while the start countdown holds everyone frozen; the cap only guards against a build that never finishes.
-        return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 120 * 20L), Phase.timed(PREPARING, prepareSeconds * 20L), Phase.untimed(FIGHTING), Phase.timed("ending", 5 * 20));
+        return List.of(Phase.untimed("waiting"), Phase.timed(BUILDING, 120 * 20L), Phase.timed(PREPARING, prepareSeconds * 20L), Phase.untimed(FIGHTING), Phase.timed("ending", 10 * 20));
     }
 
     /** The land is made, with the players frozen at their quarters, while the start countdown runs. */
