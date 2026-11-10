@@ -14,7 +14,7 @@ import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 
-/** {@code /mga kit save <name>|list|delete <name>}: inventories saved to give players in a game. */
+/** {@code /mga kit list|save <name>|preview <name>|get <name>|delete <name>}: inventories saved to give players in a game. */
 final class KitCommands {
 
     private KitCommands() {
@@ -30,6 +30,16 @@ final class KitCommands {
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .suggests(suggest(kits::names))
                                 .executes(byPlayer((player, context) -> kits.save(player, string(context, "name"))))))
+                .then(Commands.literal("preview")
+                        .requires(PLAYER)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                                .suggests(suggest(kits::names))
+                                .executes(byPlayer((player, context) -> kits.preview(player, string(context, "name"))))))
+                .then(Commands.literal("get")
+                        .requires(PLAYER)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                                .suggests(suggest(kits::names))
+                                .executes(byPlayer((player, context) -> kits.give(player, string(context, "name"))))))
                 .then(Commands.literal("delete")
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .suggests(suggest(kits::names))

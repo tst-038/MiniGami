@@ -570,6 +570,10 @@ kit:
   unknown: "%prefix%<red>There is no saved kit called <white>%name%</white>."
   deleted: "%prefix%<green>Deleted kit <white>%name%</white>. A game that uses it reports that on the next <white>/mga reload</white>."
   delete-failed: "%prefix%<red>Could not delete the file of kit <white>%name%</white>; see the server log."
+  not-empty: "%prefix%<red>Empty your inventory first; kit <white>%name%</white> fills it slot for slot."
+  given: "%prefix%<green>You have kit <white>%name%</white>. Change it and save it again with <white>/mga kit save %name%</white>."
+  view:
+    title: "<dark_gray>Kit %name%"
 
 # Loot tables and the items they name. %table%: a table id, %name%: a saved item
 loot:

@@ -1,8 +1,10 @@
 package io.github.tst_038.minigami.paper.session;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.paper.item.InventoryPreview;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -11,6 +13,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -35,7 +38,6 @@ public final class SnapshotAdmin {
         this.store = store;
         this.sessions = sessions;
         this.messages = messages;
-        plugin.getServer().getPluginManager().registerEvents(new SnapshotView(), plugin);
     }
 
     public void inspect(CommandSender sender, Player target) {
@@ -57,7 +59,14 @@ public final class SnapshotAdmin {
             if (sender instanceof Player viewer) {
                 var where = "%s at %.0f, %.0f, %.0f".formatted(Optional.ofNullable(plugin.getServer().getWorld(location.world()))
                         .map(World::getName).orElse(location.world().toString()), location.x(), location.y(), location.z());
-                viewer.getScheduler().run(plugin, opened -> viewer.openInventory(SnapshotView.create(messages, target, snapshot, items, where)), null);
+                var vitals = "%.1f health, %d food, level %d, %s".formatted(snapshot.health(), snapshot.foodLevel(), snapshot.level(), snapshot.gameMode().toLowerCase());
+                var effects = snapshot.effects().stream().map(effect -> effect.type() + " " + (effect.amplifier() + 1)).toList();
+                var details = List.of(
+                        InventoryPreview.info(Material.APPLE, messages.render("snapshot.view.vitals"), List.of(vitals)),
+                        InventoryPreview.info(Material.COMPASS, messages.render("snapshot.view.where"), List.of(where)),
+                        InventoryPreview.info(Material.POTION, messages.render("snapshot.view.effects"), effects.isEmpty() ? List.of("-") : effects));
+                var preview = InventoryPreview.create(messages.render("snapshot.view.title", player), items, details);
+                viewer.getScheduler().run(plugin, opened -> viewer.openInventory(preview), null);
             } else {
                 // displayName() carries the item as hover, so staff can see enchantments and names.
                 messages.send(sender, "snapshot.items", Placeholder.component("items", Component.join(JoinConfiguration.commas(true),

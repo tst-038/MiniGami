@@ -135,7 +135,7 @@ features:
 
 | Feature | Does |
 |---|---|
-| `kit` | Gives items, or an inventory saved with `/mg kit save <name>` |
+| `kit` | Gives items, or an inventory saved with `/mg kit save <name>` (see it with `/mg kit preview <name>`) |
 | `break-blocks` | Limits what players break, in a phase where the game puts them in survival or creative (adventure can't break blocks): a block breaks if it is on the `whitelist` (when given) and not on the `blacklist` (neither = all, `whitelist: []` = none), optionally `instant`, `drops: false`, and `place: true` to allow placing any block |
 | `give-drops` | Replaces what broken blocks drop |
 | `projectile-breaks` | Projectiles break the listed blocks |
@@ -185,7 +185,7 @@ way through. The tables below give an overview.
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
 | `/mg gametype list\|<id> info` · `/mga options [gametype]` | admin |
-| `/mg kit list\|save <name>\|delete <name>` | admin |
+| `/mg kit list\|save <name>\|delete <name>` · `/mg kit preview <name>` (look without taking) · `/mg kit get <name>` (into an empty inventory, to change and save again) | admin |
 | `/mg night list\|info\|create\|delete\|edit` | admin |
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |
 | `/mg lobby set\|tp` · `/mg config info` | admin |

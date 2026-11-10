@@ -35,6 +35,7 @@ import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.GameLoader;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
+import io.github.tst_038.minigami.paper.item.InventoryPreview;
 import io.github.tst_038.minigami.paper.kit.KitAdmin;
 import io.github.tst_038.minigami.paper.kit.SavedKits;
 import io.github.tst_038.minigami.paper.loot.LootAdmin;
@@ -194,6 +195,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(scheduleRewards, this);
         var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, scheduleRewards,
                 Clock.systemDefaultZone(), RandomGenerator.getDefault());
+        getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadAfterEdit);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
