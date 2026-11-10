@@ -140,6 +140,8 @@ public final class LiveMatch {
     private final Map<UUID, MatchClock.Task> respawning = new HashMap<>();
     /** Participants who left after the start; the roster still has them. */
     private final Set<UUID> left = new HashSet<>();
+    /** Who outside the match may also join it, other than through its game's own permission. */
+    private final Set<String> joinPermissions = new HashSet<>();
     /** The region of every team, handed out when play starts. */
     private List<TeamRegion> teamRegions = List.of();
     /** When play started, for the record; null until then. */
@@ -417,11 +419,17 @@ public final class LiveMatch {
         return Audience.audience(members.stream().map(server::getPlayer).filter(Objects::nonNull).toList());
     }
 
-    /** Online players outside the match who may play its game. */
+    /** Lets those with the permission join this match too, so they also hear how it ends. */
+    public void allowJoining(String permission) {
+        joinPermissions.add(permission);
+    }
+
+    /** Online players outside the match who may join it: by its game's permission, or one allowed with {@link #allowJoining}. */
     public Audience onlookers() {
-        var permission = PlayPermissions.of(variant.gametype().id());
+        var permissions = new HashSet<>(joinPermissions);
+        permissions.add(PlayPermissions.of(variant.gametype().id()));
         return Audience.audience(plugin.getServer().getOnlinePlayers().stream()
-                .filter(player -> !members.contains(player.getUniqueId()) && player.hasPermission(permission)).toList());
+                .filter(player -> !members.contains(player.getUniqueId()) && permissions.stream().anyMatch(player::hasPermission)).toList());
     }
 
     /** Whether the match is still gathering players: in its first phase, and nobody was brought to their spawn yet. */
