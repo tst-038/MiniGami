@@ -18,6 +18,7 @@ public final class Rotation<T> {
     private final boolean random;
     private final RandomGenerator randomness;
     private int next;
+    private Optional<T> pinned = Optional.empty();
 
     /**
      * @param games the games, in the order they take turns
@@ -32,8 +33,28 @@ public final class Rotation<T> {
         this.randomness = randomness;
     }
 
-    /** The next game that fits, or empty if none does; in turn, the one after it goes next. */
+    /**
+     * Plays this game next, once, instead of whichever's turn it is; it needn't be one of the games.
+     * The turns then go on where they were. Empty plays the turns again.
+     */
+    public void pin(Optional<T> game) {
+        pinned = game;
+    }
+
+    public Optional<T> pinned() {
+        return pinned;
+    }
+
+    /**
+     * The next game that fits, or empty if none does; in turn, the one after it goes next. A pinned
+     * game that doesn't fit is kept for later rather than passed over.
+     */
     public Optional<T> next(Predicate<T> fits) {
+        if (pinned.isPresent()) {
+            var game = pinned.filter(fits);
+            game.ifPresent(played -> pinned = Optional.empty());
+            return game;
+        }
         if (random) {
             var fitting = games.stream().filter(fits).toList();
             return fitting.isEmpty() ? Optional.empty() : Optional.of(fitting.get(randomness.nextInt(fitting.size())));

@@ -56,4 +56,33 @@ class RotationTest {
         assertEquals(java.util.Set.of("spleef", "koth"), picked);
         assertTrue(next(rotation, 1).isEmpty());
     }
+
+    @Test
+    void aPinnedGamePlaysOnceThenTheTurnsGoOn() {
+        var rotation = new Rotation<>(List.of("spleef", "koth"), false, new Random(1));
+        next(rotation, 10);
+        rotation.pin(Optional.of("the-wall"));
+
+        assertEquals(Optional.of("the-wall"), next(rotation, 10));
+        assertEquals(Optional.empty(), rotation.pinned());
+        assertEquals(Optional.of("koth"), next(rotation, 10));
+    }
+
+    @Test
+    void aPinnedGameThatDoesNotFitIsKept() {
+        var rotation = new Rotation<>(List.of("spleef"), false, new Random(1));
+        rotation.pin(Optional.of("the-wall"));
+
+        assertEquals(Optional.empty(), next(rotation, 4));
+        assertEquals(Optional.of("the-wall"), next(rotation, 8));
+    }
+
+    @Test
+    void unpinningPlaysTheTurnsAgain() {
+        var rotation = new Rotation<>(List.of("spleef"), true, new Random(1));
+        rotation.pin(Optional.of("koth"));
+        rotation.pin(Optional.empty());
+
+        assertEquals(Optional.of("spleef"), next(rotation, 10));
+    }
 }

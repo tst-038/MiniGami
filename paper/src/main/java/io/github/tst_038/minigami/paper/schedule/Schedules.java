@@ -45,8 +45,10 @@ import org.bukkit.plugin.Plugin;
  * If the match hasn't started when the call closes, it is stopped. Once it has, its players may win
  * the schedule's rewards.
  *
- * <p>A schedule skips its time during a game night, while its last call is still open, and while it
- * is paused. When no game fits, players see nothing; hosts hear about it.
+ * <p>A schedule skips its time during a game night, while its last call is still open, while it
+ * is paused, and once when staff skip it. When no game fits, players see nothing; hosts hear about it.
+ * Staff can also pick its next game, open it now even without enough players, start its match, or
+ * call it off.
  *
  * <p>Not thread-safe: use it from the server thread only, ticking it once a second.
  */
@@ -112,6 +114,8 @@ public final class Schedules {
     private final Map<String, Turn> turns = new HashMap<>();
     // shortcut: pauses are kept in memory, so a restart resumes every schedule; store them if staff need a pause to last.
     private final Set<String> paused = new HashSet<>();
+    /** Schedules whose next time opens nothing. */
+    private final Set<String> skipping = new HashSet<>();
     /** Oldest first. */
     private final List<Call> calls = new ArrayList<>();
 
@@ -148,7 +152,7 @@ public final class Schedules {
             var turn = turn(loaded.find(id).orElseThrow(), now);
             if (turn.next.isPresent() && !now.isBefore(turn.next.get())) {
                 turn.next = turn.schedule.when().next(now);
-                if (!paused.contains(id) && fire(turn) == Outcome.NOTHING_FITS) {
+                if (!paused.contains(id) && !skipping.remove(id) && fire(turn, false) == Outcome.NOTHING_FITS) {
                     messages.send(hosts(), "schedule.skipped", Placeholder.parsed("name", turn.schedule.name()), Formatter.number("players", couldJoin().size()));
                 }
             }
@@ -160,13 +164,18 @@ public final class Schedules {
     private Turn turn(Schedule schedule, LocalDateTime now) {
         var turn = turns.get(schedule.id());
         if (turn == null || turn.schedule != schedule) {
-            turn = new Turn(schedule, new Rotation<>(schedule.games(), schedule.pick() == Schedule.Pick.RANDOM, random), schedule.when().next(now));
+            var rotation = new Rotation<>(schedule.games(), schedule.pick() == Schedule.Pick.RANDOM, random);
+            // A game staff picked survives a reload, as long as it still exists.
+            Optional.ofNullable(turn).flatMap(old -> old.rotation.pinned()).filter(entry -> variant(entry).isPresent())
+                    .ifPresent(entry -> rotation.pin(Optional.of(entry)));
+            turn = new Turn(schedule, rotation, schedule.when().next(now));
             turns.put(schedule.id(), turn);
         }
         return turn;
     }
 
-    private Outcome fire(Turn turn) {
+    /** @param force for staff: opens a game however few players could join it */
+    private Outcome fire(Turn turn, boolean force) {
         if (nightRunning.getAsBoolean()) {
             return Outcome.NIGHT;
         }
@@ -174,10 +183,11 @@ public final class Schedules {
             return Outcome.CALL_OPEN;
         }
         int players = couldJoin().size();
-        if (players < turn.schedule.minOnline()) {
+        if (!force && players < turn.schedule.minOnline()) {
             return Outcome.NOTHING_FITS;
         }
-        var picked = turn.rotation.next(entry -> variant(entry).filter(variant -> fits(variant, players)).isPresent()).flatMap(this::variant);
+        var picked = turn.rotation.next(entry -> variant(entry).filter(variant -> fits(variant, force ? Integer.MAX_VALUE : players)).isPresent())
+                .flatMap(this::variant);
         if (picked.isEmpty()) {
             return Outcome.NOTHING_FITS;
         }
@@ -302,26 +312,119 @@ public final class Schedules {
         for (var id : loaded.ids()) {
             var turn = turn(loaded.find(id).orElseThrow(), now);
             var state = paused.contains(id) ? messages.render("schedule.state.paused")
-                    : calls.stream().anyMatch(call -> call.schedule.id().equals(id)) ? messages.render("schedule.state.calling") : Component.empty();
+                    : skipping.contains(id) ? messages.render("schedule.state.skipping")
+                    : call(id).isPresent() ? messages.render("schedule.state.calling") : Component.empty();
+            var picked = turn.rotation.pinned().flatMap(this::variant)
+                    .map(variant -> messages.render("schedule.state.picked", Placeholder.parsed("game", variant.name()))).orElse(Component.empty());
+            state = state.append(picked);
             messages.send(sender, "schedule.list-entry", Placeholder.unparsed("id", id), Placeholder.parsed("name", turn.schedule.name()),
                     Placeholder.unparsed("next", turn.next.map(NEXT_TIME::format).orElse("never")), Placeholder.component("state", state));
         }
     }
 
-    /** Opens the schedule's next game now, paused or not; its times stay as they are. */
-    public void now(CommandSender sender, String id) {
+    /**
+     * Opens the schedule's next game now, or the one given, paused or not, however few players could
+     * join; its times stay as they are.
+     */
+    public void now(CommandSender sender, String id, Optional<Schedule.Entry> game) {
+        var schedule = find(sender, id);
+        if (schedule.isEmpty() || game.isPresent() && !exists(sender, game.get())) {
+            return;
+        }
+        var name = names(schedule.get());
+        var turn = turn(schedule.get(), LocalDateTime.now(clock));
+        var pinned = turn.rotation.pinned();
+        game.ifPresent(entry -> turn.rotation.pin(game));
+        var outcome = fire(turn, true);
+        if (outcome != Outcome.OPENED) {
+            turn.rotation.pin(pinned);
+        }
+        switch (outcome) {
+            case OPENED -> messages.send(sender, "schedule.opened", name);
+            case NIGHT -> messages.send(sender, "schedule.night-running", name);
+            case CALL_OPEN -> messages.send(sender, "schedule.call-open", name);
+            // Forced, so only busy arenas keep it from opening.
+            case NOTHING_FITS -> messages.send(sender, "schedule.arenas-busy", name);
+            case OPEN_FAILED -> messages.send(sender, "schedule.open-failed", name);
+        }
+    }
+
+    /** Picks the game the schedule opens next, once; empty goes back to its own turns. */
+    public void next(CommandSender sender, String id, Optional<Schedule.Entry> game) {
+        var schedule = find(sender, id);
+        if (schedule.isEmpty() || game.isPresent() && !exists(sender, game.get())) {
+            return;
+        }
+        turn(schedule.get(), LocalDateTime.now(clock)).rotation.pin(game);
+        game.flatMap(this::variant).ifPresentOrElse(
+                variant -> messages.send(sender, "schedule.next-picked", names(schedule.get()), Placeholder.parsed("game", variant.name())),
+                () -> messages.send(sender, "schedule.next-cleared", names(schedule.get())));
+    }
+
+    /** Starts the match of the schedule's open call now, however few players joined it. */
+    public void start(CommandSender sender, String id) {
         var schedule = find(sender, id);
         if (schedule.isEmpty()) {
             return;
         }
-        var name = names(schedule.get());
-        switch (fire(turn(schedule.get(), LocalDateTime.now(clock)))) {
-            case OPENED -> messages.send(sender, "schedule.opened", name);
-            case NIGHT -> messages.send(sender, "schedule.night-running", name);
-            case CALL_OPEN -> messages.send(sender, "schedule.call-open", name);
-            case NOTHING_FITS -> messages.send(sender, "schedule.skipped", name, Formatter.number("players", couldJoin().size()));
-            case OPEN_FAILED -> messages.send(sender, "schedule.open-failed", name);
+        var match = call(id).map(call -> call.match)
+                .filter(live -> !live.match().isFinished() && live.isJoinable() && live.match().roster().size() > 0);
+        if (match.isEmpty()) {
+            messages.send(sender, "schedule.cannot-start", names(schedule.get()));
+            return;
         }
+        match.get().forceStart();
+        messages.send(sender, "start.started");
+    }
+
+    /** Calls off the schedule's open call, stopping its match if it hasn't started. */
+    public void cancel(CommandSender sender, String id) {
+        var schedule = find(sender, id);
+        if (schedule.isEmpty()) {
+            return;
+        }
+        var call = call(id);
+        if (call.isEmpty()) {
+            messages.send(sender, "schedule.no-call");
+            return;
+        }
+        calls.remove(call.get());
+        var game = Placeholder.parsed("game", call.get().variant.name());
+        if (call.get().match != null && !call.get().match.match().isFinished()) {
+            messages.send(call.get().match.audience(), "schedule.called-off", game);
+            call.get().match.stop();
+        }
+        messages.send(sender, "schedule.cancelled", names(schedule.get()), game);
+    }
+
+    /** The schedule's next time opens nothing; resuming takes that back. */
+    public void skip(CommandSender sender, String id) {
+        find(sender, id).ifPresent(schedule -> messages.send(sender, skipping.add(id) ? "schedule.skipping" : "schedule.already-skipping", names(schedule)));
+    }
+
+    /** The schedule's call that is still open to join, if any. A started match's call is gone already. */
+    private Optional<Call> call(String id) {
+        return calls.stream().filter(call -> call.schedule.id().equals(id)).findFirst();
+    }
+
+    /** Whether the game and its variant exist; tells the sender if not. */
+    private boolean exists(CommandSender sender, Schedule.Entry entry) {
+        var game = games.get().find(entry.game());
+        if (game.isEmpty()) {
+            messages.send(sender, "join.unknown-game", Placeholder.unparsed("game", entry.game()));
+        } else if (game.get().variant(entry.variant()).isEmpty()) {
+            messages.send(sender, "join.unknown-variant", Placeholder.parsed("game", game.get().name()), Placeholder.unparsed("variant", entry.variant().orElseThrow()),
+                    Placeholder.unparsed("variants", String.join(", ", game.get().variants().keySet())));
+        }
+        return game.flatMap(found -> found.variant(entry.variant())).isPresent();
+    }
+
+    public Collection<String> gameIds() {
+        return games.get().ids();
+    }
+
+    public Collection<String> variantIds(String game) {
+        return games.get().find(game).map(found -> found.variants().keySet()).orElse(Set.of());
     }
 
     public void pause(CommandSender sender, String id) {
@@ -329,7 +432,7 @@ public final class Schedules {
     }
 
     public void resume(CommandSender sender, String id) {
-        find(sender, id).ifPresent(schedule -> messages.send(sender, paused.remove(id) ? "schedule.resumed" : "schedule.not-paused", names(schedule)));
+        find(sender, id).ifPresent(schedule -> messages.send(sender, paused.remove(id) | skipping.remove(id) ? "schedule.resumed" : "schedule.not-paused", names(schedule)));
     }
 
     private Optional<Schedule> find(CommandSender sender, String id) {

@@ -1,6 +1,6 @@
 # A schedule: at set times a game opens on its own and everyone online who isn't playing gets a
 # clickable call to join it. The file name is the schedule's id; delete the file to stop it.
-# Staff: /mga schedule list, /mga schedule now|pause|resume <id>, and /mga schedule info|create|delete|edit for the files.
+# Staff: /mga schedule list, /mga schedule now|next <id> [game] [variant], /mga schedule start|skip|cancel|pause|resume <id>, and /mga schedule info|create|delete|edit for the files.
 # Players join with /mg schedule join, which needs minigami.schedule.join (everyone has it) but not the game's own minigami.play.<game>.
 name: "<gold>Example schedule"
 # When, in server time, as a cron line: minute hour day-of-month month day-of-week (0 or 7 is Sunday).

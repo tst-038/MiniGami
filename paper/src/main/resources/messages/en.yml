@@ -743,10 +743,20 @@ schedule:
   night-running: "%prefix%<red>%name%<red> doesn't open games during a game night."
   call-open: "%prefix%<red>%name%<red> still has a game open to join."
   open-failed: "%prefix%<red>%name%<red> could not open its game; see the server log."
+  arenas-busy: "%prefix%<red>%name%<red> could not open its game: all its arenas are busy."
+  # %game%: the game picked
+  next-picked: "%prefix%<green>%name%<green> opens %game%<green> next."
+  next-cleared: "%prefix%<green>%name%<green> opens its games in turn again."
+  cannot-start: "%prefix%<red>%name%<red> has no game open to join with players in it."
+  skipping: "%prefix%<yellow>%name%<yellow> skips its next time. Undo with <white>resume</white>."
+  already-skipping: "%prefix%<red>%name%<red> skips its next time already."
+  # To staff, and to the players in the match that was called off. %game%
+  cancelled: "%prefix%<yellow>%name%<yellow>: called off %game%<yellow>."
+  called-off: "%prefix%%game%<red> was called off by staff."
   paused: "%prefix%<yellow>%name%<yellow> is paused until resumed, or until the server restarts."
   already-paused: "%prefix%<red>%name%<red> is paused already."
   resumed: "%prefix%<green>%name%<green> runs again."
-  not-paused: "%prefix%<red>%name%<red> isn't paused."
+  not-paused: "%prefix%<red>%name%<red> isn't paused or skipping."
   # %schedule%: as typed, %schedules%: the ones there are
   unknown: "%prefix%<red>There is no schedule called <white>%schedule%</white>. There are: <white>%schedules%</white>"
   none: "%prefix%<gray>There are no schedules. Add one in schedules/<id>.yml."
@@ -756,6 +766,9 @@ schedule:
   state:
     paused: " <yellow>paused"
     calling: " <green>open to join"
+    skipping: " <yellow>skips next time"
+    # %game%: the game staff picked to open next
+    picked: " <gray>then %game%"
 
 debug:
   summary: "%prefix%<gray>MiniGami <white>%version%</white>, matches: <white>%matches%</white>, listeners: <white>%listeners%</white>, players with saved state: <white>%snapshots%</white>"

@@ -180,7 +180,7 @@ way through. The tables below give an overview.
 | `/mg match list`, `/mg match <match> info\|kick <player>` | helper |
 | `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <player>` | mod |
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
-| `/mg schedule list` · `/mg schedule now\|pause\|resume <schedule>` | helper · mod |
+| `/mg schedule list` · `/mg schedule now\|next <schedule> [game] [variant]`, `start\|skip\|cancel\|pause\|resume <schedule>` | helper · mod |
 | `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `team`, `kick` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
@@ -290,6 +290,19 @@ rewards:
 Each place draws at most one reward. Chances are percentages, and whatever is left over to 100% wins nothing. Players
 who leave early win nothing. With `draw: team` (the default) a team shares one draw, so its members all win the same;
 with `draw: player` each member draws their own.
+
+Staff steer schedules by hand (all mod commands, under `/mg schedule`):
+
+| Command | |
+|---|---|
+| `next <schedule> [game] [variant]` | Open this game at the next time, once, instead of the schedule's own pick; it may be any game. Without a game, go back to the schedule's own turns. |
+| `now <schedule> [game] [variant]` | Open its next game (or the one given) right now, however few players are online (`min-online` and the game's minimum players don't apply); only busy arenas stop it. Its times stay as they are. |
+| `start <schedule>` | Start the game it opened now, however few players joined. Without this, a call that closes with too few players is called off. |
+| `skip <schedule>` | Its next time opens nothing. `resume` takes that back. |
+| `cancel <schedule>` | Call off the game it opened that hasn't started yet. |
+| `pause` / `resume <schedule>` | Stop and restart opening games, until the server restarts. |
+
+Any waiting match, scheduled or not, also starts with `/mg match <match> start` or `/mg start`.
 
 ## Stats and placeholders
 

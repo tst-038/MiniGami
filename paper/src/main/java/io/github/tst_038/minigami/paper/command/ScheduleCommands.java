@@ -17,6 +17,7 @@ import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
+import io.github.tst_038.minigami.paper.schedule.Schedule;
 import io.github.tst_038.minigami.paper.schedule.Schedules;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
@@ -26,7 +27,8 @@ import java.util.function.BiConsumer;
 import org.bukkit.command.CommandSender;
 
 /**
- * {@code /mg schedule join [schedule] [player]} for players (admins can name another player), {@code list} for helpers, {@code now|pause|resume} for mods,
+ * {@code /mg schedule join [schedule] [player]} for players (admins can name another player), {@code list} for helpers,
+ * {@code now|next [game] [variant]} and {@code start|skip|cancel|pause|resume} for mods,
  * and {@code info|create|delete|edit} of the schedule files for admins.
  */
 final class ScheduleCommands {
@@ -57,7 +59,11 @@ final class ScheduleCommands {
                                 .then(Commands.argument("player", ArgumentTypes.player())
                                         .executes(bySender((sender, context) -> schedules.join(sender, player(context), Optional.of(schedule(context))))))))
                 .then(Commands.literal("list").requires(HELPER).executes(bySender((sender, context) -> schedules.list(sender))))
-                .then(running("now", schedules, schedules::now))
+                .then(picking("now", schedules, schedules::now))
+                .then(picking("next", schedules, schedules::next))
+                .then(running("start", schedules, schedules::start))
+                .then(running("skip", schedules, schedules::skip))
+                .then(running("cancel", schedules, schedules::cancel))
                 .then(running("pause", schedules, schedules::pause))
                 .then(running("resume", schedules, schedules::resume))
                 .then(Commands.literal("info").requires(ADMIN)
@@ -86,6 +92,26 @@ final class ScheduleCommands {
                 .then(Commands.argument("schedule", StringArgumentType.word())
                         .suggests(suggest(schedules::ids))
                         .executes(bySender((sender, context) -> action.accept(sender, schedule(context)))));
+    }
+
+    /** A command on a loaded schedule and, optionally, a game and its variant, for mods. */
+    private static ArgumentBuilder<CommandSourceStack, ?> picking(String name, Schedules schedules, Picking action) {
+        return Commands.literal(name).requires(MOD)
+                .then(Commands.argument("schedule", StringArgumentType.word())
+                        .suggests(suggest(schedules::ids))
+                        .executes(bySender((sender, context) -> action.run(sender, schedule(context), Optional.empty())))
+                        .then(Commands.argument("game", StringArgumentType.word())
+                                .suggests(suggest(schedules::gameIds))
+                                .executes(bySender((sender, context) -> action.run(sender, schedule(context),
+                                        Optional.of(new Schedule.Entry(string(context, "game"), Optional.empty())))))
+                                .then(Commands.argument("variant", StringArgumentType.word())
+                                        .suggests(suggest(context -> schedules.variantIds(string(context, "game"))))
+                                        .executes(bySender((sender, context) -> action.run(sender, schedule(context),
+                                                Optional.of(new Schedule.Entry(string(context, "game"), Optional.of(string(context, "variant"))))))))));
+    }
+
+    private interface Picking {
+        void run(CommandSender sender, String schedule, Optional<Schedule.Entry> game);
     }
 
     /** A schedule file, loaded or not. */
