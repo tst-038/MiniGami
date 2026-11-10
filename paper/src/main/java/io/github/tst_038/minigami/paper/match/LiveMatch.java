@@ -60,6 +60,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.logging.Level;
+import io.github.tst_038.minigami.paper.permission.PlayPermissions;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -414,6 +415,13 @@ public final class LiveMatch {
     public Audience audience() {
         var server = plugin.getServer();
         return Audience.audience(members.stream().map(server::getPlayer).filter(Objects::nonNull).toList());
+    }
+
+    /** Online players outside the match who may play its game. */
+    public Audience onlookers() {
+        var permission = PlayPermissions.of(variant.gametype().id());
+        return Audience.audience(plugin.getServer().getOnlinePlayers().stream()
+                .filter(player -> !members.contains(player.getUniqueId()) && player.hasPermission(permission)).toList());
     }
 
     /** Whether the match is still gathering players: in its first phase, and nobody was brought to their spawn yet. */

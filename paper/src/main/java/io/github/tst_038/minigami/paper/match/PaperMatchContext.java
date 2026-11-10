@@ -292,4 +292,14 @@ public final class PaperMatchContext implements MatchContext {
     public Audience audience() {
         return match.audience();
     }
+
+    @Override
+    public Audience onlookers() {
+        return match.onlookers();
+    }
+
+    @Override
+    public String gameName() {
+        return match.variant().name();
+    }
 }

@@ -246,4 +246,14 @@ public interface MatchContext {
 
     /** Everyone currently in the match, eliminated players included, for messages to the whole match. */
     Audience audience();
+
+    /** Online players outside the match who may play its game, to hear how it ended. */
+    default Audience onlookers() {
+        return Audience.empty();
+    }
+
+    /** The name of the match's game or variant, as MiniMessage. */
+    default String gameName() {
+        return "";
+    }
 }
