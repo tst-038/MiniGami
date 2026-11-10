@@ -470,6 +470,7 @@ public final class Nights implements Listener {
             return;
         }
         var game = opened.get();
+        game.joinableBy(PlayPermissions.night(night.template().id()));
         sidebar.hide(players);
         for (Player player : players) {
             try {

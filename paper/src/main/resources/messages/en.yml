@@ -65,8 +65,8 @@ match:
   # %players%: the winning team's players, each in the team's colour. %team%: the team's name, in its colour
   winner-team: "%prefix%%players% <gray>won the match!"
   no-winner: "%prefix%<gray>Nobody won."
-  # How a match ended, to online players outside it who may join it: minigami.play.<game>, or for a game
-  # a schedule opened, only minigami.schedule.join.<schedule>.
+  # How a match ended, to online players outside it who may join it: minigami.play.<game>; for a game a
+  # schedule opened only minigami.schedule.join.<schedule>, and for a game night's only minigami.night.join.<night>.
   # %game%: the game's or variant's name; the rest as in winner, winner-team
   onlookers:
     winner: "%prefix%<gold>%player%</gold> <gray>won %game%<gray>!"
