@@ -202,7 +202,7 @@ public final class Schedules {
         if (match.isEmpty()) {
             return Outcome.OPEN_FAILED;
         }
-        match.get().allowJoining(PlayPermissions.schedule(turn.schedule.id()));
+        match.get().joinableBy(PlayPermissions.schedule(turn.schedule.id()));
         var call = new Call(turn.schedule, match.get(), clock.instant());
         calls.add(call);
         announce(call, "schedule.call");
@@ -302,7 +302,7 @@ public final class Schedules {
                 return;
             }
             call.match = match.get();
-            call.match.allowJoining(PlayPermissions.schedule(call.schedule.id()));
+            call.match.joinableBy(PlayPermissions.schedule(call.schedule.id()));
         }
         publicMatches.join(player, call.match);
     }
