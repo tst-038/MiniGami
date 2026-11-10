@@ -288,7 +288,8 @@ rewards:
 ```
 
 Each place draws at most one reward. Chances are percentages, and whatever is left over to 100% wins nothing. Players
-who leave early win nothing. With `draw: team` (the default) a team shares one draw, so its members all win the same;
+who leave early win nothing. The last place always draws from `taking-part`, even when it has a list of its own, unless
+everyone shares one place. With `draw: team` (the default) a team shares one draw, so its members all win the same;
 with `draw: player` each member draws their own.
 
 Staff steer schedules by hand (all mod commands, under `/mg schedule`):

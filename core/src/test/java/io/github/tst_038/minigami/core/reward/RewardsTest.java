@@ -41,7 +41,7 @@ class RewardsTest {
 
     @Test
     void eachPlaceDrawsFromItsOwnTableAndTheRestFromTakingPart() {
-        var rewards = new Rewards<>(Map.of(1, sure("crown"), 2, sure("medal")), sure("cookie"));
+        var rewards = new Rewards<>(Map.of(1, sure("crown"), 2, sure("medal"), 3, sure("bronze")), sure("cookie"));
 
         var won = rewards.draw(record(), new Random(1));
 
@@ -108,8 +108,18 @@ class RewardsTest {
         var participants = List.of(entry(a1, false), entry(a2, false), entry(b1, false), entry(b2, false));
         var record = new MatchRecord("test", "test", Optional.empty(), "arena", Instant.EPOCH, Instant.EPOCH, result, participants);
 
-        var won = new Rewards<>(Map.of(1, sure("crown"), 2, sure("medal")), RewardTable.<String>empty()).draw(record, new Random(1));
+        var won = new Rewards<>(Map.of(1, sure("crown"), 2, sure("medal")), sure("cookie")).draw(record, new Random(1));
 
-        assertEquals(Map.of(a1, "crown", a2, "crown", b1, "medal", b2, "medal"), won);
+        assertEquals(Map.of(a1, "crown", a2, "crown", b1, "cookie", b2, "cookie"), won);
+    }
+
+    @Test
+    void whenEveryoneSharesOnePlaceNoOneIsLast() {
+        var result = new MatchResult(List.of(new Placement(1, List.of(WINNER, SECOND))));
+        var record = new MatchRecord("test", "test", Optional.empty(), "arena", Instant.EPOCH, Instant.EPOCH, result, List.of(entry(WINNER, false), entry(SECOND, false)));
+
+        var won = new Rewards<>(Map.of(1, sure("crown")), sure("cookie")).draw(record, new Random(1));
+
+        assertEquals(Map.of(WINNER, "crown", SECOND, "crown"), won);
     }
 }

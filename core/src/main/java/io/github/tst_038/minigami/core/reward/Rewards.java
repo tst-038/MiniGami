@@ -10,7 +10,8 @@ import java.util.random.RandomGenerator;
 
 /**
  * What the players of a match may win: a table per place, and one for everyone else who played. Who
- * placed without a table of their own draws from the taking-part table; who left draws nothing.
+ * placed without a table of their own, or came last, draws from the taking-part table; who left draws
+ * nothing. When everyone shares one place, no one counts as last.
  *
  * @param places by place, 1 being the winners
  * @param draw whether a team's members share one draw or each draw their own
@@ -50,13 +51,15 @@ public record Rewards<T>(Map<Integer, RewardTable<T>> places, RewardTable<T> tak
     public Map<UUID, T> draw(MatchRecord record, RandomGenerator random) {
         var placeOf = new HashMap<UUID, Integer>();
         record.result().placements().forEach(placement -> placement.participants().forEach(id -> placeOf.putIfAbsent(id, placement.place())));
+        var places = placeOf.values().stream().distinct().count();
+        var last = places > 1 ? placeOf.values().stream().max(Integer::compare) : Optional.<Integer>empty();
         var won = new LinkedHashMap<UUID, T>();
         var teamDraws = new HashMap<String, Optional<T>>();
         for (var participant : record.participants()) {
             if (participant.left()) {
                 continue;
             }
-            var table = Optional.ofNullable(placeOf.get(participant.id())).map(places::get).orElse(takingPart);
+            var table = Optional.ofNullable(placeOf.get(participant.id())).filter(place -> !last.equals(Optional.of(place))).map(this.places::get).orElse(takingPart);
             var drawn = participant.team().filter(team -> draw == Draw.TEAM).map(team -> teamDraws.computeIfAbsent(team, id -> table.draw(random))).orElseGet(() -> table.draw(random));
             drawn.ifPresent(reward -> won.put(participant.id(), reward));
         }

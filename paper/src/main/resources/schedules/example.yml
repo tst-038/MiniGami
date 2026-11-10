@@ -27,7 +27,8 @@ min-online: 0
 join-seconds: 120
 # What the players may win, given once the game is over. Each list holds rewards with their chance in
 # percent; a player wins at most one of them, and the chance left over to 100 wins nothing.
-# places: a list per place (1 wins); everyone else who played to the end draws from taking-part.
+# places: a list per place (1 wins); everyone else who played to the end draws from taking-part,
+# and so does the last place, even with a list of its own (unless everyone shares one place).
 # Who left the game wins nothing. Leave rewards out for none.
 # draw: team (the default) gives a team's members one shared draw, so they all win the same;
 # player lets each of them draw their own.
