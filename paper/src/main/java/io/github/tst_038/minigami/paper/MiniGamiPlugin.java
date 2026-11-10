@@ -301,7 +301,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 games = loadedGames.entries();
                 playPermissions.sync(games.ids());
                 nightTemplates = loadedNights.entries();
+                playPermissions.syncNights(nightTemplates.ids());
                 schedules = loadedSchedules.entries();
+                playPermissions.syncSchedules(schedules.ids());
                 fileProblems.forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedSettings.problems().forEach(problem -> getLogger().warning("Using defaults: " + problem));
                 loadedLoot.problems().forEach(problem -> getLogger().warning("Skipped: " + problem));

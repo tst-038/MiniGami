@@ -164,9 +164,10 @@ public final class Nights implements Listener {
         publish();
         var name = Placeholder.parsed("name", template.get().name());
         messages.send(host, "night.opened", name);
-        var mayJoin = plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(PlayPermissions.NIGHTS));
+        var permission = PlayPermissions.night(template.get().id());
+        var mayJoin = plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(permission));
         messages.send(mayJoin, "night.open", name, Placeholder.styling("join", Clicks.by(player -> {
-            if (player.hasPermission(PlayPermissions.NIGHTS)) {
+            if (player.hasPermission(permission)) {
                 join(player);
             }
         })));
@@ -194,7 +195,8 @@ public final class Nights implements Listener {
         var group = new ArrayList<Player>();
         group.add(player);
         party.ifPresent(members -> members.stream().filter(member -> !member.equals(id)).map(plugin.getServer()::getPlayer).filter(Objects::nonNull).forEach(group::add));
-        var denied = group.stream().filter(member -> !member.hasPermission(PlayPermissions.NIGHTS)).findFirst();
+        var permission = PlayPermissions.night(night.template().id());
+        var denied = group.stream().filter(member -> !member.hasPermission(permission)).findFirst();
         if (denied.isPresent()) {
             messages.send(player, "night.not-allowed", Placeholder.component("player", denied.get().name()));
             return;

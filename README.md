@@ -226,8 +226,11 @@ it) or can't be played (its file didn't load); staff with `minigami.admin` also 
 | `minigami.helper` | op | List and inspect matches, kick players from matches and game nights |
 | `minigami.host` | op | Run game nights |
 | `minigami.play.<game>` | everyone (`minigami.play.*`) | Join that game |
-| `minigami.night.join` | everyone | Join game nights |
-| `minigami.schedule.join` | everyone | Join scheduled games, whatever `minigami.play.<game>` says |
+| `minigami.night.join.<night>` | everyone (`minigami.night.join`) | Join that game night and hear when it opens |
+| `minigami.schedule.join.<schedule>` | everyone (`minigami.schedule.join`) | Hear and join that schedule's games, whatever `minigami.play.<game>` says |
+
+To keep one schedule or night for a rank, set its own permission to false for everyone and true for that rank,
+for instance `minigami.schedule.join.hour-game-solo`.
 
 ## Configuration files
 

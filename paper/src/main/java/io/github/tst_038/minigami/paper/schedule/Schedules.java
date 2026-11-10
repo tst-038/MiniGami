@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.core.schedule.Rotation;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.match.LiveMatch;
+import io.github.tst_038.minigami.paper.permission.PlayPermissions;
 import io.github.tst_038.minigami.paper.match.PublicMatches;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.night.Nights;
@@ -54,7 +55,7 @@ import org.bukkit.plugin.Plugin;
  */
 public final class Schedules {
 
-    public static final String JOIN_PERMISSION = "minigami.schedule.join";
+    public static final String JOIN_PERMISSION = PlayPermissions.SCHEDULES;
 
     private static final DateTimeFormatter NEXT_TIME = DateTimeFormatter.ofPattern("EEE HH:mm", Locale.ENGLISH);
 
@@ -153,7 +154,7 @@ public final class Schedules {
             if (turn.next.isPresent() && !now.isBefore(turn.next.get())) {
                 turn.next = turn.schedule.when().next(now);
                 if (!paused.contains(id) && !skipping.remove(id) && fire(turn, false) == Outcome.NOTHING_FITS) {
-                    messages.send(hosts(), "schedule.skipped", Placeholder.parsed("name", turn.schedule.name()), Formatter.number("players", couldJoin().size()));
+                    messages.send(hosts(), "schedule.skipped", Placeholder.parsed("name", turn.schedule.name()), Formatter.number("players", couldJoin(turn.schedule).size()));
                 }
             }
         }
@@ -182,7 +183,7 @@ public final class Schedules {
         if (calls.stream().anyMatch(call -> call.schedule.id().equals(turn.schedule.id()))) {
             return Outcome.CALL_OPEN;
         }
-        int players = couldJoin().size();
+        int players = couldJoin(turn.schedule).size();
         if (!force && players < turn.schedule.minOnline()) {
             return Outcome.NOTHING_FITS;
         }
@@ -201,7 +202,7 @@ public final class Schedules {
         if (match.isEmpty()) {
             return Outcome.OPEN_FAILED;
         }
-        match.get().allowJoining(JOIN_PERMISSION);
+        match.get().allowJoining(PlayPermissions.schedule(turn.schedule.id()));
         var call = new Call(turn.schedule, match.get(), clock.instant());
         calls.add(call);
         announce(call, "schedule.call");
@@ -217,19 +218,20 @@ public final class Schedules {
         return variant.minPlayers() <= players && variant.arenas().stream().anyMatch(arena -> !running.isArenaInUse(arena.id()));
     }
 
-    /** Online, allowed to answer calls, and not playing. */
-    private List<Player> couldJoin() {
+    /** Online, allowed to answer the schedule's calls, and not playing. */
+    private List<Player> couldJoin(Schedule schedule) {
+        var permission = PlayPermissions.schedule(schedule.id());
         return plugin.getServer().getOnlinePlayers().stream()
-                .filter(player -> player.hasPermission(JOIN_PERMISSION) && running.find(player.getUniqueId()).isEmpty())
+                .filter(player -> player.hasPermission(permission) && running.find(player.getUniqueId()).isEmpty())
                 .map(Player.class::cast).toList();
     }
 
     private void announce(Call call, String key) {
         long seconds = Math.max(0, (Duration.between(clock.instant(), call.closesAt).toMillis() + 999) / 1000);
-        messages.send(Audience.audience(couldJoin()), key, Placeholder.parsed("name", call.schedule.name()), Placeholder.parsed("game", call.variant.name()),
+        messages.send(Audience.audience(couldJoin(call.schedule)), key, Placeholder.parsed("name", call.schedule.name()), Placeholder.parsed("game", call.variant.name()),
                 Formatter.number("seconds", seconds), Formatter.number("needed", call.variant.minPlayers()),
                 Placeholder.styling("join", Clicks.by(player -> {
-                    if (player.hasPermission(JOIN_PERMISSION)) {
+                    if (player.hasPermission(PlayPermissions.schedule(call.schedule.id()))) {
                         join(player, Optional.empty());
                     }
                 })));
@@ -252,7 +254,7 @@ public final class Schedules {
                 if (call.match != null && call.match.startsIn().isEmpty()) {
                     var game = Placeholder.parsed("game", call.match.variant().name());
                     if (call.match.members().isEmpty()) {
-                        messages.send(Audience.audience(couldJoin()), "schedule.nobody-joined", Placeholder.parsed("name", call.schedule.name()), game);
+                        messages.send(Audience.audience(couldJoin(call.schedule)), "schedule.nobody-joined", Placeholder.parsed("name", call.schedule.name()), game);
                     } else {
                         messages.send(call.match.audience(), "schedule.not-enough-players", game);
                     }
@@ -261,7 +263,7 @@ public final class Schedules {
                     rewards.watch(call.schedule, call.match);
                 } else {
                     // Its match ended before the call closed because everyone who joined left again.
-                    messages.send(Audience.audience(couldJoin()), "schedule.nobody-joined", Placeholder.parsed("name", call.schedule.name()),
+                    messages.send(Audience.audience(couldJoin(call.schedule)), "schedule.nobody-joined", Placeholder.parsed("name", call.schedule.name()),
                             Placeholder.parsed("game", call.variant.name()));
                 }
             } else if (!call.reminded && !now.isBefore(call.remindAt)) {
@@ -284,7 +286,9 @@ public final class Schedules {
         if (id.isPresent() && find(sender, id.get()).isEmpty()) {
             return;
         }
+        // Staff may put a player in any call; players only answer the calls of schedules they may join.
         var open = calls.reversed().stream().filter(call -> id.isEmpty() || call.schedule.id().equals(id.get()))
+                .filter(call -> sender != player || player.hasPermission(PlayPermissions.schedule(call.schedule.id())))
                 .filter(call -> call.match == null || call.match.match().isFinished() || call.match.isJoinable()).findFirst();
         if (open.isEmpty()) {
             messages.send(sender, "schedule.no-call");
@@ -298,7 +302,7 @@ public final class Schedules {
                 return;
             }
             call.match = match.get();
-            call.match.allowJoining(JOIN_PERMISSION);
+            call.match.allowJoining(PlayPermissions.schedule(call.schedule.id()));
         }
         publicMatches.join(player, call.match);
     }

@@ -646,8 +646,8 @@ night:
   # To everyone online. <join>…</join> joins on click
   open: "%prefix%%name% <gold>is open for sign-up! <join><hover:show_text:'Click to join'><green><bold>[Join]</bold></green></hover></join>"
   already-joined: "%prefix%<red>You're already in the night."
-  # %player%: who may not join game nights (a permission, minigami.night.join)
-  not-allowed: "%prefix%<red>%player% can't join game nights."
+  # %player%: who may not join this game night (a permission, minigami.night.join.<night>)
+  not-allowed: "%prefix%<red>%player% can't join this game night."
   not-joined: "%prefix%<red>You're not in the night."
   party-leader-only: "%prefix%<red>Only the party leader can join the night."
   # %size%: players in the party who are online, %team%: most players in a night team
