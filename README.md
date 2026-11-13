@@ -42,7 +42,7 @@ all without writing code.
 - **Stats.** Wins, games played, kills and deaths per game and variant, stored in SQLite, with leaderboards and
   PlaceholderAPI support.
 - **Safe for players.** Inventories, health and location are saved when a player joins a match and restored when they
-  leave, even after a crash (`/mg player <name> restore`). Quitters can rejoin within a time limit.
+  leave, even after a crash (`/mga player <name> snapshot restore`). Quitters can rejoin within a time limit.
 - **HUD.** Sidebar, boss bar, titles, sounds and fireworks, all set in `config.yml` and overridable per game.
 
 ## Requirements
@@ -189,7 +189,7 @@ way through. The tables below give an overview.
 | `/mg night list\|info\|create\|delete\|edit` | admin |
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |
 | `/mg lobby set\|tp` · `/mg config info` | admin |
-| `/mg player <player> snapshot\|restore` | admin |
+| `/mga player <player> snapshot [restore]` | admin |
 | `/mg join <game> [variant] <player>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
 
 ## Troubleshooting: `/mg doctor`
