@@ -684,6 +684,7 @@ public final class LiveMatch {
      * gets back, so the death is only announced.
      */
     private void dieQuitting(Player player) {
+        player.closeInventory(); // so crafting-grid and cursor items drop too
         var drops = new ArrayList<ItemStack>();
         for (var item : player.getInventory().getContents()) {
             if (item != null && !item.isEmpty()) {

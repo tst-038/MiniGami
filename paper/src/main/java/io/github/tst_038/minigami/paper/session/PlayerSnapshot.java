@@ -91,6 +91,8 @@ public record PlayerSnapshot(
     }
 
     public static PlayerSnapshot capture(Player player) {
+        // Closing puts crafting-grid and cursor items back into the inventory, so the snapshot holds them.
+        player.closeInventory();
         var location = player.getLocation();
         var effects = player.getActivePotionEffects().stream()
                 .map(effect -> new SavedEffect(effect.getType().getKey().asString(), effect.getDuration(), effect.getAmplifier(),
@@ -132,6 +134,8 @@ public record PlayerSnapshot(
      */
     public void restore(Player player) {
         restoreAttributes(player);
+        // Otherwise game items in the crafting grid or on the cursor land in the restored inventory once it closes.
+        player.closeInventory();
         player.setGameMode(GameMode.valueOf(gameMode));
         player.getInventory().setContents(ItemStack.deserializeItemsFromBytes(Base64.getDecoder().decode(items)));
         player.teleport(location.resolve(player.getServer()));
