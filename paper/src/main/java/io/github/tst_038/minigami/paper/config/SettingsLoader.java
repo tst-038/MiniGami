@@ -4,6 +4,10 @@ import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.config.setting.Kind;
+import io.github.tst_038.minigami.api.config.setting.Setting;
+import io.github.tst_038.minigami.paper.config.Settings.LeaderboardSettings;
+import io.github.tst_038.minigami.paper.game.Start;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -23,6 +27,17 @@ public final class SettingsLoader {
 
     public static final String FILE = "config.yml";
     static final int DEFAULT_BLOCKS_PER_TICK = 8192;
+    static final int DEFAULT_PARTY_INVITE_SECONDS = 60;
+
+    private static final Setting<Integer> PARTY_INVITE_SECONDS = Setting.of("invite-seconds", Kind.integer(5, 3600),
+            "how long a party invite can be accepted").orElse(DEFAULT_PARTY_INVITE_SECONDS);
+    private static final Setting<ConfigReader> PARTIES = Setting.of("parties", Kind.section(List.of(PARTY_INVITE_SECONDS)), "parties");
+    private static final Setting<Integer> LEADERBOARD_SIZE = Setting.of("size", Kind.integer(1, 100),
+            "how many players a leaderboard shows").orElse(LeaderboardSettings.DEFAULT.size());
+    private static final Setting<Integer> LEADERBOARD_REFRESH_SECONDS = Setting.of("refresh-seconds", Kind.integer(10, 86_400),
+            "how often leaderboards are read again from storage").orElse(LeaderboardSettings.DEFAULT.refreshSeconds());
+    private static final Setting<ConfigReader> LEADERBOARDS = Setting.of("leaderboards", Kind.section(List.of(LEADERBOARD_SIZE, LEADERBOARD_REFRESH_SECONDS)),
+            "leaderboards");
 
     /**
      * The settings, and why the defaults were used instead if the file is invalid.
@@ -64,6 +79,10 @@ public final class SettingsLoader {
                 : Optional.<Location>empty();
         int blocksPerTick = reader.has("blocks-per-tick")
                 ? reader.integer("blocks-per-tick", 256, 1_000_000) : DEFAULT_BLOCKS_PER_TICK;
+        var start = Start.read(reader, Start.DEFAULT);
+        int partyInviteSeconds = reader.read(PARTIES).read(PARTY_INVITE_SECONDS);
+        var boards = reader.read(LEADERBOARDS);
+        var leaderboards = new LeaderboardSettings(boards.read(LEADERBOARD_SIZE), boards.read(LEADERBOARD_REFRESH_SECONDS));
         var hud = bundledHud();
         if (reader.has("hud")) {
             reader.section("hud").keys();
@@ -75,7 +94,7 @@ public final class SettingsLoader {
         var keys = YamlFiles.keys(config, reader);
         try {
             reader.check();
-            return new Loaded(new Settings(lobby, blocksPerTick, hud), List.of(), keys);
+            return new Loaded(new Settings(lobby, blocksPerTick, hud, start, partyInviteSeconds, leaderboards), List.of(), keys);
         } catch (InvalidConfigException e) {
             return new Loaded(Settings.DEFAULTS, e.problems(), keys);
         }

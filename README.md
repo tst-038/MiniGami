@@ -92,6 +92,9 @@ to play and which arenas it can use.
 
 You can also copy one of the files in `games/`, edit it, and run `/mg reload`.
 
+Once a match has `min-players`, it waits 20 seconds before play begins, and more players can still join. Change that
+for every game under `start:` in `config.yml`, or for one game or variant with `start: { seconds: 40 }` in its file.
+
 ## How it fits together
 
 | Term | What it is |
@@ -236,7 +239,7 @@ for instance `minigami.schedule.join.hour-game-solo`.
 
 ```
 plugins/MiniGami/
-├── config.yml              lobby and HUD (sidebar, boss bar, titles, sounds)
+├── config.yml              lobby, HUD (sidebar, boss bar, titles, sounds), match start timer, parties, leaderboards
 ├── messages/en.yml         every message players see (MiniMessage)
 ├── arenas/<id>/arena.yml   world, spawns, regions, waiting spot (+ saved map)
 ├── games/<id>.yml          one file per game, with its variants

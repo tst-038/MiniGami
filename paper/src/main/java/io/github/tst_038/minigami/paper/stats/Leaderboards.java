@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.event.EventHandler;
@@ -45,14 +46,14 @@ public final class Leaderboards implements Listener {
     private final Executor serverThread;
     private final Logger logger;
     private final Function<UUID, Optional<String>> cachedName;
-    private final int size;
+    private final IntSupplier size;
     private volatile Map<Board, List<Entry>> boards = Map.of();
 
     /**
      * @param cachedName the name the server knows for a player whose name isn't stored; must not block
-     * @param size how many players a board shows
+     * @param size how many players a board shows; read on each refresh, so a reload applies to the next one
      */
-    public Leaderboards(Storage storage, Executor serverThread, Logger logger, Function<UUID, Optional<String>> cachedName, int size) {
+    public Leaderboards(Storage storage, Executor serverThread, Logger logger, Function<UUID, Optional<String>> cachedName, IntSupplier size) {
         this.storage = storage;
         this.serverThread = serverThread;
         this.logger = logger;
@@ -129,7 +130,7 @@ public final class Leaderboards implements Listener {
             select.setString(2, WINS);
             select.setString(3, PLAYED);
             select.setString(4, PLAYED);
-            select.setInt(5, size);
+            select.setInt(5, size.getAsInt());
             try (var rows = select.executeQuery()) {
                 while (rows.next()) {
                     read.computeIfAbsent(new Board(rows.getString(1), Optional.ofNullable(rows.getString(2)), rows.getString(3)), board -> new ArrayList<>())

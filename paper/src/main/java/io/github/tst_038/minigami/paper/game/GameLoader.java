@@ -50,6 +50,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  *   mode: random             # arena: the arena's spawns, which it must have; random: random places of the highest floor of the region or map, whatever spawns the arena has; left out: the arena's, or random if it has none and the game type allows
  *   teams: spread            # together (the default): a team shares one spawn, or spread: every player takes the next one
  *   respawn: highest-floor   # spawns (the default), or the highest floor still standing in region, for games that break their floor
+ * start: { seconds: 40 }    # optional; how a match starts once it has enough players, over config.yml's start: the wait in which more can join, and its last countdown-seconds frozen at spawns
  * respawn-seconds: 5         # optional; how long a player who died waits to come back, at the arena's respawning spot; 0 (the default): at once
  * name-tags: teammates       # optional; who sees a player's name tag: everyone (the default), teammates or nobody
  * messages:                  # optional; the game's own wording for any message key, over messages/en.yml
@@ -139,10 +140,11 @@ public final class GameLoader {
      * @param arenas the arenas loaded so far; a game may only use playable ones
      * @param hasLobby whether a lobby is set, which games that wait in the lobby need
      * @param hud the HUD every game has unless it sets its own under {@code hud}
+     * @param start how matches start, for every game that doesn't set its own under {@code start}
      * @param knownMessage whether a message key exists, so a game's own wording for a mistyped key is caught
      */
     public YamlFiles.Loaded<Game> load(YamlFiles files, IdRegistry<Arena> arenas, boolean hasLobby, ConfigurationSection hud,
-            Predicate<String> knownMessage) {
+            Start start, Predicate<String> knownMessage) {
         var withHud = new TreeMap<String, YamlConfiguration>();
         // enabled: false keeps a file (documentation, work in progress) out of the games without deleting it.
         files.files().forEach((id, own) -> {
@@ -151,7 +153,7 @@ public final class GameLoader {
             }
         });
         return new YamlFiles(files.folder(), withHud, files.problems())
-                .parse(Game::id, this::reader, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud, knownMessage));
+                .parse(Game::id, this::reader, (id, config) -> parseGame(id, config, files.fileName(id), files.files().get(id), arenas, hasLobby, hud, start, knownMessage));
     }
 
     /** The HUD defaults, the game's own settings over them, and the variant's over those if one is given. */
@@ -170,9 +172,9 @@ public final class GameLoader {
     }
 
     private Game parseGame(String id, ConfigReader config, String file, YamlConfiguration own, IdRegistry<Arena> arenas, boolean hasLobby,
-            ConfigurationSection hud, Predicate<String> knownMessage) {
+            ConfigurationSection hud, Start start, Predicate<String> knownMessage) {
         config.refuse("extends", "games don't extend each other; put what differs under variants, or copy the other game's file");
-        var base = parse(id, Optional.empty(), config, arenas, hasLobby, knownMessage);
+        var base = parse(id, Optional.empty(), config, arenas, hasLobby, start, knownMessage);
         // Each variant is checked on its own below; here they only count as read.
         var section = config.has(VARIANTS) ? Optional.of(config.section(VARIANTS)) : Optional.<ConfigReader>empty();
         var ids = section.map(ConfigReader::keys).orElse(Set.of());
@@ -205,7 +207,7 @@ public final class GameLoader {
                 continue;
             }
             var reader = reader(file, withHud(hud, own, settings));
-            variants.put(variant, parse(id, Optional.of(variant), reader, arenas, hasLobby, knownMessage));
+            variants.put(variant, parse(id, Optional.of(variant), reader, arenas, hasLobby, start, knownMessage));
             try {
                 reader.check();
             } catch (InvalidConfigException e) {
@@ -217,7 +219,7 @@ public final class GameLoader {
 
     /** @param variant empty for the game itself */
     private Variant parse(String id, Optional<String> variant, ConfigReader config, IdRegistry<Arena> arenas, boolean hasLobby,
-            Predicate<String> knownMessage) {
+            Start defaultStart, Predicate<String> knownMessage) {
         var gametypeId = config.read(settings.gametype());
         var game = gametypes.find(gametypeId).orElse(null);
         if (!gametypeId.isEmpty() && game == null) {
@@ -274,6 +276,7 @@ public final class GameLoader {
         }
         var respawnSeconds = config.read(GameSettings.RESPAWN_SECONDS);
         var endingSeconds = config.read(GameSettings.ENDING_SECONDS);
+        var start = Start.read(config, defaultStart);
         var featureRegions = Stream.concat(region.stream(), Variant.allFeatures(game, features, roles, ranks).flatMap(feature -> feature.regions().stream())).distinct().toList();
         var allFeatures = Variant.allFeatures(game, features, roles, ranks).toList();
         // Not a problem of the file: an arena that isn't ready is still being set up, and a problem would fail
@@ -294,7 +297,7 @@ public final class GameLoader {
             findings.addAll(diagnosis.findings());
         }
         var hud = Hud.read(config, game == null ? List.of() : game.phases().stream().map(Phase::id).toList(), knownStats());
-        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, endingSeconds, roles, ranks, quit, playable, findings,
+        return new Variant(id, variant, game, name, minPlayers, maxPlayers, waiting, lives, nameTags, messages, teams, teamSpawns, randomSpawns, respawn, respawnSeconds, start, endingSeconds, roles, ranks, quit, playable, findings,
                 features, stats, hud, config.read(GameSettings.ADVANCEMENTS));
     }
 

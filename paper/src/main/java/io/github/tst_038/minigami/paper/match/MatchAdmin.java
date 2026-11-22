@@ -141,7 +141,7 @@ public final class MatchAdmin {
             }
             live.resume();
             messages.send(sender, "match.admin.resumed", Placeholder.unparsed("match", id),
-                    Formatter.number("seconds", LiveMatch.COUNTDOWN_TICKS / 20));
+                    Formatter.number("seconds", LiveMatch.RESUME_SECONDS));
         });
     }
 

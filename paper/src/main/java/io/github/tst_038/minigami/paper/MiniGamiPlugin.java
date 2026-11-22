@@ -68,6 +68,7 @@ import io.github.tst_038.minigami.paper.storage.Migrations;
 import io.github.tst_038.minigami.paper.storage.SqliteStorage;
 import io.github.tst_038.minigami.paper.storage.Storage;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -109,9 +110,6 @@ public final class MiniGamiPlugin extends JavaPlugin {
     static final List<String> EXAMPLE_TERRAIN = List.of("plains.yml", "desert.yml", "snowy.yml", "forest.yml", "badlands.yml", "ores/vanilla.yml");
 
     private static final String MESSAGES = "messages/en.yml";
-    private static final int LEADERBOARD_SIZE = 10;
-    /** Five minutes: boards lag a little behind, but are never read from storage per view. */
-    private static final long LEADERBOARD_REFRESH_TICKS = 5 * 60 * 20;
 
     private final IdRegistry<GameType> gametypes = new IdRegistry<>(GameType::id);
     private final IdRegistry<FeatureFactory> features = new IdRegistry<>(FeatureFactory::id);
@@ -127,7 +125,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private IdRegistry<Game> games = new IdRegistry<>(Game::id);
     private IdRegistry<NightTemplate> nightTemplates = new IdRegistry<>(NightTemplate::id);
     private IdRegistry<Schedule> schedules = new IdRegistry<>(Schedule::id);
-    private Settings settings = Settings.DEFAULTS;
+    /** Read from other threads too, such as the storage thread refreshing leaderboards. */
+    private volatile Settings settings = Settings.DEFAULTS;
+    private Leaderboards leaderboards;
+    /** Rescheduled when a load changes its period; started by the first load, so the first boards have the configured size. */
+    private ScheduledTask leaderboardRefresh;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
     private Nights nights;
@@ -159,11 +161,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(profiles, this);
         // Players already online after a reload of the plugin.
         getServer().getOnlinePlayers().forEach(player -> profiles.join(player.getUniqueId(), player.getName()));
-        var leaderboards = new Leaderboards(storage, serverThread, getLogger(), this::cachedName, LEADERBOARD_SIZE);
-        getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
+        leaderboards = new Leaderboards(storage, serverThread, getLogger(), this::cachedName, () -> settings.leaderboards().size());
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
-        var parties = new PartyService(this, storage, messages);
+        var parties = new PartyService(this, storage, messages, () -> settings.partyInviteTicks());
         parties.load();
         var matchValues = new MatchValues();
         var nightValues = new NightValues();
@@ -217,6 +218,14 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> matches.tick(), 1, 1);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> scheduled.tick(), 20, 20);
+    }
+
+    /** Refreshes the leaderboards now, and then as often as the settings say. */
+    private void scheduleLeaderboards() {
+        if (leaderboardRefresh != null) {
+            leaderboardRefresh.cancel();
+        }
+        leaderboardRefresh = getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, settings.leaderboards().refreshTicks());
     }
 
     /** From the server's user cache only, so it never blocks; empty for players it has forgotten. */
@@ -275,7 +284,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 lootTables = loadedLoot.tables();
                 var loadedTerrain = TerrainStyles.load(terrainFiles, BlockCatalog.server());
                 terrainStyles = loadedTerrain.styles();
-                var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
+                var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), loadedSettings.settings().start(), messageTexts::isString);
                 var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
                 var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries());
                 // Also for files with problems, so they can be fixed by command.
@@ -296,7 +305,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
                     waiting.add(next);
                 }
                 messages.replace(messageTexts);
+                var refreshTicks = settings.leaderboards().refreshTicks();
                 settings = loadedSettings.settings();
+                if (leaderboardRefresh == null || settings.leaderboards().refreshTicks() != refreshTicks) {
+                    scheduleLeaderboards();
+                }
                 arenas = loadedArenas.entries();
                 games = loadedGames.entries();
                 playPermissions.sync(games.ids());

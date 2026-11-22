@@ -31,6 +31,7 @@ import java.util.stream.Stream;
  * @param ranks in the order they are handed out within each team; empty when it has none
  * @param respawn where a player who comes back is put down
  * @param respawnSeconds how long a player who died but is still in waits before they are put at a spawn; 0 means at once
+ * @param start how a match starts once it has enough players
  * @param endingSeconds how long the ending phase lasts; 0 means the game type's own
  * @param quit what quitting a running match does to a player still in it
  * @param arenas the arenas it lists that can host it
@@ -42,7 +43,7 @@ import java.util.stream.Stream;
  * @param advancements whether players can earn advancements in its matches
  */
 public record Variant(String game, Optional<String> id, GameType gametype, String name, int minPlayers, int maxPlayers, Waiting waiting, int lives,
-        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, boolean randomSpawns, Respawn respawn, int respawnSeconds, int endingSeconds, List<Role> roles, List<Rank> ranks, Quit quit, List<Arena> arenas, List<Finding> findings,
+        NameTags nameTags, Map<String, String> messages, Optional<TeamSetup> teams, TeamSpawns teamSpawns, boolean randomSpawns, Respawn respawn, int respawnSeconds, Start start, int endingSeconds, List<Role> roles, List<Rank> ranks, Quit quit, List<Arena> arenas, List<Finding> findings,
         Map<String, List<Feature>> features, List<StatGroup> statGroups, Hud hud, boolean advancements) {
 
     public Variant {

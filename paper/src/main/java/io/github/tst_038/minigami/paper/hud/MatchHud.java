@@ -328,7 +328,7 @@ public final class MatchHud {
             online().forEach(player -> player.hideBossBar(bossBar));
             return;
         }
-        var total = startsIn.isPresent() ? LiveMatch.START_TICKS : match.match().phaseLengthTicks();
+        var total = startsIn.isPresent() ? match.variant().start().ticks() : match.match().phaseLengthTicks();
         bossBar.name(text(null, text.get(), values(null)));
         bossBar.progress(Math.clamp((float) left.getAsLong() / total, 0f, 1f));
         online().forEach(player -> player.showBossBar(bossBar));
@@ -342,7 +342,7 @@ public final class MatchHud {
             return;
         }
         var seconds = (startsIn.getAsLong() + 19) / 20;
-        if (seconds > LiveMatch.COUNTDOWN_TICKS / 20 || seconds == lastCountdown || seconds == 0) {
+        if (seconds > match.variant().start().countdownSeconds() || seconds == lastCountdown || seconds == 0) {
             return;
         }
         lastCountdown = seconds;
