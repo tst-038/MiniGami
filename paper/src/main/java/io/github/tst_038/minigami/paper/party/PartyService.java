@@ -119,7 +119,8 @@ public final class PartyService {
         if (old != null) {
             old.cancel();
         }
-        messages.send(leader, "party.invited", Placeholder.unparsed("player", target.getName()));
+        messages.send(leader, "party.invited", Placeholder.unparsed("player", target.getName()),
+                Formatter.number("seconds", inviteTicks.getAsLong() / 20));
         messages.send(target, "party.invite", Placeholder.unparsed("leader", leader.getName()),
                 Placeholder.styling("accept", Clicks.by(invitee -> accept(invitee, leader.getName()))));
     }

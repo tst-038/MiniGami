@@ -128,7 +128,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     /** Read from other threads too, such as the storage thread refreshing leaderboards. */
     private volatile Settings settings = Settings.DEFAULTS;
     private Leaderboards leaderboards;
-    /** Rescheduled when a load changes its period; started by the first load, so the first boards have the configured size. */
+    /** Rescheduled, and so refreshed at once, when a load changes the leaderboard settings; started by the first load, so the first boards have the configured size. */
     private ScheduledTask leaderboardRefresh;
     private ActiveMatches matches;
     private SnapshotStore snapshots;
@@ -305,9 +305,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                     waiting.add(next);
                 }
                 messages.replace(messageTexts);
-                var refreshTicks = settings.leaderboards().refreshTicks();
+                var boards = settings.leaderboards();
                 settings = loadedSettings.settings();
-                if (leaderboardRefresh == null || settings.leaderboards().refreshTicks() != refreshTicks) {
+                if (leaderboardRefresh == null || !settings.leaderboards().equals(boards)) {
                     scheduleLeaderboards();
                 }
                 arenas = loadedArenas.entries();

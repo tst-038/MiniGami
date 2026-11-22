@@ -799,8 +799,13 @@ class GameLoaderTest {
                 .entries().find("fall").orElseThrow();
         assertEquals(new Start(60, 5), game.base().start());
         assertEquals(new Start(10, 2), game.variants().get("quick").start());
-        assertEquals(List.of("games/fall.yml: start.countdown-seconds: must be at most seconds (4)"),
-                problems(load(base + ", start: { seconds: 4 }}")));
+        var partial = load(base + ", start: { seconds: 60 }, variants: {slow: {name: Slow, start: { countdown-seconds: 2 }}}}")
+                .entries().find("fall").orElseThrow();
+        assertEquals(new Start(60, 2), partial.variants().get("slow").start());
+        assertEquals(List.of("games/fall.yml: start.seconds: must be more than countdown-seconds (5)"),
+                problems(load(base + ", start: { seconds: 5 }}")));
+        assertEquals(List.of("games/fall.yml: start.countdown-seconds: must be less than seconds (30)"),
+                problems(load(base + ", start: { countdown-seconds: 30 }}")));
     }
 
     @Test

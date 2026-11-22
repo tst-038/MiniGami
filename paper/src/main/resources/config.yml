@@ -9,7 +9,8 @@
 blocks-per-tick: 8192
 
 # How a match starts once it has enough players (min-players). It waits seconds, while more players can still
-# join up to max-players, and holds everyone frozen at their spawns for the last countdown-seconds of that.
+# join up to max-players, and holds everyone frozen at their spawns for the last countdown-seconds of that
+# (less than seconds).
 # Every game gets this; a game file or variant can set its own under start:, such as start: { seconds: 40 }.
 start:
   seconds: 20
