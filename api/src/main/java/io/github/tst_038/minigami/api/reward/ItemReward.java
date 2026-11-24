@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public record ItemReward(Material material, int amount, Optional<String> givenName) implements Reward {
 
-    private static final int MOST = 64 * 36;
+    static final int MOST = 64 * 36;
 
     @Override
     public String name() {

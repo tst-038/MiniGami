@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -21,7 +22,7 @@ class ScheduleLoaderTest {
     }
 
     private static Schedule read(ConfigReader root) {
-        return ScheduleLoader.read("hourly", root, game -> game.equals("spleef") || game.equals("koth"), (game, variant) -> game.equals("koth") && variant.equals("teams"));
+        return ScheduleLoader.read("hourly", root, game -> game.equals("spleef") || game.equals("koth"), (game, variant) -> game.equals("koth") && variant.equals("teams"), new RewardReader(name -> Optional.empty()));
     }
 
     private static List<String> problems(String yaml) throws Exception {

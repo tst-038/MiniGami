@@ -8,14 +8,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.core.reward.Rewards;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
 class RewardReaderTest {
+
+    /** Reading only asks whether an item exists; making an item needs a server. */
+    private final MiniGamiSavedItems saved = new MiniGamiSavedItems() {
+        @Override
+        public Optional<ItemStack> find(String name) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean has(String name) {
+            return name.equals("crate-key");
+        }
+    };
+    private final RewardReader reader = new RewardReader(saved);
 
     private static ConfigReader root(String yaml) throws Exception {
         var config = new YamlConfiguration();
@@ -23,9 +39,9 @@ class RewardReaderTest {
         return ConfigReader.of("schedules/test.yml", config);
     }
 
-    private static List<String> problems(String yaml) throws Exception {
+    private List<String> problems(String yaml) throws Exception {
         var root = root(yaml);
-        RewardReader.read(root);
+        reader.read(root);
         return assertThrows(InvalidConfigException.class, root::check).problems().stream().map(ConfigProblem::toString).toList();
     }
 
@@ -39,7 +55,7 @@ class RewardReaderTest {
                 taking-part: [ { chance: 25, item: cookie } ]
                 """);
 
-        var rewards = RewardReader.read(root);
+        var rewards = reader.read(root);
 
         assertDoesNotThrow(root::check);
         var first = rewards.places().get(1).chances();
@@ -62,7 +78,7 @@ class RewardReaderTest {
         var problems = problems("taking-part: [ { chance: 10 }, { chance: 10, item: cookie, command: say hi, name: hi } ]");
 
         assertEquals(2, problems.size());
-        assertTrue(problems.stream().allMatch(problem -> problem.contains("needs exactly one of item, command")), problems.toString());
+        assertTrue(problems.stream().allMatch(problem -> problem.contains("needs exactly one of item, command, saved")), problems.toString());
     }
 
     @Test
@@ -81,9 +97,9 @@ class RewardReaderTest {
 
     @Test
     void drawIsTeamUnlessSetToPlayer() throws Exception {
-        assertEquals(Rewards.Draw.TEAM, RewardReader.read(root("taking-part: []")).draw());
+        assertEquals(Rewards.Draw.TEAM, reader.read(root("taking-part: []")).draw());
         var root = root("draw: player");
-        assertEquals(Rewards.Draw.PLAYER, RewardReader.read(root).draw());
+        assertEquals(Rewards.Draw.PLAYER, reader.read(root).draw());
         assertDoesNotThrow(root::check);
     }
 
@@ -91,7 +107,7 @@ class RewardReaderTest {
     void readsOneItemEntry() throws Exception {
         var root = root("{ item: diamond, amount: 3 }");
 
-        assertEquals(Optional.of(new ItemReward(Material.DIAMOND, 3, Optional.empty())), RewardReader.reward(root));
+        assertEquals(Optional.of(new ItemReward(Material.DIAMOND, 3, Optional.empty())), reader.reward(root));
         assertDoesNotThrow(() -> root.check());
     }
 
@@ -99,7 +115,7 @@ class RewardReaderTest {
     void readsOneCommandEntry() throws Exception {
         var root = root("{ command: \"/eco give %player% 100\", name: \"100 coins\" }");
 
-        assertEquals(Optional.of(new CommandReward("eco give %player% 100", "100 coins")), RewardReader.reward(root));
+        assertEquals(Optional.of(new CommandReward("eco give %player% 100", "100 coins")), reader.reward(root));
         assertDoesNotThrow(() -> root.check());
     }
 
@@ -108,10 +124,41 @@ class RewardReaderTest {
         for (var yaml : List.of("{ amount: 3 }", "{ item: cookie, command: say hi, name: hi }")) {
             var root = root(yaml);
 
-            assertEquals(Optional.empty(), RewardReader.reward(root));
+            assertEquals(Optional.empty(), reader.reward(root));
             var problems = assertThrows(InvalidConfigException.class, root::check).problems();
             assertEquals(1, problems.size(), problems.toString());
-            assertTrue(problems.getFirst().toString().contains("needs exactly one of item, command"));
+            assertTrue(problems.getFirst().toString().contains("needs exactly one of item, command, saved"));
         }
+    }
+
+    @Test
+    void readsOneSavedEntryWithItsAmountAndName() throws Exception {
+        var root = root("{ saved: crate-key, amount: 2, name: \"<gold>Crate keys\" }");
+
+        assertEquals(Optional.of(new SavedReward("crate-key", 2, Optional.of("<gold>Crate keys"), saved)), reader.reward(root));
+        assertDoesNotThrow(root::check);
+    }
+
+    @Test
+    void aSavedEntryTakesOneAmountAndNamesItselfWithoutAName() throws Exception {
+        var root = root("{ chance: 10, saved: crate-key }");
+
+        var reward = reader.reward(root).orElseThrow();
+
+        assertEquals(new SavedReward("crate-key", 1, Optional.empty(), saved), reward);
+        assertEquals("1x crate-key", reward.name());
+    }
+
+    @Test
+    void aSavedItemThatDoesNotExistIsAProblem() throws Exception {
+        var problems = problems("taking-part: [ { chance: 10, saved: nothing-like-it } ]");
+
+        assertEquals(1, problems.size());
+        assertTrue(problems.getFirst().contains("no saved item 'nothing-like-it'"), problems.getFirst());
+    }
+
+    @Test
+    void aSavedAmountOutOfRangeIsAProblem() throws Exception {
+        assertEquals(1, problems("taking-part: [ { chance: 10, saved: crate-key, amount: 0 } ]").size());
     }
 }

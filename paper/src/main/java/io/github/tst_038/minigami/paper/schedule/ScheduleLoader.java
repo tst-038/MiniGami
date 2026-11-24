@@ -22,10 +22,13 @@ public final class ScheduleLoader {
     private ScheduleLoader() {
     }
 
-    /** @param games the games loaded alongside, which the schedules may open */
-    public static YamlFiles.Loaded<Schedule> load(YamlFiles files, IdRegistry<Game> games) {
+    /**
+     * @param games the games loaded alongside, which the schedules may open
+     * @param rewards reads their rewards
+     */
+    public static YamlFiles.Loaded<Schedule> load(YamlFiles files, IdRegistry<Game> games, RewardReader rewards) {
         return files.parse(Schedule::id, (id, config) -> read(id, config, game -> games.find(game).isPresent(),
-                (game, variant) -> games.find(game).flatMap(found -> found.variant(Optional.of(variant))).isPresent()));
+                (game, variant) -> games.find(game).flatMap(found -> found.variant(Optional.of(variant))).isPresent(), rewards));
     }
 
     /**
@@ -33,8 +36,9 @@ public final class ScheduleLoader {
      *
      * @param isGame whether a game id exists
      * @param isVariant whether a game (first) has a variant with that id (second)
+     * @param reader reads the rewards
      */
-    static Schedule read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant) {
+    static Schedule read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant, RewardReader reader) {
         var name = root.has("name") ? root.string("name") : id;
         root.suggest("when", List.of("\"*/30 * * * *\"", "\"0 20 * * 5\""));
         var when = root.cron("when").orElse(null);
@@ -58,7 +62,7 @@ public final class ScheduleLoader {
         }
         var joinSeconds = root.has("join-seconds") ? root.integer("join-seconds", 10, 3600) : 120;
         var minOnline = root.has("min-online") ? root.integer("min-online", 0, 1000) : 0;
-        var rewards = root.has("rewards") ? RewardReader.read(root.section("rewards")) : Rewards.<Reward>none();
+        var rewards = root.has("rewards") ? reader.read(root.section("rewards")) : Rewards.<Reward>none();
         // Only kept when the reader has no problems, so a missing cron line never reaches a schedule.
         return new Schedule(id, name, when == null ? Cron.parse("* * * * *") : when, pick, games, joinSeconds, minOnline, rewards);
     }

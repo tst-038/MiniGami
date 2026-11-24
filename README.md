@@ -285,10 +285,16 @@ rewards:
     1:
       - { chance: 50, item: diamond, amount: 3 }
       - { chance: 50, command: "eco give %player% 100", name: "<gold>100 coins" }
+      - { chance: 10, saved: crate-key, amount: 2, name: "<aqua>2 crate keys" }
   taking-part:
     - { chance: 25, item: cookie, amount: 4 }
   draw: team                      # or player
 ```
+
+A reward is an `item` (with an `amount`), a `command` (run from the console, `%player%` is the winner; it needs a `name`)
+or a `saved` item: one saved with `/mga loot save <name>`, for what `item` can't describe, such as a crate key or an item
+with its own name and enchantments. A saved item takes an `amount` and a `name` too, is given as it is when the reward is
+won, and a name with no saved item is a config problem. Items that don't fit in the inventory drop at the winner's feet.
 
 Each place draws at most one reward. Chances are percentages, and whatever is left over to 100% wins nothing. Players
 who leave early win nothing. The last place always draws from `taking-part`, even when it has a list of its own, unless
@@ -361,6 +367,13 @@ public void onLeave(MiniGamiPlayerLeaveEvent event) {
     event.getPlayer().ifPresent(player -> giveHeldReward(player));
 }
 ```
+
+To read the same `saved:` items in your own config, the `io.github.tst_038.minigami.api.loot` package has
+`MiniGamiSavedItems`, another Bukkit service: `find(name)` gives a copy of the item saved with `/mga loot save <name>`,
+`has(name)` whether there is one. Items can be saved and deleted while the server runs, so look one up when you need it.
+`io.github.tst_038.minigami.api.reward.RewardReader` reads reward entries (`{ saved: crate-key }`, `{ item: diamond }`,
+`{ command: ..., name: ... }`) into `Reward`s you can `give(player)`; create it with the service:
+`new RewardReader(getServer().getServicesManager().load(MiniGamiSavedItems.class))`.
 
 Both events run synchronously on the server thread. After a server crash, the saved state is given back at the
 player's next login without a leave event, since no join was seen since the restart.

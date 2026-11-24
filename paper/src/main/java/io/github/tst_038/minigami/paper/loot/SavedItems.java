@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.loot;
 
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.paper.item.ItemCodec;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,7 +22,7 @@ import org.bukkit.inventory.ItemStack;
  * Items that loot tables name with {@code saved: <name>}, for anything their own fields can't describe, kept in memory and as one
  * {@code <name>.yml} file each. The file methods block, so call them off the server thread.
  */
-public final class SavedItems {
+public final class SavedItems implements MiniGamiSavedItems {
 
     private static final String EXTENSION = ".yml";
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
@@ -39,11 +40,13 @@ public final class SavedItems {
         return NAME.matcher(name).matches();
     }
 
+    @Override
     public boolean has(String name) {
         return items.containsKey(name);
     }
 
     /** A copy, so nobody changes the saved one. */
+    @Override
     public Optional<ItemStack> find(String name) {
         return Optional.ofNullable(items.get(name)).map(ItemStack::clone);
     }

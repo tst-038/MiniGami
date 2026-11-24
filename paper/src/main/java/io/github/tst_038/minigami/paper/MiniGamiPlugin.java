@@ -5,11 +5,13 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
+import io.github.tst_038.minigami.api.reward.RewardReader;
 import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
@@ -122,6 +124,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private SavedKits kits;
     private SavedItems savedItems;
+    private RewardReader rewardReader;
     /** The tables of the last load; a game keeps the ones it was loaded with. */
     private volatile LootTables lootTables = LootTables.NONE;
     private volatile TerrainStyles terrainStyles = TerrainStyles.NONE;
@@ -180,6 +183,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues, nightValues);
         }
+        getServer().getServicesManager().register(MiniGamiSavedItems.class, savedItems, this, ServicePriority.Normal);
+        rewardReader = new RewardReader(savedItems);
         var presence = new PlayerPresence(getServer());
         getServer().getServicesManager().register(MiniGamiPlayers.class, presence, this, ServicePriority.Normal);
         getServer().getServicesManager().register(MiniGamiStats.class, new PluginStats(storage, profiles, Clock.systemDefaultZone(), getLogger()), this,
@@ -209,7 +214,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 Clock.systemDefaultZone(), RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadAfterEdit);
+        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, rewardReader, running::isArenaInUse, this::loadAfterEdit);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
         var lootSetup = new LootSetup(() -> arenas, () -> lootTables, editor, maps, messages, this);
         getServer().getPluginManager().registerEvents(lootSetup, this);
@@ -289,7 +294,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 terrainStyles = loadedTerrain.styles();
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), messageTexts::isString);
                 var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
-                var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries());
+                var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries(), rewardReader);
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
