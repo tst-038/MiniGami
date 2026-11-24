@@ -20,7 +20,8 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Items that loot tables name with {@code saved: <name>}, for anything their own fields can't describe, kept in memory and as one
- * {@code <name>.yml} file each. The file methods block, so call them off the server thread.
+ * {@code <name>.yml} file each. The file methods block; the plugin reads them once on the server thread when it enables, so
+ * that plugins depending on it see the items in their own {@code onEnable}.
  */
 public final class SavedItems implements MiniGamiSavedItems {
 

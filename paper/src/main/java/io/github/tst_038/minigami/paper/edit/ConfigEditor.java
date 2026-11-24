@@ -265,7 +265,7 @@ public final class ConfigEditor {
 
     /**
      * @param id ignored for {@link Kind#CONFIG}
-     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value #LocationConfig.HERE}
+     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value LocationConfig#HERE}
      */
     public void set(CommandSender sender, Kind kind, String id, String key, String text) {
         Consumer<YamlConfiguration> change;

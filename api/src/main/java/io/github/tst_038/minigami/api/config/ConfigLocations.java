@@ -20,6 +20,10 @@ public final class ConfigLocations {
         return world;
     }
 
+    /**
+     * The location in {@code config}, in the given world; a problem for each missing or non-numeric {@code x}, {@code y} and
+     * {@code z}. Yaw and pitch are 0 if left out. The world may be null, as when it was a problem to read.
+     */
     public static Location read(ConfigReader config, World world) {
         var x = config.decimal("x");
         var y = config.decimal("y");
@@ -29,7 +33,7 @@ public final class ConfigLocations {
         return new Location(world, x, y, z, yaw, pitch);
     }
 
-    /** A location that names its own world: {@code { world: world, x: 0.5, ... }}. */
+    /** A location that names its own world: {@code { world: world, x: 0.5, ... }}. Looks up worlds, so run it on the server thread. */
     public static Location readWithWorld(ConfigReader config, Function<String, World> worlds) {
         return read(config, world(config, "world", worlds));
     }

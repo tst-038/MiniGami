@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.api.reward;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 
 /**
@@ -12,9 +13,10 @@ import org.bukkit.entity.Player;
  * been deleted gives nothing.
  *
  * @param saved where the item is looked up by {@code item}
+ * @param logger where a missing item is reported
  * @param givenName as written; empty shows the amount and the saved name
  */
-record SavedReward(String item, int amount, Optional<String> givenName, MiniGamiSavedItems saved) implements Reward {
+record SavedReward(String item, int amount, Optional<String> givenName, MiniGamiSavedItems saved, Logger logger) implements Reward {
 
     @Override
     public String name() {
@@ -26,16 +28,18 @@ record SavedReward(String item, int amount, Optional<String> givenName, MiniGami
         saved.find(item).ifPresentOrElse(
                 found -> player.getInventory().addItem(found.asQuantity(amount)).values()
                         .forEach(left -> player.getWorld().dropItem(player.getLocation(), left)),
-                () -> player.getServer().getLogger().warning("The saved item '" + item + "' is gone, so " + player.getName() + " got no reward"));
+                () -> logger.warning("The saved item '" + item + "' is gone, so " + player.getName() + " got no reward"));
     }
 
     /** {@code saved: <name>}, with an {@code amount} (1 if left out) and a {@code name} (the amount and saved name if left out). */
     static final class Type implements RewardType {
 
         private final MiniGamiSavedItems saved;
+        private final Logger logger;
 
-        Type(MiniGamiSavedItems saved) {
+        Type(MiniGamiSavedItems saved, Logger logger) {
             this.saved = saved;
+            this.logger = logger;
         }
 
         @Override
@@ -51,7 +55,7 @@ record SavedReward(String item, int amount, Optional<String> givenName, MiniGami
             }
             int amount = entry.has("amount") ? entry.integer("amount", 1, ItemReward.MOST) : 1;
             var name = entry.has("name") ? Optional.of(entry.string("name")) : Optional.<String>empty();
-            return new SavedReward(item, amount, name, saved);
+            return new SavedReward(item, amount, name, saved, logger);
         }
     }
 }

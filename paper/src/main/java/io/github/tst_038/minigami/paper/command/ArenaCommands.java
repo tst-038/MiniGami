@@ -1,6 +1,5 @@
 package io.github.tst_038.minigami.paper.command;
 
-import io.github.tst_038.minigami.paper.config.LocationConfig;
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
@@ -17,6 +16,7 @@ import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.arena.TerrainSetup;
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;

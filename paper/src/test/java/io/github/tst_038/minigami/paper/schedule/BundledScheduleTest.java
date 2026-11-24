@@ -8,6 +8,7 @@ import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.Set;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ class BundledScheduleTest {
         }
         var root = ConfigReader.of("schedules/example.yml", config);
 
-        var schedule = ScheduleLoader.read("example", root, game -> Set.of("spleef", "king-of-the-hill").contains(game), (game, variant) -> variant.equals("decay"), new RewardReader(name -> Optional.empty()));
+        var schedule = ScheduleLoader.read("example", root, game -> Set.of("spleef", "king-of-the-hill").contains(game), (game, variant) -> variant.equals("decay"), new RewardReader(name -> Optional.empty(), Logger.getLogger("test")));
 
         assertDoesNotThrow(root::check);
         assertEquals(3, schedule.games().size());

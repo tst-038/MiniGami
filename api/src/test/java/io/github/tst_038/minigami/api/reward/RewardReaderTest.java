@@ -12,6 +12,7 @@ import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.core.reward.Rewards;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
@@ -31,7 +32,8 @@ class RewardReaderTest {
             return name.equals("crate-key");
         }
     };
-    private final RewardReader reader = new RewardReader(saved);
+    private final Logger logger = Logger.getLogger("test");
+    private final RewardReader reader = new RewardReader(saved, logger);
 
     private static ConfigReader root(String yaml) throws Exception {
         var config = new YamlConfiguration();
@@ -135,7 +137,7 @@ class RewardReaderTest {
     void readsOneSavedEntryWithItsAmountAndName() throws Exception {
         var root = root("{ saved: crate-key, amount: 2, name: \"<gold>Crate keys\" }");
 
-        assertEquals(Optional.of(new SavedReward("crate-key", 2, Optional.of("<gold>Crate keys"), saved)), reader.reward(root));
+        assertEquals(Optional.of(new SavedReward("crate-key", 2, Optional.of("<gold>Crate keys"), saved, logger)), reader.reward(root));
         assertDoesNotThrow(root::check);
     }
 
@@ -145,7 +147,7 @@ class RewardReaderTest {
 
         var reward = reader.reward(root).orElseThrow();
 
-        assertEquals(new SavedReward("crate-key", 1, Optional.empty(), saved), reward);
+        assertEquals(new SavedReward("crate-key", 1, Optional.empty(), saved, logger), reward);
         assertEquals("1x crate-key", reward.name());
     }
 

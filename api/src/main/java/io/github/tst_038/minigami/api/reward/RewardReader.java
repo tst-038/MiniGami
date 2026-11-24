@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -29,9 +30,12 @@ public final class RewardReader {
     /** Every kind of reward; a new kind only needs adding here. */
     private final List<RewardType> types;
 
-    /** @param saved the items a {@code saved} reward may name */
-    public RewardReader(MiniGamiSavedItems saved) {
-        types = List.of(new ItemReward.Type(), new CommandReward.Type(), new SavedReward.Type(saved));
+    /**
+     * @param saved the items a {@code saved} reward may name
+     * @param logger where a {@code saved} reward reports an item that has since been deleted
+     */
+    public RewardReader(MiniGamiSavedItems saved, Logger logger) {
+        types = List.of(new ItemReward.Type(), new CommandReward.Type(), new SavedReward.Type(saved, logger));
     }
 
     /** Problems are collected in the reader, so the caller ends with {@link ConfigReader#check()}. */
