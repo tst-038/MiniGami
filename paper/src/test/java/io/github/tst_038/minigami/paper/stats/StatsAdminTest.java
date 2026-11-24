@@ -48,6 +48,9 @@ class StatsAdminTest {
     private Path folder;
     private Storage storage;
     private StatsRecorder recorder;
+    private PlayerProfiles profiles;
+    private PluginStats pluginStats;
+    private Leaderboards leaderboards;
     private StatsAdmin admin;
     private CommandSender sender;
 
@@ -55,9 +58,10 @@ class StatsAdminTest {
     void open() {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         // Everything handed to the server thread runs at once, on whichever thread hands it over.
-        var profiles = new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), LOGGER);
-        var leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), 5);
+        profiles = new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), LOGGER);
+        leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), 5);
         recorder = new StatsRecorder(storage, profiles, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
+        pluginStats = new PluginStats(storage, profiles, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
         var games = new IdRegistry<Game>(Game::id);
         // Only the ids of the games are asked for.
         games.register(new Game("tdm", null, Map.of()));
@@ -201,5 +205,48 @@ class StatsAdminTest {
                 List.of("alice duel =1", "alice duel big=1", "alice spleef =1", "bob duel =1", "bob duel big=1", "bob spleef =1"),
                 List.of("alice duel =1", "alice duel big=1", "alice spleef =1", "bob duel =1", "bob duel big=1", "bob spleef =1"),
                 List.of("alice duel =3", "alice duel big=3", "alice spleef =3", "bob duel =2", "bob duel big=2", "bob spleef =2"));
+    }
+
+    /** A game no file has, which only another plugin keeps stats for: known once a board has it. */
+    private void keepStatsOfAGameWithoutAFile() {
+        pluginStats.add("koth", Map.of(alice, Map.of(new Stat("captures"), 4L), bob, Map.of(new Stat("captures"), 1L)));
+        settle();
+        leaderboards.refresh();
+        settle();
+    }
+
+    @Test
+    void aGameThatOnlyHasStoredStatsCanBeResetForAPlayerAndForEveryone() {
+        keepStatsOfAGameWithoutAFile();
+
+        admin.resetPlayer(sender, "alice", Optional.of("koth"));
+        settle();
+        assertEquals(List.of("bob koth =1"), counts("player_stat_totals").stream().filter(row -> row.contains("koth")).toList());
+        assertEquals(List.of("stats.admin.reset-player"), sent);
+
+        admin.resetGame(sender, "koth", Optional.empty());
+        settle();
+        assertEquals(List.of(), counts("player_stat_totals").stream().filter(row -> row.contains("koth")).toList());
+        assertEquals(List.of("stats.admin.reset-player", "stats.admin.reset-game"), sent);
+    }
+
+    @Test
+    void aStatOfAGameThatOnlyHasStoredStatsCanBeRaised() {
+        keepStatsOfAGameWithoutAFile();
+
+        admin.add(sender, "alice", "koth", "captures", 2);
+        settle();
+
+        assertEquals(List.of("stats.admin.changed"), sent);
+        assertEquals(6, profiles.of(alice).orElseThrow().game("koth").stat(new Stat("captures")));
+    }
+
+    @Test
+    void aGameWithNeitherAFileNorStoredStatsIsStillUnknown() {
+        keepStatsOfAGameWithoutAFile();
+
+        admin.resetGame(sender, "hockey", Optional.empty());
+
+        assertEquals(List.of("stats.unknown-game"), sent);
     }
 }

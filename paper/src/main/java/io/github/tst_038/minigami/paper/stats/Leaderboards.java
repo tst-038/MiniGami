@@ -83,6 +83,13 @@ public final class Leaderboards implements Listener {
         return boards.getOrDefault(new Board(period, game, variant, stat), List.of());
     }
 
+    /** The games that have a board, as of the last refresh: also those no loaded game has, such as the ones other plugins keep stats for. */
+    public Set<String> games() {
+        var games = new TreeSet<String>();
+        boards.keySet().stream().filter(board -> board.period() == Period.ALL_TIME).forEach(board -> games.add(board.game()));
+        return games;
+    }
+
     /** The stats the game has a board for, wins and played included once anyone has them. */
     public Set<String> stats(String game) {
         var stats = new TreeSet<String>();

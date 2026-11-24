@@ -89,6 +89,7 @@ class LeaderboardsTest {
         play(Optional.of("big"), bob, Map.of(carol, 9L));
         settle();
         assertTrue(leaderboards.top("tdm", Optional.empty(), KILLS.id()).isEmpty(), "not refreshed yet");
+        assertTrue(leaderboards.games().isEmpty());
 
         leaderboards.refresh();
         settle();
@@ -103,6 +104,7 @@ class LeaderboardsTest {
                 "everyone played all three matches, variants added up");
         assertEquals(List.of(1L, 1L), leaderboards.top("tdm", Optional.of("big"), Leaderboards.PLAYED).stream().map(Entry::amount).toList());
         assertEquals(Set.of(Leaderboards.WINS, Leaderboards.PLAYED, KILLS.id()), leaderboards.stats("tdm"));
+        assertEquals(Set.of("tdm"), leaderboards.games());
 
         play(Optional.empty(), bob, Map.of(alice, 10L));
         settle();
