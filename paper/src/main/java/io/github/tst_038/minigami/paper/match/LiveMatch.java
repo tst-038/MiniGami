@@ -125,8 +125,8 @@ public final class LiveMatch {
     private CompletableFuture<Void> edits = CompletableFuture.completedFuture(null);
     /** Holds on players who wait in place: nothing of theirs is saved, but they count as in a match. */
     private final Map<UUID, Presence.Claim> placeClaims = new HashMap<>();
-    /** The team each spawn is for, by the spawn's place in the arena's list. */
-    private final List<Optional<String>> spawnTags;
+    /** The team each spawn is for, by the spawn's place in the arena's list; settled when play starts, see {@link #spawnTags}. */
+    private List<Optional<String>> spawnTags;
     /** The spawn each team without spawns of its own was given at the start; its players come back there. */
     private final Map<String, Integer> teamHomes = new HashMap<>();
     private final Lives lives = new Lives(this::livesOf);
@@ -868,6 +868,7 @@ public final class LiveMatch {
         teamRegions = variant.gametype().regionPerTeam()
                 .map(prefix -> TeamRegion.assign(prefix, match.roster().teams(), name -> Optional.ofNullable(arena.regions().get(name))))
                 .orElse(List.of());
+        spawnTags = spawnTags(teamRegions);
         var everyone = takingPart();
         var together = variant.teams().isPresent() && variant.teamSpawns() == TeamSpawns.TOGETHER;
         var scattered = variant.gametype().usesSpawns() && variant.randomSpawns() && arena.spawns().isEmpty();
@@ -922,6 +923,15 @@ public final class LiveMatch {
                 hud.started();
             }
         }));
+    }
+
+    /**
+     * The team each spawn is for: the one the arena tags it with, else the team whose region it stands in. A team then
+     * starts and comes back in the region the game gave it, not on whichever shared spawn it drew.
+     */
+    private List<Optional<String>> spawnTags(List<TeamRegion> regions) {
+        return arena.spawns().stream().map(spawn -> spawn.team().or(() -> regions.stream()
+                .filter(region -> region.region().contains(spawn.location())).findFirst().flatMap(TeamRegion::team))).toList();
     }
 
     /** Puts each player on a standable place of the highest floor, as far as it goes from those already placed; for a game that needs no spawns. */
