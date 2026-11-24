@@ -81,7 +81,7 @@ public final class ArenaLoader {
                 : Optional.<Location>empty();
         var map = config.has("map") ? Optional.of(box("map", config.section("map"), world)) : Optional.<Region>empty();
         return new Arena(id, world, spawns, waitingSpot, spectatorSpot, regions(config, world), map, LootPoint.read(config, world), List.of(), respawningSpot,
-                config.has("name") ? Optional.of(config.string("name")) : Optional.empty());
+                config.has("name") ? Optional.of(config.text("name")) : Optional.empty());
     }
 
     private static Map<String, Region> regions(ConfigReader config, World world) {

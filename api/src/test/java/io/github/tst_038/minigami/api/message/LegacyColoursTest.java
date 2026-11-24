@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.edit;
+package io.github.tst_038.minigami.api.message;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

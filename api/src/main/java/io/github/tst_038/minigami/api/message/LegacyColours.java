@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.edit;
+package io.github.tst_038.minigami.api.message;
 
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -6,10 +6,10 @@ import java.util.regex.Pattern;
 
 /**
  * The colour codes server owners know from other plugins, {@code &c}, {@code &l} and {@code &#ff8800} (or with
- * {@code §}), turned into the MiniMessage that every text is read as. The rest of the text, MiniMessage included, is
- * kept as it is.
+ * {@code §}), turned into the MiniMessage that every text is read as, so a text players read may use either. The rest of
+ * the text, MiniMessage included, is kept as it is.
  */
-final class LegacyColours {
+public final class LegacyColours {
 
     private static final Pattern CODE = Pattern.compile("[&§](?:#([0-9a-fA-F]{6})|([0-9a-fk-orA-FK-OR]))");
     private static final String COLOURS = "0123456789abcdef";
@@ -22,12 +22,12 @@ final class LegacyColours {
     }
 
     /** Whether the text opens with a code, which YAML would otherwise read as an anchor. */
-    static boolean startsWithCode(String text) {
+    public static boolean startsWithCode(String text) {
         var matcher = CODE.matcher(text.strip());
         return matcher.lookingAt();
     }
 
-    static String toMiniMessage(String text) {
+    public static String toMiniMessage(String text) {
         var matcher = CODE.matcher(text);
         var out = new StringBuilder();
         // A colour code ends the bold, italic and so on before it, as it does in the legacy format; a MiniMessage colour tag doesn't.

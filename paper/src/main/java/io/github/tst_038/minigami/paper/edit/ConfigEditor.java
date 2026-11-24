@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.edit;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.message.LegacyColours;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -276,12 +277,11 @@ public final class ConfigEditor {
             var location = player.getLocation();
             change = config -> config.set(key, location(config, location));
         } else {
-            var parsed = parse(text);
-            if (parsed == null) {
+            var value = parse(text);
+            if (value == null) {
                 messages.send(sender, "edit.bad-value", Placeholder.unparsed("value", text));
                 return;
             }
-            var value = isDisplayText(key) ? withColours(parsed) : parsed;
             change = config -> config.set(key, forKey(kind, id, config, key, value));
         }
         edit(sender, kind, id, false, change, "edit.set", Placeholder.unparsed("key", key));
@@ -565,7 +565,7 @@ public final class ConfigEditor {
 
     /** The value a command typed, read as YAML, so text may be put in quotes; {@code null} if it isn't one. */
     static Object parse(String text) {
-        // YAML would read a leading & as an anchor; here it is a colour code of a text.
+        // YAML would read a leading & as an anchor; here it is a colour code of a text, which is read when it is loaded.
         if (LegacyColours.startsWithCode(text)) {
             return text.strip();
         }
@@ -586,35 +586,9 @@ public final class ConfigEditor {
         return value instanceof ConfigurationSection section ? plain(section) : value;
     }
 
-    /**
-     * A name typed as the rest of a command: the text {@link #parse} reads, quotes taken off, else what was typed as it is;
-     * legacy colour codes become MiniMessage.
-     */
+    /** A name typed as the rest of a command: the text {@link #parse} reads, quotes taken off, else what was typed as it is. */
     static String text(String typed) {
-        return LegacyColours.toMiniMessage(parse(typed) instanceof String text ? text : typed.strip());
-    }
-
-    /**
-     * Keys whose texts players read, so a typed legacy colour code there means a colour: names, the HUD and a game's own
-     * messages. Elsewhere a text keeps its {@code &}, such as a reward's console command that another plugin reads.
-     */
-    static boolean isDisplayText(String key) {
-        var path = List.of(key.split("\\."));
-        return path.getLast().equals("name") || path.contains("hud") || path.contains("messages");
-    }
-
-    /** The value with legacy colour codes in its texts, also those in lists and sections, turned into MiniMessage. */
-    static Object withColours(Object value) {
-        return switch (value) {
-            case String text -> LegacyColours.toMiniMessage(text);
-            case List<?> list -> list.stream().map(ConfigEditor::withColours).toList();
-            case Map<?, ?> map -> {
-                var coloured = new LinkedHashMap<Object, Object>();
-                map.forEach((key, item) -> coloured.put(key, withColours(item)));
-                yield coloured;
-            }
-            default -> value;
-        };
+        return parse(typed) instanceof String text ? text : typed.strip();
     }
 
     private static Map<String, Object> plain(ConfigurationSection section) {

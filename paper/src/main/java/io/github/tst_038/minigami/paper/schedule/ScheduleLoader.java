@@ -35,7 +35,7 @@ public final class ScheduleLoader {
      * @param isVariant whether a game (first) has a variant with that id (second)
      */
     static Schedule read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant) {
-        var name = root.has("name") ? root.string("name") : id;
+        var name = root.has("name") ? root.text("name") : id;
         root.suggest("when", List.of("\"*/30 * * * *\"", "\"0 20 * * 5\""));
         var whenText = root.string("when");
         Cron when = null;

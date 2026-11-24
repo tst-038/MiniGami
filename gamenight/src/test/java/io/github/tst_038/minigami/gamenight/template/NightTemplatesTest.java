@@ -67,6 +67,11 @@ class NightTemplatesTest {
     }
 
     @Test
+    void theNameMayUseLegacyColourCodes() throws Exception {
+        assertEquals("<gold>Game Night", read(root("name: '&6Game Night'\nplaylist: [spleef]")).name());
+    }
+
+    @Test
     void defaults() throws Exception {
         var root = root("name: Plain\nplaylist: [spleef]");
 

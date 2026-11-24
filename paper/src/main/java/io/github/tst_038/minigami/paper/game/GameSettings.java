@@ -30,7 +30,7 @@ final class GameSettings {
 
     static final Setting<Boolean> ENABLED = Setting.of("enabled", Kind.bool(), "false keeps the file out of the games without deleting it")
             .orElse(true);
-    static final Setting<Optional<String>> NAME = Setting.of("name", Kind.optional(Kind.text()), "the name players see; left out, the id")
+    static final Setting<Optional<String>> NAME = Setting.of("name", Kind.optional(Kind.displayText()), "the name players see; left out, the id")
             .orElse(Optional.empty());
     static final Setting<Integer> MIN_PLAYERS = Setting.of("min-players", Kind.integer(1, Integer.MAX_VALUE), "the fewest players a match starts with");
     static final Setting<Integer> MAX_PLAYERS = Setting.of("max-players", Kind.integer(1, Integer.MAX_VALUE), "the most players a match takes");

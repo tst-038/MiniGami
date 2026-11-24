@@ -28,7 +28,7 @@ public record CommandReward(String command, String name) implements Reward {
         @Override
         public Reward read(ConfigReader entry) {
             var command = entry.string("command");
-            return new CommandReward(command.startsWith("/") ? command.substring(1) : command, entry.string("name"));
+            return new CommandReward(command.startsWith("/") ? command.substring(1) : command, entry.text("name"));
         }
     }
 }

@@ -140,7 +140,7 @@ public final class LootReader {
                 config.problem("potion", "unknown potion type '" + type + "'");
             }
         }
-        var label = config.has("name") ? Optional.of(config.string("name")) : Optional.<String>empty();
+        var label = config.has("name") ? Optional.of(config.text("name")) : Optional.<String>empty();
         var spec = new ItemSpec.Vanilla(material, amount(config, catalog.maxStack().applyAsInt(material)), label, enchants, potion);
         return Optional.of(new Entry.Item<>(spec, weight));
     }

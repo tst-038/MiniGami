@@ -19,7 +19,7 @@ public final class NightTemplates {
      * @param isVariant whether a game (first) has a variant with that id (second)
      */
     public static NightTemplate read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant) {
-        var name = root.string("name");
+        var name = root.text("name");
         var teams = teams(root);
         // Offered even when the file leaves them out, so a command can complete them.
         Points.DEFAULT.places().keySet().forEach(place -> root.suggest("points.places." + place, List.of()));
