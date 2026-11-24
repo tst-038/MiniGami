@@ -4,10 +4,9 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.gamenight.night.Night;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.Optional;
+import java.util.function.Predicate;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
@@ -17,7 +16,8 @@ import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * The standings on the sidebar of the night's players, between games. A game shows its own sidebar
- * while it runs, so this is hidden before a game and shown again after it.
+ * while it runs, so this is hidden before a game and shown again after it. It remembers each player's board
+ * from before the night once and gives it back on every hide.
  */
 public final class NightSidebar {
 
@@ -26,10 +26,11 @@ public final class NightSidebar {
     private final NightReport report;
     /** The board last shown, so only players who still have it are taken off it. */
     private Scoreboard shown;
-    /** The board each player had before, to give back; whatever another plugin gave them, not ours. */
-    private final Map<UUID, Scoreboard> previous = new HashMap<>();
+    private final RememberedBoards remembered;
 
-    public NightSidebar(Server server, Messages messages, NightReport report) {
+    /** @param matchBoard whether a board is a match's own HUD board; covers players who join mid-match */
+    public NightSidebar(Server server, Messages messages, NightReport report, Predicate<Scoreboard> matchBoard) {
+        this.remembered = new RememberedBoards(matchBoard);
         this.server = server;
         this.messages = messages;
         this.report = report;
@@ -49,10 +50,7 @@ public final class NightSidebar {
             score.customName(lines.get(i));
         }
         for (Player player : players) {
-            // Showing again replaces our own board, which is not theirs to get back.
-            if (player.getScoreboard() != shown) {
-                previous.put(player.getUniqueId(), player.getScoreboard());
-            }
+            remembered.remember(player, shown);
             player.setScoreboard(board);
         }
         shown = board;
@@ -61,10 +59,19 @@ public final class NightSidebar {
     /** Takes the sidebar away from those who have it; players in a game have its own board and keep it. */
     void hide(Collection<Player> players) {
         for (Player player : players) {
-            var old = previous.remove(player.getUniqueId());
             if (shown != null && player.getScoreboard() == shown) {
-                player.setScoreboard(old != null && old != shown ? old : server.getScoreboardManager().getMainScoreboard());
+                player.setScoreboard(remembered.get(player.getUniqueId()).filter(old -> old != shown).orElseGet(() -> server.getScoreboardManager().getMainScoreboard()));
             }
         }
+    }
+
+    /** Lets go of what is remembered about a player who is no longer in the night. */
+    void forget(UUID id) {
+        remembered.forget(id);
+    }
+
+    /** Lets go of everything remembered, when the night is over. */
+    void clear() {
+        remembered.clear();
     }
 }

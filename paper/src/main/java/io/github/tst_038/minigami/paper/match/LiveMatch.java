@@ -87,6 +87,7 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * A match of a variant in one arena, together with the players in it. Players join during the first
@@ -485,6 +486,11 @@ public final class LiveMatch {
     /** Whether this many more players fit in before the variant's maximum is reached. */
     public boolean hasRoom(int more) {
         return match.roster().size() + more <= variant.maxPlayers();
+    }
+
+    /** Whether the board is one this match's HUD gave a member. */
+    public boolean ownsBoard(Scoreboard board) {
+        return hud.owns(board);
     }
 
     /**

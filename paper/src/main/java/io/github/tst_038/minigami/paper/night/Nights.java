@@ -49,6 +49,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -405,6 +406,12 @@ public final class Nights implements Listener {
         return active != null && active.state != State.PLAYING && entity instanceof Player player && active.night.players().contains(player.getUniqueId());
     }
 
+    /** A player who leaves the server has nothing to give back; the server gives them a board when they return. */
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        sidebar.forget(event.getPlayer().getUniqueId());
+    }
+
     /** Scores the finished game of the night, and goes on to the next one or ends the night. */
     @EventHandler
     public void onMatchEnd(MatchEndEvent event) {
@@ -516,6 +523,7 @@ public final class Nights implements Listener {
         }
         active.parties.forEach(parties::disband);
         sidebar.hide(online);
+        sidebar.clear();
         online.forEach(this::exit);
         releaseAll();
         active = null;
@@ -588,6 +596,8 @@ public final class Nights implements Listener {
         if (active.game != null && active.game.isMember(id)) {
             active.game.leave(player);
         }
+        sidebar.hide(List.of(player));
+        sidebar.forget(id);
         exit(player);
         messages.send(audience(onlinePlayers(night)), "night.player-left", Placeholder.component("player", player.name()));
         publish();

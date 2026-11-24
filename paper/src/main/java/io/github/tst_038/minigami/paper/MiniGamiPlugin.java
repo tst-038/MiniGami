@@ -210,7 +210,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, doctor);
         var nightReport = new NightReport(getServer(), messages);
         nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), sessions, parties, new NightStore(storage, getLogger()), nightReport,
-                new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
+                new NightSidebar(getServer(), messages, nightReport, running::ownsBoard), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
         var scheduleRewards = new ScheduleRewards(this, messages, RandomGenerator.getDefault());

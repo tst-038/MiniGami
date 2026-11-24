@@ -24,6 +24,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * The matches on the server, whoever opened them. An arena hosts one match at a time and gets its
@@ -165,6 +166,11 @@ public final class RunningMatches implements Listener {
     Collection<LiveMatch> running() {
         byArena.values().removeIf(match -> match.match().isFinished());
         return byArena.values();
+    }
+
+    /** Whether the board is a running match's own, not a player's real one. */
+    public boolean ownsBoard(Scoreboard board) {
+        return running().stream().anyMatch(match -> match.ownsBoard(board));
     }
 
     /** The match the player is in. */

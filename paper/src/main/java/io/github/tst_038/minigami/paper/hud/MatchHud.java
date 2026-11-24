@@ -123,6 +123,11 @@ public final class MatchHud {
         refresh(player, board);
     }
 
+    /** Whether the board is one of this match's own, as opposed to a player's real one. */
+    public boolean owns(Scoreboard board) {
+        return boards.containsValue(board);
+    }
+
     /** Takes it away again and gives back the board they had; harmless for someone who has none. */
     public void hide(UUID id) {
         var board = boards.remove(id);
