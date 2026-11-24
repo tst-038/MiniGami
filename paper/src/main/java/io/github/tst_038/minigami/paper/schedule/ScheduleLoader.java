@@ -37,15 +37,7 @@ public final class ScheduleLoader {
     static Schedule read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant) {
         var name = root.has("name") ? root.string("name") : id;
         root.suggest("when", List.of("\"*/30 * * * *\"", "\"0 20 * * 5\""));
-        var whenText = root.string("when");
-        Cron when = null;
-        if (!whenText.isEmpty()) {
-            try {
-                when = Cron.parse(whenText);
-            } catch (IllegalArgumentException e) {
-                root.problem("when", e.getMessage());
-            }
-        }
+        var when = root.cron("when").orElse(null);
         var pick = root.has("pick") ? root.choice("pick", Schedule.Pick.class) : Schedule.Pick.ROTATE;
         var items = root.sections("games", "game");
         if (items.isEmpty() && root.has("games")) {
