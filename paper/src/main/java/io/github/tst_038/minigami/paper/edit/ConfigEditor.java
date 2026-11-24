@@ -1,6 +1,5 @@
 package io.github.tst_038.minigami.paper.edit;
 
-import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -11,6 +10,7 @@ import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaFile;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.config.ConfigFiles;
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.game.Game;
@@ -265,11 +265,11 @@ public final class ConfigEditor {
 
     /**
      * @param id ignored for {@link Kind#CONFIG}
-     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value #ConfigLocations.HERE}
+     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value #LocationConfig.HERE}
      */
     public void set(CommandSender sender, Kind kind, String id, String key, String text) {
         Consumer<YamlConfiguration> change;
-        if (text.equals(ConfigLocations.HERE)) {
+        if (text.equals(LocationConfig.HERE)) {
             if (!(sender instanceof Player player)) {
                 messages.send(sender, "edit.here-needs-player");
                 return;
@@ -555,12 +555,12 @@ public final class ConfigEditor {
     static Map<String, Object> location(ConfigurationSection config, Location location) {
         var world = config.getString("world");
         if (world == null) {
-            return ConfigLocations.writeWithWorld(location);
+            return LocationConfig.writeWithWorld(location);
         }
         if (!world.equals(location.getWorld().getName())) {
             throw new IllegalArgumentException("you are in world " + location.getWorld().getName() + ", but its locations are in " + world);
         }
-        return ConfigLocations.write(location);
+        return LocationConfig.write(location);
     }
 
     /** The value a command typed, read as YAML; {@code null} if it isn't one. */

@@ -59,7 +59,7 @@ public final class SettingsLoader {
                     Collections.emptySortedMap());
         }
         var reader = ConfigReader.of(FILE, config);
-        reader.suggest("lobby", List.of(ConfigLocations.HERE));
+        reader.suggest("lobby", List.of(LocationConfig.HERE));
         var lobby = reader.has("lobby")
                 ? Optional.of(ConfigLocations.readWithWorld(reader.section("lobby"), worlds))
                 : Optional.<Location>empty();

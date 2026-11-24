@@ -1,8 +1,8 @@
 package io.github.tst_038.minigami.paper.arena;
 
-import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,7 +26,7 @@ public final class ArenaFile {
     /** @param team the only team that starts there, or empty for everyone */
     public static void addSpawn(YamlConfiguration config, Location location, Optional<String> team) {
         var spawns = new ArrayList<Map<?, ?>>(config.getMapList("spawns"));
-        var spawn = ConfigLocations.write(location);
+        var spawn = LocationConfig.write(location);
         team.ifPresent(id -> spawn.put("team", id));
         spawns.add(spawn);
         config.set("spawns", spawns);

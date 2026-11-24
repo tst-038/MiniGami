@@ -20,7 +20,7 @@ public final class StatPlaceholders {
 
     private static final String WEEKLY = "weekly_";
     private static final String MONTHLY = "monthly_";
-    private static final String PLAYED = "played";
+    private static final String PLAYED = Stat.PLAYED;
 
     private final Leaderboards leaderboards;
     private final PlayerProfiles profiles;

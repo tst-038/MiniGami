@@ -7,6 +7,7 @@ import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,15 +63,15 @@ public final class ArenaLoader {
         var spawns = config.has("spawns")
                 ? config.sections("spawns").stream().map(spawn -> spawn(spawn, world)).toList()
                 : List.<Arena.Spawn>of();
-        config.suggest("waiting-spot", List.of(ConfigLocations.HERE));
+        config.suggest("waiting-spot", List.of(LocationConfig.HERE));
         var waitingSpot = config.has("waiting-spot")
                 ? Optional.of(ConfigLocations.read(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();
-        config.suggest("spectator-spot", List.of(ConfigLocations.HERE));
+        config.suggest("spectator-spot", List.of(LocationConfig.HERE));
         var spectatorSpot = config.has("spectator-spot")
                 ? Optional.of(ConfigLocations.read(config.section("spectator-spot"), world))
                 : Optional.<Location>empty();
-        config.suggest("respawning-spot", List.of(ConfigLocations.HERE));
+        config.suggest("respawning-spot", List.of(LocationConfig.HERE));
         var respawningSpot = config.has("respawning-spot")
                 ? Optional.of(ConfigLocations.read(config.section("respawning-spot"), world))
                 : Optional.<Location>empty();

@@ -122,7 +122,6 @@ public final class StatsRecorder implements Listener {
         }
     }
 
-    // Each total is updated, or inserted the first time: plain SQL every database understands, and safe since only the storage thread writes.
     private static void addTotals(Connection connection, MatchRecord record, UUID player, Integer place, boolean left, long seconds)
             throws SQLException {
         var won = place != null && place == 1 ? 1 : 0;

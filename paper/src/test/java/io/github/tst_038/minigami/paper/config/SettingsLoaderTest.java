@@ -3,7 +3,6 @@ package io.github.tst_038.minigami.paper.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +41,7 @@ class SettingsLoaderTest {
         try (var bundled = getClass().getClassLoader().getResourceAsStream(SettingsLoader.FILE)) {
             config.loadFromString(new String(bundled.readAllBytes(), StandardCharsets.UTF_8));
         }
-        config.set("lobby", ConfigLocations.writeWithWorld(new Location(world, 1.5, 70, -2.5, 90, 10)));
+        config.set("lobby", LocationConfig.writeWithWorld(new Location(world, 1.5, 70, -2.5, 90, 10)));
 
         var saved = config.saveToString();
 

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Who owns one capture point, and who is taking it. A team other than the owner that stands on the
+ * Who owns one capture point, and who is taking it. A side other than the owner that stands on the
  * point alone for the capture time takes it. A kept point stays its owner's until then; one not kept is
  * owned only while its owner stands on it alone. Contesting it pauses the taking, leaving it empty
  * starts it over, and the owner alone on it fends it off.
@@ -20,8 +20,8 @@ public final class Capture<T> {
     private int progress;
 
     /**
-     * @param seconds how long a team must stand on the point alone to take it; 1 takes it at once
-     * @param keep whether the owner keeps it once it steps off or another team steps on
+     * @param seconds how long a side must stand on the point alone to take it; 1 takes it at once
+     * @param keep whether the owner keeps it once it steps off or another side steps on
      */
     public Capture(int seconds, boolean keep) {
         this.seconds = seconds;
@@ -29,9 +29,9 @@ public final class Capture<T> {
     }
 
     /**
-     * One second passes with these teams on the point.
+     * One second passes with these sides on the point.
      *
-     * @param present the distinct teams standing on it
+     * @param present the distinct sides standing on it
      * @return whether the point changed hands
      */
     public boolean tick(List<T> present) {
@@ -46,9 +46,9 @@ public final class Capture<T> {
             progress = 0;
             return false;
         }
-        var team = present.getFirst();
-        if (!taker.equals(Optional.of(team))) {
-            taker = Optional.of(team);
+        var side = present.getFirst();
+        if (!taker.equals(Optional.of(side))) {
+            taker = Optional.of(side);
             progress = 0;
         }
         if (++progress < seconds) {
@@ -64,7 +64,7 @@ public final class Capture<T> {
         return owner;
     }
 
-    /** The team taking the point, while it is not done. */
+    /** The side taking the point, while it is not done. */
     public Optional<T> taker() {
         return taker;
     }

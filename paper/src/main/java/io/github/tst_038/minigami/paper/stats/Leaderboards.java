@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.stats;
 
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.core.stat.Period;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -32,10 +33,10 @@ import org.bukkit.event.Listener;
 public final class Leaderboards implements Listener {
 
     /** The board of matches won; besides {@link #PLAYED}, every other board is a stat. */
-    public static final String WINS = "wins";
+    public static final String WINS = Stat.WINS;
 
     /** The board of matches played, which every game has without keeping it as a stat. */
-    public static final String PLAYED = "played";
+    public static final String PLAYED = Stat.PLAYED;
 
     /** @param name the name they last joined with; empty if nobody knows it, e.g. they haven't joined since names were kept */
     public record Entry(UUID id, Optional<String> name, long amount) {

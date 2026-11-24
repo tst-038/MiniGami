@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.command;
 
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
@@ -7,7 +8,6 @@ import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.ArgumentBuilder;
-import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
@@ -40,7 +40,7 @@ final class ConfigCommands {
                 .requires(ADMIN.and(PLAYER))
                 .executes(help)
                 .then(Commands.literal("set").executes(byPlayer((player, context) ->
-                        editor.set(player, Kind.CONFIG, "", "lobby", ConfigLocations.HERE))))
+                        editor.set(player, Kind.CONFIG, "", "lobby", LocationConfig.HERE))))
                 .then(Commands.literal("tp").executes(byPlayer((player, context) -> lobby.get().ifPresentOrElse(
                         player::teleportAsync, () -> messages.send(player, "lobby.none")))));
     }

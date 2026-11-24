@@ -198,32 +198,25 @@ public final class StatsAdmin {
     }
 
     private static void adjust(Connection connection, UUID id, String game, String stat, long delta) throws SQLException {
-        var update = isTotal(stat) ? "UPDATE player_totals SET " + stat + " = " + stat + " + ? WHERE player = ? AND game = ? AND variant = ''"
-                : "UPDATE player_stat_totals SET amount = amount + ? WHERE player = ? AND game = ? AND variant = '' AND stat = ?";
-        try (var statement = connection.prepareStatement(update)) {
+        if (!isTotal(stat)) {
+            StatRows.addTotal(connection, id, game, "", stat, delta);
+            return;
+        }
+        try (var statement = connection.prepareStatement(
+                "UPDATE player_totals SET " + stat + " = " + stat + " + ? WHERE player = ? AND game = ? AND variant = ''")) {
             statement.setLong(1, delta);
             statement.setString(2, id.toString());
             statement.setString(3, game);
-            if (!isTotal(stat)) {
-                statement.setString(4, stat);
-            }
             if (statement.executeUpdate() > 0) {
                 return;
             }
         }
-        var insert = isTotal(stat)
-                ? "INSERT INTO player_totals (player, game, variant, played, wins, placed, place_sum, left_matches, seconds_played) VALUES (?, ?, '', "
-                        + (stat.equals(Leaderboards.PLAYED) ? "?, 0" : "0, ?") + ", 0, 0, 0, 0)"
-                : "INSERT INTO player_stat_totals (player, game, variant, stat, amount) VALUES (?, ?, '', ?, ?)";
-        try (var statement = connection.prepareStatement(insert)) {
+        try (var statement = connection.prepareStatement(
+                "INSERT INTO player_totals (player, game, variant, played, wins, placed, place_sum, left_matches, seconds_played) VALUES (?, ?, '', "
+                        + (stat.equals(Leaderboards.PLAYED) ? "?, 0" : "0, ?") + ", 0, 0, 0, 0)")) {
             statement.setString(1, id.toString());
             statement.setString(2, game);
-            if (isTotal(stat)) {
-                statement.setLong(3, delta);
-            } else {
-                statement.setString(3, stat);
-                statement.setLong(4, delta);
-            }
+            statement.setLong(3, delta);
             statement.executeUpdate();
         }
     }

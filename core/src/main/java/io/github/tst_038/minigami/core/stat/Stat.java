@@ -16,6 +16,12 @@ public record Stat(String id) {
     /** The participant's points at the end, as the win condition ranked them. Filled in by the engine for games that score. */
     public static final Stat POINTS = new Stat("points");
 
+    /** The id of the matches a participant won, which MiniGami keeps itself from the results: no match counts a stat by this id. */
+    public static final String WINS = "wins";
+
+    /** The id of the matches a participant played, which MiniGami keeps itself like {@link #WINS}. */
+    public static final String PLAYED = "played";
+
     public Stat {
         if (!VALID_ID.matcher(id).matches()) {
             throw new IllegalArgumentException("Invalid stat id '" + id + "': use lower case letters, digits and dashes");

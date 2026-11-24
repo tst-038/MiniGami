@@ -30,7 +30,7 @@ public record Profile(Map<VariantId, Totals> byVariant) {
                 .map(Map.Entry::getValue).reduce(Totals.NONE, Totals::plus);
     }
 
-    /** The games they played, by id. */
+    /** The games they have stats or matches in, by id. */
     public Set<String> games() {
         var games = new TreeSet<String>();
         byVariant.keySet().forEach(key -> games.add(key.game()));
