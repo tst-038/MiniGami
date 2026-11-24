@@ -19,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class KothFiles {
 
     public static final String CONFIG = "config.yml";
+    public static final String SHOP = "shop.yml";
     public static final String MESSAGES = "messages/en.yml";
 
     private final JavaPlugin plugin;
@@ -33,6 +34,16 @@ public final class KothFiles {
             return readOrSaveBundled(CONFIG);
         } catch (IOException | IllegalArgumentException e) {
             problems.add(new ConfigProblem(CONFIG, "", "can't be read: " + e.getMessage()));
+            return "";
+        }
+    }
+
+    /** The text of {@code shop.yml}; an unreadable file counts as empty, and is a problem. */
+    public String readShop(List<ConfigProblem> problems) {
+        try {
+            return readOrSaveBundled(SHOP);
+        } catch (IOException | IllegalArgumentException e) {
+            problems.add(new ConfigProblem(SHOP, "", "can't be read: " + e.getMessage()));
             return "";
         }
     }

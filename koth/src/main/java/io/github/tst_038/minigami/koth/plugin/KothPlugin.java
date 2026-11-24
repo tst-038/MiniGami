@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
+import io.github.tst_038.minigami.api.reward.RewardReader;
 import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.core.storage.Migrations;
 import io.github.tst_038.minigami.core.storage.SqliteStorage;
@@ -17,6 +18,10 @@ import io.github.tst_038.minigami.koth.round.CombatListener;
 import io.github.tst_038.minigami.koth.placeholder.KothExpansion;
 import io.github.tst_038.minigami.koth.round.KothRuntime;
 import io.github.tst_038.minigami.koth.sidebar.KothSidebar;
+import io.github.tst_038.minigami.koth.shop.Checkout;
+import io.github.tst_038.minigami.koth.shop.Shop;
+import io.github.tst_038.minigami.koth.shop.ShopListener;
+import io.github.tst_038.minigami.koth.shop.ShopReader;
 import io.github.tst_038.minigami.koth.stats.StatBuffer;
 import io.github.tst_038.minigami.koth.status.KothPlaceholders;
 import io.github.tst_038.minigami.koth.world.KothWorld;
@@ -36,6 +41,13 @@ public final class KothPlugin extends JavaPlugin {
     private Storage storage;
     private KothRuntime runtime;
     private KothSidebar sidebar;
+    private RewardReader rewards;
+    private volatile Shop shop = Shop.NONE;
+
+    /** What the shop sells now; {@link Shop#NONE} until a usable {@code shop.yml} has been read. */
+    public Shop shop() {
+        return shop;
+    }
 
     @Override
     public void onEnable() {
@@ -57,6 +69,8 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BalanceListener(wallet), this);
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);
         getServer().getPluginManager().registerEvents(new RespawnListener(runtime::config), this);
+        rewards = new RewardReader(savedItems, getLogger());
+        getServer().getPluginManager().registerEvents(new ShopListener(new Checkout(messages, wallet, players, serverThread, getLogger())), this);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
         sidebar = new KothSidebar(getServer(), messages, players);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -75,6 +89,7 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getAsyncScheduler().runNow(this, task -> {
             var problems = new ArrayList<ConfigProblem>();
             var configText = files.readConfig(problems);
+            var shopText = files.readShop(problems);
             var messageTexts = files.readMessages(problems);
             if (!isEnabled()) {
                 return;
@@ -87,9 +102,15 @@ public final class KothPlugin extends JavaPlugin {
                 var loaded = KothConfigLoader.load(configText, new KothWorld(getServer()));
                 problems.addAll(loaded.problems());
                 loaded.config().ifPresent(runtime::configure);
+                var loadedShop = ShopReader.load(shopText, rewards);
+                problems.addAll(loadedShop.problems());
+                loadedShop.shop().ifPresent(read -> shop = read);
                 problems.forEach(problem -> getLogger().warning(problem.toString()));
                 if (loaded.config().isEmpty()) {
                     getLogger().warning("KOTH has no usable config.yml yet, so it stays off or keeps the one it had.");
+                }
+                if (loadedShop.shop().isEmpty()) {
+                    getLogger().warning("KOTH has no usable shop.yml yet, so the shop stays closed or keeps the one it had.");
                 }
             });
         });

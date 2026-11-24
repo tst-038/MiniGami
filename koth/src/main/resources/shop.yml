@@ -1,0 +1,27 @@
+# The /koth shop. Each entry costs points and gives its rewards, all of them:
+#   { item: <item>, amount, name }        an item
+#   { saved: <name>, amount, name }       an item saved in MiniGami with /mga loot save <name>, such as a crate key
+#   { command: "...", name: "..." }       run from the console, %player% being the buyer
+# owned-permission: who already has it can't buy the entry again.
+title: "<dark_gray>KOTH shop"
+rows: 3
+entries:
+  diamonds:
+    slot: 11
+    cost: 300
+    icon: { item: diamond, name: "<aqua>8 diamonds" }
+    rewards:
+      - { item: diamond, amount: 8 }
+  # crate-key:
+  #   slot: 13
+  #   cost: 500
+  #   icon: { item: tripwire_hook, name: "<gold>KOTH crate key", lore: ["<gray>Opens the KOTH crate"] }
+  #   rewards:
+  #     - { saved: koth-crate-key, name: "<gold>KOTH crate key" }
+  anvil:
+    slot: 15
+    cost: 5000
+    owned-permission: essentials.anvil
+    icon: { item: anvil, name: "<yellow>/anvil", lore: ["<gray>Open an anvil anywhere"] }
+    rewards:
+      - { command: "lp user %player% permission set essentials.anvil true", name: "<yellow>/anvil" }
