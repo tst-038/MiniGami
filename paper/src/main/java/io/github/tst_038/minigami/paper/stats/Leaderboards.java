@@ -26,7 +26,8 @@ import org.bukkit.event.Listener;
 /**
  * The best players per game and stat, wins included, over the whole game and per variant, for all time and for this week and this month.
  * Read from storage in the background whenever {@link #refresh()} is called, every few minutes, and kept in memory in between, so showing a
- * board never waits on the database. Refreshed again after each match. Refresh from the server thread; read from any.
+ * board never waits on the database. Refreshed again after each match, and when the date changes, which moves the weekly and monthly
+ * boards on. Refresh from the server thread; read from any.
  */
 public final class Leaderboards implements Listener {
 

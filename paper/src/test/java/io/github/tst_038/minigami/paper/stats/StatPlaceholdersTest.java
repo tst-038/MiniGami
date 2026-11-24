@@ -43,8 +43,9 @@ class StatPlaceholdersTest {
     @BeforeEach
     void open() {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
-        profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
-        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, Clock.fixed(START.plusSeconds(3600), ZoneOffset.UTC), id -> Optional.empty(), 10);
+        var today = Clock.fixed(START.plusSeconds(3600), ZoneOffset.UTC);
+        profiles = new PlayerProfiles(storage, serverThread::add, today, LOGGER);
+        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, today, id -> Optional.empty(), 10);
         placeholders = new StatPlaceholders(leaderboards, profiles);
         profiles.join(alice, "Alice");
         profiles.join(bob, "Bob");
@@ -102,6 +103,16 @@ class StatPlaceholdersTest {
     }
 
     @Test
+    void theViewersOwnStatsOfThisWeekOrMonth() {
+        assertEquals("5", placeholders.resolve(Optional.of(alice), "weekly_stat_spleef_kills"));
+        assertEquals("2", placeholders.resolve(Optional.of(alice), "monthly_stat_spleef_duos_kills"));
+        assertEquals("2", placeholders.resolve(Optional.of(alice), "weekly_stat_spleef_played"));
+        assertEquals("1", placeholders.resolve(Optional.of(alice), "monthly_stat_spleef_duos_wins"));
+        assertEquals("", placeholders.resolve(Optional.of(UUID.randomUUID()), "weekly_stat_spleef_kills"), "not online or still loading");
+        assertEquals("", placeholders.resolve(Optional.empty(), "monthly_stat_spleef_kills"));
+    }
+
+    @Test
     void whatIsNotOursStaysAsTyped() {
         assertNull(placeholders.resolve(Optional.empty(), "top_spleef_kills_first_name"));
         assertNull(placeholders.resolve(Optional.empty(), "top_spleef_kills_0_name"));
@@ -110,7 +121,8 @@ class StatPlaceholdersTest {
         assertNull(placeholders.resolve(Optional.empty(), "stat_spleef"));
         assertNull(placeholders.resolve(Optional.empty(), "weekly_top_spleef_kills_first_name"));
         assertNull(placeholders.resolve(Optional.empty(), "yearly_top_spleef_kills_1_name"));
-        assertNull(placeholders.resolve(Optional.of(alice), "weekly_stat_spleef_kills"), "not there yet");
+        assertNull(placeholders.resolve(Optional.of(alice), "weekly_stat_spleef"));
+        assertNull(placeholders.resolve(Optional.of(alice), "yearly_stat_spleef_kills"));
         assertNull(placeholders.resolve(Optional.empty(), "weekly_weekly_top_spleef_kills_1_name"));
     }
 }

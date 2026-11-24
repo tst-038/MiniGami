@@ -12,8 +12,8 @@ import java.util.UUID;
  * <li>{@code top_<game>[_<variant>]_<stat>_<place>_name} and {@code …_value}: a place on a leaderboard</li>
  * <li>{@code stat_<game>[_<variant>]_<stat>}: the viewer's own amount; {@code wins} and {@code played} work too</li>
  * </ul>
- * A leading {@code weekly_} or {@code monthly_} makes the top forms count this week or this month only, such as
- * {@code weekly_top_<game>_<stat>_<place>_name}.
+ * A leading {@code weekly_} or {@code monthly_} makes either form count this week or this month only, such as
+ * {@code weekly_top_<game>_<stat>_<place>_name} and {@code monthly_stat_<game>_<stat>}.
  * Without a variant the game's variants are added up. Any thread.
  */
 public final class StatPlaceholders {
@@ -48,8 +48,8 @@ public final class StatPlaceholders {
         if (parts[0].equals("top") && (parts.length == 5 || parts.length == 6)) {
             return top(period, parts);
         }
-        if (period == Period.ALL_TIME && parts[0].equals("stat") && (parts.length == 3 || parts.length == 4)) {
-            return own(viewer, parts);
+        if (parts[0].equals("stat") && (parts.length == 3 || parts.length == 4)) {
+            return own(viewer, period, parts);
         }
         return null;
     }
@@ -74,8 +74,8 @@ public final class StatPlaceholders {
         return field.equals("name") ? entry.name().orElse("") : Long.toString(entry.amount());
     }
 
-    private String own(Optional<UUID> viewer, String[] parts) {
-        var profile = viewer.flatMap(profiles::of);
+    private String own(Optional<UUID> viewer, Period period, String[] parts) {
+        var profile = viewer.flatMap(id -> profiles.of(id, period));
         if (profile.isEmpty()) {
             return "";
         }

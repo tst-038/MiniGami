@@ -790,6 +790,8 @@ placeholders:
   header: "%prefix%<gold>Placeholders</gold> <gray>for PlaceholderAPI:"
   line: "<gray> <white>%placeholder%</white> <dark_gray>-</dark_gray> %what%"
   own: "<gray>your own amount"
+  own-weekly: "<gray>your own amount this week, from Monday"
+  own-monthly: "<gray>your own amount this month"
   top: "<gray>the name on a leaderboard place"
   top-value: "<gray>the amount on a leaderboard place"
   top-weekly: "<gray>the name on a leaderboard place of this week, from Monday; <white>_value</white><gray> the amount"

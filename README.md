@@ -318,6 +318,7 @@ With PlaceholderAPI installed:
 | Placeholder | |
 |---|---|
 | `%mg_stat_<game>[_<variant>]_<stat>%` | The viewer's own amount |
+| `%mg_weekly_stat_<game>[_<variant>]_<stat>%` / `%mg_monthly_stat_…%` | The viewer's own amount this week (from Monday) / this month |
 | `%mg_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard |
 | `%mg_weekly_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard of this week (from Monday), in the server's time |
 | `%mg_monthly_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard of this month |

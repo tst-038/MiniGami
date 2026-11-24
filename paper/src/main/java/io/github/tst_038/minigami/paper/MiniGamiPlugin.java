@@ -56,6 +56,7 @@ import io.github.tst_038.minigami.paper.presence.PlayerPresence;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
+import io.github.tst_038.minigami.paper.stats.DayRollover;
 import io.github.tst_038.minigami.paper.stats.Leaderboards;
 import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
 import io.github.tst_038.minigami.paper.stats.StatPlaceholders;
@@ -83,6 +84,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
@@ -155,12 +157,18 @@ public final class MiniGamiPlugin extends JavaPlugin {
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
         storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "MiniGami storage",getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
-        var profiles = new PlayerProfiles(storage, serverThread, Clock.systemUTC(), getLogger());
+        var profiles = new PlayerProfiles(storage, serverThread, Clock.systemDefaultZone(), getLogger());
         getServer().getPluginManager().registerEvents(profiles, this);
         // Players already online after a reload of the plugin.
         getServer().getOnlinePlayers().forEach(player -> profiles.join(player.getUniqueId(), player.getName()));
         var leaderboards = new Leaderboards(storage, serverThread, getLogger(), Clock.systemDefaultZone(), this::cachedName, LEADERBOARD_SIZE);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
+        // The weekly and monthly stats change with the date, not only with matches.
+        new DayRollover(Clock.systemDefaultZone(), (delay, task) -> getServer().getAsyncScheduler().runDelayed(this,
+                ignored -> serverThread.execute(task), delay.toMillis(), TimeUnit.MILLISECONDS), () -> {
+            profiles.reloadOnline();
+            leaderboards.refresh();
+        }).start();
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, Clock.systemDefaultZone(), getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
         var parties = new PartyService(this, storage, messages);
