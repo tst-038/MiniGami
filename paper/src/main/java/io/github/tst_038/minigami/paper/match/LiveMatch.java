@@ -1055,6 +1055,12 @@ public final class LiveMatch {
      */
     private void onDeath(PlayerDeathEvent event) {
         var player = event.getEntity();
+        // Asked for first: the death may decide the match and end its phase, and nothing that sets off may keep them dead.
+        player.getScheduler().run(plugin, task -> {
+            if (player.isDead()) {
+                player.spigot().respawn();
+            }
+        }, null);
         var message = event.deathMessage();
         event.deathMessage(null);
         if (message != null) {
@@ -1070,11 +1076,6 @@ public final class LiveMatch {
         if (playing && killer != null && !killer.equals(player) && isActive(killer.getUniqueId())) {
             hud.killed(killer);
         }
-        player.getScheduler().run(plugin, task -> {
-            if (player.isDead()) {
-                player.spigot().respawn();
-            }
-        }, null);
     }
 
     /**
