@@ -16,6 +16,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.random.RandomGenerator;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -38,6 +39,8 @@ public final class KothRuntime {
     private final StatBuffer buffer;
     private final Clock clock;
     private final RandomGenerator random;
+    private final Optional<LocalDateTime> dismissedBefore;
+    private final Consumer<LocalDateTime> onDismissed;
     private KothConfig config;
     private Activations activations;
     private Round round;
@@ -46,7 +49,7 @@ public final class KothRuntime {
     private volatile KothStatus status = KothStatus.OFF;
 
     public KothRuntime(Server server, Messages messages, Wallet wallet, MiniGamiStats miniGamiStats, MiniGamiPlayers players, StatBuffer buffer,
-            Clock clock, RandomGenerator random) {
+            Clock clock, RandomGenerator random, Optional<LocalDateTime> dismissedBefore, Consumer<LocalDateTime> onDismissed) {
         this.server = server;
         this.announcer = new Announcer(server, messages);
         this.wallet = wallet;
@@ -55,13 +58,15 @@ public final class KothRuntime {
         this.buffer = buffer;
         this.clock = clock;
         this.random = random;
+        this.dismissedBefore = dismissedBefore;
+        this.onDismissed = onDismissed;
     }
 
     /** Uses a freshly read config from now on; a round that is running carries on with its own. */
     public void configure(KothConfig config) {
         this.config = config;
         if (activations == null) {
-            activations = new Activations(config.plan(), LocalDateTime.now(clock));
+            activations = new Activations(config.plan(), LocalDateTime.now(clock), dismissedBefore, onDismissed);
         } else {
             activations.replan(config.plan());
         }

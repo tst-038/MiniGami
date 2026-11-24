@@ -18,6 +18,7 @@ import io.github.tst_038.minigami.koth.ledger.Wallet;
 import io.github.tst_038.minigami.koth.round.CombatListener;
 import io.github.tst_038.minigami.koth.placeholder.KothExpansion;
 import io.github.tst_038.minigami.koth.round.KothRuntime;
+import io.github.tst_038.minigami.koth.schedule.HandledWindows;
 import io.github.tst_038.minigami.koth.sidebar.KothSidebar;
 import io.github.tst_038.minigami.koth.shop.Checkout;
 import io.github.tst_038.minigami.koth.shop.Shop;
@@ -32,10 +33,13 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -75,7 +79,12 @@ public final class KothPlugin extends JavaPlugin {
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
         var wallet = new Wallet(new PointsLedger(storage), new Balances(), serverThread, getLogger());
         var buffer = new StatBuffer();
-        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, buffer, Clock.systemDefaultZone(), RandomGenerator.getDefault());
+        var handledWindows = new HandledWindows(storage);
+        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, buffer, Clock.systemDefaultZone(), RandomGenerator.getDefault(),
+                lastDismissed(handledWindows), start -> handledWindows.remember(start).exceptionally(failure -> {
+                    getLogger().log(Level.WARNING, "Could not remember that the window of " + start + " was skipped or stopped", failure);
+                    return null;
+                }));
 
         getServer().getPluginManager().registerEvents(new BalanceListener(wallet), this);
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);
@@ -97,6 +106,16 @@ public final class KothPlugin extends JavaPlugin {
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");
         });
         loadConfig(files, messages, null);
+    }
+
+    /** shortcut: waits for one small read while enabling; make it async if the database ever gets slow. */
+    private Optional<LocalDateTime> lastDismissed(HandledWindows handledWindows) {
+        try {
+            return handledWindows.last().join();
+        } catch (CompletionException e) {
+            getLogger().log(Level.WARNING, "Could not read which window was last skipped or stopped, so it may start after all", e.getCause());
+            return Optional.empty();
+        }
     }
 
     /**

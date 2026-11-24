@@ -141,6 +141,43 @@ class ActivationsTest {
     }
 
     @Test
+    void aSkippedWindowIsNotResumedByTheNextActivations() {
+        var dismissed = new ArrayList<LocalDateTime>();
+        new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add).tick(at(2, 20, 0, 0), EMPTY);
+        assertEquals(List.of(at(2, 20, 0, 0)), dismissed);
+
+        // A restart in the middle of the skipped window, as it would be handed what was remembered.
+        var restarted = new Activations(plan(), at(2, 20, 30, 0), Optional.of(dismissed.getFirst()), start -> { });
+
+        assertEquals(List.of(), restarted.tick(at(2, 20, 30, 1), CROWDED));
+        assertEquals(Optional.empty(), restarted.running());
+    }
+
+    @Test
+    void aStoppedWindowIsNotResumedByTheNextActivations() {
+        var dismissed = new ArrayList<LocalDateTime>();
+        var activations = new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add);
+        activations.tick(at(2, 20, 0, 0), CROWDED);
+        activations.forceStop(at(2, 20, 10, 0));
+        assertEquals(List.of(at(2, 20, 0, 0)), dismissed);
+
+        var restarted = new Activations(plan(), at(2, 20, 30, 0), Optional.of(dismissed.getFirst()), start -> { });
+
+        assertEquals(List.of(), restarted.tick(at(2, 20, 30, 1), CROWDED));
+    }
+
+    @Test
+    void aWindowThatRanIsStillResumedByTheNextActivations() {
+        var dismissed = new ArrayList<LocalDateTime>();
+        new Activations(plan(), at(2, 19, 59, 0), Optional.empty(), dismissed::add).tick(at(2, 20, 0, 0), CROWDED);
+        assertEquals(List.of(), dismissed);
+
+        var restarted = new Activations(plan(), at(2, 20, 30, 0), Optional.empty(), dismissed::add);
+
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), restarted.tick(at(2, 20, 30, 1), CROWDED));
+    }
+
+    @Test
     void theWindowAfterASkippedOneStartsNormally() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
         activations.tick(at(2, 20, 0, 0), EMPTY);
