@@ -178,6 +178,8 @@ public final class PlayerProfiles implements Listener {
                 }
             }
         }
+        // Stats can exist without a match record, from an admin edit for instance: they still show, on totals of nothing played.
+        stats.forEach((key, amounts) -> byVariant.computeIfAbsent(key, ignored -> new Totals(0, 0, 0, 0, 0, Duration.ZERO, amounts)));
         return new Profile(byVariant);
     }
 }

@@ -99,6 +99,24 @@ class PlayerProfilesTest {
     }
 
     @Test
+    void statsWithoutAMatchRecordShowOnTotalsOfNothingPlayed() {
+        storage.submit(connection -> {
+            try (var statement = connection.createStatement()) {
+                statement.execute("INSERT INTO player_stat_totals (player, game, variant, stat, amount) VALUES ('" + alice + "', 'x', '', 'kills', 7)");
+            }
+            return null;
+        }).join();
+
+        profiles.load(alice);
+        settle();
+
+        var game = profiles.of(alice).orElseThrow().game("x");
+        assertEquals(7, game.stat(KILLS));
+        assertEquals(0, game.played());
+        assertEquals(Set.of("x"), profiles.of(alice).orElseThrow().games());
+    }
+
+    @Test
     void aRecordedMatchReloadsTheProfilesOfThoseOnline() {
         profiles.load(alice);
         settle();
