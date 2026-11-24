@@ -168,7 +168,8 @@ public final class StatsView {
             var game = games.get().find(id);
             var totals = profile.game(id);
             messages.send(sender, "stats.game-header", player, gameName(id));
-            if (only.isEmpty()) {
+            // A game that is only stored has no record to show until it has been played, as its stats come from another plugin.
+            if (only.isEmpty() && (game.isPresent() || totals.played() > 0)) {
                 sendRecord(sender, totals, true);
             }
             var stats = game.map(StatsView::statIds).orElseGet(TreeSet::new);
