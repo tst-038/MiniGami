@@ -522,12 +522,16 @@ public final class Nights implements Listener {
             store.save(new NightStore.Played(active.id, template.id(), template.name(), active.start, clock.instant(), night.results()));
         }
         active.parties.forEach(parties::disband);
-        sidebar.hide(online);
-        sidebar.clear();
+        dropSidebar(online);
         online.forEach(this::exit);
         releaseAll();
         active = null;
         values.clear();
+    }
+
+    private void dropSidebar(Collection<Player> online) {
+        sidebar.hide(online);
+        sidebar.clear();
     }
 
     /** A player still in another match is left there; that match gives them back their spot. */
@@ -565,8 +569,16 @@ public final class Nights implements Listener {
         release(player.getUniqueId(), hold);
     }
 
-    /** Gives back the state of everyone still held, for the night's end and the plugin's shutdown; players offline get theirs when they join. */
-    public void releaseAll() {
+    /** The plugin is shutting down: a night underway gives its players their boards and their state back. */
+    public void shutdown() {
+        if (active != null) {
+            dropSidebar(onlinePlayers(active.night));
+        }
+        releaseAll();
+    }
+
+    /** Gives back the state of everyone still held; players offline get theirs when they join. */
+    private void releaseAll() {
         List.copyOf(holds.entrySet()).forEach(entry -> release(entry.getKey(), entry.getValue()));
         holds.clear();
     }

@@ -4,8 +4,8 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.gamenight.night.Night;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Server;
@@ -24,9 +24,10 @@ public final class NightSidebar {
     private final Server server;
     private final Messages messages;
     private final NightReport report;
+    /** What each player had before the night, for hide to give back. */
+    private final RememberedBoards remembered;
     /** The board last shown, so only players who still have it are taken off it. */
     private Scoreboard shown;
-    private final RememberedBoards remembered;
 
     /** @param matchBoard whether a board is a match's own HUD board; covers players who join mid-match */
     public NightSidebar(Server server, Messages messages, NightReport report, Predicate<Scoreboard> matchBoard) {
@@ -60,7 +61,7 @@ public final class NightSidebar {
     void hide(Collection<Player> players) {
         for (Player player : players) {
             if (shown != null && player.getScoreboard() == shown) {
-                player.setScoreboard(remembered.get(player.getUniqueId()).filter(old -> old != shown).orElseGet(() -> server.getScoreboardManager().getMainScoreboard()));
+                player.setScoreboard(remembered.get(player.getUniqueId()).orElseGet(() -> server.getScoreboardManager().getMainScoreboard()));
             }
         }
     }

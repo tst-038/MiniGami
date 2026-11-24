@@ -42,7 +42,7 @@ public final class RunningMatches implements Listener {
     private final ActiveMatches matches;
     private final ArenaMaps maps;
     private final MatchValues values;
-    /** Per arena id, its latest match; finished ones are dropped lazily. */
+    /** Per arena id, its match from opening until its scope has closed, so a finished match still owns the boards it has yet to take down. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
     /** @param lobby the lobby currently set */
@@ -71,7 +71,8 @@ public final class RunningMatches implements Listener {
 
     private LiveMatch open(Variant variant, Arena arena, Opening opening) {
         var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values, maps);
-        // Registered first so it runs last, once the match has let go of the arena.
+        // Registered first so they run last, once the match has let go of the arena and its players.
+        match.match().scope().register(() -> byArena.remove(arena.id(), match));
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {
             maps.setUp(arena);
@@ -164,13 +165,12 @@ public final class RunningMatches implements Listener {
 
     /** The matches that haven't finished, oldest first. */
     Collection<LiveMatch> running() {
-        byArena.values().removeIf(match -> match.match().isFinished());
-        return byArena.values();
+        return byArena.values().stream().filter(match -> !match.match().isFinished()).toList();
     }
 
-    /** Whether the board is a running match's own, not a player's real one. */
+    /** Whether the board is a match's own, not a player's real one; true until the match has taken it down, even once finished. */
     public boolean ownsBoard(Scoreboard board) {
-        return running().stream().anyMatch(match -> match.ownsBoard(board));
+        return byArena.values().stream().anyMatch(match -> match.ownsBoard(board));
     }
 
     /** The match the player is in. */

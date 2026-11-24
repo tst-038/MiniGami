@@ -15,6 +15,9 @@ import io.github.tst_038.minigami.api.reward.RewardReader;
 import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.itemrace.ItemRace;
 import io.github.tst_038.minigami.paper.arena.Arena;
@@ -69,9 +72,6 @@ import io.github.tst_038.minigami.paper.stats.StatsRecorder;
 import io.github.tst_038.minigami.paper.stats.PlaceholderGuide;
 import io.github.tst_038.minigami.paper.stats.StatsAdmin;
 import io.github.tst_038.minigami.paper.stats.StatsView;
-import io.github.tst_038.minigami.core.storage.Migrations;
-import io.github.tst_038.minigami.core.storage.SqliteStorage;
-import io.github.tst_038.minigami.core.storage.Storage;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -435,7 +435,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
             matches.disposeAll();
         }
         if (nights != null) {
-            nights.releaseAll();
+            nights.shutdown();
         }
         // After the matches, so the leave events of players they restore still fire to those who listen.
         getServer().getServicesManager().unregisterAll(this);
