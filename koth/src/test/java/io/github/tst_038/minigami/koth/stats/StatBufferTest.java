@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.koth.stats;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
@@ -38,14 +39,12 @@ class StatBufferTest {
     }
 
     @Test
-    void zerosAreLeftOut() {
+    void anAmountOfZeroOrLessIsRejected() {
         var buffer = new StatBuffer();
-        buffer.add(ALICE, KothStats.KILLS, 0);
-        buffer.add(ALICE, KothStats.DEATHS, 2);
-        buffer.add(ALICE, KothStats.DEATHS, -2);
-        buffer.add(BOB, KothStats.POINTS, 1);
 
-        assertEquals(Map.of(BOB, Map.of(KothStats.POINTS, 1L)), buffer.drain());
+        assertThrows(IllegalArgumentException.class, () -> buffer.add(ALICE, KothStats.KILLS, 0));
+        assertThrows(IllegalArgumentException.class, () -> buffer.add(ALICE, KothStats.KILLS, -2));
+        assertTrue(buffer.isEmpty());
     }
 
     @Test

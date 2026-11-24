@@ -10,20 +10,17 @@ public final class StatBuffer {
 
     private Map<UUID, Map<Stat, Long>> counted = new HashMap<>();
 
+    /** @param amount more than 0 */
     public void add(UUID player, Stat stat, long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("The amount must be more than 0, not " + amount);
+        }
         counted.computeIfAbsent(player, ignored -> new HashMap<>()).merge(stat, amount, Long::sum);
     }
 
-    /** @return everything counted since the last drain, which it then forgets; stats that add up to 0 and players left with none are left out */
+    /** @return everything counted since the last drain, which it then forgets */
     public Map<UUID, Map<Stat, Long>> drain() {
-        var drained = new HashMap<UUID, Map<Stat, Long>>();
-        counted.forEach((player, stats) -> {
-            var nonZero = new HashMap<>(stats);
-            nonZero.values().removeIf(amount -> amount == 0);
-            if (!nonZero.isEmpty()) {
-                drained.put(player, nonZero);
-            }
-        });
+        var drained = counted;
         counted = new HashMap<>();
         return drained;
     }
