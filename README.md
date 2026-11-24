@@ -341,7 +341,8 @@ afterwards. A player is **in a match** from the moment MiniGami takes them over,
 for a match (also in place), playing, eliminated, spectating, and the whole of a game night including the breaks
 between games. Anything you give a player in that span is lost, so check first or wait for the leave event.
 
-Depend on the plugin jar (`compileOnly`, for example `compileOnly(files("libs/MiniGami-<version>.jar"))`) and list
+Depend on the api (`compileOnly("io.github.tst-038:minigami-api:<version>")`, published to your local Maven
+repository with `./gradlew publishToMavenLocal`, see [Building from source](#building-from-source)) and list
 it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false, join-classpath: true }`
 (`join-classpath` lets your plugin see MiniGami's classes; or `softdepend: [MiniGami]` in `plugin.yml`), and guard your
 code for it being absent. The types are in `io.github.tst_038.minigami.api.presence`:
@@ -377,7 +378,8 @@ To read the same `saved:` items in your own config, the `io.github.tst_038.minig
 `MiniGamiSavedItems`, another Bukkit service: `find(name)` gives a copy of the item saved with `/mga loot save <name>`,
 `has(name)` whether there is one. Items can be saved and deleted while the server runs, so look one up when you need it.
 `io.github.tst_038.minigami.api.reward.RewardReader` reads reward entries (`{ saved: crate-key }`, `{ item: diamond }`,
-`{ command: ..., name: ... }`) into `Reward`s you can `give(player)`; create it with the service:
+`{ command: ..., name: ... }`) into `Reward`s you can `give(player)`, which throws a `RewardFailedException` when it
+couldn't be given (a saved item since deleted, a command that failed); create it with the service:
 `new RewardReader(getServer().getServicesManager().load(MiniGamiSavedItems.class))`.
 
 ### Keeping stats outside matches
@@ -408,6 +410,8 @@ Requires Java 25. The Gradle wrapper downloads everything else.
 ```
 
 The plugin jar ends up in `paper/build/libs/`. `./gradlew runServer` starts a local Paper test server with the plugin.
+`./gradlew publishToMavenLocal` publishes `minigami-api` and `minigami-core` for other plugins to compile against, and
+`minigami-plugin`, the plugin jar, for their test servers.
 
 The project is split into modules: `core` (game logic, no server code), `api` (what games and features build on),
 `features`, `stats`, `gamenight`, the `games/*`, and `paper` (the plugin itself).

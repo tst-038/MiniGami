@@ -1,5 +1,6 @@
 plugins {
     id("minigami.java-conventions")
+    id("minigami.published")
 }
 
 dependencies {
