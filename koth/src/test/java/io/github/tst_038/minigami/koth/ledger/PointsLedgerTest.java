@@ -28,7 +28,7 @@ class PointsLedgerTest {
     private final List<Storage> opened = new ArrayList<>();
 
     private PointsLedger open() {
-        var storage = new SqliteStorage(folder.resolve("koth.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
+        var storage = new SqliteStorage(folder.resolve("koth.db"), new Migrations(getClass().getClassLoader(), PointsLedger.MIGRATIONS), "Test storage", LOGGER);
         opened.add(storage);
         return new PointsLedger(storage);
     }

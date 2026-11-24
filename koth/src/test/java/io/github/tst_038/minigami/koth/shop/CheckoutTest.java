@@ -52,7 +52,7 @@ class CheckoutTest {
     @BeforeEach
     void open() throws IOException {
         LOGGER.setLevel(Level.OFF);
-        storage = new SqliteStorage(folder.resolve("koth.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
+        storage = new SqliteStorage(folder.resolve("koth.db"), new Migrations(getClass().getClassLoader(), PointsLedger.MIGRATIONS), "Test storage", LOGGER);
         // A direct executor stands in for the server thread.
         wallet = new Wallet(new PointsLedger(storage), new Balances(), Runnable::run, LOGGER);
         try (var in = getClass().getResourceAsStream("/messages/en.yml")) {

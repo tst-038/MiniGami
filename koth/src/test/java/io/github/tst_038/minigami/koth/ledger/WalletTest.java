@@ -26,7 +26,7 @@ class WalletTest {
 
     @BeforeEach
     void open() {
-        storage = new SqliteStorage(folder.resolve("koth.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
+        storage = new SqliteStorage(folder.resolve("koth.db"), new Migrations(getClass().getClassLoader(), PointsLedger.MIGRATIONS), "Test storage", LOGGER);
         // A direct executor stands in for the server thread, so a result is in the cache once its future completes.
         wallet = new Wallet(new PointsLedger(storage), new Balances(), Runnable::run, LOGGER);
     }

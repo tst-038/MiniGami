@@ -60,7 +60,7 @@ public final class KothPlugin extends JavaPlugin {
         }
         var files = new KothFiles(this);
         var messages = new Messages(files.bundledMessages(), getLogger());
-        storage = new SqliteStorage(getDataPath().resolve("koth.db"), new Migrations(getClass().getClassLoader(), "storage/koth/sqlite"), "MiniGamiKoth storage", getLogger());
+        storage = new SqliteStorage(getDataPath().resolve("koth.db"), new Migrations(getClass().getClassLoader(), PointsLedger.MIGRATIONS), "MiniGamiKoth storage", getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
         var wallet = new Wallet(new PointsLedger(storage), new Balances(), serverThread, getLogger());
         var buffer = new StatBuffer();

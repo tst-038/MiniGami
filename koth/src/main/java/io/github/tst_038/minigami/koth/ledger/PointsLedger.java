@@ -14,6 +14,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class PointsLedger {
 
+    /** Resource folder of the schema migrations, unique so MiniGami's own migrations on the joined classpath never shadow them. */
+    public static final String MIGRATIONS = "storage/koth/sqlite";
+
     private final Storage storage;
 
     public PointsLedger(Storage storage) {
