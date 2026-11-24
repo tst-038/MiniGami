@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.core.storage.Migrations;
 import io.github.tst_038.minigami.core.storage.SqliteStorage;
 import io.github.tst_038.minigami.core.storage.Storage;
+import io.github.tst_038.minigami.koth.command.KothCommands;
 import io.github.tst_038.minigami.koth.config.KothConfigLoader;
 import io.github.tst_038.minigami.koth.config.KothFiles;
 import io.github.tst_038.minigami.koth.ledger.Balances;
@@ -26,18 +27,26 @@ import io.github.tst_038.minigami.koth.stats.StatBuffer;
 import io.github.tst_038.minigami.koth.status.KothPlaceholders;
 import io.github.tst_038.minigami.koth.world.KothWorld;
 import io.github.tst_038.minigami.koth.world.RespawnListener;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.RandomGenerator;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /** King of the Hill as a plugin of its own, on top of MiniGami's stats, saved items and players. */
 public final class KothPlugin extends JavaPlugin {
 
     private final AtomicInteger configLoads = new AtomicInteger();
+    /** Who asked for a load that hasn't finished; the newest load answers them all, also those of loads it overtook. */
+    private final Queue<Audience> requesters = new ConcurrentLinkedQueue<>();
     private Storage storage;
     private KothRuntime runtime;
     private KothSidebar sidebar;
@@ -80,11 +89,23 @@ public final class KothPlugin extends JavaPlugin {
             runtime.second();
             sidebar.update(runtime.config(), runtime.status(), LocalDateTime.now());
         }, 20, 20);
-        loadConfig(files, messages);
+        var commands = new KothCommands(getServer(), messages, runtime, wallet, players, this::shop, requester -> loadConfig(files, messages, requester), serverThread, getLogger());
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
+            event.registrar().register(commands.adminRoot(), "Manage King of the Hill");
+        });
+        loadConfig(files, messages, null);
     }
 
-    /** Reads the files off the server thread, then applies them on it, unless a newer load has started since. */
-    private void loadConfig(KothFiles files, Messages messages) {
+    /**
+     * Reads the files off the server thread, then applies them on it, unless a newer load has started since.
+     *
+     * @param requester who is told how it went, if anyone; the newest load answers everyone waiting
+     */
+    private void loadConfig(KothFiles files, Messages messages, Audience requester) {
+        if (requester != null) {
+            requesters.add(requester);
+        }
         var load = configLoads.incrementAndGet();
         getServer().getAsyncScheduler().runNow(this, task -> {
             var problems = new ArrayList<ConfigProblem>();
@@ -112,8 +133,32 @@ public final class KothPlugin extends JavaPlugin {
                 if (loadedShop.shop().isEmpty()) {
                     getLogger().warning("KOTH has no usable shop.yml yet, so the shop stays closed or keeps the one it had.");
                 }
+                tell(drain(), messages, problems, loaded.config().isPresent(), loadedShop.shop().isPresent());
             });
         });
+    }
+
+    private List<Audience> drain() {
+        var waiting = new ArrayList<Audience>();
+        for (Audience audience; (audience = requesters.poll()) != null; ) {
+            waiting.add(audience);
+        }
+        return waiting;
+    }
+
+    private void tell(List<Audience> waiting, Messages messages, List<ConfigProblem> problems, boolean configUsed, boolean shopUsed) {
+        for (Audience audience : waiting) {
+            problems.forEach(problem -> messages.send(audience, "admin.reload-problem", Placeholder.unparsed("problem", problem.toString())));
+            if (!configUsed) {
+                messages.send(audience, "admin.reload-kept", Placeholder.unparsed("file", KothFiles.CONFIG));
+            }
+            if (!shopUsed) {
+                messages.send(audience, "admin.reload-kept", Placeholder.unparsed("file", KothFiles.SHOP));
+            }
+            if (configUsed && shopUsed) {
+                messages.send(audience, "admin.reload-done");
+            }
+        }
     }
 
     @Override

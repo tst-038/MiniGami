@@ -37,7 +37,12 @@ public final class Wallet {
 
     /** Gives the player points. A failure is logged, as nobody waits for it. */
     public void credit(UUID player, long amount) {
-        logged(refreshed(ledger.add(player, amount), player), "give " + amount + " points to " + player);
+        logged(give(player, amount), "give " + amount + " points to " + player);
+    }
+
+    /** @return the player's points now, after giving them that many */
+    public CompletableFuture<Long> give(UUID player, long amount) {
+        return refreshed(ledger.add(player, amount), player);
     }
 
     /** @return the player's points now, or empty if they had too few and nothing was taken */

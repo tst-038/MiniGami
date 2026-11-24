@@ -3,19 +3,16 @@ package io.github.tst_038.minigami.koth.sidebar;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.koth.config.KothConfig;
-import io.github.tst_038.minigami.koth.status.KothPlaceholders;
+import io.github.tst_038.minigami.koth.message.StatusResolver;
 import io.github.tst_038.minigami.koth.status.KothStatus;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Criteria;
@@ -53,7 +50,7 @@ public final class KothSidebar {
             return;
         }
         var lines = config.get().sidebar();
-        var resolver = resolver(status, now);
+        var resolver = StatusResolver.of(messages, status, now);
         draw(messages.parse(lines.title(), resolver), (status.running().isPresent() ? lines.active() : lines.inactive()).stream()
                 .map(text -> messages.parse(text, resolver)).toList());
         var world = config.get().world();
@@ -71,16 +68,6 @@ public final class KothSidebar {
     public void shutdown() {
         server.getOnlinePlayers().forEach(this::giveBack);
         remembered.clear();
-    }
-
-    /** The values as placeholders, with a text of its own for no holder and no start planned. */
-    private TagResolver resolver(KothStatus status, LocalDateTime now) {
-        var resolvers = new ArrayList<TagResolver>();
-        KothPlaceholders.values(status, now).forEach((name, text) -> {
-            var fallback = name.equals("holder") ? "placeholder.no-holder" : name.equals("next_start") ? "placeholder.never" : null;
-            resolvers.add(text.isEmpty() && fallback != null ? Placeholder.component(name, messages.render(fallback)) : Placeholder.parsed(name, text));
-        });
-        return TagResolver.resolver(resolvers);
     }
 
     private void draw(Component title, List<Component> lines) {

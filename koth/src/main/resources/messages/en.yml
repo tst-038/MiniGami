@@ -25,6 +25,7 @@ balance:
   loading: "%prefix%<gray>Loading your points, try again."
 join:
   in-match: "%prefix%<red>Leave your match first."
+  done: "%prefix%<gray>Off you go."
 shop:
   cost-line: "<gray>Cost: <gold>%cost%</gold> points"
   owned-line: "<green>You have this already"
@@ -51,6 +52,10 @@ admin:
   points-taken: "%prefix%<green>Took %amount% points from <white>%player%</white>; they have <gold>%points%</gold>."
   points-shown: "%prefix%<white>%player%</white> <gray>has <gold>%points%</gold> points."
   unknown-player: "%prefix%<red>No player called <white>%player%</white> has been here."
+  state-running: "<green>running"
+  state-idle: "<gray>idle"
+  loaded: "<green>ok"
+  not-loaded: "<red>not loaded"
   storage-failed: "%prefix%<red>The points storage failed; see the log."
   # The status lines: %state%, %holder%, %taker%, %progress%, %capture%, %next_start%, %online%, %config%, %shop%
   status: "%prefix%<gray>%state% <dark_gray>|</dark_gray> holder %holder% <dark_gray>|</dark_gray> taking: %taker% %progress%/%capture%s <dark_gray>|</dark_gray> next %next_start% <dark_gray>|</dark_gray> online %online% <dark_gray>|</dark_gray> config %config%, shop %shop%"

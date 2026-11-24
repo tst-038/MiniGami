@@ -55,6 +55,14 @@ class WalletTest {
     }
 
     @Test
+    void givingReturnsAndCachesTheNewBalance() {
+        wallet.give(ALICE, 4).join();
+
+        assertEquals(9, wallet.give(ALICE, 5).join());
+        assertEquals(OptionalLong.of(9), wallet.balances().of(ALICE));
+    }
+
+    @Test
     void aFailedSpendLeavesTheCache() {
         wallet.credit(ALICE, 3);
         wallet.balance(ALICE).join();

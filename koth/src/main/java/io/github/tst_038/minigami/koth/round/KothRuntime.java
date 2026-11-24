@@ -94,18 +94,29 @@ public final class KothRuntime {
                 flush();
             }
         }
+        publish(now);
+    }
+
+    private void publish(LocalDateTime now) {
         status = new KothStatus(activations.running(), Optional.ofNullable(round).flatMap(Round::holder), Optional.ofNullable(round).flatMap(Round::holderName),
                 Optional.ofNullable(round).flatMap(Round::taker), round == null ? 0 : round.progress(), activations.nextStart(now));
     }
 
     /** Staff start, for the given length or the timetable's. @return false if KOTH isn't set up or is already running */
     public boolean forceStart(Optional<Duration> length) {
-        return config != null && activations.forceStart(LocalDateTime.now(clock), length).map(this::handle).isPresent();
+        return forced(config != null ? activations.forceStart(LocalDateTime.now(clock), length) : Optional.empty());
     }
 
     /** Staff stop. @return false if KOTH isn't set up or isn't running */
     public boolean forceStop() {
-        return config != null && activations.forceStop(LocalDateTime.now(clock)).map(this::handle).isPresent();
+        return forced(config != null ? activations.forceStop(LocalDateTime.now(clock)) : Optional.empty());
+    }
+
+    /** Acts on a staff change at once, and shows it without waiting for the next second. */
+    private boolean forced(Optional<ActivationEvent> event) {
+        event.ifPresent(this::handle);
+        event.ifPresent(ignored -> publish(LocalDateTime.now(clock)));
+        return event.isPresent();
     }
 
     /** The plugin is going down: ends the round quietly and hands over the last stats. Call while MiniGami is still enabled. */
