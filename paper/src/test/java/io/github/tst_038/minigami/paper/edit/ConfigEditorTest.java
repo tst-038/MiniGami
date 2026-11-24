@@ -1,7 +1,9 @@
 package io.github.tst_038.minigami.paper.edit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -30,9 +32,21 @@ class ConfigEditorTest {
     }
 
     @Test
-    void legacyColourCodesBecomeMiniMessage() {
-        assertEquals("<red><bold>Yuletide Crate", ConfigEditor.parse("&c&lYuletide Crate"));
-        assertEquals("<gold>Game Night", ConfigEditor.parse("\"&6Game Night\""));
+    void aTextMayStartWithAColourCode() {
+        assertEquals("&c&lYuletide Crate", ConfigEditor.parse("&c&lYuletide Crate"));
+    }
+
+    @Test
+    void legacyColourCodesBecomeMiniMessageInWhatPlayersRead() {
+        assertTrue(ConfigEditor.isDisplayText("name"));
+        assertTrue(ConfigEditor.isDisplayText("variants.snowy.name"));
+        assertTrue(ConfigEditor.isDisplayText("hud.sidebar.default"));
+        assertTrue(ConfigEditor.isDisplayText("variants.snowy.hud.boss-bar.text.fighting"));
+        assertTrue(ConfigEditor.isDisplayText("messages.the-wall.dropped"));
+        assertFalse(ConfigEditor.isDisplayText("rewards.first.command"));
+        assertFalse(ConfigEditor.isDisplayText("names"));
+        assertEquals(List.of("<red>A", "", "<aqua>B"), ConfigEditor.withColours(List.of("&cA", "", "&bB")));
+        assertEquals(Map.of("title", "<gold>MG", "size", 3), ConfigEditor.withColours(Map.of("title", "&6MG", "size", 3)));
     }
 
     @Test
