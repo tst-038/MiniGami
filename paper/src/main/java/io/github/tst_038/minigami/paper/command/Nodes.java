@@ -9,6 +9,7 @@ import io.github.tst_038.minigami.paper.night.Nights;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,6 +60,17 @@ final class Nodes {
     /** The online player named by the {@code player} argument. */
     static Player player(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return context.getArgument("player", PlayerSelectorArgumentResolver.class).resolve(context.getSource()).getFirst();
+    }
+
+    /** The players a {@code players} argument names, one by name or any number by a selector such as {@code @a}. */
+    static List<Player> players(CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException {
+        return context.getArgument(argument, PlayerSelectorArgumentResolver.class).resolve(context.getSource());
+    }
+
+    /** Whether the argument was typed as a selector such as {@code @a[distance=..20]} rather than a player's name. */
+    static <S> boolean isSelector(CommandContext<S> context, String argument) {
+        return context.getNodes().stream().filter(node -> node.getNode().getName().equals(argument)).findFirst()
+                .map(node -> node.getRange().get(context.getInput()).startsWith("@")).orElse(false);
     }
 
     static SuggestionProvider<CommandSourceStack> suggest(Supplier<? extends Collection<String>> ids) {

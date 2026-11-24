@@ -6,7 +6,9 @@ import static io.github.tst_038.minigami.paper.command.Nodes.HOST;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
+import static io.github.tst_038.minigami.paper.command.Nodes.isSelector;
 import static io.github.tst_038.minigami.paper.command.Nodes.player;
+import static io.github.tst_038.minigami.paper.command.Nodes.players;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
@@ -33,7 +35,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 
 /**
- * {@code /mg night join|leave|standings} for players, and {@code /mga night} for hosts {@code add <player>|all},
+ * {@code /mg night join|leave|standings} for players, and {@code /mga night} for hosts {@code add <player|selector>},
  * {@code start <night>|begin|next|skip|pause|resume|end|kick <player>|team <player> <team>}. For admins, the
  * templates: {@code list|create <id> <game> [name]|info <id>|delete <id>} and {@code edit <id> set|unset|playlist ...}, where
  * {@code playlist} is {@code list|add <game> [variant]|remove <n>|move <n> <to>|points <n> <place> <points>|taking-part <n> <points>}.
@@ -57,10 +59,14 @@ final class NightCommands {
         return Commands.literal("night")
                 .executes(help)
                 .then(Commands.literal("add").requires(HOST)
-                        // A literal wins over the argument, so a player called "all" is added by a selector such as @p[name=all].
-                        .then(Commands.literal("all").executes(bySender((sender, context) -> nights.addAll(sender))))
-                        .then(Commands.argument("player", ArgumentTypes.player())
-                                .executes(bySender((sender, context) -> nights.add(sender, player(context))))))
+                        .then(Commands.argument("players", ArgumentTypes.players())
+                                .executes(bySender((sender, context) -> {
+                                    if (isSelector(context, "players")) {
+                                        nights.addSelected(sender, players(context, "players"));
+                                    } else {
+                                        nights.add(sender, players(context, "players").getFirst());
+                                    }
+                                }))))
                 .then(Commands.literal("start").requires(HOST)
                         .then(Commands.argument("night", StringArgumentType.word())
                                 .suggests(suggest(nights::templateIds))

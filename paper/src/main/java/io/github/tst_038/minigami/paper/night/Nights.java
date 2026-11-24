@@ -229,21 +229,21 @@ public final class Nights implements Listener {
     }
 
     /**
-     * Signs up every online player who may join the night, except staff such as the host and admins, who run it rather than
-     * play; one of them who plays joins themselves.
+     * Signs up the players a selector such as {@code @a} picked who may join the night, except staff such as the host and
+     * admins, who run it rather than play; one of them who plays joins themselves, or is added by name.
      */
-    public void addAll(CommandSender host) {
+    public void addSelected(CommandSender host, Collection<? extends Player> selected) {
         if (!hasNight(host)) {
             return;
         }
         var night = active.night;
         var permission = PlayPermissions.night(night.template().id());
-        var adding = plugin.getServer().getOnlinePlayers().stream()
+        var adding = selected.stream()
                 .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !isStaff(player))
                 .toList();
         adding.forEach(this::signUp);
         publish();
-        messages.send(host, "night.added-all", Formatter.number("count", adding.size()));
+        messages.send(host, "night.added-selected", Formatter.number("count", adding.size()), Formatter.number("skipped", selected.size() - adding.size()));
     }
 
     private static boolean isStaff(Player player) {
