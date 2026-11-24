@@ -14,11 +14,15 @@ import io.github.tst_038.minigami.koth.ledger.Balances;
 import io.github.tst_038.minigami.koth.ledger.PointsLedger;
 import io.github.tst_038.minigami.koth.ledger.Wallet;
 import io.github.tst_038.minigami.koth.round.CombatListener;
+import io.github.tst_038.minigami.koth.placeholder.KothExpansion;
 import io.github.tst_038.minigami.koth.round.KothRuntime;
+import io.github.tst_038.minigami.koth.sidebar.KothSidebar;
 import io.github.tst_038.minigami.koth.stats.StatBuffer;
+import io.github.tst_038.minigami.koth.status.KothPlaceholders;
 import io.github.tst_038.minigami.koth.world.KothWorld;
 import io.github.tst_038.minigami.koth.world.RespawnListener;
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +35,7 @@ public final class KothPlugin extends JavaPlugin {
     private final AtomicInteger configLoads = new AtomicInteger();
     private Storage storage;
     private KothRuntime runtime;
+    private KothSidebar sidebar;
 
     @Override
     public void onEnable() {
@@ -43,7 +48,7 @@ public final class KothPlugin extends JavaPlugin {
         }
         var files = new KothFiles(this);
         var messages = new Messages(files.bundledMessages(), getLogger());
-        storage = new SqliteStorage(getDataPath().resolve("koth.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "MiniGamiKoth storage", getLogger());
+        storage = new SqliteStorage(getDataPath().resolve("koth.db"), new Migrations(getClass().getClassLoader(), "storage/koth/sqlite"), "MiniGamiKoth storage", getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
         var wallet = new Wallet(new PointsLedger(storage), new Balances(), serverThread, getLogger());
         var buffer = new StatBuffer();
@@ -53,7 +58,14 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);
         getServer().getPluginManager().registerEvents(new RespawnListener(runtime::config), this);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
-        getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> runtime.second(), 20, 20);
+        sidebar = new KothSidebar(getServer(), messages, players);
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), Clock.systemDefaultZone()));
+        }
+        getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> {
+            runtime.second();
+            sidebar.update(runtime.config(), runtime.status(), LocalDateTime.now());
+        }, 20, 20);
         loadConfig(files, messages);
     }
 
@@ -88,6 +100,9 @@ public final class KothPlugin extends JavaPlugin {
         // First, while MiniGami is still enabled to take the last stats.
         if (runtime != null) {
             runtime.shutdown();
+        }
+        if (sidebar != null) {
+            sidebar.shutdown();
         }
         if (storage != null) {
             storage.close();
