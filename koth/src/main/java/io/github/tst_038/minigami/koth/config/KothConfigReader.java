@@ -19,6 +19,7 @@ public final class KothConfigReader {
     /** The most blocks the colour box may cover; it is scanned and repainted on every capture. */
     static final int MAX_COLOUR_BLOCKS = 32_768;
     private static final int MAX_SECONDS = 3600;
+    private static final int MAX_SIDEBAR_LINES = 15;
 
     private KothConfigReader() {
     }
@@ -47,6 +48,13 @@ public final class KothConfigReader {
         var scoring = new Scoring(scoringSection.integer("points", 1, Integer.MAX_VALUE), scoringSection.integer("every-seconds", 1, MAX_SECONDS));
         var sidebar = root.section("sidebar");
         var lines = new SidebarLines(sidebar.string("title"), sidebar.strings("inactive"), sidebar.strings("active"));
+        // The client shows no more than 15 lines of a sidebar.
+        if (lines.inactive().size() > MAX_SIDEBAR_LINES) {
+            sidebar.problem("inactive", "has more than " + MAX_SIDEBAR_LINES + " lines");
+        }
+        if (lines.active().size() > MAX_SIDEBAR_LINES) {
+            sidebar.problem("active", "has more than " + MAX_SIDEBAR_LINES + " lines");
+        }
 
         root.check();
         // check() passed, so nothing above went wrong and the timetable is there.

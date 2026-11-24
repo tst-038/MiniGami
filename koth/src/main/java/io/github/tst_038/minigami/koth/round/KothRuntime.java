@@ -103,7 +103,7 @@ public final class KothRuntime {
     }
 
     private void publish(LocalDateTime now) {
-        status = new KothStatus(activations.running(), Optional.ofNullable(round).flatMap(Round::holder), Optional.ofNullable(round).flatMap(Round::holderName),
+        status = new KothStatus(activations.running(), Optional.ofNullable(round).flatMap(Round::holderName),
                 Optional.ofNullable(round).flatMap(Round::taker), round == null ? 0 : round.progress(), activations.nextStart(now));
     }
 
@@ -133,14 +133,13 @@ public final class KothRuntime {
         flush();
     }
 
-    private Object handle(ActivationEvent event) {
+    private void handle(ActivationEvent event) {
         switch (event) {
             case ActivationEvent.Warning warning -> announcer.warning(warning.before(), warning.start());
             case ActivationEvent.Skipped skipped -> announcer.skipped(skipped.refusal());
             case ActivationEvent.Started started -> begin(started);
-            case ActivationEvent.Ended ended -> finish();
+            case ActivationEvent.Ended ignored -> finish();
         }
-        return event;
     }
 
     private void begin(ActivationEvent.Started started) {

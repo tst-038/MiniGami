@@ -40,6 +40,8 @@ final class Round {
             hill.drop();
             ground.dropped(holderName.orElseGet(() -> ground.nameOf(holder)));
             holderName = Optional.empty();
+            colour = Optional.empty();
+            ground.paint(neutral);
         });
         var tick = hill.tick(ground.onPoint());
         tick.captured().ifPresent(player -> {

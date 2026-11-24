@@ -25,12 +25,12 @@ class KothPlaceholdersTest {
     }
 
     private static KothStatus active() {
-        return new KothStatus(Optional.of(new Window(NOW.minusMinutes(5), NOW.plusMinutes(10))), Optional.of(ALICE), Optional.of("Alice"), Optional.empty(), 0,
+        return new KothStatus(Optional.of(new Window(NOW.minusMinutes(5), NOW.plusMinutes(10))), Optional.of("Alice"), Optional.empty(), 0,
                 Optional.of(NOW.plusHours(2)));
     }
 
     private static KothStatus idle() {
-        return new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusMinutes(90)));
+        return new KothStatus(Optional.empty(), Optional.empty(), Optional.empty(), 0, Optional.of(NOW.plusMinutes(90)));
     }
 
     @Test

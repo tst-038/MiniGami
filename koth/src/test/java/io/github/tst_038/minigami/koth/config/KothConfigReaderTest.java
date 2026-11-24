@@ -135,6 +135,14 @@ class KothConfigReaderTest {
     }
 
     @Test
+    void moreSidebarLinesThanTheClientShowsIsAProblem() {
+        var line = "    - \"<white>Time left: <yellow>%time_left%\"";
+        var yaml = bundledWith(line, (line + "\n").repeat(15).stripTrailing());
+
+        assertEquals(List.of("config.yml: sidebar.active: has more than 15 lines"), problems(yaml));
+    }
+
+    @Test
     void scoringOutOfRangeIsAProblemNotAnException() {
         assertEquals(List.of("config.yml: scoring.every-seconds: must be between 1 and 3600"),
                 problems(bundledWith("every-seconds: 1", "every-seconds: 0")));

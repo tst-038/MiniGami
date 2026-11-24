@@ -16,6 +16,7 @@ import io.github.tst_038.minigami.koth.shop.Shop;
 import io.github.tst_038.minigami.koth.shop.ShopMenu;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -60,11 +61,12 @@ public final class KothCommands {
     private final MiniGamiPlayers players;
     private final Supplier<Shop> shop;
     private final Consumer<Audience> reload;
+    private final Clock clock;
     private final Executor serverThread;
     private final Logger logger;
 
     public KothCommands(Server server, Messages messages, KothRuntime runtime, Wallet wallet, MiniGamiPlayers players, Supplier<Shop> shop,
-            Consumer<Audience> reload, Executor serverThread, Logger logger) {
+            Consumer<Audience> reload, Clock clock, Executor serverThread, Logger logger) {
         this.server = server;
         this.messages = messages;
         this.runtime = runtime;
@@ -72,6 +74,7 @@ public final class KothCommands {
         this.players = players;
         this.shop = shop;
         this.reload = reload;
+        this.clock = clock;
         this.serverThread = serverThread;
         this.logger = logger;
     }
@@ -92,7 +95,7 @@ public final class KothCommands {
                 .then(Commands.literal("reload").executes(bySender(reload::accept)))
                 .then(Commands.literal("start")
                         .executes(bySender(sender -> start(sender, Optional.empty())))
-                        .then(Commands.argument("minutes", IntegerArgumentType.integer(1))
+                        .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 10080))
                                 .executes(context -> {
                                     start(context.getSource().getSender(), Optional.of(Duration.ofMinutes(IntegerArgumentType.getInteger(context, "minutes"))));
                                     return Command.SINGLE_SUCCESS;
@@ -113,7 +116,7 @@ public final class KothCommands {
             messages.send(sender, "status.not-configured");
         } else {
             var status = runtime.status();
-            messages.send(sender, status.running().isPresent() ? "status.active" : "status.inactive", StatusResolver.of(messages, status, LocalDateTime.now()));
+            messages.send(sender, status.running().isPresent() ? "status.active" : "status.inactive", StatusResolver.of(messages, status, LocalDateTime.now(clock)));
         }
     }
 
@@ -177,7 +180,7 @@ public final class KothCommands {
         var status = runtime.status();
         var config = runtime.config();
         var taker = status.taker().map(server::getPlayer).map(Player::getName);
-        messages.send(sender, "admin.status", StatusResolver.of(messages, status, LocalDateTime.now()),
+        messages.send(sender, "admin.status", StatusResolver.of(messages, status, LocalDateTime.now(clock)),
                 Placeholder.component("state", messages.render(status.running().isPresent() ? "admin.state-running" : "admin.state-idle")),
                 Placeholder.component("taker", taker.isPresent() ? Component.text(taker.get()) : messages.render("placeholder.no-holder")),
                 Placeholder.unparsed("progress", String.valueOf(status.progress())),
@@ -191,7 +194,8 @@ public final class KothCommands {
         var sender = context.getSource().getSender();
         var name = StringArgumentType.getString(context, "player");
         // From the user cache only, so it never blocks.
-        OfflinePlayer target = server.getPlayerExact(name) != null ? server.getPlayerExact(name) : server.getOfflinePlayerIfCached(name);
+        Player online = server.getPlayerExact(name);
+        OfflinePlayer target = online != null ? online : server.getOfflinePlayerIfCached(name);
         if (target == null) {
             messages.send(sender, "admin.unknown-player", Placeholder.unparsed("player", name));
             return Command.SINGLE_SUCCESS;
@@ -225,7 +229,7 @@ public final class KothCommands {
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, Long> amount() {
-        return Commands.argument("amount", LongArgumentType.longArg(1));
+        return Commands.argument("amount", LongArgumentType.longArg(1, Integer.MAX_VALUE));
     }
 
     private static long amountOf(CommandContext<CommandSourceStack> context) {

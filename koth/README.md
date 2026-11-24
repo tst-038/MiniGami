@@ -81,6 +81,10 @@ schedule:
   warn-minutes: [2]
 ```
 
+Times are the server's local wall-clock time, like MiniGami's own cron schedules. When the clocks change for
+daylight saving time, a warning can be given twice or skipped. To avoid that, run the server in a time zone without
+daylight saving time, such as UTC.
+
 ## shop.yml
 
 The shop is a chest menu. Each entry has a `slot`, a `cost` in points, an `icon`, and `rewards`, all of which are

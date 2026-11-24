@@ -52,13 +52,13 @@ public final class Activations {
     public List<ActivationEvent> tick(LocalDateTime now, Situation situation) {
         var events = new ArrayList<ActivationEvent>();
         running.filter(window -> !now.isBefore(window.end())).ifPresent(window -> {
-            events.add(new ActivationEvent.Ended(window, EndReason.TIME_UP));
+            events.add(new ActivationEvent.Ended(window));
             running = Optional.empty();
         });
         if (running.isEmpty()) {
             plan.timetable().current(now).filter(window -> !handled.equals(Optional.of(window.start()))).ifPresent(window -> {
                 handled = Optional.of(window.start());
-                var event = window.start().isBefore(createdAt) ? started(window, false) : startOrSkip(window, situation);
+                var event = window.start().isBefore(createdAt) ? started(window) : startOrSkip(window, situation);
                 if (event instanceof ActivationEvent.Skipped) {
                     onDismissed.accept(window.start());
                 }
@@ -86,7 +86,7 @@ public final class Activations {
         }
         // The forced run stands in for any window open right now.
         plan.timetable().current(now).ifPresent(window -> handled = Optional.of(window.start()));
-        return Optional.of(started(new Window(now, now.plus(length.orElse(plan.timetable().length()))), true));
+        return Optional.of(started(new Window(now, now.plus(length.orElse(plan.timetable().length())))));
     }
 
     /** Staff stop. The window open right now is not started again. Empty if nothing is running. */
@@ -100,7 +100,7 @@ public final class Activations {
             handled = Optional.of(open.start());
             onDismissed.accept(open.start());
         });
-        return Optional.of(new ActivationEvent.Ended(window.get(), EndReason.STOPPED));
+        return Optional.of(new ActivationEvent.Ended(window.get()));
     }
 
     public Optional<Window> running() {
@@ -116,12 +116,12 @@ public final class Activations {
                 .map(restriction -> restriction.check(situation))
                 .flatMap(Optional::stream)
                 .findFirst()
-                .<ActivationEvent>map(refusal -> new ActivationEvent.Skipped(window, refusal))
-                .orElseGet(() -> started(window, false));
+                .<ActivationEvent>map(refusal -> new ActivationEvent.Skipped(refusal))
+                .orElseGet(() -> started(window));
     }
 
-    private ActivationEvent started(Window window, boolean forced) {
+    private ActivationEvent started(Window window) {
         running = Optional.of(window);
-        return new ActivationEvent.Started(window, forced);
+        return new ActivationEvent.Started(window);
     }
 }

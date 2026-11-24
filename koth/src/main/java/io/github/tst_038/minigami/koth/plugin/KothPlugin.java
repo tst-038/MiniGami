@@ -78,9 +78,10 @@ public final class KothPlugin extends JavaPlugin {
         storage = new SqliteStorage(getDataPath().resolve("koth.db"), new Migrations(getClass().getClassLoader(), PointsLedger.MIGRATIONS), "MiniGamiKoth storage", getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
         var wallet = new Wallet(new PointsLedger(storage), new Balances(), serverThread, getLogger());
+        var clock = Clock.systemDefaultZone();
         var buffer = new StatBuffer();
         var handledWindows = new HandledWindows(storage);
-        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, buffer, Clock.systemDefaultZone(), RandomGenerator.getDefault(),
+        runtime = new KothRuntime(getServer(), messages, wallet, stats, players, buffer, clock, RandomGenerator.getDefault(),
                 lastDismissed(handledWindows), start -> handledWindows.remember(start).exceptionally(failure -> {
                     getLogger().log(Level.WARNING, "Could not remember that the window of " + start + " was skipped or stopped", failure);
                     return null;
@@ -92,15 +93,15 @@ public final class KothPlugin extends JavaPlugin {
         rewards = new RewardReader(savedItems, getLogger());
         getServer().getPluginManager().registerEvents(new ShopListener(new Checkout(getServer(), messages, wallet, players, serverThread, getLogger())), this);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
-        sidebar = new KothSidebar(getServer(), messages, players);
+        sidebar = new KothSidebar(getServer(), messages, players, clock);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            unregisterPlaceholders = KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), Clock.systemDefaultZone()));
+            unregisterPlaceholders = KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), clock));
         }
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> {
             runtime.second();
-            sidebar.update(runtime.config(), runtime.status(), LocalDateTime.now());
+            sidebar.update(runtime.config(), runtime.status());
         }, 20, 20);
-        var commands = new KothCommands(getServer(), messages, runtime, wallet, players, this::shop, requester -> loadConfig(files, messages, requester), serverThread, getLogger());
+        var commands = new KothCommands(getServer(), messages, runtime, wallet, players, this::shop, requester -> loadConfig(files, messages, requester), clock, serverThread, getLogger());
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(commands.playerRoot(), "King of the Hill: status, shop, points and going there");
             event.registrar().register(commands.adminRoot(), "Manage King of the Hill");

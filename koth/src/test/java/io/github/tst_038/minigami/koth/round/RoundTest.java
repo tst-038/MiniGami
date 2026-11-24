@@ -130,5 +130,7 @@ class RoundTest {
         assertEquals(Optional.empty(), round.holderName());
         assertEquals(List.of("captured Alice", "dropped Alice"), ground.told);
         assertEquals(0, ground.credited);
+        assertEquals(2, ground.painted.size());
+        assertEquals(Dye.WHITE, ground.painted.get(1));
     }
 }

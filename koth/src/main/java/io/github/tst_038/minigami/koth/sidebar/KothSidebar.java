@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.koth.config.KothConfig;
 import io.github.tst_038.minigami.koth.message.StatusResolver;
 import io.github.tst_038.minigami.koth.status.KothStatus;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -32,25 +33,27 @@ public final class KothSidebar {
     private final Server server;
     private final Messages messages;
     private final MiniGamiPlayers players;
+    private final Clock clock;
     /** What each player with our board had before it. */
     private final Map<UUID, Scoreboard> remembered = new HashMap<>();
     private Scoreboard board;
     private int lineCount = -1;
 
-    public KothSidebar(Server server, Messages messages, MiniGamiPlayers players) {
+    public KothSidebar(Server server, Messages messages, MiniGamiPlayers players, Clock clock) {
         this.server = server;
         this.messages = messages;
         this.players = players;
+        this.clock = clock;
     }
 
     /** Refreshes the lines, and gives the board to those who should have it and takes it from those who shouldn't. */
-    public void update(Optional<KothConfig> config, KothStatus status, LocalDateTime now) {
+    public void update(Optional<KothConfig> config, KothStatus status) {
         if (config.isEmpty()) {
             shutdown();
             return;
         }
         var lines = config.get().sidebar();
-        var resolver = StatusResolver.of(messages, status, now);
+        var resolver = StatusResolver.of(messages, status, LocalDateTime.now(clock));
         draw(messages.parse(lines.title(), resolver), (status.running().isPresent() ? lines.active() : lines.inactive()).stream()
                 .map(text -> messages.parse(text, resolver)).toList());
         var world = config.get().world();

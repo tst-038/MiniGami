@@ -18,7 +18,7 @@ public final class StatusResolver {
         var resolvers = new ArrayList<TagResolver>();
         KothPlaceholders.values(status, now).forEach((name, text) -> {
             var fallback = name.equals("holder") ? "placeholder.no-holder" : name.equals("next_start") ? "placeholder.never" : null;
-            resolvers.add(text.isEmpty() && fallback != null ? Placeholder.component(name, messages.render(fallback)) : Placeholder.parsed(name, text));
+            resolvers.add(text.isEmpty() && fallback != null ? Placeholder.component(name, messages.render(fallback)) : name.equals("holder") ? Placeholder.unparsed(name, text) : Placeholder.parsed(name, text));
         });
         return TagResolver.resolver(resolvers);
     }

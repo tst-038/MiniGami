@@ -11,15 +11,15 @@ public sealed interface ActivationEvent {
     record Warning(Duration before, LocalDateTime start) implements ActivationEvent {
     }
 
-    /** KOTH should begin now and run until the window ends. {@code forced} is true for a staff start. */
-    record Started(Window window, boolean forced) implements ActivationEvent {
+    /** KOTH should begin now and run until the window ends. */
+    record Started(Window window) implements ActivationEvent {
     }
 
     /** A window came and a restriction said no, so it won't run. */
-    record Skipped(Window window, Refusal refusal) implements ActivationEvent {
+    record Skipped(Refusal refusal) implements ActivationEvent {
     }
 
     /** KOTH should end now. */
-    record Ended(Window window, EndReason reason) implements ActivationEvent {
+    record Ended(Window window) implements ActivationEvent {
     }
 }

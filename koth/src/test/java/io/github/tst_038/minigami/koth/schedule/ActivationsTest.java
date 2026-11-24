@@ -61,10 +61,10 @@ class ActivationsTest {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
 
         assertEquals(List.of(), activations.tick(at(2, 19, 59, 59), CROWDED));
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), activations.tick(at(2, 20, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 0, 0), CROWDED));
         assertEquals(Optional.of(window(2, 20, 0, 60)), activations.running());
         assertEquals(List.of(), activations.tick(at(2, 20, 59, 59), CROWDED));
-        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60), EndReason.TIME_UP)), activations.tick(at(2, 21, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60))), activations.tick(at(2, 21, 0, 0), CROWDED));
         assertEquals(Optional.empty(), activations.running());
         assertEquals(List.of(), activations.tick(at(2, 21, 0, 1), CROWDED));
     }
@@ -73,7 +73,7 @@ class ActivationsTest {
     void aTickThatComesLateStillStartsTheWindow() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
 
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), activations.tick(at(2, 20, 0, 5), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 0, 5), CROWDED));
     }
 
     @Test
@@ -127,7 +127,7 @@ class ActivationsTest {
     void aRefusedWindowIsSkippedWithTheReason() {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
 
-        assertEquals(List.of(new ActivationEvent.Skipped(window(2, 20, 0, 60), notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
+        assertEquals(List.of(new ActivationEvent.Skipped(notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
         assertEquals(Optional.empty(), activations.running());
     }
 
@@ -174,7 +174,7 @@ class ActivationsTest {
 
         var restarted = new Activations(plan(), at(2, 20, 30, 0), Optional.empty(), dismissed::add);
 
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), restarted.tick(at(2, 20, 30, 1), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), restarted.tick(at(2, 20, 30, 1), CROWDED));
     }
 
     @Test
@@ -183,32 +183,32 @@ class ActivationsTest {
         activations.tick(at(2, 20, 0, 0), EMPTY);
         activations.tick(at(2, 21, 30, 0), CROWDED);
 
-        assertEquals(List.of(new ActivationEvent.Started(window(3, 20, 0, 60), false)), activations.tick(at(3, 20, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(3, 20, 0, 60))), activations.tick(at(3, 20, 0, 0), CROWDED));
     }
 
     @Test
     void aWindowStartingTheSecondItWasCreatedStillAsksTheRestrictions() {
         var activations = new Activations(plan(), at(2, 20, 0, 0));
 
-        assertEquals(List.of(new ActivationEvent.Skipped(window(2, 20, 0, 60), notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
+        assertEquals(List.of(new ActivationEvent.Skipped(notEnough(1))), activations.tick(at(2, 20, 0, 0), EMPTY));
     }
 
     @Test
     void aWindowAlreadyOpenWhenCreatedResumesWhateverTheRestrictionsSay() {
         var activations = new Activations(plan(), at(2, 20, 30, 0));
 
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), activations.tick(at(2, 20, 30, 1), new Situation(0)));
-        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60), EndReason.TIME_UP)), activations.tick(at(2, 21, 0, 0), new Situation(0)));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 30, 1), new Situation(0)));
+        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60))), activations.tick(at(2, 21, 0, 0), new Situation(0)));
     }
 
     @Test
     void aForcedStartRunsForTheTimetableLengthWhateverTheRestrictionsSay() {
         var activations = new Activations(plan(), at(2, 12, 0, 0));
 
-        assertEquals(Optional.of(new ActivationEvent.Started(new Window(at(2, 12, 5, 0), at(2, 13, 5, 0)), true)),
+        assertEquals(Optional.of(new ActivationEvent.Started(new Window(at(2, 12, 5, 0), at(2, 13, 5, 0)))),
                 activations.forceStart(at(2, 12, 5, 0), Optional.empty()));
         assertEquals(List.of(), activations.tick(at(2, 12, 5, 1), EMPTY));
-        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 12, 5, 0), at(2, 13, 5, 0)), EndReason.TIME_UP)),
+        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 12, 5, 0), at(2, 13, 5, 0)))),
                 activations.tick(at(2, 13, 5, 0), EMPTY));
     }
 
@@ -216,9 +216,9 @@ class ActivationsTest {
     void aForcedStartCanChooseItsLength() {
         var activations = new Activations(plan(), at(2, 12, 0, 0));
 
-        assertEquals(Optional.of(new ActivationEvent.Started(new Window(at(2, 12, 0, 0), at(2, 12, 10, 0)), true)),
+        assertEquals(Optional.of(new ActivationEvent.Started(new Window(at(2, 12, 0, 0), at(2, 12, 10, 0)))),
                 activations.forceStart(at(2, 12, 0, 0), Optional.of(Duration.ofMinutes(10))));
-        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 12, 0, 0), at(2, 12, 10, 0)), EndReason.TIME_UP)),
+        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 12, 0, 0), at(2, 12, 10, 0)))),
                 activations.tick(at(2, 12, 10, 0), CROWDED));
     }
 
@@ -237,7 +237,7 @@ class ActivationsTest {
 
         activations.forceStart(at(2, 20, 0, 0), Optional.of(Duration.ofMinutes(10)));
 
-        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 20, 0, 0), at(2, 20, 10, 0)), EndReason.TIME_UP)),
+        assertEquals(List.of(new ActivationEvent.Ended(new Window(at(2, 20, 0, 0), at(2, 20, 10, 0)))),
                 activations.tick(at(2, 20, 10, 0), CROWDED));
         assertEquals(List.of(), run(activations, at(2, 20, 10, 0), at(2, 21, 30, 0), CROWDED));
     }
@@ -248,7 +248,7 @@ class ActivationsTest {
         activations.forceStart(at(2, 12, 0, 0), Optional.of(Duration.ofMinutes(10)));
         activations.tick(at(2, 12, 10, 0), CROWDED);
 
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), activations.tick(at(2, 20, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 0, 0), CROWDED));
     }
 
     @Test
@@ -256,10 +256,10 @@ class ActivationsTest {
         var activations = new Activations(plan(), at(2, 19, 59, 0));
         activations.tick(at(2, 20, 0, 0), CROWDED);
 
-        assertEquals(Optional.of(new ActivationEvent.Ended(window(2, 20, 0, 60), EndReason.STOPPED)), activations.forceStop(at(2, 20, 10, 0)));
+        assertEquals(Optional.of(new ActivationEvent.Ended(window(2, 20, 0, 60))), activations.forceStop(at(2, 20, 10, 0)));
         assertEquals(Optional.empty(), activations.running());
         assertEquals(List.of(), run(activations, at(2, 20, 10, 0), at(2, 21, 30, 0), CROWDED));
-        assertEquals(List.of(new ActivationEvent.Started(window(3, 20, 0, 60), false)), activations.tick(at(3, 20, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(3, 20, 0, 60))), activations.tick(at(3, 20, 0, 0), CROWDED));
     }
 
     @Test
@@ -267,9 +267,9 @@ class ActivationsTest {
         var activations = new Activations(plan(), at(2, 12, 0, 0));
         activations.forceStart(at(2, 12, 0, 0), Optional.empty());
 
-        assertEquals(Optional.of(new ActivationEvent.Ended(new Window(at(2, 12, 0, 0), at(2, 13, 0, 0)), EndReason.STOPPED)),
+        assertEquals(Optional.of(new ActivationEvent.Ended(new Window(at(2, 12, 0, 0), at(2, 13, 0, 0)))),
                 activations.forceStop(at(2, 12, 30, 0)));
-        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60), false)), activations.tick(at(2, 20, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Started(window(2, 20, 0, 60))), activations.tick(at(2, 20, 0, 0), CROWDED));
     }
 
     @Test
@@ -286,7 +286,7 @@ class ActivationsTest {
 
         assertEquals(Optional.of(window(2, 20, 0, 60)), activations.running());
         assertEquals(List.of(), run(activations, at(2, 20, 0, 0), at(2, 20, 59, 59), new Situation(0)));
-        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60), EndReason.TIME_UP)), activations.tick(at(2, 21, 0, 0), CROWDED));
+        assertEquals(List.of(new ActivationEvent.Ended(window(2, 20, 0, 60))), activations.tick(at(2, 21, 0, 0), CROWDED));
     }
 
     @Test
@@ -306,7 +306,7 @@ class ActivationsTest {
         activations.replan(plan(30, 10, "0 22 * * *"));
 
         assertEquals(Optional.of(at(2, 22, 0, 0)), activations.nextStart(at(2, 21, 30, 0)));
-        assertEquals(List.of(new ActivationEvent.Skipped(window(2, 22, 0, 30), new Refusal("restriction.min-online", Map.of("online", "5", "needed", "10")))),
+        assertEquals(List.of(new ActivationEvent.Skipped(new Refusal("restriction.min-online", Map.of("online", "5", "needed", "10")))),
                 activations.tick(at(2, 22, 0, 0), CROWDED));
     }
 

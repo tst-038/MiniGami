@@ -60,8 +60,4 @@ public final class Hill {
     public int progress() {
         return capture.progress();
     }
-
-    public int captureSeconds() {
-        return captureSeconds;
-    }
 }
