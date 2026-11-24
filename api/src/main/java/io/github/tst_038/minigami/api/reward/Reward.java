@@ -12,6 +12,10 @@ public interface Reward {
     /** What the winner is told they won, as MiniMessage text. */
     String name();
 
-    /** Gives it to the player, who is online. Server thread only. */
+    /**
+     * Gives it to the player, who is online. Server thread only.
+     *
+     * @throws RewardFailedException when it could not be given
+     */
     void give(Player player);
 }

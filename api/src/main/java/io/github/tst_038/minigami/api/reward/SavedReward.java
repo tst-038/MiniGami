@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
  * An item saved with {@code /mga loot save}, put in the winner's inventory like an {@link ItemReward}: for
  * what {@code item} can't describe, such as a crate key or an item with its own name and enchantments. It is
  * looked up when it is given, as loot does, so changing the saved item changes what is won; one that has since
- * been deleted gives nothing.
+ * been deleted is a {@link RewardFailedException}.
  *
  * @param saved where the item is looked up by {@code item}
  * @param logger where a missing item is reported
@@ -25,10 +25,12 @@ record SavedReward(String item, int amount, Optional<String> givenName, MiniGami
 
     @Override
     public void give(Player player) {
-        saved.find(item).ifPresentOrElse(
-                found -> player.getInventory().addItem(found.asQuantity(amount)).values()
-                        .forEach(left -> player.getWorld().dropItem(player.getLocation(), left)),
-                () -> logger.warning("The saved item '" + item + "' is gone, so " + player.getName() + " got no reward"));
+        var found = saved.find(item).orElseThrow(() -> {
+            logger.warning("The saved item '" + item + "' is gone, so " + player.getName() + " got no reward");
+            return new RewardFailedException("The saved item '" + item + "' is gone");
+        });
+        player.getInventory().addItem(found.asQuantity(amount)).values()
+                .forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
     }
 
     /** {@code saved: <name>}, with an {@code amount} (1 if left out) and a {@code name} (the amount and saved name if left out). */
