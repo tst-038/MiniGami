@@ -66,6 +66,8 @@ import org.bukkit.plugin.Plugin;
 public final class Nights implements Listener {
 
     public static final String HOST_PERMISSION = "minigami.host";
+    /** The lowest staff rank; admins and mods have it too, so it marks every member of staff. */
+    private static final String STAFF_PERMISSION = "minigami.helper";
 
     private enum State {
         /** Players join; no team is formed and no game played. */
@@ -224,6 +226,28 @@ public final class Nights implements Listener {
             // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
             night.teams().ifPresent(formed -> tellTeam(night, joining));
         }
+    }
+
+    /**
+     * Signs up every online player who may join the night, except staff such as the host and admins, who run it rather than
+     * play; one of them who plays joins themselves.
+     */
+    public void addAll(CommandSender host) {
+        if (!hasNight(host)) {
+            return;
+        }
+        var night = active.night;
+        var permission = PlayPermissions.night(night.template().id());
+        var adding = plugin.getServer().getOnlinePlayers().stream()
+                .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !isStaff(player))
+                .toList();
+        adding.forEach(this::signUp);
+        publish();
+        messages.send(host, "night.added-all", Formatter.number("count", adding.size()));
+    }
+
+    private static boolean isStaff(Player player) {
+        return player.hasPermission(STAFF_PERMISSION) || player.hasPermission(HOST_PERMISSION);
     }
 
     /** Online players outside the night who may sign up for it. */

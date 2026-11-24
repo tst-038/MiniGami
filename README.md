@@ -181,7 +181,7 @@ way through. The tables below give an overview.
 | `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <player>` | mod |
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
 | `/mg schedule list` · `/mg schedule now\|next <schedule> [game] [variant]`, `start\|skip\|cancel\|pause\|resume <schedule>` | helper · mod |
-| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `team`, `kick` | host |
+| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `add <player>`, `add-all`, `team`, `kick` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
 | `/mg gametype list\|<id> info` · `/mga options [gametype]` | admin |
@@ -268,7 +268,8 @@ playlist:
   - { game: spleef, variant: lives, points: { places: { 1: 20, 2: 14, 3: 10 } } }
 ```
 
-Run it with `/mg night start <id>`, then `begin` and `next`. Players join with `/mg night join`.
+Run it with `/mg night start <id>`, then `begin` and `next`. Players join with `/mg night join`; `add-all` signs up every
+online player who may join, except staff (`minigami.helper` or `minigami.host`), who join themselves if they play.
 
 ## Schedules and rewards
 
