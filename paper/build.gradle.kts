@@ -1,7 +1,7 @@
 plugins {
     id("minigami.java-conventions")
     alias(libs.plugins.run.paper)
-    `maven-publish`
+    id("minigami.published")
 }
 
 dependencies {

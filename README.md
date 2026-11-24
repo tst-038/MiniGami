@@ -341,8 +341,9 @@ afterwards. A player is **in a match** from the moment MiniGami takes them over,
 for a match (also in place), playing, eliminated, spectating, and the whole of a game night including the breaks
 between games. Anything you give a player in that span is lost, so check first or wait for the leave event.
 
-Depend on the api (`compileOnly("io.github.tst-038:minigami-api:<version>")`, published to your local Maven
-repository with `./gradlew publishToMavenLocal`, see [Building from source](#building-from-source)) and list
+Depend on the api (`compileOnly("io.github.tst-038:minigami-api:<version>")`; every release is on
+[GitHub Packages](https://github.com/tst-038?tab=packages&repo_name=MiniGami), add
+`maven("https://maven.pkg.github.com/tst-038/MiniGami")` with a GitHub token that can read packages) and list
 it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false, join-classpath: true }`
 (`join-classpath` lets your plugin see MiniGami's classes; or `softdepend: [MiniGami]` in `plugin.yml`), and guard your
 code for it being absent. The types are in `io.github.tst_038.minigami.api.presence`:
@@ -411,7 +412,7 @@ Requires Java 25. The Gradle wrapper downloads everything else.
 
 The plugin jar ends up in `paper/build/libs/`. `./gradlew runServer` starts a local Paper test server with the plugin.
 `./gradlew publishToMavenLocal` publishes `minigami-api` and `minigami-core` for other plugins to compile against, and
-`minigami-plugin`, the plugin jar, for their test servers.
+`minigami-plugin`, the plugin jar, for their test servers. Publishing a GitHub release puts the same on GitHub Packages.
 
 The project is split into modules: `core` (game logic, no server code), `api` (what games and features build on),
 `features`, `stats`, `gamenight`, the `games/*`, and `paper` (the plugin itself).
