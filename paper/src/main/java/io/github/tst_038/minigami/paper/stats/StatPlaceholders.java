@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.stats;
 
+import io.github.tst_038.minigami.core.stat.Period;
 import io.github.tst_038.minigami.core.stat.Stat;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,10 +12,14 @@ import java.util.UUID;
  * <li>{@code top_<game>[_<variant>]_<stat>_<place>_name} and {@code …_value}: a place on a leaderboard</li>
  * <li>{@code stat_<game>[_<variant>]_<stat>}: the viewer's own amount; {@code wins} and {@code played} work too</li>
  * </ul>
+ * A leading {@code weekly_} or {@code monthly_} makes the top forms count this week or this month only, such as
+ * {@code weekly_top_<game>_<stat>_<place>_name}.
  * Without a variant the game's variants are added up. Any thread.
  */
 public final class StatPlaceholders {
 
+    private static final String WEEKLY = "weekly_";
+    private static final String MONTHLY = "monthly_";
     private static final String PLAYED = "played";
 
     private final Leaderboards leaderboards;
@@ -31,17 +36,25 @@ public final class StatPlaceholders {
      *     or a profile still loading
      */
     public String resolve(Optional<UUID> viewer, String params) {
+        var period = Period.ALL_TIME;
+        if (params.startsWith(WEEKLY)) {
+            period = Period.WEEK;
+            params = params.substring(WEEKLY.length());
+        } else if (params.startsWith(MONTHLY)) {
+            period = Period.MONTH;
+            params = params.substring(MONTHLY.length());
+        }
         var parts = params.split("_", -1);
         if (parts[0].equals("top") && (parts.length == 5 || parts.length == 6)) {
-            return top(parts);
+            return top(period, parts);
         }
-        if (parts[0].equals("stat") && (parts.length == 3 || parts.length == 4)) {
+        if (period == Period.ALL_TIME && parts[0].equals("stat") && (parts.length == 3 || parts.length == 4)) {
             return own(viewer, parts);
         }
         return null;
     }
 
-    private String top(String[] parts) {
+    private String top(Period period, String[] parts) {
         var length = parts.length;
         var field = parts[length - 1];
         int place;
@@ -53,7 +66,7 @@ public final class StatPlaceholders {
         if (place < 1 || !(field.equals("name") || field.equals("value"))) {
             return null;
         }
-        var board = leaderboards.top(parts[1], length == 6 ? Optional.of(parts[2]) : Optional.empty(), parts[length - 3]);
+        var board = leaderboards.top(period, parts[1], length == 6 ? Optional.of(parts[2]) : Optional.empty(), parts[length - 3]);
         if (place > board.size()) {
             return "";
         }

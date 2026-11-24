@@ -13,6 +13,7 @@ import io.github.tst_038.minigami.core.storage.Storage;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ class StatPlaceholdersTest {
     void open() {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
-        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, id -> Optional.empty(), 10);
+        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, Clock.fixed(START.plusSeconds(3600), ZoneOffset.UTC), id -> Optional.empty(), 10);
         placeholders = new StatPlaceholders(leaderboards, profiles);
         profiles.join(alice, "Alice");
         profiles.join(bob, "Bob");
@@ -80,6 +81,17 @@ class StatPlaceholdersTest {
     }
 
     @Test
+    void placesOnABoardOfThisWeekOrMonth() {
+        // The test's clock is the 28th at 21:00: the two matches count this week and this month.
+        assertEquals("Alice", placeholders.resolve(Optional.empty(), "weekly_top_spleef_kills_1_name"));
+        assertEquals("5", placeholders.resolve(Optional.empty(), "weekly_top_spleef_kills_1_value"));
+        assertEquals("Bob", placeholders.resolve(Optional.empty(), "monthly_top_spleef_duos_kills_1_name"));
+        assertEquals("2", placeholders.resolve(Optional.empty(), "monthly_top_spleef_wins_1_value"));
+        assertEquals("", placeholders.resolve(Optional.empty(), "weekly_top_spleef_kills_3_name"));
+        assertEquals("", placeholders.resolve(Optional.empty(), "weekly_top_tnt-run_kills_1_name"));
+    }
+
+    @Test
     void theViewersOwnStats() {
         assertEquals("5", placeholders.resolve(Optional.of(alice), "stat_spleef_kills"));
         assertEquals("2", placeholders.resolve(Optional.of(alice), "stat_spleef_duos_kills"));
@@ -96,5 +108,9 @@ class StatPlaceholdersTest {
         assertNull(placeholders.resolve(Optional.empty(), "top_spleef_kills_1_uuid"));
         assertNull(placeholders.resolve(Optional.empty(), "kills"));
         assertNull(placeholders.resolve(Optional.empty(), "stat_spleef"));
+        assertNull(placeholders.resolve(Optional.empty(), "weekly_top_spleef_kills_first_name"));
+        assertNull(placeholders.resolve(Optional.empty(), "yearly_top_spleef_kills_1_name"));
+        assertNull(placeholders.resolve(Optional.of(alice), "weekly_stat_spleef_kills"), "not there yet");
+        assertNull(placeholders.resolve(Optional.empty(), "weekly_weekly_top_spleef_kills_1_name"));
     }
 }

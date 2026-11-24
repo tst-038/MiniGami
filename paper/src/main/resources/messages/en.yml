@@ -792,6 +792,8 @@ placeholders:
   own: "<gray>your own amount"
   top: "<gray>the name on a leaderboard place"
   top-value: "<gray>the amount on a leaderboard place"
+  top-weekly: "<gray>the name on a leaderboard place of this week, from Monday; <white>_value</white><gray> the amount"
+  top-monthly: "<gray>the name on a leaderboard place of this month; <white>_value</white><gray> the amount"
   match: "<gray>your match, with \\<value> one of: <white>%values%</white><gray>; a game adds its own stats, roles and timers"
   night: "<gray>the game night, with \\<value> one of: <white>%values%</white>"
   hint: "<gray>/mga placeholders <white>\\<game></white> lists the ones that exist for a game."
