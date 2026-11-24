@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.github.tst_038.minigami.gamenight.night.Night;
-import io.github.tst_038.minigami.paper.storage.Migrations;
-import io.github.tst_038.minigami.paper.storage.SqliteStorage;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ class NightStoreTest {
 
     @BeforeEach
     void open() {
-        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), LOGGER);
+        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         store = new NightStore(storage, LOGGER);
     }
 

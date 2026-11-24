@@ -1,12 +1,12 @@
-package io.github.tst_038.minigami.paper.storage;
+package io.github.tst_038.minigami.core.storage;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The SQL database the plugin keeps its data in. All work runs on one storage thread, never the
- * server thread, one piece after the other in the order it was submitted. Write SQL every
+ * An SQL database an application keeps its data in. All work runs on one storage thread, never the
+ * caller's own thread, one piece after the other in the order it was submitted. Write SQL every
  * implementation understands.
  */
 public interface Storage extends AutoCloseable {
@@ -19,7 +19,7 @@ public interface Storage extends AutoCloseable {
 
     /**
      * Runs the work in a transaction of its own on the storage thread, after everything submitted
-     * before it. Comes back on that thread, so hop to the server thread before touching the game.
+     * before it. Comes back on that thread, so hop back to the thread that owns the state before touching it.
      *
      * @return what the work returned, or its failure (an {@link SQLException} as the cause); the transaction is then rolled back
      */

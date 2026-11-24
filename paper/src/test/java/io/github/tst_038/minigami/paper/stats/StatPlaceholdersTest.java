@@ -7,9 +7,9 @@ import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
 import io.github.tst_038.minigami.core.stat.Stat;
-import io.github.tst_038.minigami.paper.storage.Migrations;
-import io.github.tst_038.minigami.paper.storage.SqliteStorage;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -41,7 +41,7 @@ class StatPlaceholdersTest {
 
     @BeforeEach
     void open() {
-        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), LOGGER);
+        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
         leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, id -> Optional.empty(), 10);
         placeholders = new StatPlaceholders(leaderboards, profiles);

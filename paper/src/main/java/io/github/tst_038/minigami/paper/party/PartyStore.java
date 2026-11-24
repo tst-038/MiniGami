@@ -1,7 +1,7 @@
 package io.github.tst_038.minigami.paper.party;
 
 import io.github.tst_038.minigami.core.party.Parties.Party;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.storage;
+package io.github.tst_038.minigami.core.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -26,7 +26,7 @@ class SqliteStorageTest {
     private final List<Storage> opened = new ArrayList<>();
 
     private Storage open(String migrations) {
-        var storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/" + migrations), LOGGER);
+        var storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/" + migrations), "Test storage", LOGGER);
         opened.add(storage);
         return storage;
     }
@@ -94,7 +94,7 @@ class SqliteStorageTest {
         assertInstanceOf(IllegalStateException.class, failed.getCause());
         storage.close();
 
-        var check = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/none"), LOGGER);
+        var check = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/none"), "Test storage", LOGGER);
         opened.add(check);
 
         assertEquals(1, check.submit(SqliteStorageTest::schemaVersion).join());

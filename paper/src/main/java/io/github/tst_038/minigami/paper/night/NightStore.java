@@ -1,7 +1,7 @@
 package io.github.tst_038.minigami.paper.night;
 
 import io.github.tst_038.minigami.gamenight.night.Night;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

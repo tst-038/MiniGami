@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.storage;
+package io.github.tst_038.minigami.core.storage;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Brings a database's schema up to date from numbered SQL files bundled with the plugin:
+ * Brings a database's schema up to date from numbered SQL files bundled as resources:
  * {@code 1.sql}, {@code 2.sql} and so on, each run once, in order, in a transaction of its own. The
  * database remembers in {@code schema_version} which it has. A file is never changed once released;
  * a change to the schema is a new file.

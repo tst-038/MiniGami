@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.storage;
+package io.github.tst_038.minigami.core.storage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,20 +15,25 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * A database in one SQLite file, through the driver the server ships. One connection, used only by
+ * A database in one SQLite file, through the SQLite JDBC driver the host supplies at runtime. One connection, used only by
  * the storage thread, which opens the file and brings its schema up to date before any other work.
  * Written ahead to a log (WAL), so a crash loses at most the last transactions, never half of one.
  */
 public final class SqliteStorage implements Storage {
 
     private final Logger logger;
-    private final ExecutorService thread = Executors.newSingleThreadExecutor(Thread.ofPlatform().name("MiniGami storage").factory());
+    private final ExecutorService thread;
     /** Only touched on the storage thread; null if the database couldn't be opened. */
     private Connection connection;
 
-    /** Opens the file, made if missing, in the background; work submitted meanwhile waits for it. */
-    public SqliteStorage(Path file, Migrations migrations, Logger logger) {
+    /**
+     * Opens the file, made if missing, in the background; work submitted meanwhile waits for it.
+     *
+     * @param threadName the name of the storage thread, as it shows in thread dumps
+     */
+    public SqliteStorage(Path file, Migrations migrations, String threadName, Logger logger) {
         this.logger = logger;
+        this.thread = Executors.newSingleThreadExecutor(Thread.ofPlatform().name(threadName).factory());
         thread.execute(() -> {
             try {
                 Files.createDirectories(file.toAbsolutePath().getParent());

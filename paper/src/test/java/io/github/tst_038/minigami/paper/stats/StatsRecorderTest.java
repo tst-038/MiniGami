@@ -7,9 +7,9 @@ import io.github.tst_038.minigami.core.result.MatchRecord.Entry;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
 import io.github.tst_038.minigami.core.stat.Stat;
-import io.github.tst_038.minigami.paper.storage.Migrations;
-import io.github.tst_038.minigami.paper.storage.SqliteStorage;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -40,7 +40,7 @@ class StatsRecorderTest {
     @BeforeEach
     void open() {
         // The migrations the plugin ships.
-        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"),
+        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage",
                 Logger.getLogger(getClass().getName()));
         recorder = new StatsRecorder(storage, new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), Logger.getLogger(getClass().getName())),
                 Logger.getLogger(getClass().getName()));
@@ -133,7 +133,7 @@ class StatsRecorderTest {
                 INSERT INTO player_totals VALUES ('alice', 'other-type', 'spleef', 1, 1, 1, 1, 0, 30);
                 INSERT INTO player_stat_totals VALUES ('alice', 'last-standing', 'spleef', 'kills', 4);
                 INSERT INTO player_stat_totals VALUES ('alice', 'other-type', 'spleef', 'kills', 1)""");
-        storage = new SqliteStorage(folder.resolve("old.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"),
+        storage = new SqliteStorage(folder.resolve("old.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage",
                 Logger.getLogger(getClass().getName()));
 
         assertEquals(List.of("last-standing spleef  snow"), rows("SELECT gametype, game, variant, arena FROM matches"));
@@ -150,7 +150,7 @@ class StatsRecorderTest {
                         ? null : super.getResourceAsStream(name);
             }
         };
-        var old = new SqliteStorage(file, new Migrations(older, "storage/sqlite"), Logger.getLogger(StatsRecorderTest.class.getName()));
+        var old = new SqliteStorage(file, new Migrations(older, "storage/sqlite"), "Test storage", Logger.getLogger(StatsRecorderTest.class.getName()));
         old.submit(connection -> {
             try (var statement = connection.createStatement()) {
                 for (var line : sql.split(";\n")) {
