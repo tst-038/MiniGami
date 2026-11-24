@@ -47,7 +47,7 @@ class StatPlaceholdersTest {
         placeholders = new StatPlaceholders(leaderboards, profiles);
         profiles.join(alice, "Alice");
         profiles.join(bob, "Bob");
-        var recorder = new StatsRecorder(storage, profiles, LOGGER);
+        var recorder = new StatsRecorder(storage, profiles, Clock.systemUTC(), LOGGER);
         play(recorder, Optional.empty(), Map.of(alice, 3L, bob, 1L));
         play(recorder, Optional.of("duos"), Map.of(alice, 2L, bob, 3L));
         leaderboards.refresh();

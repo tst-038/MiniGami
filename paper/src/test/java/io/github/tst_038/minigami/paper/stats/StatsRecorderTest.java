@@ -14,6 +14,9 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +46,7 @@ class StatsRecorderTest {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage",
                 Logger.getLogger(getClass().getName()));
         recorder = new StatsRecorder(storage, new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), Logger.getLogger(getClass().getName())),
-                Logger.getLogger(getClass().getName()));
+                Clock.fixed(START, ZoneOffset.UTC), Logger.getLogger(getClass().getName()));
     }
 
     @AfterEach
@@ -108,6 +111,53 @@ class StatsRecorderTest {
         assertEquals(List.of("alice 9", "bob 3"), withNames(rows(
                 "SELECT player, SUM(amount) FROM player_stat_totals WHERE game = 'tdm' AND stat = 'kills'"
                         + " GROUP BY player ORDER BY 2 DESC")));
+    }
+
+    @Test
+    void statsPlayedAndWinsAddUpPerDayInTheClocksZone() {
+        recorder.record(match(Optional.empty())).join();
+        recorder.record(match(Optional.of("big"))).join();
+
+        var day = LocalDate.of(2026, 10, 28).toEpochDay();
+        assertEquals(List.of(
+                        "alice tdm  kills " + day + " 3", "alice tdm  played " + day + " 1", "alice tdm  wins " + day + " 1",
+                        "alice tdm big kills " + day + " 3", "alice tdm big played " + day + " 1", "alice tdm big wins " + day + " 1",
+                        "bob tdm  kills " + day + " 1", "bob tdm  played " + day + " 1",
+                        "bob tdm big kills " + day + " 1", "bob tdm big played " + day + " 1"),
+                withNames(rows("SELECT player, game, variant, stat, day, amount FROM player_daily_stats")).stream().sorted().toList());
+    }
+
+    @Test
+    void aMatchEndingAfterMidnightLocallyCountsOnTheNextDay() {
+        recorder = new StatsRecorder(storage, new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), Logger.getLogger(getClass().getName())),
+                Clock.fixed(START, ZoneId.of("Pacific/Auckland")), Logger.getLogger(getClass().getName()));
+
+        recorder.record(match(Optional.empty())).join();
+
+        assertEquals(List.of(String.valueOf(LocalDate.of(2026, 10, 29).toEpochDay())), rows("SELECT DISTINCT day FROM player_daily_stats"));
+    }
+
+    @Test
+    void matchesAlreadyPlayedAreCountedPerDayWhenTheTableIsAdded() {
+        storage.close();
+        var end = Instant.parse("2026-10-28T12:00:00Z").toEpochMilli();
+        oldDatabase(folder.resolve("old.db"), 5, """
+                INSERT INTO matches (id, gametype, game, variant, arena, started_at, ended_at) VALUES (1, 'tdm', 'tdm', 'big', 'a', 1, %1$d);
+                INSERT INTO matches (id, gametype, game, variant, arena, started_at, ended_at) VALUES (2, 'tdm', 'tdm', 'big', 'a', 1, %1$d);
+                INSERT INTO match_players (match_id, player, team, place, left_match) VALUES (1, 'alice', NULL, 1, 0);
+                INSERT INTO match_players (match_id, player, team, place, left_match) VALUES (1, 'bob', NULL, 2, 0);
+                INSERT INTO match_players (match_id, player, team, place, left_match) VALUES (2, 'alice', NULL, 2, 0);
+                INSERT INTO match_stats (match_id, player, stat, amount) VALUES (1, 'alice', 'kills', 3);
+                INSERT INTO match_stats (match_id, player, stat, amount) VALUES (2, 'alice', 'kills', 2)""".formatted(end));
+        storage = new SqliteStorage(folder.resolve("old.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage",
+                Logger.getLogger(getClass().getName()));
+
+        // SQLite works out the local day with the operating system's zone, as the JVM's default is.
+        var day = LocalDate.ofInstant(Instant.ofEpochMilli(end), ZoneId.systemDefault()).toEpochDay();
+        assertEquals(List.of(
+                        "alice tdm big kills " + day + " 5", "alice tdm big played " + day + " 2", "alice tdm big wins " + day + " 1",
+                        "bob tdm big played " + day + " 1"),
+                rows("SELECT player, game, variant, stat, day, amount FROM player_daily_stats").stream().sorted().toList());
     }
 
     @Test

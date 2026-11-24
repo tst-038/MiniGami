@@ -161,7 +161,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getOnlinePlayers().forEach(player -> profiles.join(player.getUniqueId(), player.getName()));
         var leaderboards = new Leaderboards(storage, serverThread, getLogger(), this::cachedName, LEADERBOARD_SIZE);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
-        getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
+        getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, Clock.systemDefaultZone(), getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
         var parties = new PartyService(this, storage, messages);
         parties.load();

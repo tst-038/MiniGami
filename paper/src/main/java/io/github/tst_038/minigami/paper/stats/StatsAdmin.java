@@ -18,6 +18,7 @@ import org.bukkit.command.CommandSender;
  * Changes the stored totals by hand: a stat of one player and game raised, lowered or set, and the totals of a player
  * or a game cleared. The matches themselves stay in the history; only the running totals, which are what the stats and boards read, change.
  * A hand edit lands on the game's own row, not on one of its variants, so it shows in the game's totals and board but not in a variant's.
+ * It changes the all-time totals only: the weekly and monthly ones, kept per day, count what was played.
  *
  * <p>Call from the server thread.
  */
@@ -72,6 +73,7 @@ public final class StatsAdmin {
             run(sender, connection -> {
                 delete(connection, "player_totals", "player = ?", id.toString(), game);
                 delete(connection, "player_stat_totals", "player = ?", id.toString(), game);
+                delete(connection, "player_daily_stats", "player = ?", id.toString(), game);
                 return null;
             }, () -> {
                 profiles.reload(java.util.Set.of(id));
@@ -87,7 +89,7 @@ public final class StatsAdmin {
             return;
         }
         run(sender, connection -> {
-            for (var table : new String[] {"player_totals", "player_stat_totals"}) {
+            for (var table : new String[] {"player_totals", "player_stat_totals", "player_daily_stats"}) {
                 try (var delete = connection.prepareStatement("DELETE FROM " + table + " WHERE game = ?" + (variant.isPresent() ? " AND variant = ?" : ""))) {
                     delete.setString(1, game);
                     if (variant.isPresent()) {
@@ -110,7 +112,7 @@ public final class StatsAdmin {
      */
     public CompletableFuture<Void> renameGame(String from, String to) {
         return storage.submit(connection -> {
-            for (var table : new String[] {"matches", "player_totals", "player_stat_totals"}) {
+            for (var table : new String[] {"matches", "player_totals", "player_stat_totals", "player_daily_stats"}) {
                 try (var update = connection.prepareStatement("UPDATE " + table + " SET game = ? WHERE game = ?")) {
                     update.setString(1, to);
                     update.setString(2, from);

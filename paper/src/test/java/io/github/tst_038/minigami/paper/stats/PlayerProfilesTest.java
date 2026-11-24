@@ -49,7 +49,7 @@ class PlayerProfilesTest {
     void open() {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
-        recorder = new StatsRecorder(storage, profiles, LOGGER);
+        recorder = new StatsRecorder(storage, profiles, Clock.systemUTC(), LOGGER);
     }
 
     @AfterEach
