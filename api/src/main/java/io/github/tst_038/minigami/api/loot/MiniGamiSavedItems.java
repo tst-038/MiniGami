@@ -8,7 +8,8 @@ import org.bukkit.inventory.ItemStack;
  * configuration, such as in a {@code saved:} reward. Get it from Bukkit's services manager:
  * {@code getServer().getServicesManager().load(MiniGamiSavedItems.class)} (null while MiniGami isn't enabled).
  * Items can be saved, replaced and deleted while the server runs, so look one up again when you need it
- * rather than keeping it. Call it on the server thread.
+ * rather than keeping it. The items are there from the moment MiniGami is enabled, and change when {@code /mg reload} reads them again.
+ * Call it on the server thread.
  */
 public interface MiniGamiSavedItems {
 

@@ -61,7 +61,7 @@ class StatsAdminTest {
         profiles = new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), LOGGER);
         leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), 5);
         recorder = new StatsRecorder(storage, profiles, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
-        pluginStats = new PluginStats(storage, profiles, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
+        pluginStats = new PluginStats(storage, profiles, leaderboards, Runnable::run, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
         var games = new IdRegistry<Game>(Game::id);
         // Only the ids of the games are asked for.
         games.register(new Game("tdm", null, Map.of()));
@@ -210,8 +210,6 @@ class StatsAdminTest {
     /** A game no file has, which only another plugin keeps stats for: known once a board has it. */
     private void keepStatsOfAGameWithoutAFile() {
         pluginStats.add("koth", Map.of(alice, Map.of(new Stat("captures"), 4L), bob, Map.of(new Stat("captures"), 1L)));
-        settle();
-        leaderboards.refresh();
         settle();
     }
 

@@ -7,27 +7,36 @@ import io.github.tst_038.minigami.core.storage.Storage;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * Keeps the stats other plugins hand over: each amount is added to the all-time total and to today's row, in one transaction, so
- * it counts in the weekly and monthly stats too. A day is the epoch day in the clock's time zone. The profiles of its players
- * who are online are loaded again after; the leaderboards are not, since a plugin may call this often, and take it up when they refresh by themselves.
+ * it counts in the weekly and monthly stats too. A day is the epoch day in the clock's time zone. After the writes of a server
+ * tick, the profiles of the players who are online and the leaderboards are loaded again once, however often it was called.
  */
 public final class PluginStats implements MiniGamiStats {
 
     private final Storage storage;
     private final PlayerProfiles profiles;
     private final Clock clock;
+    private final Leaderboards leaderboards;
+    private final Executor serverThread;
     private final Logger logger;
+    // Only used on the server thread.
+    private final Set<UUID> pendingPlayers = new HashSet<>();
+    private boolean flushScheduled;
 
-    public PluginStats(Storage storage, PlayerProfiles profiles, Clock clock, Logger logger) {
+    public PluginStats(Storage storage, PlayerProfiles profiles, Leaderboards leaderboards, Executor serverThread, Clock clock, Logger logger) {
         this.storage = storage;
         this.profiles = profiles;
+        this.leaderboards = leaderboards;
+        this.serverThread = serverThread;
         this.clock = clock;
         this.logger = logger;
     }
@@ -64,6 +73,18 @@ public final class PluginStats implements MiniGamiStats {
             logger.log(Level.SEVERE, "Could not store the stats of " + game, failure);
             return null;
         });
-        profiles.reload(rows.stream().map(Row::player).collect(Collectors.toSet()));
+        rows.forEach(row -> pendingPlayers.add(row.player()));
+        if (!flushScheduled) {
+            flushScheduled = true;
+            serverThread.execute(this::flush);
+        }
+    }
+
+    // Storage is one thread that works in order, and the reloads below go through it too, so they come after every write submitted this tick.
+    private void flush() {
+        flushScheduled = false;
+        profiles.reload(Set.copyOf(pendingPlayers));
+        pendingPlayers.clear();
+        leaderboards.refresh();
     }
 }

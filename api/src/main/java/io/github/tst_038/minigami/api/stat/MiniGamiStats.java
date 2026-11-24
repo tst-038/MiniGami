@@ -15,9 +15,13 @@ public interface MiniGamiStats {
 
     /**
      * Raises the stats of the players, as of today. Nothing waits for the storage: the work is done in the background, and a
-     * failure is logged by MiniGami, not thrown here. Players who are online see it in their stats soon after. The leaderboards
-     * take it up when they refresh next, every few minutes, not at once: a plugin may call this every second, and a board is not
-     * read from storage for each call.
+     * failure is logged by MiniGami, not thrown here. The leaderboards and the profiles of players who are online are loaded again
+     * right after the write, once per server tick however often this is called, so new stats show at once.
+     *
+     * <p>Each load reads the boards from storage, so call this every few seconds rather than every tick, and put the amounts of all
+     * players for one moment into one call.
+     *
+     * <p>Name each stat for players with {@code stats.name.<stat>} in MiniGami's messages ({@code messages/en.yml}).
      *
      * <p>Stats are kept per game, so {@code game} should be an id that no MiniGami game uses; a stat of such a game is shown
      * as one of a game MiniGami has no file for. It is a lower case id, like those of the games: letters, digits and dashes.

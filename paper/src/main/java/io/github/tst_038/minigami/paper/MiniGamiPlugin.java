@@ -139,6 +139,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private SnapshotStore snapshots;
     private Nights nights;
     private Storage storage;
+    private DayRollover dayRollover;
     private ConfigEditor editor;
     private ConfigInfo info;
     private Doctor doctor;
@@ -158,9 +159,11 @@ public final class MiniGamiPlugin extends JavaPlugin {
         messages = new Messages(bundledMessages, getLogger());
         kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
         savedItems = new SavedItems(getDataPath().resolve("items"), getLogger());
+        // Plugins that use saved items read them in their onEnable, before the first config load has finished.
+        savedItems.replace(savedItems.read());
         playPermissions = new PlayPermissions(getServer().getPluginManager());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
-        storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "MiniGami storage",getLogger());
+        storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "MiniGami storage", getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
         var profiles = new PlayerProfiles(storage, serverThread, Clock.systemDefaultZone(), getLogger());
         getServer().getPluginManager().registerEvents(profiles, this);
@@ -169,11 +172,13 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var leaderboards = new Leaderboards(storage, serverThread, getLogger(), Clock.systemDefaultZone(), this::cachedName, LEADERBOARD_SIZE);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> leaderboards.refresh(), 1, LEADERBOARD_REFRESH_TICKS);
         // The weekly and monthly stats change with the date, not only with matches.
-        new DayRollover(Clock.systemDefaultZone(), (delay, task) -> getServer().getAsyncScheduler().runDelayed(this,
-                ignored -> serverThread.execute(task), delay.toMillis(), TimeUnit.MILLISECONDS), () -> {
+        // Paper's async scheduler rejects a delay below 1.
+        dayRollover = new DayRollover(Clock.systemDefaultZone(), (delay, task) -> getServer().getAsyncScheduler().runDelayed(this,
+                ignored -> serverThread.execute(task), Math.max(1, delay.toMillis()), TimeUnit.MILLISECONDS)::cancel, () -> {
             profiles.reloadOnline();
             leaderboards.refresh();
-        }).start();
+        });
+        dayRollover.start();
         getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, Clock.systemDefaultZone(), getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
         var parties = new PartyService(this, storage, messages);
@@ -187,7 +192,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         rewardReader = new RewardReader(savedItems);
         var presence = new PlayerPresence(getServer());
         getServer().getServicesManager().register(MiniGamiPlayers.class, presence, this, ServicePriority.Normal);
-        getServer().getServicesManager().register(MiniGamiStats.class, new PluginStats(storage, profiles, Clock.systemDefaultZone(), getLogger()), this,
+        getServer().getServicesManager().register(MiniGamiStats.class, new PluginStats(storage, profiles, leaderboards, serverThread, Clock.systemDefaultZone(), getLogger()), this,
                 ServicePriority.Normal);
         var sessions = new PlayerSessions(this, snapshots, getLogger(), presence);
         getServer().getPluginManager().registerEvents(sessions, this);
@@ -437,6 +442,10 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // After the matches: disposing them restores players and queues the deletes of their snapshot files.
         if (snapshots != null) {
             snapshots.close();
+        }
+        // Before the storage closes: the rollover reschedules itself.
+        if (dayRollover != null) {
+            dayRollover.stop();
         }
         if (storage != null) {
             storage.close();

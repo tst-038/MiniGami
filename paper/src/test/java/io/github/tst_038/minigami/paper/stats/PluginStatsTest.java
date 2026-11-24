@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.stats;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.core.stat.Period;
 import io.github.tst_038.minigami.core.stat.Stat;
@@ -17,6 +18,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -37,6 +39,8 @@ class PluginStatsTest {
     private Storage storage;
     private PlayerProfiles profiles;
     private PluginStats stats;
+    private Leaderboards leaderboards;
+    private final List<Runnable> serverTasks = new ArrayList<>();
 
     @BeforeEach
     void open() {
@@ -44,7 +48,8 @@ class PluginStatsTest {
         var clock = Clock.fixed(NOW, ZoneOffset.UTC);
         // Everything handed to the server thread runs at once.
         profiles = new PlayerProfiles(storage, Runnable::run, clock, LOGGER);
-        stats = new PluginStats(storage, profiles, clock, LOGGER);
+        leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, clock, id -> Optional.empty(), 5);
+        stats = new PluginStats(storage, profiles, leaderboards, serverTasks::add, clock, LOGGER);
         profiles.join(alice, "Alice");
         settle();
     }
@@ -55,6 +60,9 @@ class PluginStatsTest {
     }
 
     private void settle() {
+        // The flush the server thread would run after the tick.
+        serverTasks.forEach(Runnable::run);
+        serverTasks.clear();
         for (int round = 0; round < 3; round++) {
             storage.submit(connection -> null).join();
         }
@@ -89,6 +97,24 @@ class PluginStatsTest {
                 rows("SELECT player, game, variant, stat, day, amount FROM player_daily_stats"));
         assertEquals(5, profiles.of(alice).orElseThrow().game("koth").stat(CAPTURES));
         assertEquals(5, profiles.of(alice, Period.WEEK).orElseThrow().game("koth").stat(CAPTURES));
+    }
+
+    @Test
+    void addsOfOneTickQueueOneFlushThatRefreshesTheBoards() {
+        var bob = UUID.randomUUID();
+        stats.add("koth", Map.of(alice, Map.of(CAPTURES, 2L)));
+        stats.add("koth", Map.of(bob, Map.of(CAPTURES, 7L)));
+
+        assertEquals(1, serverTasks.size());
+        assertTrue(leaderboards.games().isEmpty());
+
+        settle();
+
+        assertTrue(leaderboards.games().contains("koth"));
+        assertEquals(List.of(7L, 2L), leaderboards.top("koth", Optional.empty(), "captures").stream().map(Leaderboards.Entry::amount).toList());
+
+        stats.add("koth", Map.of(alice, Map.of(CAPTURES, 1L)));
+        assertEquals(1, serverTasks.size());
     }
 
     @Test

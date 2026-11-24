@@ -13,13 +13,17 @@ public final class DayRollover {
 
     /** Runs a task once after a delay, on whichever thread suits it. */
     public interface Timer {
-        void after(Duration delay, Runnable task);
+        /** @return what cancels the task if it has not run yet */
+        Runnable after(Duration delay, Runnable task);
     }
 
     private final Clock clock;
     private final Timer timer;
     private final Runnable onNewDay;
     private LocalDate day;
+    private Runnable cancelPending = () -> {
+    };
+    private boolean stopped;
 
     public DayRollover(Clock clock, Timer timer, Runnable onNewDay) {
         this.clock = clock;
@@ -30,7 +34,13 @@ public final class DayRollover {
     /** Starts waiting for the next midnight. */
     public void start() {
         day = LocalDate.now(clock);
-        timer.after(untilNextDay(clock), this::fire);
+        cancelPending = timer.after(untilNextDay(clock), this::fire);
+    }
+
+    /** Cancels the wait; nothing runs after this, even a timer that has already gone off. */
+    public void stop() {
+        stopped = true;
+        cancelPending.run();
     }
 
     /** How long until the next day starts: the first moment of it, which is after midnight if a clock change skips midnight. */
@@ -40,12 +50,15 @@ public final class DayRollover {
     }
 
     private void fire() {
+        if (stopped) {
+            return;
+        }
         // A timer that goes off a moment early finds the date unchanged; it just waits for the rest.
         var today = LocalDate.now(clock);
         if (!today.equals(day)) {
             day = today;
             onNewDay.run();
         }
-        timer.after(untilNextDay(clock), this::fire);
+        cancelPending = timer.after(untilNextDay(clock), this::fire);
     }
 }

@@ -75,6 +75,8 @@ class DayRolloverTest {
         new DayRollover(clock, (delay, task) -> {
             delays.add(delay);
             tasks.add(task);
+            return () -> {
+            };
         }, () -> rolled.add(clock.instant().toString())).start();
         assertEquals(List.of(Duration.ofHours(4)), delays);
 
@@ -94,6 +96,8 @@ class DayRolloverTest {
         new DayRollover(clock, (delay, task) -> {
             delays.add(delay);
             tasks.add(task);
+            return () -> {
+            };
         }, () -> rolled.add("new day")).start();
 
         clock.now = Instant.parse("2026-10-28T23:59:59.999Z");
@@ -101,5 +105,27 @@ class DayRolloverTest {
 
         assertEquals(List.of(), rolled);
         assertEquals(List.of(Duration.ofHours(4), Duration.ofMillis(1)), delays);
+    }
+
+    @Test
+    void stoppingCancelsTheWaitAndNothingRunsAfter() {
+        var clock = new Moving("2026-10-28T20:00:00Z");
+        var tasks = new ArrayList<Runnable>();
+        var cancelled = new ArrayList<Boolean>();
+        var rolled = new ArrayList<String>();
+        var rollover = new DayRollover(clock, (delay, task) -> {
+            tasks.add(task);
+            return () -> cancelled.add(true);
+        }, () -> rolled.add("new day"));
+        rollover.start();
+
+        rollover.stop();
+        // A timer that had already gone off when it was cancelled.
+        clock.now = Instant.parse("2026-10-29T00:00:00Z");
+        tasks.get(0).run();
+
+        assertEquals(List.of(true), cancelled);
+        assertEquals(List.of(), rolled);
+        assertEquals(1, tasks.size());
     }
 }
