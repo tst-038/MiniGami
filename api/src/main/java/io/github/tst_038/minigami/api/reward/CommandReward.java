@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
  *
  * @param command without the leading slash
  */
-public record CommandReward(String command, String name) implements Reward {
+record CommandReward(String command, String name) implements Reward {
 
     @Override
     public void give(Player player) {

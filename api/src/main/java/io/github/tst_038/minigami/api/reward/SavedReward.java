@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
  * @param saved where the item is looked up by {@code item}
  * @param givenName as written; empty shows the amount and the saved name
  */
-public record SavedReward(String item, int amount, Optional<String> givenName, MiniGamiSavedItems saved) implements Reward {
+record SavedReward(String item, int amount, Optional<String> givenName, MiniGamiSavedItems saved) implements Reward {
 
     @Override
     public String name() {

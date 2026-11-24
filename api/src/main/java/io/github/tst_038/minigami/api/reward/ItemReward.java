@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
  *
  * @param givenName as written; empty shows the amount and the item in the player's language
  */
-public record ItemReward(Material material, int amount, Optional<String> givenName) implements Reward {
+record ItemReward(Material material, int amount, Optional<String> givenName) implements Reward {
 
     static final int MOST = 64 * 36;
 
