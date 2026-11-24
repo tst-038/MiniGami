@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.core.storage.Migrations;
 import io.github.tst_038.minigami.core.storage.SqliteStorage;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -41,12 +42,17 @@ class WalletTest {
         assertTrue(wallet.balances().of(ALICE).isEmpty());
 
         assertEquals(0, wallet.balance(ALICE).join());
+        assertTrue(wallet.balances().of(ALICE).isEmpty());
+
+        wallet.load(ALICE);
+        wallet.balance(ALICE).join();
 
         assertEquals(OptionalLong.of(0), wallet.balances().of(ALICE));
     }
 
     @Test
     void creditingAndSpendingUpdateTheCache() {
+        wallet.load(ALICE);
         wallet.credit(ALICE, 10);
         // Storage keeps the order, so this has run once the spend has.
         assertEquals(OptionalLong.of(4), wallet.spend(ALICE, 6).join());
@@ -56,6 +62,7 @@ class WalletTest {
 
     @Test
     void givingReturnsAndCachesTheNewBalance() {
+        wallet.load(ALICE);
         wallet.give(ALICE, 4).join();
 
         assertEquals(9, wallet.give(ALICE, 5).join());
@@ -64,6 +71,7 @@ class WalletTest {
 
     @Test
     void aFailedSpendLeavesTheCache() {
+        wallet.load(ALICE);
         wallet.credit(ALICE, 3);
         wallet.balance(ALICE).join();
 
@@ -74,6 +82,7 @@ class WalletTest {
 
     @Test
     void takingUpdatesTheCacheAndFloorsAtZero() {
+        wallet.load(ALICE);
         wallet.credit(ALICE, 3);
 
         assertEquals(0, wallet.take(ALICE, 10).join());
@@ -84,7 +93,9 @@ class WalletTest {
     @Test
     void loadingReadsStorageAndForgettingDropsIt() {
         wallet.credit(ALICE, 8);
+        wallet.load(ALICE);
         wallet.balance(ALICE).join();
+        assertEquals(OptionalLong.of(8), wallet.balances().of(ALICE));
         wallet.forget(ALICE);
         assertTrue(wallet.balances().of(ALICE).isEmpty());
 
@@ -96,5 +107,20 @@ class WalletTest {
         wallet.take(ALICE, 3).join();
 
         assertEquals(OptionalLong.of(5), wallet.balances().of(ALICE));
+    }
+
+    @Test
+    void aResultThatArrivesAfterForgettingIsNotCached() {
+        var queued = new ArrayList<Runnable>();
+        var slow = new Wallet(new PointsLedger(storage), new Balances(), queued::add, LOGGER);
+        slow.load(ALICE);
+        slow.credit(ALICE, 5);
+        // Storage has the load and the credit done once this read has; their hops back to the server thread wait in the queue.
+        storage.submit(connection -> null).join();
+        slow.forget(ALICE);
+
+        queued.forEach(Runnable::run);
+
+        assertTrue(slow.balances().of(ALICE).isEmpty());
     }
 }

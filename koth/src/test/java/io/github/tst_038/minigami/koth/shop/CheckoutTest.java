@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.AfterEach;
@@ -57,7 +58,7 @@ class CheckoutTest {
         wallet = new Wallet(new PointsLedger(storage), new Balances(), Runnable::run, LOGGER);
         try (var in = getClass().getResourceAsStream("/messages/en.yml")) {
             var messages = new Messages(YamlConfiguration.loadConfiguration(new InputStreamReader(Objects.requireNonNull(in), StandardCharsets.UTF_8)), LOGGER);
-            checkout = new Checkout(messages, wallet, inMatch::contains, Runnable::run, LOGGER);
+            checkout = new Checkout(server(), messages, wallet, inMatch::contains, Runnable::run, LOGGER);
         }
         alice = player();
         wallet.credit(ALICE, 100);
@@ -81,6 +82,15 @@ class CheckoutTest {
                     }
                     case "equals" -> proxy == args[0];
                     case "hashCode" -> System.identityHashCode(proxy);
+                    default -> throw new UnsupportedOperationException(method.getName());
+                });
+    }
+
+    /** Finds Alice by her id, while she is online. */
+    private Server server() {
+        return (Server) Proxy.newProxyInstance(Server.class.getClassLoader(), new Class<?>[] {Server.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "getPlayer" -> online && ALICE.equals(args[0]) ? alice : null;
                     default -> throw new UnsupportedOperationException(method.getName());
                 });
     }
@@ -132,11 +142,21 @@ class CheckoutTest {
     }
 
     @Test
-    void aRewardThatCantBeGivenGivesThePointsBack() {
-        checkout.buy(alice, entry(60, reward("one", false), reward("two", true)));
+    void aFirstRewardThatCantBeGivenGivesThePointsBack() {
+        checkout.buy(alice, entry(60, reward("one", true), reward("two", false)));
 
         assertEquals(100, pointsAfterSettling());
+        assertEquals(List.of(), given);
         assertEquals(true, told.getLast().contains("you kept your points"), told.getLast());
+    }
+
+    @Test
+    void aLaterRewardThatCantBeGivenKeepsThePointsTaken() {
+        checkout.buy(alice, entry(60, reward("one", false), reward("two", true)));
+
+        assertEquals(40, pointsAfterSettling());
+        assertEquals(List.of("one"), given);
+        assertEquals(true, told.getLast().contains("Part of it couldn't be given"), told.getLast());
     }
 
     @Test

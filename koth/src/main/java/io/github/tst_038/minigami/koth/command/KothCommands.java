@@ -203,10 +203,6 @@ public final class KothCommands {
             case TAKE -> wallet.take(id, amount);
         };
         result.whenCompleteAsync((points, failure) -> {
-            // The cache is for players who are here; this one was only filled for the command.
-            if (server.getPlayer(id) == null) {
-                wallet.forget(id);
-            }
             if (failure != null) {
                 logger.log(Level.SEVERE, "Could not " + what.name().toLowerCase(Locale.ROOT) + " the points of " + name, failure);
                 messages.send(sender, "admin.storage-failed");

@@ -38,11 +38,13 @@ shop:
   busy: "%prefix%<gray>Still buying your last pick…"
   unavailable: "%prefix%<red>The shop isn't set up; staff can see why in the log."
   failed: "%prefix%<red>Something went wrong; you kept your points."
+  partly-failed: "%prefix%<red>Part of it couldn't be given; staff can see it in the log."
 admin:
   reload-done: "%prefix%<green>Reloaded."
   # %problem%
   reload-problem: "%prefix%<red>%problem%"
   reload-kept: "%prefix%<yellow>%file% has problems, so the previous one stays in use."
+  reload-unusable: "%prefix%<yellow>%file% has problems, so it isn't used."
   started: "%prefix%<green>Started KOTH."
   stopped: "%prefix%<green>Stopped KOTH."
   already-running: "%prefix%<red>KOTH is already running."
