@@ -326,6 +326,7 @@ stats:
     blocks-stolen: "blocks stolen"
     items-handed-in: "items handed in"
     king-kills: "kings killed"
+    captures: "hills captured"
 
 lobby:
   none: "%prefix%<red>No lobby set. Use <white>/mga lobby set</white>."
