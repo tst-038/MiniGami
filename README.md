@@ -368,6 +368,11 @@ public void onLeave(MiniGamiPlayerLeaveEvent event) {
 }
 ```
 
+Both events run synchronously on the server thread. After a server crash, the saved state is given back at the
+player's next login without a leave event, since no join was seen since the restart.
+
+### Rewards
+
 To read the same `saved:` items in your own config, the `io.github.tst_038.minigami.api.loot` package has
 `MiniGamiSavedItems`, another Bukkit service: `find(name)` gives a copy of the item saved with `/mga loot save <name>`,
 `has(name)` whether there is one. Items can be saved and deleted while the server runs, so look one up when you need it.
@@ -375,17 +380,17 @@ To read the same `saved:` items in your own config, the `io.github.tst_038.minig
 `{ command: ..., name: ... }`) into `Reward`s you can `give(player)`; create it with the service:
 `new RewardReader(getServer().getServicesManager().load(MiniGamiSavedItems.class))`.
 
-Both events run synchronously on the server thread. After a server crash, the saved state is given back at the
-player's next login without a leave event, since no join was seen since the restart.
-
 ### Keeping stats outside matches
 
-`MiniGamiStats`, a Bukkit service in `io.github.tst_038.minigami.api.stat` (a stat is `io.github.tst_038.minigami.core.stat.Stat`), lets your plugin keep stats that show up in
-MiniGami's stats commands, leaderboards (all time, weekly and monthly) and `%mg_...%` placeholders. Pick a game id no
-MiniGami game uses (lower case letters, digits and dashes) and call it from the server thread. Amounts are added as of
-today, negative ones take away, and `played` and `wins` are MiniGami's own and refused. Storing happens in the
-background and failures are logged by MiniGami. Players see the change in their own stats soon after; leaderboards take
-it up when they refresh, every few minutes.
+`MiniGamiStats`, a Bukkit service in `io.github.tst_038.minigami.api.stat` (a stat is
+`io.github.tst_038.minigami.core.stat.Stat`), lets your plugin keep stats that show up in MiniGami's stats commands,
+leaderboards (all time, weekly and monthly) and `%mg_...%` placeholders. Pick a game id no MiniGami game uses (lower
+case letters, digits and dashes) and call it from the server thread. Amounts are added as of today, negative ones take
+away, and `played` and `wins` are MiniGami's own and refused. Storing happens in the background and failures are
+logged by MiniGami. Leaderboards and profiles show the change right after the call.
+
+Give each stat a display name in MiniGami's `messages/en.yml`, as `stats.name.<stat>` (`seconds-on-hill` in the
+example below). Games that were removed from the configuration but still have stored stats appear in `/mg stats`.
 
 ```java
 var stats = getServer().getServicesManager().load(MiniGamiStats.class); // null without MiniGami

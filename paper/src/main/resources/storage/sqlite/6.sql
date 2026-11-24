@@ -14,7 +14,8 @@ CREATE TABLE player_daily_stats (
 CREATE INDEX player_daily_stats_by_day ON player_daily_stats (day);
 
 -- The matches played so far, from the history. The day is the match's end, ended_at being epoch milliseconds,
--- turned into the server's local day: strftime reads the local time as if it were UTC, which makes its seconds local.
+-- turned into a local day with SQLite's 'localtime', which is the operating system's time zone: the JVM default
+-- unless -Duser.timezone overrides it. A one-time approximation for matches played before this table existed.
 INSERT INTO player_daily_stats (player, game, variant, stat, day, amount)
 SELECT s.player, m.game, m.variant, s.stat, CAST(strftime('%s', m.ended_at / 1000, 'unixepoch', 'localtime') AS INTEGER) / 86400, SUM(s.amount)
 FROM match_stats s JOIN matches m ON m.id = s.match_id

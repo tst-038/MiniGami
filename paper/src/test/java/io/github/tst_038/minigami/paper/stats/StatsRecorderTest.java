@@ -152,7 +152,7 @@ class StatsRecorderTest {
         storage = new SqliteStorage(folder.resolve("old.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage",
                 Logger.getLogger(getClass().getName()));
 
-        // SQLite works out the local day with the operating system's zone, as the JVM's default is.
+        // SQLite's localtime is the operating system's zone, which is the JVM default unless -Duser.timezone overrides it.
         var day = LocalDate.ofInstant(Instant.ofEpochMilli(end), ZoneId.systemDefault()).toEpochDay();
         assertEquals(List.of(
                         "alice tdm big kills " + day + " 5", "alice tdm big played " + day + " 2", "alice tdm big wins " + day + " 1",
