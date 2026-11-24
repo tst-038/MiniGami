@@ -64,8 +64,8 @@ public final class StatsView {
     public Set<String> boardStats(String gameId) {
         var stats = new TreeSet<>(leaderboards.stats(gameId));
         games.get().find(gameId).ifPresent(game -> {
-            stats.add(Leaderboards.WINS);
-            stats.add(Leaderboards.PLAYED);
+            stats.add(Stat.WINS);
+            stats.add(Stat.PLAYED);
             stats.addAll(statIds(game));
         });
         return stats;
@@ -217,8 +217,8 @@ public final class StatsView {
 
     private static long amount(Totals totals, String stat) {
         return switch (stat) {
-            case Leaderboards.WINS -> totals.wins();
-            case Leaderboards.PLAYED -> totals.played();
+            case Stat.WINS -> totals.wins();
+            case Stat.PLAYED -> totals.played();
             default -> totals.stat(new Stat(stat));
         };
     }

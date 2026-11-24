@@ -387,7 +387,7 @@ To read the same `saved:` items in your own config, the `io.github.tst_038.minig
 leaderboards (all time, weekly and monthly) and `%mg_...%` placeholders. Pick a game id no MiniGami game uses (lower
 case letters, digits and dashes) and call it from the server thread. Amounts are added as of today, negative ones take
 away, and `played` and `wins` are MiniGami's own and refused. Storing happens in the background and failures are
-logged by MiniGami. Leaderboards and profiles show the change right after the call.
+logged by MiniGami. Profiles of players who are online and the leaderboards load the change again on the next server tick, in the background.
 
 Give each stat a display name in MiniGami's `messages/en.yml`, as `stats.name.<stat>` (`seconds-on-hill` in the
 example below). Games that were removed from the configuration but still have stored stats appear in `/mg stats`.

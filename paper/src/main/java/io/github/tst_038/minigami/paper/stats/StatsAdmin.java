@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.stats;
 
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.core.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -177,7 +178,7 @@ public final class StatsAdmin {
     }
 
     private static boolean isTotal(String stat) {
-        return stat.equals(Leaderboards.WINS) || stat.equals(Leaderboards.PLAYED);
+        return new Stat(stat).keptByMiniGami();
     }
 
     /** The stat summed over the game's variants, as the stats and boards show it. */
@@ -202,23 +203,7 @@ public final class StatsAdmin {
             StatRows.addTotal(connection, id, game, "", stat, delta);
             return;
         }
-        try (var statement = connection.prepareStatement(
-                "UPDATE player_totals SET " + stat + " = " + stat + " + ? WHERE player = ? AND game = ? AND variant = ''")) {
-            statement.setLong(1, delta);
-            statement.setString(2, id.toString());
-            statement.setString(3, game);
-            if (statement.executeUpdate() > 0) {
-                return;
-            }
-        }
-        try (var statement = connection.prepareStatement(
-                "INSERT INTO player_totals (player, game, variant, played, wins, placed, place_sum, left_matches, seconds_played) VALUES (?, ?, '', "
-                        + (stat.equals(Leaderboards.PLAYED) ? "?, 0" : "0, ?") + ", 0, 0, 0, 0)")) {
-            statement.setString(1, id.toString());
-            statement.setString(2, game);
-            statement.setLong(3, delta);
-            statement.executeUpdate();
-        }
+        StatRows.addMatchTotals(connection, id, game, "", stat.equals(Stat.PLAYED) ? delta : 0, stat.equals(Stat.WINS) ? delta : 0, 0, 0, 0, 0);
     }
 
     private static void delete(Connection connection, String table, String where, String player, Optional<String> game) throws SQLException {

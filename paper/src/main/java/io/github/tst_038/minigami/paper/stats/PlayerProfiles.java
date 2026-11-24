@@ -196,11 +196,11 @@ public final class PlayerProfiles implements Listener {
         amounts.forEach((key, byStat) -> {
             var stats = new HashMap<Stat, Long>();
             byStat.forEach((stat, amount) -> {
-                if (amount > 0 && !stat.equals(Leaderboards.PLAYED) && !stat.equals(Leaderboards.WINS)) {
+                if (amount > 0 && !new Stat(stat).keptByMiniGami()) {
                     stats.put(new Stat(stat), amount);
                 }
             });
-            byVariant.put(key, new Totals(byStat.getOrDefault(Leaderboards.PLAYED, 0L), byStat.getOrDefault(Leaderboards.WINS, 0L), 0, 0, 0,
+            byVariant.put(key, new Totals(byStat.getOrDefault(Stat.PLAYED, 0L), byStat.getOrDefault(Stat.WINS, 0L), 0, 0, 0,
                     Duration.ZERO, stats));
         });
         return new Profile(byVariant);

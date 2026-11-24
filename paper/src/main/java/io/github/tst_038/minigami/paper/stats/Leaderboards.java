@@ -32,12 +32,6 @@ import org.bukkit.event.Listener;
  */
 public final class Leaderboards implements Listener {
 
-    /** The board of matches won; besides {@link #PLAYED}, every other board is a stat. */
-    public static final String WINS = Stat.WINS;
-
-    /** The board of matches played, which every game has without keeping it as a stat. */
-    public static final String PLAYED = Stat.PLAYED;
-
     /** @param name the name they last joined with; empty if nobody knows it, e.g. they haven't joined since names were kept */
     public record Entry(UUID id, Optional<String> name, long amount) {
     }
@@ -137,7 +131,7 @@ public final class Leaderboards implements Listener {
                     GROUP BY player, game, stat HAVING SUM(amount) > 0
                 UNION ALL
                 SELECT player, game, variant, stat, amount FROM player_stat_totals WHERE amount > 0 AND variant <> ''""",
-                List.of(WINS, WINS, PLAYED, PLAYED), read);
+                List.of(Stat.WINS, Stat.WINS, Stat.PLAYED, Stat.PLAYED), read);
         var today = LocalDate.now(clock);
         for (var period : List.of(Period.WEEK, Period.MONTH)) {
             var first = period.firstDay(today).orElseThrow().toEpochDay();

@@ -143,8 +143,8 @@ class PluginStatsTest {
 
     @Test
     void theStatsMiniGamiKeepsItselfAreRefusedAndNothingIsStored() {
-        assertThrows(IllegalArgumentException.class, () -> stats.add("koth", Map.of(alice, Map.of(new Stat("played"), 1L))));
-        assertThrows(IllegalArgumentException.class, () -> stats.add("koth", Map.of(alice, Map.of(new Stat("wins"), 1L))));
+        assertThrows(IllegalArgumentException.class, () -> stats.add("koth", Map.of(alice, Map.of(new Stat(Stat.PLAYED), 1L))));
+        assertThrows(IllegalArgumentException.class, () -> stats.add("koth", Map.of(alice, Map.of(new Stat(Stat.WINS), 1L))));
         settle();
 
         assertEquals(List.of(), rows("SELECT * FROM player_stat_totals"));

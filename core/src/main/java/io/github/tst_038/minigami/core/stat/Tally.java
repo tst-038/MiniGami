@@ -19,8 +19,8 @@ public final class Tally {
      * @throws IllegalArgumentException for {@link Stat#WINS} and {@link Stat#PLAYED}
      */
     public void add(UUID id, Stat stat, long amount) {
-        if (stat.id().equals(Stat.WINS) || stat.id().equals(Stat.PLAYED)) {
-            throw new IllegalArgumentException("'" + stat.id() + "' is kept by MiniGami from the results of the matches, not counted as a stat");
+        if (stat.keptByMiniGami()) {
+            throw new IllegalArgumentException("'" + stat.id() + "' is kept by MiniGami from its matches, not counted as a stat");
         }
         counts.computeIfAbsent(id, key -> new HashMap<>()).merge(stat, amount, Long::sum);
     }

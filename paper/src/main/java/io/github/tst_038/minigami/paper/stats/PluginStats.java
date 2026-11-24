@@ -22,11 +22,14 @@ import java.util.logging.Logger;
  */
 public final class PluginStats implements MiniGamiStats {
 
+    private record Row(UUID player, String stat, long amount) {
+    }
+
     private final Storage storage;
     private final PlayerProfiles profiles;
-    private final Clock clock;
     private final Leaderboards leaderboards;
     private final Executor serverThread;
+    private final Clock clock;
     private final Logger logger;
     // Only used on the server thread.
     private final Set<UUID> pendingPlayers = new HashSet<>();
@@ -41,9 +44,6 @@ public final class PluginStats implements MiniGamiStats {
         this.logger = logger;
     }
 
-    private record Row(UUID player, String stat, long amount) {
-    }
-
     @Override
     public void add(String game, Map<UUID, Map<Stat, Long>> amounts) {
         if (!IdRegistry.isValid(game)) {
@@ -52,8 +52,8 @@ public final class PluginStats implements MiniGamiStats {
         // Copied before the background work reads it, and checked before any of it is stored.
         var rows = new ArrayList<Row>();
         amounts.forEach((player, byStat) -> byStat.forEach((stat, amount) -> {
-            if (stat.id().equals(Leaderboards.PLAYED) || stat.id().equals(Leaderboards.WINS)) {
-                throw new IllegalArgumentException("'" + stat.id() + "' is kept by MiniGami from its matches");
+            if (stat.keptByMiniGami()) {
+                throw new IllegalArgumentException("'" + stat.id() + "' is kept by MiniGami from its matches, not counted as a stat");
             }
             if (amount != 0) {
                 rows.add(new Row(player, stat.id(), amount));

@@ -97,13 +97,13 @@ class LeaderboardsTest {
         assertEquals(List.of(new Entry(carol, Optional.empty(), 10), new Entry(bob, Optional.of("Bob"), 6)),
                 leaderboards.top("tdm", Optional.empty(), KILLS.id()), "the variants added up, cut to the size; carol never joined, so no name");
         assertEquals(List.of(new Entry(alice, Optional.of("Alice"), 2), new Entry(bob, Optional.of("Bob"), 1)),
-                leaderboards.top("tdm", Optional.empty(), Leaderboards.WINS));
+                leaderboards.top("tdm", Optional.empty(), Stat.WINS));
         assertEquals(List.of(new Entry(carol, Optional.empty(), 9)), leaderboards.top("tdm", Optional.of("big"), KILLS.id()));
-        assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 1)), leaderboards.top("tdm", Optional.of("big"), Leaderboards.WINS));
-        assertEquals(List.of(3L, 3L), leaderboards.top("tdm", Optional.empty(), Leaderboards.PLAYED).stream().map(Entry::amount).toList(),
+        assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 1)), leaderboards.top("tdm", Optional.of("big"), Stat.WINS));
+        assertEquals(List.of(3L, 3L), leaderboards.top("tdm", Optional.empty(), Stat.PLAYED).stream().map(Entry::amount).toList(),
                 "everyone played all three matches, variants added up");
-        assertEquals(List.of(1L, 1L), leaderboards.top("tdm", Optional.of("big"), Leaderboards.PLAYED).stream().map(Entry::amount).toList());
-        assertEquals(Set.of(Leaderboards.WINS, Leaderboards.PLAYED, KILLS.id()), leaderboards.stats("tdm"));
+        assertEquals(List.of(1L, 1L), leaderboards.top("tdm", Optional.of("big"), Stat.PLAYED).stream().map(Entry::amount).toList());
+        assertEquals(Set.of(Stat.WINS, Stat.PLAYED, KILLS.id()), leaderboards.stats("tdm"));
         assertEquals(Set.of("tdm"), leaderboards.games());
 
         play(Optional.empty(), bob, Map.of(alice, 10L));
@@ -149,12 +149,12 @@ class LeaderboardsTest {
         settle();
 
         assertEquals(List.of(new Entry(alice, Optional.of("Alice"), 2), new Entry(bob, Optional.of("Bob"), 1)),
-                leaderboards.top(Period.MONTH, "tdm", Optional.empty(), Leaderboards.WINS));
-        assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 1)), leaderboards.top(Period.WEEK, "tdm", Optional.empty(), Leaderboards.WINS),
+                leaderboards.top(Period.MONTH, "tdm", Optional.empty(), Stat.WINS));
+        assertEquals(List.of(new Entry(bob, Optional.of("Bob"), 1)), leaderboards.top(Period.WEEK, "tdm", Optional.empty(), Stat.WINS),
                 "last week's matches count in the month but not the week");
-        assertEquals(List.of(1L, 1L), leaderboards.top(Period.WEEK, "tdm", Optional.empty(), Leaderboards.PLAYED).stream().map(Entry::amount).toList());
-        assertEquals(List.of(3L, 3L), leaderboards.top(Period.MONTH, "tdm", Optional.empty(), Leaderboards.PLAYED).stream().map(Entry::amount).toList());
-        assertEquals(List.of(1L, 1L), leaderboards.top(Period.WEEK, "tdm", Optional.of("big"), Leaderboards.PLAYED).stream().map(Entry::amount).toList());
-        assertEquals(Set.of(Leaderboards.WINS, Leaderboards.PLAYED), leaderboards.stats("tdm"));
+        assertEquals(List.of(1L, 1L), leaderboards.top(Period.WEEK, "tdm", Optional.empty(), Stat.PLAYED).stream().map(Entry::amount).toList());
+        assertEquals(List.of(3L, 3L), leaderboards.top(Period.MONTH, "tdm", Optional.empty(), Stat.PLAYED).stream().map(Entry::amount).toList());
+        assertEquals(List.of(1L, 1L), leaderboards.top(Period.WEEK, "tdm", Optional.of("big"), Stat.PLAYED).stream().map(Entry::amount).toList());
+        assertEquals(Set.of(Stat.WINS, Stat.PLAYED), leaderboards.stats("tdm"));
     }
 }

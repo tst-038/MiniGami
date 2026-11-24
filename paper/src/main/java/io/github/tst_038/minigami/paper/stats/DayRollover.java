@@ -8,10 +8,12 @@ import java.time.ZonedDateTime;
 /**
  * Runs something at each midnight of the clock's time zone, such as loading the stats of the week and month again once the date has
  * changed. Waits until the next midnight and then schedules the one after, so it stays exact across days of 23 or 25 hours.
+ *
+ * <p>Not thread safe: {@link #start} and {@link #stop} are called on the server thread, and the {@link Timer} must run the task there too.
  */
 public final class DayRollover {
 
-    /** Runs a task once after a delay, on whichever thread suits it. */
+    /** Runs a task once after a delay, on the thread that calls {@link #start} and {@link #stop}: the server thread. */
     public interface Timer {
         /** @return what cancels the task if it has not run yet */
         Runnable after(Duration delay, Runnable task);

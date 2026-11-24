@@ -20,7 +20,6 @@ public final class StatPlaceholders {
 
     private static final String WEEKLY = "weekly_";
     private static final String MONTHLY = "monthly_";
-    private static final String PLAYED = Stat.PLAYED;
 
     private final Leaderboards leaderboards;
     private final PlayerProfiles profiles;
@@ -83,8 +82,8 @@ public final class StatPlaceholders {
         var totals = parts.length == 4 ? profile.get().variant(game, Optional.of(parts[2])) : profile.get().game(game);
         var stat = parts[parts.length - 1];
         return Long.toString(switch (stat) {
-            case Leaderboards.WINS -> totals.wins();
-            case PLAYED -> totals.played();
+            case Stat.WINS -> totals.wins();
+            case Stat.PLAYED -> totals.played();
             default -> totals.stat(new Stat(stat));
         });
     }

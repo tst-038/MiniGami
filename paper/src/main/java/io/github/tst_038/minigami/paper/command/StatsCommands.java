@@ -8,7 +8,7 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import io.github.tst_038.minigami.api.message.Messages;
-import io.github.tst_038.minigami.paper.stats.Leaderboards;
+import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.paper.stats.StatsAdmin;
 import io.github.tst_038.minigami.paper.stats.StatsView;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -50,7 +50,7 @@ final class StatsCommands {
         return Commands.literal("leaderboard")
                 .then(Commands.argument("game", StringArgumentType.word())
                         .suggests(suggest(view::gameIds))
-                        .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), Leaderboards.WINS, Optional.empty())))
+                        .executes(bySender((sender, context) -> view.top(sender, string(context, "game"), Stat.WINS, Optional.empty())))
                         .then(Commands.argument("stat", StringArgumentType.word())
                                 .suggests(suggest(context -> view.boardStats(string(context, "game"))))
                                 .executes(bySender((sender, context) ->
