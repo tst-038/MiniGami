@@ -665,7 +665,7 @@ night:
   # %player%: who the host kicked
   kicked: "%prefix%<green>Kicked <white>%player%</white> from the night."
   added: "%prefix%<green>Added <white>%player%</white> to the night."
-  # %count%: players signed up by add-all; staff, those already in and those without the night's permission are skipped
+  # %count%: players signed up by add all; staff, those already in and those without the night's permission are skipped
   added-all: "%prefix%<green>Added <white>%count%</white> players to the night. <gray>Staff join themselves."
   player-already-in-night: "%prefix%<red><white>%player%</white> is already in the night."
   you-were-kicked: "%prefix%<red>You were kicked from the night."
