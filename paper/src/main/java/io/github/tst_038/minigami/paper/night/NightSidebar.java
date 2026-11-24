@@ -4,6 +4,9 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.gamenight.night.Night;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.Optional;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Server;
@@ -15,8 +18,6 @@ import org.bukkit.scoreboard.Scoreboard;
 /**
  * The standings on the sidebar of the night's players, between games. A game shows its own sidebar
  * while it runs, so this is hidden before a game and shown again after it.
- *
- * <p>shortcut: hiding gives players the main scoreboard, not one another plugin had given them; remember theirs when a server needs that.
  */
 public final class NightSidebar {
 
@@ -25,6 +26,8 @@ public final class NightSidebar {
     private final NightReport report;
     /** The board last shown, so only players who still have it are taken off it. */
     private Scoreboard shown;
+    /** The board each player had before, to give back; whatever another plugin gave them, not ours. */
+    private final Map<UUID, Scoreboard> previous = new HashMap<>();
 
     public NightSidebar(Server server, Messages messages, NightReport report) {
         this.server = server;
@@ -45,15 +48,22 @@ public final class NightSidebar {
             score.setScore(lines.size() - i);
             score.customName(lines.get(i));
         }
+        for (Player player : players) {
+            // Showing again replaces our own board, which is not theirs to get back.
+            if (player.getScoreboard() != shown) {
+                previous.put(player.getUniqueId(), player.getScoreboard());
+            }
+            player.setScoreboard(board);
+        }
         shown = board;
-        players.forEach(player -> player.setScoreboard(board));
     }
 
     /** Takes the sidebar away from those who have it; players in a game have its own board and keep it. */
     void hide(Collection<Player> players) {
         for (Player player : players) {
+            var old = previous.remove(player.getUniqueId());
             if (shown != null && player.getScoreboard() == shown) {
-                player.setScoreboard(server.getScoreboardManager().getMainScoreboard());
+                player.setScoreboard(old != null && old != shown ? old : server.getScoreboardManager().getMainScoreboard());
             }
         }
     }
