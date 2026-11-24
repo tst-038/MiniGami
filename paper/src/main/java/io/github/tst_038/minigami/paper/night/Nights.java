@@ -165,8 +165,7 @@ public final class Nights implements Listener {
         var name = Placeholder.parsed("name", template.get().name());
         messages.send(host, "night.opened", name);
         var permission = PlayPermissions.night(template.get().id());
-        var mayJoin = plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(permission));
-        messages.send(mayJoin, "night.open", name, Placeholder.styling("join", Clicks.by(player -> {
+        messages.send(mayJoin(active.night), "night.open", name, Placeholder.styling("join", Clicks.by(player -> {
             if (player.hasPermission(permission)) {
                 join(player);
             }
@@ -220,9 +219,18 @@ public final class Nights implements Listener {
                 showSidebar(night, List.of(joining));
             }
             messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
+            messages.send(mayJoin(night), "night.onlooker-joined", Placeholder.component("player", joining.name()),
+                    Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
             // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
             night.teams().ifPresent(formed -> tellTeam(night, joining));
         }
+    }
+
+    /** Online players outside the night who may sign up for it. */
+    private Audience mayJoin(Night night) {
+        var permission = PlayPermissions.night(night.template().id());
+        return plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(permission)
+                && !night.players().contains(player.getUniqueId()));
     }
 
     /** A host signs a player up, whatever their party or permission. */

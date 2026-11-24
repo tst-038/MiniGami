@@ -69,6 +69,8 @@ match:
   # schedule opened only minigami.schedule.join.<schedule>, and for a game night's only minigami.night.join.<night>.
   # %game%: the game's or variant's name; the rest as in winner, winner-team
   onlookers:
+    # To those who may still join a public or scheduled game, while it gathers. %player%, %players%, %needed%, %game%
+    joined: "%prefix%<white>%player%</white> <gray>joined %game%<gray> <dark_gray>(<white>%players%</white>/%needed%)"
     winner: "%prefix%<gold>%player%</gold> <gray>won %game%<gray>!"
     winner-team: "%prefix%%players% <gray>won %game%<gray>!"
     no-winner: "%prefix%<gray>Nobody won %game%<gray>."
@@ -656,6 +658,8 @@ night:
   joined: "%prefix%<green>You joined %name%<green>. <gray>(<white>%count%</white> players)"
   # %player%
   player-joined: "%prefix%<white>%player%</white> <green>joined the night."
+  # To those who may sign up for the night and haven't. %player%, %name%: the night, %count%: how many are in it now
+  onlooker-joined: "%prefix%<white>%player%</white> <gray>joined %name%<gray>. <dark_gray>(<white>%count%</white> players)"
   left: "%prefix%<yellow>You left the night. <gray>Your points are kept."
   player-left: "%prefix%<white>%player%</white> <yellow>left the night."
   # %player%: who the host kicked

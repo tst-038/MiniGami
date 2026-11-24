@@ -66,6 +66,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.damage.DamageSource;
@@ -517,8 +518,13 @@ public final class LiveMatch {
         match.roster().add(id);
         members.add(id);
         hud.show(player);
-        messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
-                Formatter.number("players", match.roster().size()), Formatter.number("needed", variant.minPlayers()));
+        var joined = new TagResolver[] { Placeholder.component("player", player.name()), Formatter.number("players", match.roster().size()),
+                Formatter.number("needed", variant.minPlayers()) };
+        messages.send(audience(), "match.joined", joined);
+        // Those who may still join see it fill up; a private match, such as a night's game, only takes who its opener puts in.
+        if (isPublic()) {
+            messages.send(onlookers(), "match.onlookers.joined", TagResolver.resolver(joined), Placeholder.parsed("game", variant.name()));
+        }
         if (startDelay == null && match.roster().size() >= variant.minPlayers()) {
             prepareStart();
             // The arena is built while they wait, and they land on spawns that stand in the finished maze.
