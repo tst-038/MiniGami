@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.logging.Logger;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -74,7 +73,7 @@ class RewardGiveTest {
                 return false;
             }
         };
-        var reward = new SavedReward("crate-key", 1, Optional.empty(), none, Logger.getLogger("test"));
+        var reward = new SavedReward("crate-key", 1, Optional.empty(), none);
 
         var failed = assertThrows(RewardFailedException.class, () -> reward.give(player(true, new ArrayList<>())));
 

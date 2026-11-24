@@ -52,6 +52,7 @@ public final class KothPlugin extends JavaPlugin {
     /** Who asked for a load that hasn't finished; the newest load answers them all, also those of loads it overtook. */
     private final Queue<Audience> requesters = new ConcurrentLinkedQueue<>();
     private Storage storage;
+    private HandledWindows handledWindows;
     private KothRuntime runtime;
     private KothSidebar sidebar;
     private RewardReader rewards;
@@ -80,9 +81,9 @@ public final class KothPlugin extends JavaPlugin {
         var wallet = new Wallet(new PointsLedger(storage), new Balances(), serverThread, getLogger());
         var clock = Clock.systemDefaultZone();
         var buffer = new StatBuffer();
-        var handledWindows = new HandledWindows(storage);
+        handledWindows = new HandledWindows(storage);
         runtime = new KothRuntime(getServer(), messages, wallet, stats, players, buffer, clock, RandomGenerator.getDefault(),
-                lastDismissed(handledWindows), start -> handledWindows.remember(start).exceptionally(failure -> {
+                start -> handledWindows.remember(start).exceptionally(failure -> {
                     getLogger().log(Level.WARNING, "Could not remember that the window of " + start + " was skipped or stopped", failure);
                     return null;
                 }));
@@ -90,7 +91,7 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BalanceListener(wallet), this);
         getServer().getPluginManager().registerEvents(new CombatListener(runtime, buffer, players), this);
         getServer().getPluginManager().registerEvents(new RespawnListener(runtime::config), this);
-        rewards = new RewardReader(savedItems, getLogger());
+        rewards = new RewardReader(savedItems);
         getServer().getPluginManager().registerEvents(new ShopListener(new Checkout(getServer(), messages, wallet, players, serverThread, getLogger())), this);
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
         sidebar = new KothSidebar(getServer(), messages, players, clock);
@@ -109,16 +110,6 @@ public final class KothPlugin extends JavaPlugin {
         loadConfig(files, messages, null);
     }
 
-    /** shortcut: waits for one small read while enabling; make it async if the database ever gets slow. */
-    private Optional<LocalDateTime> lastDismissed(HandledWindows handledWindows) {
-        try {
-            return handledWindows.last().join();
-        } catch (CompletionException e) {
-            getLogger().log(Level.WARNING, "Could not read which window was last skipped or stopped, so it may start after all", e.getCause());
-            return Optional.empty();
-        }
-    }
-
     /**
      * Reads the files off the server thread, then applies them on it, unless a newer load has started since.
      *
@@ -134,6 +125,7 @@ public final class KothPlugin extends JavaPlugin {
             var configText = files.readConfig(problems);
             var shopText = files.readShop(problems);
             var messageTexts = files.readMessages(problems);
+            var dismissed = lastDismissed();
             if (!isEnabled()) {
                 return;
             }
@@ -146,7 +138,7 @@ public final class KothPlugin extends JavaPlugin {
                 var hadShop = shop != Shop.NONE;
                 var loaded = KothConfigLoader.load(configText, new KothWorld(getServer()));
                 problems.addAll(loaded.problems());
-                loaded.config().ifPresent(runtime::configure);
+                loaded.config().ifPresent(config -> runtime.configure(config, dismissed));
                 var loadedShop = ShopReader.load(shopText, rewards);
                 problems.addAll(loadedShop.problems());
                 loadedShop.shop().ifPresent(read -> shop = read);
@@ -162,6 +154,16 @@ public final class KothPlugin extends JavaPlugin {
                 tell(drain(), messages, problems, unused(loaded.config().isPresent(), hadConfig), unused(loadedShop.shop().isPresent(), hadShop));
             });
         });
+    }
+
+    /** Off the server thread, like the files: the start of the window last skipped or stopped. */
+    private Optional<LocalDateTime> lastDismissed() {
+        try {
+            return handledWindows.last().join();
+        } catch (CompletionException e) {
+            getLogger().log(Level.WARNING, "Could not read which window was last skipped or stopped, so it may start after all", e.getCause());
+            return Optional.empty();
+        }
     }
 
     private List<Audience> drain() {

@@ -3,7 +3,6 @@ package io.github.tst_038.minigami.api.reward;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import java.util.Optional;
-import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 
 /**
@@ -13,10 +12,9 @@ import org.bukkit.entity.Player;
  * been deleted is a {@link RewardFailedException}.
  *
  * @param saved where the item is looked up by {@code item}
- * @param logger where a missing item is reported
  * @param givenName as written; empty shows the amount and the saved name
  */
-record SavedReward(String item, int amount, Optional<String> givenName, MiniGamiSavedItems saved, Logger logger) implements Reward {
+record SavedReward(String item, int amount, Optional<String> givenName, MiniGamiSavedItems saved) implements Reward {
 
     @Override
     public String name() {
@@ -25,10 +23,7 @@ record SavedReward(String item, int amount, Optional<String> givenName, MiniGami
 
     @Override
     public void give(Player player) {
-        var found = saved.find(item).orElseThrow(() -> {
-            logger.warning("The saved item '" + item + "' is gone, so " + player.getName() + " got no reward");
-            return new RewardFailedException("The saved item '" + item + "' is gone");
-        });
+        var found = saved.find(item).orElseThrow(() -> new RewardFailedException("The saved item '" + item + "' is gone"));
         player.getInventory().addItem(found.asQuantity(amount)).values()
                 .forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
     }
@@ -37,11 +32,9 @@ record SavedReward(String item, int amount, Optional<String> givenName, MiniGami
     static final class Type implements RewardType {
 
         private final MiniGamiSavedItems saved;
-        private final Logger logger;
 
-        Type(MiniGamiSavedItems saved, Logger logger) {
+        Type(MiniGamiSavedItems saved) {
             this.saved = saved;
-            this.logger = logger;
         }
 
         @Override
@@ -57,7 +50,7 @@ record SavedReward(String item, int amount, Optional<String> givenName, MiniGami
             }
             int amount = entry.has("amount") ? entry.integer("amount", 1, ItemReward.MOST) : 1;
             var name = entry.has("name") ? Optional.of(entry.string("name")) : Optional.<String>empty();
-            return new SavedReward(item, amount, name, saved, logger);
+            return new SavedReward(item, amount, name, saved);
         }
     }
 }

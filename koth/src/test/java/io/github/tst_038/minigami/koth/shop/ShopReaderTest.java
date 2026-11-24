@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.logging.Logger;
 import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +25,7 @@ class ShopReaderTest {
                 rewards: %s
             """;
 
-    private final RewardReader rewards = new RewardReader(name -> Optional.empty(), Logger.getLogger("test"));
+    private final RewardReader rewards = new RewardReader(name -> Optional.empty());
 
     private ShopReader.Loaded load(String yaml) {
         return ShopReader.load(yaml, rewards);

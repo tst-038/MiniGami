@@ -189,7 +189,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
             StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues, nightValues);
         }
         getServer().getServicesManager().register(MiniGamiSavedItems.class, savedItems, this, ServicePriority.Normal);
-        rewardReader = new RewardReader(savedItems, getLogger());
+        rewardReader = new RewardReader(savedItems);
         var presence = new PlayerPresence(getServer());
         getServer().getServicesManager().register(MiniGamiPlayers.class, presence, this, ServicePriority.Normal);
         getServer().getServicesManager().register(MiniGamiStats.class, new PluginStats(storage, profiles, leaderboards, serverThread, Clock.systemDefaultZone(), getLogger()), this,
