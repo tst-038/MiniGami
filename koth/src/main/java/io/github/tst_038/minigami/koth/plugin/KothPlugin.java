@@ -51,6 +51,8 @@ public final class KothPlugin extends JavaPlugin {
     private KothRuntime runtime;
     private KothSidebar sidebar;
     private RewardReader rewards;
+    /** Takes our PlaceholderAPI expansion away; does nothing when PlaceholderAPI isn't there. */
+    private Runnable unregisterPlaceholders = () -> { };
     private volatile Shop shop = Shop.NONE;
 
     /** What the shop sells now; {@link Shop#NONE} until a usable {@code shop.yml} has been read. */
@@ -83,7 +85,7 @@ public final class KothPlugin extends JavaPlugin {
         getServer().getOnlinePlayers().forEach(player -> wallet.load(player.getUniqueId()));
         sidebar = new KothSidebar(getServer(), messages, players);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), Clock.systemDefaultZone()));
+            unregisterPlaceholders = KothExpansion.register(this, new KothPlaceholders(runtime::status, wallet.balances(), Clock.systemDefaultZone()));
         }
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> {
             runtime.second();
@@ -120,6 +122,8 @@ public final class KothPlugin extends JavaPlugin {
                     return;
                 }
                 messages.replace(messageTexts);
+                var hadConfig = runtime.config().isPresent();
+                var hadShop = shop != Shop.NONE;
                 var loaded = KothConfigLoader.load(configText, new KothWorld(getServer()));
                 problems.addAll(loaded.problems());
                 loaded.config().ifPresent(runtime::configure);
@@ -128,12 +132,14 @@ public final class KothPlugin extends JavaPlugin {
                 loadedShop.shop().ifPresent(read -> shop = read);
                 problems.forEach(problem -> getLogger().warning(problem.toString()));
                 if (loaded.config().isEmpty()) {
-                    getLogger().warning("KOTH has no usable config.yml yet, so it stays off or keeps the one it had.");
+                    getLogger().warning(hadConfig ? "KOTH keeps the config.yml it had, as the new one has problems."
+                            : "KOTH has no usable config.yml yet, so it stays off.");
                 }
                 if (loadedShop.shop().isEmpty()) {
-                    getLogger().warning("KOTH has no usable shop.yml yet, so the shop stays closed or keeps the one it had.");
+                    getLogger().warning(hadShop ? "KOTH keeps the shop.yml it had, as the new one has problems."
+                            : "KOTH has no usable shop.yml yet, so the shop stays closed.");
                 }
-                tell(drain(), messages, problems, loaded.config().isPresent(), loadedShop.shop().isPresent());
+                tell(drain(), messages, problems, unused(loaded.config().isPresent(), hadConfig), unused(loadedShop.shop().isPresent(), hadShop));
             });
         });
     }
@@ -146,16 +152,22 @@ public final class KothPlugin extends JavaPlugin {
         return waiting;
     }
 
-    private void tell(List<Audience> waiting, Messages messages, List<ConfigProblem> problems, boolean configUsed, boolean shopUsed) {
+    /** @return the message that says a file wasn't used, or null if it was */
+    private static String unused(boolean used, boolean hadOne) {
+        return used ? null : hadOne ? "admin.reload-kept" : "admin.reload-unusable";
+    }
+
+    /** @param configNote what to tell about config.yml, or null if it was used; likewise {@code shopNote} */
+    private void tell(List<Audience> waiting, Messages messages, List<ConfigProblem> problems, String configNote, String shopNote) {
         for (Audience audience : waiting) {
             problems.forEach(problem -> messages.send(audience, "admin.reload-problem", Placeholder.unparsed("problem", problem.toString())));
-            if (!configUsed) {
-                messages.send(audience, "admin.reload-kept", Placeholder.unparsed("file", KothFiles.CONFIG));
+            if (configNote != null) {
+                messages.send(audience, configNote, Placeholder.unparsed("file", KothFiles.CONFIG));
             }
-            if (!shopUsed) {
-                messages.send(audience, "admin.reload-kept", Placeholder.unparsed("file", KothFiles.SHOP));
+            if (shopNote != null) {
+                messages.send(audience, shopNote, Placeholder.unparsed("file", KothFiles.SHOP));
             }
-            if (configUsed && shopUsed) {
+            if (configNote == null && shopNote == null) {
                 messages.send(audience, "admin.reload-done");
             }
         }
@@ -163,15 +175,22 @@ public final class KothPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // First, while MiniGami is still enabled to take the last stats.
-        if (runtime != null) {
-            runtime.shutdown();
-        }
-        if (sidebar != null) {
-            sidebar.shutdown();
-        }
-        if (storage != null) {
-            storage.close();
+        unregisterPlaceholders.run();
+        // The runtime first, while MiniGami is still enabled to take the last stats; the rest must happen even if it throws.
+        try {
+            if (runtime != null) {
+                runtime.shutdown();
+            }
+        } finally {
+            try {
+                if (sidebar != null) {
+                    sidebar.shutdown();
+                }
+            } finally {
+                if (storage != null) {
+                    storage.close();
+                }
+            }
         }
     }
 

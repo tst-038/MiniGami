@@ -17,9 +17,15 @@ public final class KothExpansion extends PlaceholderExpansion {
         this.placeholders = placeholders;
     }
 
-    /** Kept registered across PlaceholderAPI reloads, until the plugin stops. */
-    public static void register(Plugin plugin, KothPlaceholders placeholders) {
-        new KothExpansion(plugin, placeholders).register();
+    /**
+     * Kept registered across PlaceholderAPI reloads, until the plugin stops.
+     *
+     * @return what takes it away again
+     */
+    public static Runnable register(Plugin plugin, KothPlaceholders placeholders) {
+        var expansion = new KothExpansion(plugin, placeholders);
+        expansion.register();
+        return expansion::unregister;
     }
 
     @Override
