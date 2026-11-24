@@ -1,0 +1,56 @@
+# MiniGamiKoth. Reload with /kotha reload; a file with problems isn't used, and the problems are listed.
+world:
+  # An existing world folder; it is loaded if it isn't already. A missing folder is a problem: nothing is generated.
+  name: koth
+  # Where /koth join puts players. Left out: the world's spawn.
+  spawn: { x: 0.5, y: 80, z: 0.5, yaw: 0, pitch: 0 }
+  # Players who die here come back at that spawn, unless their bed or anchor is in this world.
+  respawn-here: true
+
+schedule:
+  # cron: KOTH starts at each time below and runs length-minutes.
+  # cycle: active-minutes on, break-minutes off, around the clock, counted from midnight (server time).
+  type: cron
+  # Cron lines in server time: minute hour day-of-month month day-of-week (0 or 7 is Sunday).
+  when:
+    - "0 20 * * 1"    # Mondays 20:00
+    - "0 20 * * 3"    # Wednesdays 20:00
+    - "0 18 * * 6"    # Saturdays 18:00
+  length-minutes: 60
+  # type: cycle
+  # active-minutes: 15
+  # break-minutes: 5
+  # Chat warnings this many minutes before a start; one that falls while KOTH runs is left out.
+  warn-minutes: [60, 15, 2]
+
+point:
+  # The hill: who stands on it alone for capture-seconds takes it, and keeps it until someone else does.
+  region: { from: { x: -2, y: 64, z: -2 }, to: { x: 2, y: 66, z: 2 } }
+  capture-seconds: 5
+  # Optional: the wool, carpet, stained glass (and panes), concrete (and powder) and terracotta in this box
+  # turn a random colour on each capture, and neutral-colour while KOTH isn't running. Stained glass over a beacon colours its beam.
+  colour-blocks: { from: { x: -2, y: 60, z: -2 }, to: { x: 2, y: 63, z: 2 } }
+  neutral-colour: white
+
+scoring:
+  # The holder earns this many points every every-seconds, wherever they are in the world, until someone else takes the hill or KOTH ends.
+  # A holder who leaves the world or the server drops the hill.
+  points: 1
+  every-seconds: 1
+
+restrictions:
+  # A start is skipped, with an announcement, while fewer players than this are online (0: no limit).
+  # A forced start (/kotha start) and a start resumed after a restart ignore it.
+  min-online: 3
+
+# The sidebar of players in the KOTH world. %holder%, %time_left%, %next_start%, %next_in% and %prefix% work here.
+sidebar:
+  title: "<gold><bold>King of the Hill"
+  inactive:
+    - "<gray>Not running"
+    - ""
+    - "<white>Next: <yellow>%next_start%"
+    - "<gray>in %next_in%"
+  active:
+    - "<white>Holder: <gold>%holder%"
+    - "<white>Time left: <yellow>%time_left%"
