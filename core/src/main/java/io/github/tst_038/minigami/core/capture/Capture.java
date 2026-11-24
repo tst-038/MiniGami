@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.domination;
+package io.github.tst_038.minigami.core.capture;
 
 import java.util.List;
 import java.util.Optional;
@@ -9,9 +9,9 @@ import java.util.Optional;
  * owned only while its owner stands on it alone. Contesting it pauses the taking, leaving it empty
  * starts it over, and the owner alone on it fends it off.
  *
- * @param <T> what tells teams apart
+ * @param <T> what tells sides apart, such as a team id or a player's UUID
  */
-final class Capture<T> {
+public final class Capture<T> {
 
     private final int seconds;
     private final boolean keep;
@@ -23,7 +23,7 @@ final class Capture<T> {
      * @param seconds how long a team must stand on the point alone to take it; 1 takes it at once
      * @param keep whether the owner keeps it once it steps off or another team steps on
      */
-    Capture(int seconds, boolean keep) {
+    public Capture(int seconds, boolean keep) {
         this.seconds = seconds;
         this.keep = keep;
     }
@@ -34,7 +34,7 @@ final class Capture<T> {
      * @param present the distinct teams standing on it
      * @return whether the point changed hands
      */
-    boolean tick(List<T> present) {
+    public boolean tick(List<T> present) {
         if (!keep && !(present.size() == 1 && owner.equals(Optional.of(present.getFirst())))) {
             owner = Optional.empty();
         }
@@ -60,21 +60,21 @@ final class Capture<T> {
         return true;
     }
 
-    Optional<T> owner() {
+    public Optional<T> owner() {
         return owner;
     }
 
     /** The team taking the point, while it is not done. */
-    Optional<T> taker() {
+    public Optional<T> taker() {
         return taker;
     }
 
     /** Seconds the taker has stood on it alone so far. */
-    int progress() {
+    public int progress() {
         return progress;
     }
 
-    int seconds() {
+    public int seconds() {
         return seconds;
     }
 }

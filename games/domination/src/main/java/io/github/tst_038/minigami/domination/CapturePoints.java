@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.domination;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.api.feature.MatchContext;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.core.capture.Capture;
 import io.github.tst_038.minigami.core.roster.MatchTeam;
 import io.github.tst_038.minigami.core.stat.Stat;
 import java.util.ArrayList;
