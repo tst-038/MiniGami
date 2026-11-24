@@ -1,8 +1,8 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
-import io.github.tst_038.minigami.paper.config.ConfigLocations;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.config;
 
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;

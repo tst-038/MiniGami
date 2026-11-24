@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;

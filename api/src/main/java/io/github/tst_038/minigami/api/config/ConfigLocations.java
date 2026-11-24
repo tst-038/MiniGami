@@ -1,6 +1,5 @@
-package io.github.tst_038.minigami.paper.config;
+package io.github.tst_038.minigami.api.config;
 
-import io.github.tst_038.minigami.api.config.ConfigReader;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;

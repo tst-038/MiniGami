@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.region;
 
+import io.github.tst_038.minigami.api.config.ConfigReader;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -8,6 +9,11 @@ import org.bukkit.World;
  * part of it. Use {@link #between} to make one from any two corners.
  */
 public record Region(String id, World world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+
+    /** As far as a world reaches in Minecraft, in blocks. */
+    private static final int WORLD_BORDER = 30_000_000;
+    private static final int MIN_Y = -2048;
+    private static final int MAX_Y = 2047;
 
     public Region {
         if (minX > maxX || minY > maxY || minZ > maxZ) {
@@ -24,6 +30,25 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
     public static Region between(String id, World world, int x1, int y1, int z1, int x2, int y2, int z2) {
         return new Region(id, world, Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2),
                 Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2));
+    }
+
+    /**
+     * Reads a region from a config section, {@code { from: { x: -3, y: 64, z: -3 }, to: { x: 3, y: 67, z: 3 } }}; the
+     * corners may be given in either order.
+     */
+    public static Region read(String id, ConfigReader config, World world) {
+        var from = config.section("from");
+        var to = config.section("to");
+        return between(id, world, coordinate(from, "x"), height(from), coordinate(from, "z"),
+                coordinate(to, "x"), height(to), coordinate(to, "z"));
+    }
+
+    private static int coordinate(ConfigReader corner, String key) {
+        return corner.integer(key, -WORLD_BORDER, WORLD_BORDER);
+    }
+
+    private static int height(ConfigReader corner) {
+        return corner.integer("y", MIN_Y, MAX_Y);
     }
 
     /**
