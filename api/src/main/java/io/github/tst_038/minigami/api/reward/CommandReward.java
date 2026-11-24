@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.reward;
+package io.github.tst_038.minigami.api.reward;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import org.bukkit.entity.Player;

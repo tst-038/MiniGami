@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.reward;
+package io.github.tst_038.minigami.api.reward;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.core.reward.RewardTable;
@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.core.reward.RewardTable.Chance;
 import io.github.tst_038.minigami.core.reward.Rewards;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public final class RewardReader {
 
     /** Every kind of reward; a new kind only needs adding here. */
-    public static final List<RewardType> TYPES = List.of(new ItemReward.Type(), new CommandReward.Type());
+    static final List<RewardType> TYPES = List.of(new ItemReward.Type(), new CommandReward.Type());
 
     private RewardReader() {
     }
@@ -52,21 +53,33 @@ public final class RewardReader {
         return new Rewards<>(places, takingPart, draw);
     }
 
+    /**
+     * Reads one reward entry, such as {@code { item: diamond, amount: 3 }} or
+     * {@code { command: "...", name: "..." }}; empty, with the problem recorded, unless it has exactly one kind.
+     * Problems are collected in the reader, so the caller ends with {@link ConfigReader#check()}.
+     */
+    public static Optional<Reward> reward(ConfigReader entry) {
+        var types = TYPES.stream().filter(type -> entry.has(type.key())).toList();
+        if (types.size() != 1) {
+            // Its other keys count as read, so this is the one problem it shows.
+            entry.keys();
+            entry.problem("", "needs exactly one of " + TYPES.stream().map(RewardType::key).collect(Collectors.joining(", ")));
+            return Optional.empty();
+        }
+        return Optional.of(types.getFirst().read(entry));
+    }
+
     private static RewardTable<Reward> table(ConfigReader section, String key) {
         var chances = new ArrayList<Chance<Reward>>();
         for (ConfigReader entry : section.sections(key)) {
             entry.suggest("chance", List.of("50"));
             var percent = entry.decimal("chance");
-            var types = TYPES.stream().filter(type -> entry.has(type.key())).toList();
-            if (types.size() != 1) {
-                // Its other keys count as read, so this is the one problem it shows.
-                entry.keys();
-                entry.problem("", "needs exactly one of " + TYPES.stream().map(RewardType::key).collect(Collectors.joining(", ")));
+            var reward = reward(entry);
+            if (reward.isEmpty()) {
                 continue;
             }
-            var reward = types.getFirst().read(entry);
             try {
-                chances.add(new Chance<>(reward, percent));
+                chances.add(new Chance<>(reward.get(), percent));
             } catch (IllegalArgumentException e) {
                 entry.problem("chance", e.getMessage());
             }

@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.reward;
+package io.github.tst_038.minigami.api.reward;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,5 +85,33 @@ class RewardReaderTest {
         var root = root("draw: player");
         assertEquals(Rewards.Draw.PLAYER, RewardReader.read(root).draw());
         assertDoesNotThrow(root::check);
+    }
+
+    @Test
+    void readsOneItemEntry() throws Exception {
+        var root = root("{ item: diamond, amount: 3 }");
+
+        assertEquals(Optional.of(new ItemReward(Material.DIAMOND, 3, Optional.empty())), RewardReader.reward(root));
+        assertDoesNotThrow(() -> root.check());
+    }
+
+    @Test
+    void readsOneCommandEntry() throws Exception {
+        var root = root("{ command: \"/eco give %player% 100\", name: \"100 coins\" }");
+
+        assertEquals(Optional.of(new CommandReward("eco give %player% 100", "100 coins")), RewardReader.reward(root));
+        assertDoesNotThrow(() -> root.check());
+    }
+
+    @Test
+    void anEntryWithoutOrWithTwoKindsIsEmptyWithOneProblem() throws Exception {
+        for (var yaml : List.of("{ amount: 3 }", "{ item: cookie, command: say hi, name: hi }")) {
+            var root = root(yaml);
+
+            assertEquals(Optional.empty(), RewardReader.reward(root));
+            var problems = assertThrows(InvalidConfigException.class, root::check).problems();
+            assertEquals(1, problems.size(), problems.toString());
+            assertTrue(problems.getFirst().toString().contains("needs exactly one of item, command"));
+        }
     }
 }

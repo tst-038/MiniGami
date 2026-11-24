@@ -1,4 +1,4 @@
-package io.github.tst_038.minigami.paper.reward;
+package io.github.tst_038.minigami.api.reward;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
 
@@ -6,7 +6,7 @@ import io.github.tst_038.minigami.api.config.ConfigReader;
  * A kind of reward, read from a reward entry that has its {@link #key()}, such as
  * {@code { chance: 40, item: diamond, amount: 3 }} for the {@code item} type.
  */
-public interface RewardType {
+interface RewardType {
 
     /** The key that marks an entry as this type, which holds its main value. */
     String key();
