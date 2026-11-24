@@ -336,9 +336,9 @@ for a match (also in place), playing, eliminated, spectating, and the whole of a
 between games. Anything you give a player in that span is lost, so check first or wait for the leave event.
 
 Depend on the plugin jar (`compileOnly`, for example `compileOnly(files("libs/MiniGami-<version>.jar"))`) and list
-it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false }` (or
-`softdepend: [MiniGami]` in `plugin.yml`), and guard your code for it being absent. The types are in
-`io.github.tst_038.minigami.api.presence`:
+it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false, join-classpath: true }`
+(`join-classpath` lets your plugin see MiniGami's classes; or `softdepend: [MiniGami]` in `plugin.yml`), and guard your
+code for it being absent. The types are in `io.github.tst_038.minigami.api.presence`:
 
 - `MiniGamiPlayers`, a Bukkit service: `isInMatch(UUID)`
 - `MiniGamiPlayerJoinEvent`: MiniGami took the player over (once, even when a game night moves them between games)
@@ -364,6 +364,22 @@ public void onLeave(MiniGamiPlayerLeaveEvent event) {
 
 Both events run synchronously on the server thread. After a server crash, the saved state is given back at the
 player's next login without a leave event, since no join was seen since the restart.
+
+### Keeping stats outside matches
+
+`MiniGamiStats`, a Bukkit service in `io.github.tst_038.minigami.api.stat` (a stat is `io.github.tst_038.minigami.core.stat.Stat`), lets your plugin keep stats that show up in
+MiniGami's stats commands, leaderboards (all time, weekly and monthly) and `%mg_...%` placeholders. Pick a game id no
+MiniGami game uses (lower case letters, digits and dashes) and call it from the server thread. Amounts are added as of
+today, negative ones take away, and `played` and `wins` are MiniGami's own and refused. Storing happens in the
+background and failures are logged by MiniGami. Players see the change in their own stats soon after; leaderboards take
+it up when they refresh, every few minutes.
+
+```java
+var stats = getServer().getServicesManager().load(MiniGamiStats.class); // null without MiniGami
+if (stats != null) {
+    stats.add("koth", Map.of(player.getUniqueId(), Map.of(new Stat("seconds-on-hill"), 1L)));
+}
+```
 
 ## Building from source
 

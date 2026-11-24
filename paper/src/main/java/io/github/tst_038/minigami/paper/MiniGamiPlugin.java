@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
+import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
@@ -59,6 +60,7 @@ import io.github.tst_038.minigami.paper.session.SnapshotStore;
 import io.github.tst_038.minigami.paper.stats.DayRollover;
 import io.github.tst_038.minigami.paper.stats.Leaderboards;
 import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
+import io.github.tst_038.minigami.paper.stats.PluginStats;
 import io.github.tst_038.minigami.paper.stats.StatPlaceholders;
 import io.github.tst_038.minigami.paper.stats.StatsExpansion;
 import io.github.tst_038.minigami.paper.stats.StatsRecorder;
@@ -180,6 +182,8 @@ public final class MiniGamiPlugin extends JavaPlugin {
         }
         var presence = new PlayerPresence(getServer());
         getServer().getServicesManager().register(MiniGamiPlayers.class, presence, this, ServicePriority.Normal);
+        getServer().getServicesManager().register(MiniGamiStats.class, new PluginStats(storage, profiles, Clock.systemDefaultZone(), getLogger()), this,
+                ServicePriority.Normal);
         var sessions = new PlayerSessions(this, snapshots, getLogger(), presence);
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
