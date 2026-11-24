@@ -5,7 +5,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.night.Nights;
+import io.github.tst_038.minigami.paper.permission.Staff;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
@@ -14,6 +16,7 @@ import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -65,6 +68,22 @@ final class Nodes {
     /** The players a {@code players} argument names, one by name or any number by a selector such as {@code @a}. */
     static List<Player> players(CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException {
         return context.getArgument(argument, PlayerSelectorArgumentResolver.class).resolve(context.getSource());
+    }
+
+    /**
+     * The players a {@code players} argument names, for a command that adds them somewhere: one by name, or those a selector
+     * picks who aren't staff, who run the games rather than play them. Tells the sender when it picked only staff.
+     */
+    static List<Player> joining(Messages messages, CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException {
+        var picked = players(context, argument);
+        if (!isSelector(context, argument)) {
+            return picked;
+        }
+        var joining = picked.stream().filter(player -> !Staff.is(player)).toList();
+        if (joining.isEmpty()) {
+            messages.send(context.getSource().getSender(), "join.only-staff-picked", Formatter.number("count", picked.size()));
+        }
+        return joining;
     }
 
     /** Whether the argument was typed as a selector such as {@code @a[distance=..20]} rather than a player's name. */

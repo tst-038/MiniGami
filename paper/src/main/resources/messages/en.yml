@@ -6,6 +6,8 @@ join:
   # %player%: who tried to join
   already-in-match: "%prefix%<red>%player% is already in a match."
   name-a-player: "%prefix%<red>Who should join? <white>/mg join %game% %player% [variant]</white>"
+  # A selector such as @a picked only staff, who are passed over when adding players; add one by name. %count%: how many it picked
+  only-staff-picked: "%prefix%<yellow>The selector picked only staff (<white>%count%</white>), who are passed over. Add one by name instead."
   # %game%: the game as typed
   unknown-game: "%prefix%<red>Unknown game <white>%game%</white>. See <white>/mg list</white>."
   # %game%: the game's name, %variant%: as typed, %variants%: the ones it has

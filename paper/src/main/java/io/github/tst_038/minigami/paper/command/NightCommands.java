@@ -7,7 +7,6 @@ import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
 import static io.github.tst_038.minigami.paper.command.Nodes.isSelector;
-import static io.github.tst_038.minigami.paper.command.Nodes.player;
 import static io.github.tst_038.minigami.paper.command.Nodes.players;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
@@ -35,8 +34,8 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 
 /**
- * {@code /mg night join|leave|standings} for players, and {@code /mga night} for hosts {@code add <player|selector>},
- * {@code start <night>|begin|next|skip|pause|resume|end|kick <player>|team <player> <team>}. For admins, the
+ * {@code /mg night join|leave|standings} for players, and {@code /mga night} for hosts {@code add <players>},
+ * {@code start <night>|begin|next|skip|pause|resume|end|kick <players>|team <players> <team>}, players by name or selector. For admins, the
  * templates: {@code list|create <id> <game> [name]|info <id>|delete <id>} and {@code edit <id> set|unset|playlist ...}, where
  * {@code playlist} is {@code list|add <game> [variant]|remove <n>|move <n> <to>|points <n> <place> <points>|taking-part <n> <points>}.
  */
@@ -78,8 +77,12 @@ final class NightCommands {
                 .then(Commands.literal("resume").requires(HOST).executes(bySender((sender, context) -> nights.resume(sender))))
                 .then(Commands.literal("end").requires(HOST).executes(bySender((sender, context) -> nights.end(sender))))
                 .then(Commands.literal("kick").requires(HOST.or(HELPER))
-                        .then(Commands.argument("player", ArgumentTypes.player())
-                                .executes(bySender((sender, context) -> nights.kick(sender, player(context))))))
+                        .then(Commands.argument("players", ArgumentTypes.players())
+                                .executes(bySender((sender, context) -> {
+                                    for (var player : players(context, "players")) {
+                                        nights.kick(sender, player);
+                                    }
+                                }))))
                 .then(Commands.literal("list").requires(ADMIN).executes(bySender((sender, context) -> info.listNights(sender))))
                 .then(Commands.literal("info").requires(ADMIN)
                         .then(night(editor).executes(bySender((sender, context) -> info.night(sender, night(context))))))
@@ -102,10 +105,14 @@ final class NightCommands {
                                 .then(Edits.unset(editor, Kind.NIGHT, NightCommands::night))
                                 .then(playlist(editor, info, help))))
                 .then(Commands.literal("team").requires(HOST)
-                        .then(Commands.argument("player", ArgumentTypes.player())
+                        .then(Commands.argument("players", ArgumentTypes.players())
                                 .then(Commands.argument("team", StringArgumentType.word())
                                         .suggests(suggest(nights::teamIds))
-                                        .executes(bySender((sender, context) -> nights.team(sender, player(context), string(context, "team")))))));
+                                        .executes(bySender((sender, context) -> {
+                                            for (var player : players(context, "players")) {
+                                                nights.team(sender, player, string(context, "team"));
+                                            }
+                                        })))));
     }
 
     /** {@code playlist list|add <game> [variant]|remove <n>|move <n> <to>|points <n> <place> <points>|taking-part <n> <points>}. */

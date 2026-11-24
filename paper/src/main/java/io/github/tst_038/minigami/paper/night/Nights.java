@@ -17,6 +17,7 @@ import io.github.tst_038.minigami.paper.match.Opening;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
+import io.github.tst_038.minigami.paper.permission.Staff;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.click.Clicks;
 import java.time.Clock;
@@ -66,8 +67,6 @@ import org.bukkit.plugin.Plugin;
 public final class Nights implements Listener {
 
     public static final String HOST_PERMISSION = "minigami.host";
-    /** The lowest staff rank; admins and mods have it too, so it marks every member of staff. */
-    private static final String STAFF_PERMISSION = "minigami.helper";
 
     private enum State {
         /** Players join; no team is formed and no game played. */
@@ -239,15 +238,11 @@ public final class Nights implements Listener {
         var night = active.night;
         var permission = PlayPermissions.night(night.template().id());
         var adding = selected.stream()
-                .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !isStaff(player))
+                .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !Staff.is(player))
                 .toList();
         adding.forEach(this::signUp);
         publish();
         messages.send(host, "night.added-selected", Formatter.number("count", adding.size()), Formatter.number("skipped", selected.size() - adding.size()));
-    }
-
-    private static boolean isStaff(Player player) {
-        return player.hasPermission(STAFF_PERMISSION) || player.hasPermission(HOST_PERMISSION);
     }
 
     /** Online players outside the night who may sign up for it. */

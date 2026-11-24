@@ -6,13 +6,15 @@ import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
-import static io.github.tst_038.minigami.paper.command.Nodes.player;
+import static io.github.tst_038.minigami.paper.command.Nodes.joining;
+import static io.github.tst_038.minigami.paper.command.Nodes.players;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
@@ -94,6 +96,14 @@ public final class GamesCommand {
                 .build();
     }
 
+    /** {@code /mga join <game> <players> [variant]}: each player named or picked by a selector, staff passed over, joins the game. */
+    private static void sendInto(Messages messages, PublicMatches publicMatches, CommandSender sender, CommandContext<CommandSourceStack> context,
+            Optional<String> variant) throws CommandSyntaxException {
+        for (var player : joining(messages, context, "players")) {
+            publicMatches.join(sender, player, string(context, "game"), variant);
+        }
+    }
+
     /**
      * {@code /mga}: everything for staff.
      *
@@ -111,18 +121,22 @@ public final class GamesCommand {
                         .requires(ADMIN)
                         .then(Commands.argument("game", StringArgumentType.word())
                                 .suggests(suggest(context -> publicMatches.gameIds(context.getSource().getSender())))
-                                .then(Commands.argument("player", ArgumentTypes.player())
-                                        .executes(bySender((sender, context) -> publicMatches.join(sender, player(context), string(context, "game"), Optional.empty())))
+                                .then(Commands.argument("players", ArgumentTypes.players())
+                                        .executes(bySender((sender, context) -> sendInto(messages, publicMatches, sender, context, Optional.empty())))
                                         .then(Commands.argument("variant", StringArgumentType.word())
                                                 .suggests(suggest(context -> publicMatches.variantIds(string(context, "game"))))
-                                                .executes(bySender((sender, context) -> publicMatches.join(sender, player(context),
-                                                        string(context, "game"), Optional.of(string(context, "variant")))))))))
+                                                .executes(bySender((sender, context) -> sendInto(messages, publicMatches, sender, context,
+                                                        Optional.of(string(context, "variant")))))))))
                 .then(Commands.literal("leave")
                         .requires(HELPER)
-                        .then(Commands.argument("player", ArgumentTypes.player())
-                                .executes(bySender((sender, context) -> running.leave(sender, player(context))))))
+                        .then(Commands.argument("players", ArgumentTypes.players())
+                                .executes(bySender((sender, context) -> {
+                                    for (var player : players(context, "players")) {
+                                        running.leave(sender, player);
+                                    }
+                                }))))
                 .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))
-                .then(MatchCommands.node(matches, help))
+                .then(MatchCommands.node(messages, matches, help))
                 .then(GameCommands.node(editor, gameRenamer, info, help))
                 .then(ArenaCommands.node(editor, arenas, loot, terrain, info, help))
                 .then(GameTypeCommands.game(info, () -> games, help))
@@ -133,7 +147,7 @@ public final class GamesCommand {
                 .then(KitCommands.node(kits, help))
                 .then(LootCommands.node(lootAdmin, help))
                 .then(NightCommands.node(nights, editor, info, help))
-                .then(ScheduleCommands.node(schedules, editor, info, help))
+                .then(ScheduleCommands.node(messages, schedules, editor, info, help))
                 .then(Commands.literal("reload").requires(ADMIN).executes(bySender((sender, context) -> reload.accept(sender))))
                 .then(Commands.literal("doctor").requires(ADMIN).executes(bySender((sender, context) -> doctor.show(sender)))
                         .then(Commands.argument("target", StringArgumentType.word()).suggests(suggest(doctor::targets))

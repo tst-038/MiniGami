@@ -190,7 +190,12 @@ way through. The tables below give an overview.
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |
 | `/mg lobby set\|tp` · `/mg config info` | admin |
 | `/mga player <player> snapshot [restore]` | admin |
-| `/mg join <game> [variant] <player>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
+| `/mg join <game> <players> [variant]` · `/mg leave <players>` (helper) · `/mg schedule join <schedule> <players>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
+
+Where a command takes players (`join`, `leave`, `schedule join`, `match <match> add\|kick`, `night add\|kick\|team`), a
+name picks one player and a selector such as `@a` or `@a[distance=..30]` picks several. Commands that add players pass
+over staff (`minigami.helper` or `minigami.host`) a selector picks, so `@a` doesn't bring in the host or the admins;
+add one by name to bring them in.
 
 ## Troubleshooting: `/mg doctor`
 
