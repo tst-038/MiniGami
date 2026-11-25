@@ -414,6 +414,8 @@ makes a region their selection, and `show(player, region)` outlines it in partic
 what you save with `Region.toConfig()` and `ConfigLocations.write(location)`; they read back with `Region.read` and `ConfigLocations.read`.
 `ConfigFiles.update(path, change)`, in `io.github.tst_038.minigami.api.config`, changes a YAML file the way MiniGami's own commands
 do: it keeps the comments, writes through a temp file and makes one change at a time. It is blocking IO, so run it off the server thread.
+`DyedBlocks.scan(region, DyedBlocks.DYED)` (or `DyedBlocks.GLASS`, or any `Predicate<Material>`), in `io.github.tst_038.minigami.api.region`,
+remembers a region's dyeable blocks once; `paint(DyeColor)` colours those, keeping their facing, and `restore()` puts them back as they were. Use it on the server thread.
 
 ```java
 var setup = getServer().getServicesManager().load(MiniGamiSetup.class); // null without MiniGami
