@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.arena;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
+import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
@@ -18,10 +19,8 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Location;
-import org.bukkit.Particle;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 /**
  * An arena's spawns, which are a list and so can't be changed with a plain {@code set}, its map, and
@@ -36,20 +35,20 @@ public final class ArenaSetup {
     private final ArenaMaps maps;
     private final Predicate<String> inUse;
     private final Messages messages;
-    private final Plugin plugin;
+    private final MiniGamiSetup setup;
 
     /**
      * @param arenas the arenas currently loaded
      * @param inUse whether a match is running in the arena with this id
      */
     public ArenaSetup(Supplier<IdRegistry<Arena>> arenas, ConfigEditor editor, ArenaMaps maps, Predicate<String> inUse, Messages messages,
-            Plugin plugin) {
+            MiniGamiSetup setup) {
         this.arenas = arenas;
         this.editor = editor;
         this.maps = maps;
         this.inUse = inUse;
         this.messages = messages;
-        this.plugin = plugin;
+        this.setup = setup;
     }
 
     /** Saves the player's WorldEdit selection as the map pasted back after each match. */
@@ -157,40 +156,9 @@ public final class ArenaSetup {
     /** Outlines the region's edges in particles, only for this player, for a few seconds. */
     public void showRegion(Player player, String id, String name) {
         region(player, id, name).ifPresent(region -> {
-            messages.send(player, "arena.region.showing", Placeholder.unparsed("region", name), Formatter.number("seconds", SHOW_SECONDS));
-            int[] left = {SHOW_SECONDS * 2};
-            player.getScheduler().runAtFixedRate(plugin, task -> {
-                if (--left[0] < 0 || !player.getWorld().equals(region.world())) {
-                    task.cancel();
-                    return;
-                }
-                outline(player, region);
-            }, null, 1, 10);
+            messages.send(player, "arena.region.showing", Placeholder.unparsed("region", name), Formatter.number("seconds", MiniGamiSetup.OUTLINE_SECONDS));
+            setup.show(player, region);
         });
-    }
-
-    private static final int SHOW_SECONDS = 10;
-
-    /** The twelve edges, along the outside of the blocks, spaced so a big region stays at about a thousand particles. */
-    private static void outline(Player player, Region region) {
-        double[] min = {region.minX(), region.minY(), region.minZ()};
-        double[] max = {region.maxX() + 1, region.maxY() + 1, region.maxZ() + 1};
-        var step = Math.max(1, 4 * (max[0] - min[0] + max[1] - min[1] + max[2] - min[2]) / 1000);
-        for (int corner = 0; corner < 8; corner++) {
-            for (int axis = 0; axis < 3; axis++) {
-                if ((corner & 1 << axis) != 0) {
-                    continue;
-                }
-                double[] at = new double[3];
-                for (int i = 0; i < 3; i++) {
-                    at[i] = (corner & 1 << i) == 0 ? min[i] : max[i];
-                }
-                for (var along = min[axis]; along <= max[axis]; along += step) {
-                    at[axis] = along;
-                    player.spawnParticle(Particle.END_ROD, at[0], at[1], at[2], 1, 0, 0, 0, 0);
-                }
-            }
-        }
     }
 
     private Optional<Region> region(Audience audience, String id, String name) {

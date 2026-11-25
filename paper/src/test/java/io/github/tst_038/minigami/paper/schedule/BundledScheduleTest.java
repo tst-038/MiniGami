@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.loot.FakeSavedItems;
+import io.github.tst_038.minigami.api.reward.RewardReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -20,7 +22,7 @@ class BundledScheduleTest {
         }
         var root = ConfigReader.of("schedules/example.yml", config);
 
-        var schedule = ScheduleLoader.read("example", root, game -> Set.of("spleef", "king-of-the-hill").contains(game), (game, variant) -> variant.equals("decay"));
+        var schedule = ScheduleLoader.read("example", root, game -> Set.of("spleef", "king-of-the-hill").contains(game), (game, variant) -> variant.equals("decay"), new RewardReader(new FakeSavedItems()));
 
         assertDoesNotThrow(root::check);
         assertEquals(3, schedule.games().size());

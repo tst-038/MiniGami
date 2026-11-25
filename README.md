@@ -22,6 +22,7 @@ all without writing code.
 - [Game nights](#game-nights)
 - [Schedules and rewards](#schedules-and-rewards)
 - [Stats and placeholders](#stats-and-placeholders)
+- [Bans](#bans)
 - [For plugin developers](#for-plugin-developers)
 - [Building from source](#building-from-source)
 
@@ -161,7 +162,8 @@ features:
 ## Commands
 
 The main command is `/mg`. Typing any command without its final argument shows what can follow, so you can click your
-way through. The tables below give an overview.
+way through. The tables below give an overview. Where a command takes `<players>`, name one player or use a selector
+such as `@a[distance=..10]`; the sender hears one summary for all of them.
 
 **Players**
 
@@ -180,11 +182,12 @@ way through. The tables below give an overview.
 
 | Command | Rank |
 |---|---|
-| `/mg match list`, `/mg match <match> info\|kick <player>` | helper |
-| `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <player>` | mod |
+| `/mg match list`, `/mg match <match> info\|kick <players>` · `/mga leave <players>` (out of whatever match they are in) | helper |
+| `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <players>` | mod |
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
+| `/mga ban <players> [scope] [length] [reason...]` · `/mga unban <players> [scope]` (also an offline name) · `/mga bans [player]`; see [Bans](#bans) | ban (mod) |
 | `/mg schedule list` · `/mg schedule now\|next <schedule> [game] [variant]`, `start\|skip\|cancel\|pause\|resume <schedule>` | helper · mod |
-| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `team`, `kick` | host |
+| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `add <players>`, `team <players> <team>`, `kick <players>` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
 | `/mg gametype list\|<id> info` · `/mga options [gametype]` | admin |
@@ -225,9 +228,10 @@ it) or can't be played (its file didn't load); staff with `minigami.admin` also 
 | Permission | Default | Gives |
 |---|---|---|
 | `minigami.admin` | op | Set up arenas, games, kits and config, reload, restore players; includes `mod` |
-| `minigami.mod` | op | Start, stop and change matches, run game nights; includes `helper` and `host` |
+| `minigami.mod` | op | Start, stop and change matches, run game nights; includes `helper`, `host` and `ban` |
 | `minigami.helper` | op | List and inspect matches, kick players from matches and game nights |
 | `minigami.host` | op | Run game nights |
+| `minigami.ban` | op | Ban players with `/mga ban`, `/mga unban` and `/mga bans` |
 | `minigami.play.<game>` | everyone (`minigami.play.*`) | Join that game |
 | `minigami.night.join.<night>` | everyone (`minigami.night.join`) | Join that game night and hear when it opens |
 | `minigami.schedule.join.<schedule>` | everyone (`minigami.schedule.join`) | Hear and join that schedule's games, whatever `minigami.play.<game>` says |
@@ -288,10 +292,16 @@ rewards:
     1:
       - { chance: 50, item: diamond, amount: 3 }
       - { chance: 50, command: "eco give %player% 100", name: "<gold>100 coins" }
+      - { chance: 10, saved: crate-key, amount: 2, name: "<aqua>2 crate keys" }
   taking-part:
     - { chance: 25, item: cookie, amount: 4 }
   draw: team                      # or player
 ```
+
+A reward is an `item` (with an `amount`), a `command` (run from the console, `%player%` is the winner; it needs a `name`)
+or a `saved` item: one saved with `/mga loot save <name>`, for what `item` can't describe, such as a crate key or an item
+with its own name and enchantments. A saved item takes an `amount` and a `name` too, is given as it is when the reward is
+won, and a name with no saved item is a config problem. Items that don't fit in the inventory drop at the winner's feet.
 
 Each place draws at most one reward. Chances are percentages, and whatever is left over to 100% wins nothing. Players
 who leave early win nothing. The last place always draws from `taking-part`, even when it has a list of its own, unless
@@ -321,12 +331,28 @@ With PlaceholderAPI installed:
 | Placeholder | |
 |---|---|
 | `%mg_stat_<game>[_<variant>]_<stat>%` | The viewer's own amount |
+| `%mg_weekly_stat_<game>[_<variant>]_<stat>%` / `%mg_monthly_stat_…%` | The viewer's own amount this week (from Monday) / this month |
 | `%mg_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard |
+| `%mg_weekly_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard of this week (from Monday), in the server's time |
+| `%mg_monthly_top_<game>[_<variant>]_<stat>_<place>_name%` / `…_value%` | A place on the leaderboard of this month |
 | `%mg_match_<value>%` | A value of the viewer's match, such as `%mg_match_time%` |
 | `%mg_match_<role>%` / `%mg_match_<role>-out%` | Members of a role of the game who are alive / out, such as `%mg_match_hider%` and `%mg_match_hider-out%` |
 | `%mg_night_<value>%` | A value of the running game night, such as `%mg_night_place%` |
 
 Without a variant, all of a game's variants are added up.
+
+## Bans
+
+`/mga ban <players> [scope] [length] [reason...]` keeps players out of part of the server, for a length like `30m`, `2h`,
+`7d` or `1d12h`, or for good without one. The scope is `all` (everything below), `nights` (game nights and the games
+schedules open), `game:<game>` (one game), or one another plugin registered, such as `koth`; without a scope the ban is
+from `all`. The reason is free text after the scope or length, e.g. `/mga ban Steve game:spleef 7d griefing`. Banning again
+in a scope replaces the ban there. `/mga unban <player> [scope]` lifts one scope or all of a player's bans, also of a player
+who is offline, and `/mga bans [player]` lists the bans that have not ended.
+
+A banned player can't join by any way in, a party, a game night, a schedule's call or staff adding them, and hears the
+time left and the reason; a party leader hears it for their members. A player who is in a match or night the ban covers
+is taken out at once, or when they log in if they were offline.
 
 ## For plugin developers
 
@@ -335,10 +361,12 @@ afterwards. A player is **in a match** from the moment MiniGami takes them over,
 for a match (also in place), playing, eliminated, spectating, and the whole of a game night including the breaks
 between games. Anything you give a player in that span is lost, so check first or wait for the leave event.
 
-Depend on the plugin jar (`compileOnly`, for example `compileOnly(files("libs/MiniGami-<version>.jar"))`) and list
-it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false }` (or
-`softdepend: [MiniGami]` in `plugin.yml`), and guard your code for it being absent. The types are in
-`io.github.tst_038.minigami.api.presence`:
+Depend on the api (`compileOnly("io.github.tst-038:minigami-api:<version>")`; every release is on
+[GitHub Packages](https://github.com/tst-038?tab=packages&repo_name=MiniGami), add
+`maven("https://maven.pkg.github.com/tst-038/MiniGami")` with a GitHub token that can read packages) and list
+it in your `paper-plugin.yml` under `dependencies: server: MiniGami: { load: BEFORE, required: false, join-classpath: true }`
+(`join-classpath` lets your plugin see MiniGami's classes; or `softdepend: [MiniGami]` in `plugin.yml`), and guard your
+code for it being absent. The types are in `io.github.tst_038.minigami.api.presence`:
 
 - `MiniGamiPlayers`, a Bukkit service: `isInMatch(UUID)`
 - `MiniGamiPlayerJoinEvent`: MiniGami took the player over (once, even when a game night moves them between games)
@@ -365,6 +393,142 @@ public void onLeave(MiniGamiPlayerLeaveEvent event) {
 Both events run synchronously on the server thread. After a server crash, the saved state is given back at the
 player's next login without a leave event, since no join was seen since the restart.
 
+### Rewards
+
+To read the same `saved:` items in your own config, the `io.github.tst_038.minigami.api.loot` package has
+`MiniGamiSavedItems`, another Bukkit service: `find(name)` gives a copy of the item saved with `/mga loot save <name>`,
+`has(name)` whether there is one. Items can be saved and deleted while the server runs, so look one up when you need it.
+`save(name, item)` saves one of an item the way `/mga loot save` does, replacing one of that name (names are lower-case letters,
+digits, `_` and `-`, see `isValidName`); it can be found at once, and the returned future completes, off the server thread,
+once its file is written. Prefix the names with your plugin's, as they share one folder with every other saved item.
+`io.github.tst_038.minigami.api.reward.RewardReader` reads reward entries (`{ saved: crate-key }`, `{ item: diamond }`,
+`{ command: ..., name: ... }`) into `Reward`s you can `give(player)`, which throws a `RewardFailedException` when it
+couldn't be given (a saved item since deleted, a command that failed); create it with the service:
+`new RewardReader(getServer().getServicesManager().load(MiniGamiSavedItems.class))`.
+`io.github.tst_038.minigami.api.item.ItemLook` reads how an item looks from the keys next to it, `glow: true` (the
+enchantment glint without an enchantment, `false` hides it), `item-model: <key>` (another item's model or one from a
+resource pack, such as `myserver:ruby`) and `custom-model-data: <number>`, and `applyTo(item)` puts it on a stack, on
+top of a saved item too. Loot table items and saved items take the same keys.
+
+### Keeping stats outside matches
+
+`MiniGamiStats`, a Bukkit service in `io.github.tst_038.minigami.api.stat` (a stat is
+`io.github.tst_038.minigami.core.stat.Stat`), lets your plugin keep stats that show up in MiniGami's stats commands,
+leaderboards (all time, weekly and monthly) and `%mg_...%` placeholders. Pick a game id no MiniGami game uses (lower
+case letters, digits and dashes) and call it from the server thread. Amounts are added as of today, negative ones take
+away, and `played` and `wins` are MiniGami's own and refused. Storing happens in the background and failures are
+logged by MiniGami. Profiles of players who are online and the leaderboards load the change again on the next server tick, in the background.
+
+Give each stat a display name in MiniGami's `messages/en.yml`, as `stats.name.<stat>` (`seconds-on-hill` in the
+example below). Games that were removed from the configuration but still have stored stats appear in `/mg stats`.
+
+```java
+var stats = getServer().getServicesManager().load(MiniGamiStats.class); // null without MiniGami
+if (stats != null) {
+    stats.add("koth", Map.of(player.getUniqueId(), Map.of(new Stat("seconds-on-hill"), 1L)));
+}
+```
+
+### Setting up regions
+
+`MiniGamiSetup`, a Bukkit service in `io.github.tst_038.minigami.api.setup`, gives your plugin the tools MiniGami's
+arena commands use, for regions you keep in your own config: `selection(player, id)` is the box around the player's WorldEdit
+selection as a `Region` (empty without WorldEdit, `hasWorldEdit()` tells it from nothing being selected), `select(player, region)`
+makes a region their selection, and `show(player, region)` outlines it in particles for them alone for a few seconds. Write
+what you save with `Region.toConfig()` and `ConfigLocations.write(location)`; they read back with `Region.read` and `ConfigLocations.read`.
+`ConfigFiles.update(path, change)`, in `io.github.tst_038.minigami.api.config`, changes a YAML file the way MiniGami's own commands
+do: it keeps the comments, writes through a temp file and makes one change at a time. It is blocking IO, so run it off the server thread.
+`DyedBlocks.scan(region, DyedBlocks.DYED)` (or `DyedBlocks.GLASS`, or any `Predicate<Material>`), in `io.github.tst_038.minigami.api.region`,
+remembers a region's dyeable blocks once; `paint(DyeColor)` colours those, keeping their facing, and `restore()` puts them back as they were. Use it on the server thread.
+
+```java
+var setup = getServer().getServicesManager().load(MiniGamiSetup.class); // null without MiniGami
+setup.selection(player, "hill").ifPresentOrElse(hill -> {
+    getConfig().set("hill", hill.toConfig());
+    getConfig().set("spawn", ConfigLocations.write(player.getLocation()));
+    saveConfig();
+    setup.show(player, hill);
+}, () -> player.sendMessage(setup.hasWorldEdit() ? "Select the hill first." : "Install WorldEdit."));
+```
+
+### Commands that act on several players
+
+`PlayerTargets` in `io.github.tst_038.minigami.api.command` gives your commands MiniGami's way with players: take the
+argument from `PlayerTargets.argument()` (a name or a selector), read it with `PlayerTargets.resolve(context, name)`, and
+act with `PlayerTargets.each(messages, sender, players, action, noneKey, summaryKey, tags...)`. The action does it for one
+player and tells the audience it is given how it went; with one player that is the sender, with several it is silent and the
+sender hears `summaryKey` once, with `%count%` and `%total%`. With none, the sender hears `noneKey`.
+
+### Bans
+
+`MiniGamiBans`, a Bukkit service in `io.github.tst_038.minigami.api.ban`, shares the bans of [`/mga ban`](#bans) with your
+plugin. `register(plugin, scope)` adds a scope players can be banned from (lower-case letters, digits, `_` and `-`; not
+`all` or `nights`); register it when your plugin enables, and it goes when your plugin is disabled. `ban(player, scope)`
+is the ban that keeps the player out of that scope, a ban from `all` too, or empty; it reads memory, so check it on
+every way into your activity. `bans()` lists those that have not ended. `ban(...)` and `unban(player, scope)` change bans
+and return futures that complete on the server thread once storage has them. `MiniGamiPlayerBannedEvent` fires on the
+server thread when a ban is made; `getBan().covers(scope)` says whether it is one for you, so take the player out then.
+
+```java
+var bans = getServer().getServicesManager().load(MiniGamiBans.class); // null without MiniGami
+bans.register(this, "koth");
+
+// On each way in
+var ban = bans.ban(player.getUniqueId(), "koth");
+if (ban.isPresent()) {
+    player.sendMessage("Banned from KOTH: " + ban.get().reason().orElse("no reason"));
+    return;
+}
+
+@EventHandler
+public void onBanned(MiniGamiPlayerBannedEvent event) {
+    if (event.getBan().covers("koth")) {
+        event.getPlayer().ifPresent(this::sendOut);
+    }
+}
+```
+
+### Showing a sidebar
+
+MiniGami's matches and game nights set players' scoreboards too, so don't call `player.setScoreboard` for a sidebar of your own:
+the boards would overwrite each other and give back stale ones. `MiniGamiBoards`, a Bukkit service in
+`io.github.tst_038.minigami.api.board`, owns it. `claim(plugin, player, board, priority)` shows your board and returns a
+`BoardClaim`; `release()` gives it up. A player sees the claim with the highest `BoardPriority` (`MATCH`, `NIGHT`, then
+`PLUGIN`, the one to use), of equal ones the latest. When a claim is released the next one shows, and when none is left the
+player gets the board they had before the first claim. A player's claims are dropped when they quit and a plugin's when it is
+disabled. Call it on the server thread.
+
+```java
+var boards = getServer().getServicesManager().load(MiniGamiBoards.class); // null without MiniGami
+var claim = boards.claim(this, player, myBoard, BoardPriority.PLUGIN);
+// ... later, when the player leaves your area:
+claim.release();
+```
+
+### Menus
+
+`io.github.tst_038.minigami.api.menu` makes paged chest menus, such as a shop. A `Menu` is always a double chest: the top
+five rows hold your items (45 a page), the bottom row is the bar, with a previous-page arrow in its first slot and a
+next-page arrow in its last, each only where there is a page to go to, and an item of yours in the middle. Implement
+`MenuContent`: the `title()`, the `items()`, the `centre()` item, the two arrows for a page (counted from 0) and the
+page count, and optionally a `filler()` for the rest of the bar and `clickEmpty` for clicks on empty slots. You word
+everything, page numbers included. A `MenuItem` has an icon, a click handler that gets a `MenuClick` (player, click
+type, menu and `Place`), and optionally a `Place` (page and slot 0-44); items without one fill the next free slot.
+`Menu.open(player, content)` opens it, `refresh()` asks the content again and redraws it in place (after a purchase,
+say), `page(n)` turns the page, and `Menu.of(player)` finds the menu a player has open. MiniGami cancels every click
+and drag in a menu, shift-clicks from the player's own inventory too, and hands the clicks on, so menus need MiniGami
+enabled. Use them on the server thread.
+
+```java
+Menu.open(player, new MenuContent() {
+    public Component title() { return Component.text("Shop"); }
+    public List<MenuItem> items() { return List.of(MenuItem.of(ItemStack.of(Material.DIAMOND), click -> buy(click.player()))); }
+    public Optional<MenuItem> centre() { return Optional.empty(); }
+    public ItemStack previous(int page, int pages) { return arrow("Page " + page + "/" + pages); }
+    public ItemStack next(int page, int pages) { return arrow("Page " + (page + 2) + "/" + pages); }
+});
+```
+
 ## Building from source
 
 Requires Java 25. The Gradle wrapper downloads everything else.
@@ -374,6 +538,8 @@ Requires Java 25. The Gradle wrapper downloads everything else.
 ```
 
 The plugin jar ends up in `paper/build/libs/`. `./gradlew runServer` starts a local Paper test server with the plugin.
+`./gradlew publishToMavenLocal` publishes `minigami-api` and `minigami-core` for other plugins to compile against, and
+`minigami-plugin`, the plugin jar, for their test servers. Publishing a GitHub release puts the same on GitHub Packages.
 
 The project is split into modules: `core` (game logic, no server code), `api` (what games and features build on),
 `features`, `stats`, `gamenight`, the `games/*`, and `paper` (the plugin itself).

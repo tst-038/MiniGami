@@ -2,11 +2,14 @@ package io.github.tst_038.minigami.paper.stats;
 
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.core.result.MatchRecord;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.stat.Stat;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -18,18 +21,20 @@ import org.bukkit.event.Listener;
 
 /**
  * Keeps every match that gets a result: the match with its players and their stats, and each
- * player's running totals for the game and variant, in one transaction, so a crash leaves all of it
- * or none. The profiles of its players who are online are loaded again after.
+ * player's running totals and per-day stats (played and wins included) for the game and variant, in one
+ * transaction, so a crash leaves all of it or none. A day is the epoch day in the clock's time zone. The profiles of its players who are online are loaded again after.
  */
 public final class StatsRecorder implements Listener {
 
     private final Storage storage;
     private final PlayerProfiles profiles;
+    private final Clock clock;
     private final Logger logger;
 
-    public StatsRecorder(Storage storage, PlayerProfiles profiles, Logger logger) {
+    public StatsRecorder(Storage storage, PlayerProfiles profiles, Clock clock, Logger logger) {
         this.storage = storage;
         this.profiles = profiles;
+        this.clock = clock;
         this.logger = logger;
     }
 
@@ -50,14 +55,25 @@ public final class StatsRecorder implements Listener {
             var places = new HashMap<UUID, Integer>();
             record.result().placements().forEach(placement -> placement.participants().forEach(id -> places.put(id, placement.place())));
             // shortcut: everyone is counted as playing the whole match, those who left too; keep leave times in the record when that matters.
+            var day = LocalDate.ofInstant(record.end(), clock.getZone()).toEpochDay();
             var seconds = Duration.between(record.start(), record.end()).toSeconds();
+            var game = record.game();
+            var variant = variant(record);
             for (var entry : record.participants()) {
                 var place = places.get(entry.id());
                 insertPlayer(connection, matchId, entry, place);
-                addTotals(connection, record, entry.id(), place, entry.left(), seconds);
+                var won = place != null && place == 1;
+                StatRows.addMatchTotals(connection, entry.id(), game, variant, 1, won ? 1 : 0, place == null ? 0 : 1, place == null ? 0 : place,
+                        entry.left() ? 1 : 0, seconds);
                 for (var stat : entry.stats().entrySet()) {
-                    insertStat(connection, matchId, entry.id(), stat.getKey().id(), stat.getValue());
-                    addStatTotal(connection, record, entry.id(), stat.getKey().id(), stat.getValue());
+                    var id = stat.getKey().id();
+                    insertStat(connection, matchId, entry.id(), id, stat.getValue());
+                    StatRows.addTotal(connection, entry.id(), game, variant, id, stat.getValue());
+                    StatRows.addDay(connection, entry.id(), game, variant, id, day, stat.getValue());
+                }
+                StatRows.addDay(connection, entry.id(), game, variant, Stat.PLAYED, day, 1);
+                if (won) {
+                    StatRows.addDay(connection, entry.id(), game, variant, Stat.WINS, day, 1);
                 }
             }
             return null;
@@ -105,67 +121,6 @@ public final class StatsRecorder implements Listener {
             insert.setString(2, player.toString());
             insert.setString(3, stat);
             insert.setLong(4, amount);
-            insert.executeUpdate();
-        }
-    }
-
-    // Each total is updated, or inserted the first time: plain SQL every database understands, and safe since only the storage thread writes.
-    private static void addTotals(Connection connection, MatchRecord record, UUID player, Integer place, boolean left, long seconds)
-            throws SQLException {
-        var won = place != null && place == 1 ? 1 : 0;
-        var placed = place == null ? 0 : 1;
-        var placeSum = place == null ? 0 : place;
-        var gone = left ? 1 : 0;
-        try (var update = connection.prepareStatement("""
-                UPDATE player_totals SET played = played + 1, wins = wins + ?, placed = placed + ?, place_sum = place_sum + ?,
-                    left_matches = left_matches + ?, seconds_played = seconds_played + ?
-                WHERE player = ? AND game = ? AND variant = ?""")) {
-            update.setInt(1, won);
-            update.setInt(2, placed);
-            update.setInt(3, placeSum);
-            update.setInt(4, gone);
-            update.setLong(5, seconds);
-            update.setString(6, player.toString());
-            update.setString(7, record.game());
-            update.setString(8, variant(record));
-            if (update.executeUpdate() > 0) {
-                return;
-            }
-        }
-        try (var insert = connection.prepareStatement("""
-                INSERT INTO player_totals (player, game, variant, played, wins, placed, place_sum, left_matches, seconds_played)
-                VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)""")) {
-            insert.setString(1, player.toString());
-            insert.setString(2, record.game());
-            insert.setString(3, variant(record));
-            insert.setInt(4, won);
-            insert.setInt(5, placed);
-            insert.setInt(6, placeSum);
-            insert.setInt(7, gone);
-            insert.setLong(8, seconds);
-            insert.executeUpdate();
-        }
-    }
-
-    private static void addStatTotal(Connection connection, MatchRecord record, UUID player, String stat, long amount) throws SQLException {
-        try (var update = connection.prepareStatement(
-                "UPDATE player_stat_totals SET amount = amount + ? WHERE player = ? AND game = ? AND variant = ? AND stat = ?")) {
-            update.setLong(1, amount);
-            update.setString(2, player.toString());
-            update.setString(3, record.game());
-            update.setString(4, variant(record));
-            update.setString(5, stat);
-            if (update.executeUpdate() > 0) {
-                return;
-            }
-        }
-        try (var insert = connection.prepareStatement(
-                "INSERT INTO player_stat_totals (player, game, variant, stat, amount) VALUES (?, ?, ?, ?, ?)")) {
-            insert.setString(1, player.toString());
-            insert.setString(2, record.game());
-            insert.setString(3, variant(record));
-            insert.setString(4, stat);
-            insert.setLong(5, amount);
             insert.executeUpdate();
         }
     }

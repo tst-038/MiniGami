@@ -31,6 +31,10 @@ public final class PlaceholderGuide {
         line(sender, "%mg_stat_<game>[_<variant>]_<stat>%", "placeholders.own");
         line(sender, "%mg_top_<game>[_<variant>]_<stat>_<place>_name%", "placeholders.top");
         line(sender, "%mg_top_<game>[_<variant>]_<stat>_<place>_value%", "placeholders.top-value");
+        line(sender, "%mg_weekly_stat_<game>[_<variant>]_<stat>%", "placeholders.own-weekly");
+        line(sender, "%mg_monthly_stat_<game>[_<variant>]_<stat>%", "placeholders.own-monthly");
+        line(sender, "%mg_weekly_top_<game>[_<variant>]_<stat>_<place>_name%", "placeholders.top-weekly");
+        line(sender, "%mg_monthly_top_<game>[_<variant>]_<stat>_<place>_name%", "placeholders.top-monthly");
         line(sender, "%mg_match_<value>%", "placeholders.match", Placeholder.unparsed("values", String.join(", ", MatchValues.builtIn())));
         line(sender, "%mg_night_<value>%", "placeholders.night", Placeholder.unparsed("values", String.join(", ", NightValues.NAMES)));
         messages.send(sender, "placeholders.hint");

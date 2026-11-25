@@ -5,18 +5,31 @@ import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
+import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
+import io.github.tst_038.minigami.api.menu.MenuListener;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
+import io.github.tst_038.minigami.api.reward.RewardReader;
+import io.github.tst_038.minigami.api.stat.MiniGamiStats;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.api.stat.StatGroup;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.itemrace.ItemRace;
+import io.github.tst_038.minigami.paper.ban.BanAdmin;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
+import io.github.tst_038.minigami.paper.setup.PluginSetup;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.arena.TerrainSetup;
@@ -41,6 +54,7 @@ import io.github.tst_038.minigami.paper.kit.SavedKits;
 import io.github.tst_038.minigami.paper.loot.LootAdmin;
 import io.github.tst_038.minigami.paper.loot.SavedItems;
 import io.github.tst_038.minigami.paper.night.NightReport;
+import io.github.tst_038.minigami.paper.board.PluginBoards;
 import io.github.tst_038.minigami.paper.night.NightSidebar;
 import io.github.tst_038.minigami.paper.night.NightStore;
 import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
@@ -56,17 +70,16 @@ import io.github.tst_038.minigami.paper.presence.PlayerPresence;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.session.SnapshotAdmin;
 import io.github.tst_038.minigami.paper.session.SnapshotStore;
+import io.github.tst_038.minigami.paper.stats.DayRollover;
 import io.github.tst_038.minigami.paper.stats.Leaderboards;
 import io.github.tst_038.minigami.paper.stats.PlayerProfiles;
+import io.github.tst_038.minigami.paper.stats.PluginStats;
 import io.github.tst_038.minigami.paper.stats.StatPlaceholders;
 import io.github.tst_038.minigami.paper.stats.StatsExpansion;
 import io.github.tst_038.minigami.paper.stats.StatsRecorder;
 import io.github.tst_038.minigami.paper.stats.PlaceholderGuide;
 import io.github.tst_038.minigami.paper.stats.StatsAdmin;
 import io.github.tst_038.minigami.paper.stats.StatsView;
-import io.github.tst_038.minigami.paper.storage.Migrations;
-import io.github.tst_038.minigami.paper.storage.SqliteStorage;
-import io.github.tst_038.minigami.paper.storage.Storage;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.io.IOException;
@@ -84,6 +97,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.audience.Audience;
@@ -116,6 +130,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private SavedKits kits;
     private SavedItems savedItems;
+    private RewardReader rewardReader;
     /** The tables of the last load; a game keeps the ones it was loaded with. */
     private volatile LootTables lootTables = LootTables.NONE;
     private volatile TerrainStyles terrainStyles = TerrainStyles.NONE;
@@ -134,6 +149,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
     private SnapshotStore snapshots;
     private Nights nights;
     private Storage storage;
+    private DayRollover dayRollover;
     private ConfigEditor editor;
     private ConfigInfo info;
     private Doctor doctor;
@@ -152,17 +168,27 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // Until the first load has read the admin's copy.
         messages = new Messages(bundledMessages, getLogger());
         kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
-        savedItems = new SavedItems(getDataPath().resolve("items"), getLogger());
+        savedItems = new SavedItems(getDataPath().resolve("items"), getLogger(), task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()));
+        // Plugins that use saved items read them in their onEnable, before the first config load has finished.
+        savedItems.replace(savedItems.read());
         playPermissions = new PlayPermissions(getServer().getPluginManager());
         snapshots = new SnapshotStore(getDataPath().resolve("snapshots"), getLogger());
-        storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), getLogger());
+        storage = new SqliteStorage(getDataPath().resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "MiniGami storage", getLogger());
         Executor serverThread = task -> getServer().getGlobalRegionScheduler().execute(this, task);
-        var profiles = new PlayerProfiles(storage, serverThread, Clock.systemUTC(), getLogger());
+        var profiles = new PlayerProfiles(storage, serverThread, Clock.systemDefaultZone(), getLogger());
         getServer().getPluginManager().registerEvents(profiles, this);
         // Players already online after a reload of the plugin.
         getServer().getOnlinePlayers().forEach(player -> profiles.join(player.getUniqueId(), player.getName()));
-        leaderboards = new Leaderboards(storage, serverThread, getLogger(), this::cachedName, () -> settings.leaderboards().size());
-        getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, getLogger()), this);
+        leaderboards = new Leaderboards(storage, serverThread, getLogger(), Clock.systemDefaultZone(), this::cachedName, () -> settings.leaderboards().size());
+        // The weekly and monthly stats change with the date, not only with matches.
+        // Paper's async scheduler rejects a delay below 1.
+        dayRollover = new DayRollover(Clock.systemDefaultZone(), (delay, task) -> getServer().getAsyncScheduler().runDelayed(this,
+                ignored -> serverThread.execute(task), Math.max(1, delay.toMillis()), TimeUnit.MILLISECONDS)::cancel, () -> {
+            profiles.reloadOnline();
+            leaderboards.refresh();
+        });
+        dayRollover.start();
+        getServer().getPluginManager().registerEvents(new StatsRecorder(storage, profiles, Clock.systemDefaultZone(), getLogger()), this);
         getServer().getPluginManager().registerEvents(leaderboards, this);
         var parties = new PartyService(this, storage, messages, () -> settings.partyInviteTicks());
         parties.load();
@@ -171,8 +197,12 @@ public final class MiniGamiPlugin extends JavaPlugin {
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             StatsExpansion.register(this, new StatPlaceholders(leaderboards, profiles), matchValues, nightValues);
         }
+        getServer().getServicesManager().register(MiniGamiSavedItems.class, savedItems, this, ServicePriority.Normal);
+        rewardReader = new RewardReader(savedItems);
         var presence = new PlayerPresence(getServer());
         getServer().getServicesManager().register(MiniGamiPlayers.class, presence, this, ServicePriority.Normal);
+        getServer().getServicesManager().register(MiniGamiStats.class, new PluginStats(storage, profiles, leaderboards, serverThread, Clock.systemDefaultZone(), getLogger()), this,
+                ServicePriority.Normal);
         var sessions = new PlayerSessions(this, snapshots, getLogger(), presence);
         getServer().getPluginManager().registerEvents(sessions, this);
         matches = new ActiveMatches(getLogger());
@@ -181,25 +211,35 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), getLogger()::info,
                 () -> getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission("minigami.admin"))).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
-        maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick());
+        var boards = new PluginBoards(getServer());
+        getServer().getPluginManager().registerEvents(boards, this);
+        getServer().getServicesManager().register(MiniGamiBoards.class, boards, this, ServicePriority.Normal);
+        var bans = new PluginBans(storage, () -> games.ids(), getServer(), messages, serverThread, Clock.systemUTC(), getLogger());
+        bans.load();
+        getServer().getPluginManager().registerEvents(bans, this);
+        getServer().getServicesManager().register(MiniGamiBans.class, bans, this, ServicePriority.Normal);
+        var setup = new PluginSetup(this);
+        getServer().getServicesManager().register(MiniGamiSetup.class, setup, this, ServicePriority.Normal);
+        maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick(), setup);
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables), messages::keys);
         doctor = new Doctor(messages, getLogger(), () -> games);
-        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
+        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues, boards, bans);
         getServer().getPluginManager().registerEvents(running, this);
-        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, doctor);
+        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, bans, doctor);
         var nightReport = new NightReport(getServer(), messages);
         nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), sessions, parties, new NightStore(storage, getLogger()), nightReport,
-                new NightSidebar(getServer(), messages, nightReport), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
+                new NightSidebar(this, messages, nightReport, boards), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor, bans);
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
         var scheduleRewards = new ScheduleRewards(this, messages, RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(scheduleRewards, this);
         var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, scheduleRewards,
-                Clock.systemDefaultZone(), RandomGenerator.getDefault());
+                Clock.systemDefaultZone(), RandomGenerator.getDefault(), bans);
         getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, running::isArenaInUse, this::loadAfterEdit);
-        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
+        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, rewardReader, running::isArenaInUse, this::loadAfterEdit);
+        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, setup);
         var lootSetup = new LootSetup(() -> arenas, () -> lootTables, editor, maps, messages, this);
         getServer().getPluginManager().registerEvents(lootSetup, this);
         var terrainSetup = new TerrainSetup(() -> arenas, () -> terrainStyles, maps, running::isArenaInUse,
@@ -210,9 +250,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var gameRenamer = new GameRenamer(this, messages, editor, running::isGameInUse, statsAdmin::renameGame, this::loadAfterEdit);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(GamesCommand.playerRoot(messages, publicMatches, running, parties, nights, scheduled, statsView), "Join, leave and see stats of minigames");
-            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, gameRenamer, arenaSetup, lootSetup, terrainSetup, info,
+            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer(), bans), editor, gameRenamer, arenaSetup, lootSetup, terrainSetup, info,
                     gametypes.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), nights, scheduled,
-                    statsView, statsAdmin, new PlaceholderGuide(statsView, messages), doctor, () -> settings.lobby(), this::loadAfterEdit), "Manage minigames");
+                    statsView, statsAdmin, new PlaceholderGuide(statsView, messages), new BanAdmin(bans, messages, getServer(), getLogger()), bans::scopes, doctor, () -> settings.lobby(), this::loadAfterEdit), "Manage minigames");
         });
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.
@@ -286,7 +326,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 terrainStyles = loadedTerrain.styles();
                 var loadedGames = gameLoader.load(gameFiles, loadedArenas.entries(), loadedSettings.settings().lobby().isPresent(), loadedSettings.settings().hud(), loadedSettings.settings().start(), messageTexts::isString);
                 var loadedNights = NightTemplateLoader.load(nightFiles, loadedGames.entries());
-                var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries());
+                var loadedSchedules = ScheduleLoader.load(scheduleFiles, loadedGames.entries(), rewardReader);
                 // Also for files with problems, so they can be fixed by command.
                 var problems = new ArrayList<>(fileProblems);
                 problems.addAll(loadedSettings.problems());
@@ -426,13 +466,17 @@ public final class MiniGamiPlugin extends JavaPlugin {
             matches.disposeAll();
         }
         if (nights != null) {
-            nights.releaseAll();
+            nights.shutdown();
         }
         // After the matches, so the leave events of players they restore still fire to those who listen.
         getServer().getServicesManager().unregisterAll(this);
         // After the matches: disposing them restores players and queues the deletes of their snapshot files.
         if (snapshots != null) {
             snapshots.close();
+        }
+        // Before the storage closes: the rollover reschedules itself.
+        if (dayRollover != null) {
+            dayRollover.stop();
         }
         if (storage != null) {
             storage.close();

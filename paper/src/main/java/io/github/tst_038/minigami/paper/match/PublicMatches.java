@@ -1,7 +1,9 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
@@ -40,11 +42,14 @@ public final class PublicMatches {
     private final Messages messages;
     private final RunningMatches running;
     private final PartyService parties;
+    private final PluginBans bans;
     private final Doctor doctor;
 
     /** @param games the games currently loaded; config loading replaces the registry */
-    public PublicMatches(Plugin plugin, Supplier<IdRegistry<Game>> games, Messages messages, RunningMatches running, PartyService parties, Doctor doctor) {
+    public PublicMatches(Plugin plugin, Supplier<IdRegistry<Game>> games, Messages messages, RunningMatches running, PartyService parties, PluginBans bans,
+            Doctor doctor) {
         this.plugin = plugin;
+        this.bans = bans;
         this.games = games;
         this.messages = messages;
         this.running = running;
@@ -91,7 +96,7 @@ public final class PublicMatches {
      */
     public boolean join(Player player, LiveMatch match) {
         var group = group(player);
-        return group.isPresent() && join(group.get(), match.variant(), player,
+        return group.isPresent() && join(group.get(), match.variant(), match.banScopes(), player,
                 () -> messages.send(player, "join.match-full", Placeholder.parsed("game", match.variant().name())),
                 () -> Optional.of(match).filter(candidate -> candidate.isJoinable() && candidate.hasRoom(group.get().size()))).isPresent();
     }
@@ -147,19 +152,24 @@ public final class PublicMatches {
             messages.send(feedback, variant.get().arenas().isEmpty() ? "join.not-ready" : "join.no-free-arena", Placeholder.parsed("game", variant.get().name()));
             doctor.explain(feedback, variant.get());
         };
-        return join(group, variant.get(), feedback, noMatch, () -> matchToJoin(variant.get(), group.size()));
+        return join(group, variant.get(), Set.of(MiniGamiBans.game(variant.get().game())), feedback, noMatch, () -> matchToJoin(variant.get(), group.size()));
     }
 
     /**
      * Puts the players in one match of the variant, all or none.
      *
+     * @param banScopes a ban in any of these keeps a player, and so the group, out
      * @param noMatch tells why when {@code match} finds none to join
      * @param match the match to join, asked only once the players may join one
      */
-    private Optional<LiveMatch> join(List<Player> group, Variant variant, Audience feedback, Runnable noMatch, Supplier<Optional<LiveMatch>> match) {
+    private Optional<LiveMatch> join(List<Player> group, Variant variant, Set<String> banScopes, Audience feedback, Runnable noMatch,
+            Supplier<Optional<LiveMatch>> match) {
         for (var player : group) {
             if (running.find(player.getUniqueId()).isPresent()) {
                 messages.send(feedback, "join.already-in-match", Placeholder.component("player", player.name()));
+                return Optional.empty();
+            }
+            if (bans.keepsOut(feedback, player, banScopes)) {
                 return Optional.empty();
             }
         }

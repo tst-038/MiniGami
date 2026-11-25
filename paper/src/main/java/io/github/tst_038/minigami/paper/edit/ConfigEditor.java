@@ -1,15 +1,17 @@
 package io.github.tst_038.minigami.paper.edit;
 
+import io.github.tst_038.minigami.api.config.ConfigFiles;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.reward.RewardReader;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaFile;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
-import io.github.tst_038.minigami.paper.config.ConfigFiles;
-import io.github.tst_038.minigami.paper.config.ConfigLocations;
+import io.github.tst_038.minigami.api.config.ConfigLocations;
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.game.Game;
@@ -87,6 +89,7 @@ public final class ConfigEditor {
     private final Supplier<IdRegistry<Game>> games;
     private final Supplier<IdRegistry<Arena>> arenas;
     private final Supplier<Settings> settings;
+    private final RewardReader rewards;
     private final Predicate<String> arenaInUse;
     private final Consumer<Audience> reload;
     private volatile Keys keys = new Keys(Collections.emptySortedMap(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
@@ -111,11 +114,12 @@ public final class ConfigEditor {
      * @param arenas the arenas currently loaded, which games are checked against
      * @param games the games currently loaded, which game nights are checked against
      * @param settings the settings currently loaded, for whether games may wait in the lobby
+     * @param rewards reads the rewards of schedules
      * @param arenaInUse whether a running match uses the arena with this id; such an arena can't be changed
      * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
     public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> gametypes, GameLoader gameLoader,
-            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games, Supplier<Settings> settings, Predicate<String> arenaInUse, Consumer<Audience> reload) {
+            Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games, Supplier<Settings> settings, RewardReader rewards, Predicate<String> arenaInUse, Consumer<Audience> reload) {
         this.plugin = plugin;
         this.messages = messages;
         this.gametypes = gametypes;
@@ -123,6 +127,7 @@ public final class ConfigEditor {
         this.arenas = arenas;
         this.games = games;
         this.settings = settings;
+        this.rewards = rewards;
         this.arenaInUse = arenaInUse;
         this.reload = reload;
     }
@@ -261,11 +266,11 @@ public final class ConfigEditor {
 
     /**
      * @param id ignored for {@link Kind#CONFIG}
-     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value #ConfigLocations.HERE}
+     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value LocationConfig#HERE}
      */
     public void set(CommandSender sender, Kind kind, String id, String key, String text) {
         Consumer<YamlConfiguration> change;
-        if (text.equals(ConfigLocations.HERE)) {
+        if (text.equals(LocationConfig.HERE)) {
             if (!(sender instanceof Player player)) {
                 messages.send(sender, "edit.here-needs-player");
                 return;
@@ -527,7 +532,7 @@ public final class ConfigEditor {
             case GAME -> gameLoader.load(new YamlFiles("games", Map.of(id, config), List.of()), arenas.get(), settings.get().lobby().isPresent(), settings.get().hud(), settings.get().start(), messages::has)
                     .problems();
             case NIGHT -> NightTemplateLoader.load(new YamlFiles(NightTemplateLoader.FOLDER, Map.of(id, config), List.of()), games.get()).problems();
-            case SCHEDULE -> ScheduleLoader.load(new YamlFiles(ScheduleLoader.FOLDER, Map.of(id, config), List.of()), games.get()).problems();
+            case SCHEDULE -> ScheduleLoader.load(new YamlFiles(ScheduleLoader.FOLDER, Map.of(id, config), List.of()), games.get(), rewards).problems();
         };
     }
 

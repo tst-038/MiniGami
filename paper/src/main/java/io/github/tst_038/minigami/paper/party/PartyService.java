@@ -4,7 +4,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.party.Parties;
 import io.github.tst_038.minigami.core.party.Parties.Party;
 import io.github.tst_038.minigami.core.party.Parties.Result;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import io.github.tst_038.minigami.paper.click.Clicks;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.util.Collection;

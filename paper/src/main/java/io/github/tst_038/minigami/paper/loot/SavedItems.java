@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.loot;
 
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.paper.item.ItemCodec;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,41 +10,44 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 
 /**
  * Items that loot tables name with {@code saved: <name>}, for anything their own fields can't describe, kept in memory and as one
- * {@code <name>.yml} file each. The file methods block, so call them off the server thread.
+ * {@code <name>.yml} file each. The file methods block, except {@link #save}; the plugin reads them once on the server thread
+ * when it enables, so that plugins depending on it see the items in their own {@code onEnable}.
  */
-public final class SavedItems {
+public final class SavedItems implements MiniGamiSavedItems {
 
     private static final String EXTENSION = ".yml";
-    private static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
 
     private final Path directory;
     private final Logger logger;
+    private final Executor fileIo;
     private final Map<String, ItemStack> items = new ConcurrentSkipListMap<>();
 
-    public SavedItems(Path directory, Logger logger) {
+    /** @param fileIo runs {@link #save}'s file writes, off the server thread */
+    public SavedItems(Path directory, Logger logger, Executor fileIo) {
         this.directory = directory;
         this.logger = logger;
+        this.fileIo = fileIo;
     }
 
-    public static boolean isValidName(String name) {
-        return NAME.matcher(name).matches();
-    }
-
+    @Override
     public boolean has(String name) {
         return items.containsKey(name);
     }
 
     /** A copy, so nobody changes the saved one. */
+    @Override
     public Optional<ItemStack> find(String name) {
         return Optional.ofNullable(items.get(name)).map(ItemStack::clone);
     }
@@ -52,8 +56,23 @@ public final class SavedItems {
         return items.keySet();
     }
 
-    public void put(String name, ItemStack item) {
+    @Override
+    public CompletableFuture<Void> save(String name, ItemStack item) {
+        if (!MiniGamiSavedItems.isValidName(name)) {
+            throw new IllegalArgumentException("'" + name + "' isn't a valid name for a saved item");
+        }
+        if (item.isEmpty()) {
+            throw new IllegalArgumentException("An empty item can't be saved");
+        }
+        var text = toText(item);
         items.put(name, item.asOne());
+        return CompletableFuture.runAsync(() -> {
+            try {
+                write(name, text);
+            } catch (IOException e) {
+                throw new CompletionException(e);
+            }
+        }, fileIo);
     }
 
     /** @return whether there was such an item */
@@ -92,14 +111,14 @@ public final class SavedItems {
     }
 
     /** The file's text; made on the server thread, since serializing an item reads server state. */
-    public static String toText(ItemStack item) {
+    private static String toText(ItemStack item) {
         var config = new YamlConfiguration();
         config.set("item", ItemCodec.encode(item.asOne()));
         return config.saveToString();
     }
 
     /** Replaces the item's file, so a crash in the middle leaves the old one. */
-    public void write(String name, String text) throws IOException {
+    private void write(String name, String text) throws IOException {
         Files.createDirectories(directory);
         var temp = directory.resolve(name + EXTENSION + ".tmp");
         Files.writeString(temp, text);

@@ -1,0 +1,80 @@
+package io.github.tst_038.minigami.core.capture;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Who owns one capture point, and who is taking it. A side other than the owner that stands on the
+ * point alone for the capture time takes it. A kept point stays its owner's until then; one not kept is
+ * owned only while its owner stands on it alone. Contesting it pauses the taking, leaving it empty
+ * starts it over, and the owner alone on it fends it off.
+ *
+ * @param <T> what tells sides apart, such as a team id or a player's UUID
+ */
+public final class Capture<T> {
+
+    private final int seconds;
+    private final boolean keep;
+    private Optional<T> owner = Optional.empty();
+    private Optional<T> taker = Optional.empty();
+    private int progress;
+
+    /**
+     * @param seconds how long a side must stand on the point alone to take it; 1 takes it at once
+     * @param keep whether the owner keeps it once it steps off or another side steps on
+     */
+    public Capture(int seconds, boolean keep) {
+        this.seconds = seconds;
+        this.keep = keep;
+    }
+
+    /**
+     * One second passes with these sides on the point.
+     *
+     * @param present the distinct sides standing on it
+     * @return whether the point changed hands
+     */
+    public boolean tick(List<T> present) {
+        if (!keep && !(present.size() == 1 && owner.equals(Optional.of(present.getFirst())))) {
+            owner = Optional.empty();
+        }
+        if (present.size() > 1) {
+            return false;
+        }
+        if (present.isEmpty() || owner.equals(Optional.of(present.getFirst()))) {
+            taker = Optional.empty();
+            progress = 0;
+            return false;
+        }
+        var side = present.getFirst();
+        if (!taker.equals(Optional.of(side))) {
+            taker = Optional.of(side);
+            progress = 0;
+        }
+        if (++progress < seconds) {
+            return false;
+        }
+        owner = taker;
+        taker = Optional.empty();
+        progress = 0;
+        return true;
+    }
+
+    public Optional<T> owner() {
+        return owner;
+    }
+
+    /** The side taking the point, while it is not done. */
+    public Optional<T> taker() {
+        return taker;
+    }
+
+    /** Seconds the taker has stood on it alone so far. */
+    public int progress() {
+        return progress;
+    }
+
+    public int seconds() {
+        return seconds;
+    }
+}

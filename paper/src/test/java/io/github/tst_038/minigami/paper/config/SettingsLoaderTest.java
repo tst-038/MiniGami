@@ -9,6 +9,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;

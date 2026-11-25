@@ -1,9 +1,13 @@
 package io.github.tst_038.minigami.paper.stats;
 
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.stat.Period;
+import io.github.tst_038.minigami.core.stat.Stat;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,41 +26,39 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 /**
- * The best players per game and stat, wins included, over the whole game and per variant. Read from storage in the background whenever
- * {@link #refresh()} is called, every few minutes, and kept in memory in between, so showing a
- * board never waits on the database. Refreshed again after each match. Refresh from the server thread; read from any.
+ * The best players per game and stat, wins included, over the whole game and per variant, for all time and for this week and this month.
+ * Read from storage in the background whenever {@link #refresh()} is called, every few minutes, and kept in memory in between, so showing a
+ * board never waits on the database. Refreshed again after each match, and when the date changes, which moves the weekly and monthly
+ * boards on. Refresh from the server thread; read from any.
  */
 public final class Leaderboards implements Listener {
-
-    /** The board of matches won; besides {@link #PLAYED}, every other board is a stat. */
-    public static final String WINS = "wins";
-
-    /** The board of matches played, which every game has without keeping it as a stat. */
-    public static final String PLAYED = "played";
 
     /** @param name the name they last joined with; empty if nobody knows it, e.g. they haven't joined since names were kept */
     public record Entry(UUID id, Optional<String> name, long amount) {
     }
 
     /** @param variant empty for the whole game */
-    private record Board(String game, Optional<String> variant, String stat) {
+    private record Board(Period period, String game, Optional<String> variant, String stat) {
     }
 
     private final Storage storage;
     private final Executor serverThread;
     private final Logger logger;
+    private final Clock clock;
     private final Function<UUID, Optional<String>> cachedName;
     private final IntSupplier size;
     private volatile Map<Board, List<Entry>> boards = Map.of();
 
     /**
+     * @param clock tells today, in the server's time zone, which is where a week or a month starts
      * @param cachedName the name the server knows for a player whose name isn't stored; must not block
      * @param size how many players a board shows; read on each refresh, so a reload applies to the next one
      */
-    public Leaderboards(Storage storage, Executor serverThread, Logger logger, Function<UUID, Optional<String>> cachedName, IntSupplier size) {
+    public Leaderboards(Storage storage, Executor serverThread, Logger logger, Clock clock, Function<UUID, Optional<String>> cachedName, IntSupplier size) {
         this.storage = storage;
         this.serverThread = serverThread;
         this.logger = logger;
+        this.clock = clock;
         this.cachedName = cachedName;
         this.size = size;
     }
@@ -67,13 +69,27 @@ public final class Leaderboards implements Listener {
      * @param variant empty for the whole game, its variants added up
      */
     public List<Entry> top(String game, Optional<String> variant, String stat) {
-        return boards.getOrDefault(new Board(game, variant, stat), List.of());
+        return top(Period.ALL_TIME, game, variant, stat);
+    }
+
+    /**
+     * Best first, over the days of the period up to today, as of the last refresh; otherwise as {@link #top(String, Optional, String)}.
+     */
+    public List<Entry> top(Period period, String game, Optional<String> variant, String stat) {
+        return boards.getOrDefault(new Board(period, game, variant, stat), List.of());
+    }
+
+    /** The games that have a board, as of the last refresh: also those no loaded game has, such as the ones other plugins keep stats for. */
+    public Set<String> games() {
+        var games = new TreeSet<String>();
+        boards.keySet().stream().filter(board -> board.period() == Period.ALL_TIME).forEach(board -> games.add(board.game()));
+        return games;
     }
 
     /** The stats the game has a board for, wins and played included once anyone has them. */
     public Set<String> stats(String game) {
         var stats = new TreeSet<String>();
-        boards.keySet().stream().filter(board -> board.game().equals(game)).forEach(board -> stats.add(board.stat()));
+        boards.keySet().stream().filter(board -> board.period() == Period.ALL_TIME && board.game().equals(game)).forEach(board -> stats.add(board.stat()));
         return stats;
     }
 
@@ -101,43 +117,61 @@ public final class Leaderboards implements Listener {
     // shortcut: every board is read on each refresh; read only boards someone looked at once there are many games and players.
     private Map<Board, List<Entry>> read(Connection connection) throws SQLException {
         var read = new HashMap<Board, List<Entry>>();
+        rank(connection, Period.ALL_TIME, """
+                SELECT player, game, NULL AS variant, ? AS stat, SUM(wins) AS amount FROM player_totals
+                    GROUP BY player, game HAVING SUM(wins) > 0
+                UNION ALL
+                SELECT player, game, variant, ?, wins FROM player_totals WHERE wins > 0 AND variant <> ''
+                UNION ALL
+                SELECT player, game, NULL, ?, SUM(played) FROM player_totals
+                    GROUP BY player, game HAVING SUM(played) > 0
+                UNION ALL
+                SELECT player, game, variant, ?, played FROM player_totals WHERE played > 0 AND variant <> ''
+                UNION ALL
+                SELECT player, game, NULL, stat, SUM(amount) FROM player_stat_totals
+                    GROUP BY player, game, stat HAVING SUM(amount) > 0
+                UNION ALL
+                SELECT player, game, variant, stat, amount FROM player_stat_totals WHERE amount > 0 AND variant <> ''""",
+                List.of(Stat.WINS, Stat.WINS, Stat.PLAYED, Stat.PLAYED), read);
+        var today = LocalDate.now(clock);
+        for (var period : List.of(Period.WEEK, Period.MONTH)) {
+            var first = period.firstDay(today).orElseThrow().toEpochDay();
+            // The days hold played and wins as stats too.
+            rank(connection, period, """
+                    SELECT player, game, NULL AS variant, stat, SUM(amount) AS amount FROM player_daily_stats WHERE day >= ?
+                        GROUP BY player, game, stat HAVING SUM(amount) > 0
+                    UNION ALL
+                    SELECT player, game, variant, stat, SUM(amount) FROM player_daily_stats WHERE day >= ? AND variant <> ''
+                        GROUP BY player, game, variant, stat HAVING SUM(amount) > 0""", List.of(first, first), read);
+        }
+        return read;
+    }
+
+    /** Adds the best players of each board that the amounts, rows of player, game, variant, stat and amount, make up. */
+    private void rank(Connection connection, Period period, String amounts, List<Object> parameters, Map<Board, List<Entry>> into) throws SQLException {
         try (var select = connection.prepareStatement("""
                 SELECT ranked.game, ranked.variant, ranked.stat, ranked.player, player_names.name, ranked.amount
                 FROM (
                     SELECT game, variant, stat, player, amount,
                         ROW_NUMBER() OVER (PARTITION BY game, variant, stat ORDER BY amount DESC, player) AS position
                     FROM (
-                        SELECT player, game, NULL AS variant, ? AS stat, SUM(wins) AS amount FROM player_totals
-                            GROUP BY player, game HAVING SUM(wins) > 0
-                        UNION ALL
-                        SELECT player, game, variant, ?, wins FROM player_totals WHERE wins > 0 AND variant <> ''
-                        UNION ALL
-                        SELECT player, game, NULL, ?, SUM(played) FROM player_totals
-                            GROUP BY player, game HAVING SUM(played) > 0
-                        UNION ALL
-                        SELECT player, game, variant, ?, played FROM player_totals WHERE played > 0 AND variant <> ''
-                        UNION ALL
-                        SELECT player, game, NULL, stat, SUM(amount) FROM player_stat_totals
-                            GROUP BY player, game, stat HAVING SUM(amount) > 0
-                        UNION ALL
-                        SELECT player, game, variant, stat, amount FROM player_stat_totals WHERE amount > 0 AND variant <> ''
+                """ + amounts + """
+
                     ) AS amounts
                 ) AS ranked
                 LEFT JOIN player_names ON player_names.player = ranked.player
                 WHERE ranked.position <= ?
                 ORDER BY ranked.game, ranked.variant, ranked.stat, ranked.position""")) {
-            select.setString(1, WINS);
-            select.setString(2, WINS);
-            select.setString(3, PLAYED);
-            select.setString(4, PLAYED);
-            select.setInt(5, size.getAsInt());
+            for (var i = 0; i < parameters.size(); i++) {
+                select.setObject(i + 1, parameters.get(i));
+            }
+            select.setInt(parameters.size() + 1, size.getAsInt());
             try (var rows = select.executeQuery()) {
                 while (rows.next()) {
-                    read.computeIfAbsent(new Board(rows.getString(1), Optional.ofNullable(rows.getString(2)), rows.getString(3)), board -> new ArrayList<>())
+                    into.computeIfAbsent(new Board(period, rows.getString(1), Optional.ofNullable(rows.getString(2)), rows.getString(3)), board -> new ArrayList<>())
                             .add(new Entry(UUID.fromString(rows.getString(4)), Optional.ofNullable(rows.getString(5)), rows.getLong(6)));
                 }
             }
         }
-        return read;
     }
 }

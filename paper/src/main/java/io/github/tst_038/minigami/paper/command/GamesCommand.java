@@ -1,20 +1,24 @@
 package io.github.tst_038.minigami.paper.command;
 
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
+import static io.github.tst_038.minigami.paper.command.Nodes.BAN;
 import static io.github.tst_038.minigami.paper.command.Nodes.HELPER;
 import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
 import static io.github.tst_038.minigami.paper.command.Nodes.player;
+import static io.github.tst_038.minigami.paper.command.Nodes.players;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
+import io.github.tst_038.minigami.paper.ban.BanAdmin;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.arena.TerrainSetup;
 import io.github.tst_038.minigami.paper.diagnosis.Doctor;
@@ -38,6 +42,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.bukkit.Location;
@@ -102,10 +107,10 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> adminRoot(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor, GameRenamer gameRenamer,
-            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, BanAdmin bans, Supplier<Set<String>> banScopes, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mga")
-                .requires(HELPER)
+                .requires(HELPER.or(BAN))
                 .executes(help)
                 .then(Commands.literal("join")
                         .requires(ADMIN)
@@ -119,9 +124,12 @@ public final class GamesCommand {
                                                         string(context, "game"), Optional.of(string(context, "variant")))))))))
                 .then(Commands.literal("leave")
                         .requires(HELPER)
-                        .then(Commands.argument("player", ArgumentTypes.player())
-                                .executes(bySender((sender, context) -> running.leave(sender, player(context))))))
+                        .then(Commands.argument("players", PlayerTargets.argument())
+                                .executes(bySender((sender, context) -> running.leave(sender, players(context))))))
                 .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))
+                .then(BanCommands.ban(bans, banScopes))
+                .then(BanCommands.unban(bans))
+                .then(BanCommands.list(bans))
                 .then(MatchCommands.node(matches, help))
                 .then(GameCommands.node(editor, gameRenamer, info, help))
                 .then(ArenaCommands.node(editor, arenas, loot, terrain, info, help))

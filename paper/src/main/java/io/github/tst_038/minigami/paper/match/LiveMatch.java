@@ -1,5 +1,7 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.features.playarea.PlayAreaFactory;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
@@ -87,6 +89,7 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * A match of a variant in one arena, together with the players in it. Players join during the first
@@ -138,6 +141,7 @@ public final class LiveMatch {
     private final Set<UUID> left = new HashSet<>();
     /** Who outside the match may join it, when not those with its game's permission. */
     private Optional<String> joinPermission = Optional.empty();
+    private Optional<Set<String>> banScopes = Optional.empty();
     /** The region of every team, handed out when play starts. */
     private List<TeamRegion> teamRegions = List.of();
     /** When play started, for the record; null until then. */
@@ -160,7 +164,7 @@ public final class LiveMatch {
      * @throws IllegalArgumentException if the variant waits in the lobby and there is none
      */
     public LiveMatch(Plugin plugin, Variant variant, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages,
-            MatchValues values, ArenaMaps maps) {
+            MatchValues values, ArenaMaps maps, MiniGamiBoards boards) {
         this.plugin = plugin;
         this.variant = variant;
         this.arena = arena;
@@ -185,7 +189,7 @@ public final class LiveMatch {
             }
         });
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
-        this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror, values);
+        this.hud = new MatchHud(plugin, boards, this, scoreboardTeams::mirror, values);
         match.onResult(result -> {
             recordEnd();
             hud.decided(result);
@@ -418,6 +422,16 @@ public final class LiveMatch {
     /** Only those with the permission may join this match, instead of those with its game's, so only they hear how it ends. */
     public void joinableBy(String permission) {
         joinPermission = Optional.of(permission);
+    }
+
+    /** Only bans in these scopes keep players out of this match, instead of its game's: {@code game:<id>}. */
+    public void bannedBy(Set<String> scopes) {
+        banScopes = Optional.of(Set.copyOf(scopes));
+    }
+
+    /** The scopes whose bans keep players out of this match: its game's, or those set with {@link #bannedBy}. */
+    public Set<String> banScopes() {
+        return banScopes.orElseGet(() -> Set.of(MiniGamiBans.game(variant.game())));
     }
 
     /** Online players outside the match who may join it: by its game's permission, or the one set with {@link #joinableBy}. */
