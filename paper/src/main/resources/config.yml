@@ -8,6 +8,24 @@
 # Lower it if the server lags while a match starts, raise it to start matches sooner.
 blocks-per-tick: 8192
 
+# How a match starts once it has enough players (min-players). It waits seconds, while more players can still
+# join up to max-players, and holds everyone frozen at their spawns for the last countdown-seconds of that
+# (less than seconds).
+# Every game gets this; a game file or variant can set its own under start:, such as start: { seconds: 40 }.
+start:
+  seconds: 20
+  countdown-seconds: 3
+
+parties:
+  # How long a party invite can be accepted.
+  invite-seconds: 60
+
+leaderboards:
+  # How many players each leaderboard shows (stats menus and PlaceholderAPI).
+  size: 10
+  # How often leaderboards are read again from storage; they lag this much behind, but views never wait on storage.
+  refresh-seconds: 300
+
 # What players see of a match next to chat. Every game gets this; a game file can override any part
 # of it under its own hud: key, or turn it all off with hud: false.
 #

@@ -84,7 +84,7 @@ class BundledGamesTest {
         var arenas = new IdRegistry<Arena>(Arena::id);
         arenas.register(new Arena("example", null, List.of(), Optional.empty(), Optional.empty(), Map.of(), Optional.empty()));
 
-        var loaded = loader.load(new YamlFiles("games", files, List.of()), arenas, false, resource("config.yml").getConfigurationSection("hud"), messages::isString);
+        var loaded = loader.load(new YamlFiles("games", files, List.of()), arenas, false, resource("config.yml").getConfigurationSection("hud"), io.github.tst_038.minigami.paper.game.Start.DEFAULT, messages::isString);
 
         assertEquals(List.of(), loaded.problems());
         assertEquals(MiniGamiPlugin.EXAMPLE_GAMES.size(), loaded.entries().ids().size());

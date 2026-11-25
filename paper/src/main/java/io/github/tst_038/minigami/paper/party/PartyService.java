@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.LongSupplier;
 import java.util.logging.Level;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -31,9 +32,6 @@ import org.bukkit.plugin.Plugin;
  */
 public final class PartyService {
 
-    /** How long an invite can be accepted. */
-    private static final long INVITE_TICKS = 60 * 20;
-
     private record Invite(UUID leader, UUID invitee) {
     }
 
@@ -41,14 +39,17 @@ public final class PartyService {
     private final PartyStore store;
     private final Messages messages;
     private final Parties parties;
+    private final LongSupplier inviteTicks;
     /** The timer that ends each open invite. */
     private final Map<Invite, ScheduledTask> invites = new HashMap<>();
 
-    public PartyService(Plugin plugin, Storage storage, Messages messages) {
+    /** @param inviteTicks how long an invite can be accepted; read for each invite, so a reload applies to the next one */
+    public PartyService(Plugin plugin, Storage storage, Messages messages, LongSupplier inviteTicks) {
         this.plugin = plugin;
         this.store = new PartyStore(storage, plugin.getLogger());
         this.messages = messages;
         this.parties = new Parties();
+        this.inviteTicks = inviteTicks;
     }
 
     /** Brings the saved parties back; they are there a moment after startup. */
@@ -114,11 +115,12 @@ public final class PartyService {
                 tell(List.of(invite.leader(), invite.invitee()), "party.invite-expired", Placeholder.unparsed("leader", leader.getName()),
                         Placeholder.unparsed("player", target.getName()));
             }
-        }, INVITE_TICKS));
+        }, inviteTicks.getAsLong()));
         if (old != null) {
             old.cancel();
         }
-        messages.send(leader, "party.invited", Placeholder.unparsed("player", target.getName()));
+        messages.send(leader, "party.invited", Placeholder.unparsed("player", target.getName()),
+                Formatter.number("seconds", inviteTicks.getAsLong() / 20));
         messages.send(target, "party.invite", Placeholder.unparsed("leader", leader.getName()),
                 Placeholder.styling("accept", Clicks.by(invitee -> accept(invitee, leader.getName()))));
     }

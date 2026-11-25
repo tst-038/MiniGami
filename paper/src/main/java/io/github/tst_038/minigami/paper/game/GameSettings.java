@@ -97,7 +97,7 @@ final class GameSettings {
         var phases = game.map(type -> type.phases().stream().map(Phase::id).toList()).orElse(List.of());
         var perPhase = features(phases);
         var all = new ArrayList<Setting<?>>(List.of(gametype(), NAME, MIN_PLAYERS, MAX_PLAYERS, WAITING, LIVES, NAME_TAGS, messages(), TEAMS,
-                SPAWNS, RESPAWN_SECONDS, ENDING_SECONDS, REGION, ARENAS, stats(), ADVANCEMENTS, QUIT, HudSettings.setting(phases),
+                SPAWNS, Start.setting(), RESPAWN_SECONDS, ENDING_SECONDS, REGION, ARENAS, stats(), ADVANCEMENTS, QUIT, HudSettings.setting(phases),
                 Setting.of(ROLES, Kind.each("role", () -> game.map(GameType::roles).orElse(List.of()), Kind.section(RoleSettings.role(perPhase))),
                         "the roles, handed out in this order").orElse(Map.of()),
                 Setting.of(RANKS, Kind.each("rank", () -> game.map(GameType::ranks).orElse(List.of()), Kind.section(RoleSettings.rank(perPhase))),

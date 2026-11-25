@@ -72,6 +72,8 @@ class GameLoaderTest {
     private final IdRegistry<StatGroup> statGroups = new IdRegistry<>(StatGroup::id);
     private final IdRegistry<Arena> arenas = new IdRegistry<>(Arena::id);
     private final YamlConfiguration hud = new YamlConfiguration();
+    /** The start from config.yml in these tests; unlike Start.DEFAULT, so falling back to it shows. */
+    private static final Start CONFIG_START = new Start(30, 5);
 
     /** A game whose code relies on a seeker and a hider. */
     private static final GameType HIDE = new GameType() {
@@ -208,7 +210,7 @@ class GameLoaderTest {
     private YamlFiles.Loaded<Game> load(String yaml, boolean hasLobby) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of).load(new YamlFiles("games", Map.of("fall", config), List.of()), arenas, hasLobby, hud, CONFIG_START, Set.of("match.joined", "match.left")::contains);
     }
 
     private YamlFiles.Loaded<Game> loadAll(Map<String, String> yamlById) throws Exception {
@@ -218,7 +220,7 @@ class GameLoaderTest {
             config.loadFromString(entry.getValue());
             files.put(entry.getKey(), config);
         }
-        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of).load(new YamlFiles("games", files, List.of()), arenas, true, hud, Set.of("match.joined", "match.left")::contains);
+        return new GameLoader(games, features, statGroups, Hosting.checks(true, () -> io.github.tst_038.minigami.api.loot.LootTables.NONE), Set::of).load(new YamlFiles("games", files, List.of()), arenas, true, hud, CONFIG_START, Set.of("match.joined", "match.left")::contains);
     }
 
     @Test
@@ -786,6 +788,24 @@ class GameLoaderTest {
         var game = load(base + ", respawn-seconds: 5, variants: {quick: {name: Quick, respawn-seconds: 2}}}").entries().find("fall").orElseThrow();
         assertEquals(2, game.variants().get("quick").respawnSeconds());
         assertEquals(List.of("games/fall.yml: respawn-seconds: must be between 0 and 3600"), problems(load(base + ", respawn-seconds: -1}")));
+    }
+
+    @Test
+    void startComesFromConfigAndCanBeSetPerGameAndVariantKeyByKey() throws Exception {
+        var base = "{gametype: test, min-players: 2, max-players: 8, waiting: arena, arenas: [hills]";
+
+        assertEquals(CONFIG_START, load(base + "}").entries().find("fall").orElseThrow().base().start());
+        var game = load(base + ", start: { seconds: 60 }, variants: {quick: {name: Quick, start: { seconds: 10, countdown-seconds: 2 }}}}")
+                .entries().find("fall").orElseThrow();
+        assertEquals(new Start(60, 5), game.base().start());
+        assertEquals(new Start(10, 2), game.variants().get("quick").start());
+        var partial = load(base + ", start: { seconds: 60 }, variants: {slow: {name: Slow, start: { countdown-seconds: 2 }}}}")
+                .entries().find("fall").orElseThrow();
+        assertEquals(new Start(60, 2), partial.variants().get("slow").start());
+        assertEquals(List.of("games/fall.yml: start.seconds: must be more than countdown-seconds (5)"),
+                problems(load(base + ", start: { seconds: 5 }}")));
+        assertEquals(List.of("games/fall.yml: start.countdown-seconds: must be less than seconds (30)"),
+                problems(load(base + ", start: { countdown-seconds: 30 }}")));
     }
 
     @Test

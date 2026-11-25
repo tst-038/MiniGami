@@ -59,7 +59,7 @@ class StatsAdminTest {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         // Everything handed to the server thread runs at once, on whichever thread hands it over.
         profiles = new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), LOGGER);
-        leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), 5);
+        leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), () -> 5);
         recorder = new StatsRecorder(storage, profiles, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
         pluginStats = new PluginStats(storage, profiles, leaderboards, Runnable::run, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
         var games = new IdRegistry<Game>(Game::id);

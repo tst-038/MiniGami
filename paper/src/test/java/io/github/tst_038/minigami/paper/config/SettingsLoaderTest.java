@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
+import io.github.tst_038.minigami.paper.game.Start;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -48,6 +49,35 @@ class SettingsLoaderTest {
 
         assertTrue(saved.contains("Set it in-game with /mga lobby set"), saved);
         assertEquals(Optional.of(new Location(world, 1.5, 70, -2.5, 90, 10)), load(saved).settings().lobby());
+    }
+
+    @Test
+    void timingsDefaultToHowTheyWereBeforeTheyCouldBeSet() {
+        var settings = load("").settings();
+
+        assertEquals(Start.DEFAULT, settings.start());
+        assertEquals(60, settings.partyInviteSeconds());
+        assertEquals(Settings.LeaderboardSettings.DEFAULT, settings.leaderboards());
+    }
+
+    @Test
+    void readsTheTimings() {
+        var loaded = load("{start: {seconds: 45}, parties: {invite-seconds: 120}, leaderboards: {size: 5, refresh-seconds: 60}}");
+
+        assertEquals(List.of(), loaded.problems());
+        assertEquals(new Start(45, 3), loaded.settings().start());
+        assertEquals(120, loaded.settings().partyInviteSeconds());
+        assertEquals(new Settings.LeaderboardSettings(5, 60), loaded.settings().leaderboards());
+    }
+
+    @Test
+    void theBundledFileMatchesTheDefaults() throws Exception {
+        try (var bundled = getClass().getClassLoader().getResourceAsStream(SettingsLoader.FILE)) {
+            var loaded = load(new String(bundled.readAllBytes(), StandardCharsets.UTF_8));
+            assertEquals(List.of(), loaded.problems());
+            assertEquals(Start.DEFAULT, loaded.settings().start());
+            assertEquals(Settings.LeaderboardSettings.DEFAULT, loaded.settings().leaderboards());
+        }
     }
 
     @Test

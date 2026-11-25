@@ -48,7 +48,7 @@ class PluginStatsTest {
         var clock = Clock.fixed(NOW, ZoneOffset.UTC);
         // Everything handed to the server thread runs at once.
         profiles = new PlayerProfiles(storage, Runnable::run, clock, LOGGER);
-        leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, clock, id -> Optional.empty(), 5);
+        leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, clock, id -> Optional.empty(), () -> 5);
         stats = new PluginStats(storage, profiles, leaderboards, serverTasks::add, clock, LOGGER);
         profiles.join(alice, "Alice");
         settle();

@@ -45,7 +45,7 @@ class StatPlaceholdersTest {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         var today = Clock.fixed(START.plusSeconds(3600), ZoneOffset.UTC);
         profiles = new PlayerProfiles(storage, serverThread::add, today, LOGGER);
-        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, today, id -> Optional.empty(), 10);
+        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, today, id -> Optional.empty(), () -> 10);
         placeholders = new StatPlaceholders(leaderboards, profiles);
         profiles.join(alice, "Alice");
         profiles.join(bob, "Bob");

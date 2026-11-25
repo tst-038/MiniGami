@@ -20,6 +20,7 @@ import io.github.tst_038.minigami.core.win.LastManStanding;
 import io.github.tst_038.minigami.core.win.WinCondition;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
+import io.github.tst_038.minigami.paper.game.Start;
 import java.lang.reflect.Proxy;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -67,7 +68,7 @@ class StatsViewTest {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         // Everything handed to the server thread runs at once, on whichever thread hands it over.
         profiles = new PlayerProfiles(storage, Runnable::run, Clock.systemUTC(), LOGGER);
-        var leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), 5);
+        var leaderboards = new Leaderboards(storage, Runnable::run, LOGGER, Clock.fixed(START, ZoneOffset.UTC), id -> Optional.empty(), () -> 5);
         recorder = new StatsRecorder(storage, profiles, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
         pluginStats = new PluginStats(storage, profiles, leaderboards, Runnable::run, Clock.fixed(START, ZoneOffset.UTC), LOGGER);
         var games = new IdRegistry<Game>(Game::id);
@@ -133,7 +134,7 @@ class StatsViewTest {
                 return Set.of(KILLS);
             }
         };
-        return new Variant("tdm", Optional.empty(), type, name, 2, 8, null, 0, null, Map.of(), Optional.empty(), null, false, null, 0, 0,
+        return new Variant("tdm", Optional.empty(), type, name, 2, 8, null, 0, null, Map.of(), Optional.empty(), null, false, null, 0, Start.DEFAULT, 0,
                 List.of(), List.of(), null, List.of(), List.of(), Map.of(), List.of(), null, false);
     }
 

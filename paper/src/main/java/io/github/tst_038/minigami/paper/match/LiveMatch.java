@@ -102,12 +102,8 @@ import org.bukkit.scoreboard.Scoreboard;
  */
 public final class LiveMatch {
 
-    /** How long it takes from enough players joining until play begins. */
-    public static final long START_TICKS = 20 * 20;
-    /** How long players stand frozen at their spawns before play begins; part of {@link #START_TICKS}. */
-    public static final long COUNTDOWN_TICKS = 3 * 20;
-    /** The wait before the players land on their spawns, while the arena is made ready. */
-    public static final long START_DELAY_TICKS = START_TICKS - COUNTDOWN_TICKS;
+    /** The 3-2-1 after a pause; fixed, as a game's long start countdown would hold a resumed match up for nothing. */
+    public static final long RESUME_SECONDS = 3;
 
     private final Plugin plugin;
     private final Variant variant;
@@ -536,14 +532,14 @@ public final class LiveMatch {
         if (startDelay == null && match.roster().size() >= variant.minPlayers()) {
             prepareStart();
             // The arena is built while they wait, and they land on spawns that stand in the finished maze.
-            startDelay = match.clock().schedule(START_DELAY_TICKS, () -> edits.thenRun(() -> {
+            startDelay = match.clock().schedule(variant.start().delayTicks(), () -> edits.thenRun(() -> {
                 if (!match.scope().isClosed()) {
                     startPlaying(true);
                 }
             }));
-            goAt = match.clock().elapsedTicks() + START_TICKS;
+            goAt = match.clock().elapsedTicks() + variant.start().ticks();
             match.scope().register(startDelay);
-            messages.send(audience(), "match.starting", Formatter.number("seconds", START_TICKS / 20));
+            messages.send(audience(), "match.starting", Formatter.number("seconds", variant.start().seconds()));
         }
     }
 
@@ -813,7 +809,7 @@ public final class LiveMatch {
             throw new IllegalStateException(resuming ? "Already resuming" : "Not paused");
         }
         resuming = true;
-        var secondsLeft = new long[] {COUNTDOWN_TICKS / 20};
+        var secondsLeft = new long[] {RESUME_SECONDS};
         hud.countDown(secondsLeft[0]);
         var task = plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, timer -> {
             if (--secondsLeft[0] > 0) {
@@ -907,7 +903,7 @@ public final class LiveMatch {
             return;
         }
         countdown = match.scope().child();
-        goAt = match.clock().elapsedTicks() + COUNTDOWN_TICKS;
+        goAt = match.clock().elapsedTicks() + variant.start().countdownTicks();
         new Freeze().enable(new PaperMatchContext(plugin, this, countdown));
         var early = variant.gametype().startsDuringCountdown();
         if (early) {

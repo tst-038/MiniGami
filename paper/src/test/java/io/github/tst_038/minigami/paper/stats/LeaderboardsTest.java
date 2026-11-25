@@ -52,7 +52,7 @@ class LeaderboardsTest {
         storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
         recorder = new StatsRecorder(storage, profiles, TODAY, LOGGER);
-        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, TODAY, id -> Optional.empty(), 2);
+        leaderboards = new Leaderboards(storage, serverThread::add, LOGGER, TODAY, id -> Optional.empty(), () -> 2);
     }
 
     @AfterEach
