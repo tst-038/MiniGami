@@ -1,5 +1,8 @@
 package io.github.tst_038.minigami.paper.hud;
 
+import io.github.tst_038.minigami.api.board.BoardClaim;
+import io.github.tst_038.minigami.api.board.BoardPriority;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
 import io.github.tst_038.minigami.core.roster.MatchTeam;
@@ -41,6 +44,7 @@ import org.bukkit.FireworkEffect;
 import org.bukkit.Server;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Scoreboard;
@@ -71,7 +75,9 @@ public final class MatchHud {
     private static final Title.Times PAUSED_TIMES = Title.Times.times(Duration.ofMillis(250), Duration.ofHours(1), Duration.ofMillis(250));
     private static final List<Color> FIREWORK_COLORS = List.of(Color.RED, Color.ORANGE, Color.YELLOW, Color.LIME, Color.AQUA, Color.FUCHSIA);
 
+    private final Plugin plugin;
     private final Server server;
+    private final MiniGamiBoards boardClaims;
     private final LiveMatch match;
     private final Hud hud;
     /** Puts the match's teams on a member's board, so names keep their colours there. */
@@ -80,8 +86,8 @@ public final class MatchHud {
     private final BossBar bossBar;
     private final boolean placeholderApi;
     private final Map<UUID, Scoreboard> boards = new HashMap<>();
-    /** The board each member had before, to give back. */
-    private final Map<UUID, Scoreboard> previous = new HashMap<>();
+    /** Each member's claim on their board; releasing it gives back the one they had. */
+    private final Map<UUID, BoardClaim> claims = new HashMap<>();
     /** What each sidebar shows, so unchanged lines aren't sent again. */
     private final Map<UUID, List<Component>> shown = new HashMap<>();
     /** The floors as last counted, numbered from the highest there was since the start; empty while the game has no region to play in, or before the first count. */
@@ -89,7 +95,10 @@ public final class MatchHud {
     private long lastCountdown = -1;
 
     /** @param published where each member's values go for other plugins */
-    public MatchHud(Server server, LiveMatch match, Consumer<Scoreboard> mirrorTeams, MatchValues published) {
+    public MatchHud(Plugin plugin, MiniGamiBoards boardClaims, LiveMatch match, Consumer<Scoreboard> mirrorTeams, MatchValues published) {
+        this.plugin = plugin;
+        this.boardClaims = boardClaims;
+        var server = plugin.getServer();
         this.server = server;
         this.match = match;
         this.hud = match.variant().hud();
@@ -117,31 +126,25 @@ public final class MatchHud {
             return;
         }
         var board = server.getScoreboardManager().getNewScoreboard();
-        previous.put(id, player.getScoreboard());
         boards.put(id, board);
-        player.setScoreboard(board);
+        claims.put(id, boardClaims.claim(plugin, player, board, BoardPriority.MATCH));
         refresh(player, board);
-    }
-
-    /** Whether the board is one of this match's own, as opposed to a player's real one. */
-    public boolean owns(Scoreboard board) {
-        return boards.containsValue(board);
     }
 
     /** Takes it away again and gives back the board they had; harmless for someone who has none. */
     public void hide(UUID id) {
         var board = boards.remove(id);
-        var old = previous.remove(id);
+        var claim = claims.remove(id);
         shown.remove(id);
         published.remove(id);
         var player = server.getPlayer(id);
+        if (claim != null) {
+            claim.release();
+        }
         if (board == null || player == null) {
             return;
         }
         player.hideBossBar(bossBar);
-        if (player.getScoreboard() == board) {
-            player.setScoreboard(old);
-        }
     }
 
     /** Play began: GO. */

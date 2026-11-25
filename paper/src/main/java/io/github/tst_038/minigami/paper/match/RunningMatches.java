@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -24,7 +25,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * The matches on the server, whoever opened them. An arena hosts one match at a time and gets its
@@ -42,12 +42,13 @@ public final class RunningMatches implements Listener {
     private final ActiveMatches matches;
     private final ArenaMaps maps;
     private final MatchValues values;
-    /** Per arena id, its match from opening until its scope has closed, so a finished match still owns the boards it has yet to take down. */
+    private final MiniGamiBoards boards;
+    /** Per arena id, its match from opening until its scope has closed. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
     /** @param lobby the lobby currently set */
     public RunningMatches(Plugin plugin, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
-            ActiveMatches matches, ArenaMaps maps, MatchValues values) {
+            ActiveMatches matches, ArenaMaps maps, MatchValues values, MiniGamiBoards boards) {
         this.plugin = plugin;
         this.lobby = lobby;
         this.sessions = sessions;
@@ -55,6 +56,7 @@ public final class RunningMatches implements Listener {
         this.matches = matches;
         this.maps = maps;
         this.values = values;
+        this.boards = boards;
     }
 
     /**
@@ -70,7 +72,7 @@ public final class RunningMatches implements Listener {
     }
 
     private LiveMatch open(Variant variant, Arena arena, Opening opening) {
-        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values, maps);
+        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values, maps, boards);
         // Registered first so they run last, once the match has let go of the arena and its players.
         match.match().scope().register(() -> byArena.remove(arena.id(), match));
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
@@ -166,11 +168,6 @@ public final class RunningMatches implements Listener {
     /** The matches that haven't finished, oldest first. */
     Collection<LiveMatch> running() {
         return byArena.values().stream().filter(match -> !match.match().isFinished()).toList();
-    }
-
-    /** Whether the board is a match's own, not a player's real one; true until the match has taken it down, even once finished. */
-    public boolean ownsBoard(Scoreboard board) {
-        return byArena.values().stream().anyMatch(match -> match.ownsBoard(board));
     }
 
     /** The match the player is in. */

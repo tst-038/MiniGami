@@ -1,38 +1,44 @@
 package io.github.tst_038.minigami.paper.night;
 
+import io.github.tst_038.minigami.api.board.BoardClaim;
+import io.github.tst_038.minigami.api.board.BoardPriority;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.gamenight.night.Night;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.util.Collection;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Predicate;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Scoreboard;
 
 /**
  * The standings on the sidebar of the night's players, between games. A game shows its own sidebar
- * while it runs, so this is hidden before a game and shown again after it. It remembers each player's board
- * from before the night once and gives it back on every hide.
+ * while it runs, so this is hidden before a game and shown again after it. It holds a claim on each player's board
+ * while it is shown; a game's own board, claimed with a higher priority, covers it, and releasing it gives back whatever
+ * the player saw before.
  */
 public final class NightSidebar {
 
+    private final Plugin plugin;
     private final Server server;
     private final Messages messages;
     private final NightReport report;
-    /** What each player had before the night, for hide to give back. */
-    private final RememberedBoards remembered;
-    /** The board last shown, so only players who still have it are taken off it. */
-    private Scoreboard shown;
+    private final MiniGamiBoards boards;
+    private final Map<UUID, BoardClaim> claims = new HashMap<>();
 
-    /** @param matchBoard whether a board is a match's own HUD board; covers players who join mid-match */
-    public NightSidebar(Server server, Messages messages, NightReport report, Predicate<Scoreboard> matchBoard) {
-        this.remembered = new RememberedBoards(matchBoard);
-        this.server = server;
+    public NightSidebar(Plugin plugin, Messages messages, NightReport report, MiniGamiBoards boards) {
+        this.plugin = plugin;
+        this.server = plugin.getServer();
+        this.boards = boards;
         this.messages = messages;
         this.report = report;
     }
@@ -51,28 +57,31 @@ public final class NightSidebar {
             score.customName(lines.get(i));
         }
         for (Player player : players) {
-            remembered.remember(player, shown);
-            player.setScoreboard(board);
-        }
-        shown = board;
-    }
-
-    /** Takes the sidebar away from those who have it; players in a game have its own board and keep it. */
-    void hide(Collection<Player> players) {
-        for (Player player : players) {
-            if (shown != null && player.getScoreboard() == shown) {
-                player.setScoreboard(remembered.get(player.getUniqueId()).orElseGet(() -> server.getScoreboardManager().getMainScoreboard()));
+            // The new claim first, so the board they had before is never shown in between.
+            var old = claims.put(player.getUniqueId(), boards.claim(plugin, player, board, BoardPriority.NIGHT));
+            if (old != null) {
+                old.release();
             }
         }
     }
 
-    /** Lets go of what is remembered about a player who is no longer in the night. */
-    void forget(UUID id) {
-        remembered.forget(id);
+    /** Takes the sidebar away from those who have it; players in a game have its own board over it and keep it. */
+    void hide(Collection<Player> players) {
+        for (Player player : players) {
+            forget(player.getUniqueId());
+        }
     }
 
-    /** Lets go of everything remembered, when the night is over. */
+    /** Lets go of the claim on a player who is no longer in the night; for a player who quit there is nothing left to give back. */
+    void forget(UUID id) {
+        var claim = claims.remove(id);
+        if (claim != null) {
+            claim.release();
+        }
+    }
+
+    /** Lets go of every claim, when the night is over. */
     void clear() {
-        remembered.clear();
+        List.copyOf(claims.keySet()).forEach(this::forget);
     }
 }

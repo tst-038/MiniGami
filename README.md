@@ -420,6 +420,23 @@ setup.selection(player, "hill").ifPresentOrElse(hill -> {
 }, () -> player.sendMessage(setup.hasWorldEdit() ? "Select the hill first." : "Install WorldEdit."));
 ```
 
+### Showing a sidebar
+
+MiniGami's matches and game nights set players' scoreboards too, so don't call `player.setScoreboard` for a sidebar of your own:
+the boards would overwrite each other and give back stale ones. `MiniGamiBoards`, a Bukkit service in
+`io.github.tst_038.minigami.api.board`, owns it. `claim(plugin, player, board, priority)` shows your board and returns a
+`BoardClaim`; `release()` gives it up. A player sees the claim with the highest `BoardPriority` (`MATCH`, `NIGHT`, then
+`PLUGIN`, the one to use), of equal ones the latest. When a claim is released the next one shows, and when none is left the
+player gets the board they had before the first claim. A player's claims are dropped when they quit and a plugin's when it is
+disabled. Call it on the server thread.
+
+```java
+var boards = getServer().getServicesManager().load(MiniGamiBoards.class); // null without MiniGami
+var claim = boards.claim(this, player, myBoard, BoardPriority.PLUGIN);
+// ... later, when the player leaves your area:
+claim.release();
+```
+
 ## Building from source
 
 Requires Java 25. The Gradle wrapper downloads everything else.

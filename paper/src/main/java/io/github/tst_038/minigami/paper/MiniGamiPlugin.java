@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
@@ -49,6 +50,7 @@ import io.github.tst_038.minigami.paper.kit.SavedKits;
 import io.github.tst_038.minigami.paper.loot.LootAdmin;
 import io.github.tst_038.minigami.paper.loot.SavedItems;
 import io.github.tst_038.minigami.paper.night.NightReport;
+import io.github.tst_038.minigami.paper.board.PluginBoards;
 import io.github.tst_038.minigami.paper.night.NightSidebar;
 import io.github.tst_038.minigami.paper.night.NightStore;
 import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
@@ -204,17 +206,20 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), getLogger()::info,
                 () -> getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission("minigami.admin"))).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
+        var boards = new PluginBoards(getServer());
+        getServer().getPluginManager().registerEvents(boards, this);
+        getServer().getServicesManager().register(MiniGamiBoards.class, boards, this, ServicePriority.Normal);
         var setup = new PluginSetup(this);
         getServer().getServicesManager().register(MiniGamiSetup.class, setup, this, ServicePriority.Normal);
         maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick(), setup);
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables), messages::keys);
         doctor = new Doctor(messages, getLogger(), () -> games);
-        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
+        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues, boards);
         getServer().getPluginManager().registerEvents(running, this);
         var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, doctor);
         var nightReport = new NightReport(getServer(), messages);
         nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), sessions, parties, new NightStore(storage, getLogger()), nightReport,
-                new NightSidebar(getServer(), messages, nightReport, running::ownsBoard), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
+                new NightSidebar(this, messages, nightReport, boards), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
         var scheduleRewards = new ScheduleRewards(this, messages, RandomGenerator.getDefault());

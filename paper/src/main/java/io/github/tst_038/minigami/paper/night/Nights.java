@@ -608,7 +608,6 @@ public final class Nights implements Listener {
         if (active.game != null && active.game.isMember(id)) {
             active.game.leave(player);
         }
-        sidebar.hide(List.of(player));
         sidebar.forget(id);
         exit(player);
         messages.send(audience(onlinePlayers(night)), "night.player-left", Placeholder.component("player", player.name()));

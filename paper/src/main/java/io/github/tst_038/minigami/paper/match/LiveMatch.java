@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.features.playarea.PlayAreaFactory;
 import io.github.tst_038.minigami.api.feature.MatchRejoinEvent;
@@ -165,7 +166,7 @@ public final class LiveMatch {
      * @throws IllegalArgumentException if the variant waits in the lobby and there is none
      */
     public LiveMatch(Plugin plugin, Variant variant, Arena arena, Opening opening, Optional<Location> lobby, PlayerSessions sessions, Messages messages,
-            MatchValues values, ArenaMaps maps) {
+            MatchValues values, ArenaMaps maps, MiniGamiBoards boards) {
         this.plugin = plugin;
         this.variant = variant;
         this.arena = arena;
@@ -190,7 +191,7 @@ public final class LiveMatch {
             }
         });
         this.scoreboardTeams = new ScoreboardTeams(plugin.getServer().getScoreboardManager().getMainScoreboard(), arena.id(), match.scope(), plugin.getLogger());
-        this.hud = new MatchHud(plugin.getServer(), this, scoreboardTeams::mirror, values);
+        this.hud = new MatchHud(plugin, boards, this, scoreboardTeams::mirror, values);
         match.onResult(result -> {
             recordEnd();
             hud.decided(result);
@@ -486,11 +487,6 @@ public final class LiveMatch {
     /** Whether this many more players fit in before the variant's maximum is reached. */
     public boolean hasRoom(int more) {
         return match.roster().size() + more <= variant.maxPlayers();
-    }
-
-    /** Whether the board is one this match's HUD gave a member. */
-    public boolean ownsBoard(Scoreboard board) {
-        return hud.owns(board);
     }
 
     /**
