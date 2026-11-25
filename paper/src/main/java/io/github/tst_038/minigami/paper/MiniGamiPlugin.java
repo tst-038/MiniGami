@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.loot.LootTables;
@@ -23,6 +24,8 @@ import io.github.tst_038.minigami.core.storage.SqliteStorage;
 import io.github.tst_038.minigami.core.storage.Storage;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.itemrace.ItemRace;
+import io.github.tst_038.minigami.paper.ban.BanAdmin;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -210,23 +213,27 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var boards = new PluginBoards(getServer());
         getServer().getPluginManager().registerEvents(boards, this);
         getServer().getServicesManager().register(MiniGamiBoards.class, boards, this, ServicePriority.Normal);
+        var bans = new PluginBans(storage, () -> games.ids(), getServer(), messages, serverThread, Clock.systemUTC(), getLogger());
+        bans.load();
+        getServer().getPluginManager().registerEvents(bans, this);
+        getServer().getServicesManager().register(MiniGamiBans.class, bans, this, ServicePriority.Normal);
         var setup = new PluginSetup(this);
         getServer().getServicesManager().register(MiniGamiSetup.class, setup, this, ServicePriority.Normal);
         maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick(), setup);
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables), messages::keys);
         doctor = new Doctor(messages, getLogger(), () -> games);
-        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues, boards);
+        var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues, boards, bans);
         getServer().getPluginManager().registerEvents(running, this);
-        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, doctor);
+        var publicMatches = new PublicMatches(this, () -> games, messages, running, parties, bans, doctor);
         var nightReport = new NightReport(getServer(), messages);
         nights = new Nights(this, messages, () -> nightTemplates, () -> games, running, () -> settings.lobby(), sessions, parties, new NightStore(storage, getLogger()), nightReport,
-                new NightSidebar(this, messages, nightReport, boards), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor);
+                new NightSidebar(this, messages, nightReport, boards), nightValues, Clock.systemUTC(), RandomGenerator.getDefault(), doctor, bans);
         getServer().getPluginManager().registerEvents(nights, this);
         // The server's own time zone: schedules are written in server time.
         var scheduleRewards = new ScheduleRewards(this, messages, RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(scheduleRewards, this);
         var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, scheduleRewards,
-                Clock.systemDefaultZone(), RandomGenerator.getDefault());
+                Clock.systemDefaultZone(), RandomGenerator.getDefault(), bans);
         getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
@@ -242,9 +249,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var gameRenamer = new GameRenamer(this, messages, editor, running::isGameInUse, statsAdmin::renameGame, this::loadAfterEdit);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(GamesCommand.playerRoot(messages, publicMatches, running, parties, nights, scheduled, statsView), "Join, leave and see stats of minigames");
-            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer()), editor, gameRenamer, arenaSetup, lootSetup, terrainSetup, info,
+            event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer(), bans), editor, gameRenamer, arenaSetup, lootSetup, terrainSetup, info,
                     gametypes.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), nights, scheduled,
-                    statsView, statsAdmin, new PlaceholderGuide(statsView, messages), doctor, () -> settings.lobby(), this::loadAfterEdit), "Manage minigames");
+                    statsView, statsAdmin, new PlaceholderGuide(statsView, messages), new BanAdmin(bans, messages, getServer(), getLogger()), bans::scopes, doctor, () -> settings.lobby(), this::loadAfterEdit), "Manage minigames");
         });
         loadConfig(null);
         // The global region scheduler is the main thread on Paper and keeps the door open for Folia.

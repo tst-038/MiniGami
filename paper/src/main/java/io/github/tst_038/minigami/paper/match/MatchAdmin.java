@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.match;
 import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.roster.Participant;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -27,9 +28,11 @@ public final class MatchAdmin {
     private final RunningMatches matches;
     private final Messages messages;
     private final Server server;
+    private final PluginBans bans;
 
-    public MatchAdmin(RunningMatches matches, Messages messages, Server server) {
+    public MatchAdmin(RunningMatches matches, Messages messages, Server server, PluginBans bans) {
         this.matches = matches;
+        this.bans = bans;
         this.messages = messages;
         this.server = server;
     }
@@ -170,6 +173,9 @@ public final class MatchAdmin {
         }
         if (!live.isJoinable()) {
             messages.send(feedback, "match.admin.started", matchTag);
+            return false;
+        }
+        if (bans.keepsOut(feedback, player, live.banScopes())) {
             return false;
         }
         try {

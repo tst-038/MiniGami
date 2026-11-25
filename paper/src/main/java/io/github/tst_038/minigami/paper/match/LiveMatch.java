@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.feature.Feature;
 import io.github.tst_038.minigami.features.playarea.PlayAreaFactory;
@@ -144,6 +145,7 @@ public final class LiveMatch {
     private final Set<UUID> left = new HashSet<>();
     /** Who outside the match may join it, when not those with its game's permission. */
     private Optional<String> joinPermission = Optional.empty();
+    private Optional<Set<String>> banScopes = Optional.empty();
     /** The region of every team, handed out when play starts. */
     private List<TeamRegion> teamRegions = List.of();
     /** When play started, for the record; null until then. */
@@ -424,6 +426,16 @@ public final class LiveMatch {
     /** Only those with the permission may join this match, instead of those with its game's, so only they hear how it ends. */
     public void joinableBy(String permission) {
         joinPermission = Optional.of(permission);
+    }
+
+    /** Only bans in these scopes keep players out of this match, instead of its game's: {@code game:<id>}. */
+    public void bannedBy(Set<String> scopes) {
+        banScopes = Optional.of(Set.copyOf(scopes));
+    }
+
+    /** The scopes whose bans keep players out of this match: its game's, or those set with {@link #bannedBy}. */
+    public Set<String> banScopes() {
+        return banScopes.orElseGet(() -> Set.of(MiniGamiBans.game(variant.game())));
     }
 
     /** Online players outside the match who may join it: by its game's permission, or the one set with {@link #joinableBy}. */

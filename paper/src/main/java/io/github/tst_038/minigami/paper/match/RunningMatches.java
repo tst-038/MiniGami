@@ -1,10 +1,12 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiPlayerBannedEvent;
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
 import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
@@ -45,13 +47,15 @@ public final class RunningMatches implements Listener {
     private final ArenaMaps maps;
     private final MatchValues values;
     private final MiniGamiBoards boards;
+    private final PluginBans bans;
     /** Per arena id, its match from opening until its scope has closed. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
     /** @param lobby the lobby currently set */
     public RunningMatches(Plugin plugin, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
-            ActiveMatches matches, ArenaMaps maps, MatchValues values, MiniGamiBoards boards) {
+            ActiveMatches matches, ArenaMaps maps, MatchValues values, MiniGamiBoards boards, PluginBans bans) {
         this.plugin = plugin;
+        this.bans = bans;
         this.lobby = lobby;
         this.sessions = sessions;
         this.messages = messages;
@@ -154,18 +158,32 @@ public final class RunningMatches implements Listener {
         find(event.getPlayer().getUniqueId()).ifPresent(match -> match.quit(event.getPlayer()));
     }
 
-    /** A participant who quit with time to come back is put back in their match. */
+    /**
+     * A participant who quit with time to come back is put back in their match, and taken out at once if they were banned from
+     * it meanwhile, which gives them their own state back.
+     */
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
         running().stream().filter(match -> match.isAway(player.getUniqueId())).findFirst().ifPresent(match -> {
             try {
                 match.rejoin(player);
+                if (bans.keepsOut(player, player, match.banScopes())) {
+                    match.leave(player);
+                }
             } catch (IllegalStateException e) {
                 plugin.getLogger().log(Level.WARNING, player.getName() + " could not be brought back into their match", e);
                 messages.send(player, "join.failed", Placeholder.component("player", player.name()));
             }
         });
+    }
+
+    /** A player banned from the match they are in leaves it. */
+    @EventHandler
+    public void onBanned(MiniGamiPlayerBannedEvent event) {
+        var ban = event.getBan();
+        event.getPlayer().ifPresent(player -> find(player.getUniqueId())
+                .filter(match -> match.banScopes().stream().anyMatch(ban::covers)).ifPresent(match -> match.leave(player)));
     }
 
     /** The matches that haven't finished, oldest first. */

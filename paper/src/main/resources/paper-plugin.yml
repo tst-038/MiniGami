@@ -23,13 +23,17 @@ permissions:
     children:
       minigami.mod: true
   minigami.mod:
-    description: Staff rank. Start, stop, pause and change matches, and run game nights; plus everything a helper can
+    description: Staff rank. Start, stop, pause and change matches, run game nights and ban players; plus everything a helper can
     default: op
     children:
       minigami.helper: true
       minigami.host: true
+      minigami.ban: true
   minigami.helper:
     description: Staff rank. List and look at matches, and kick players from matches and game nights
+    default: op
+  minigami.ban:
+    description: Ban players from games, game nights and other plugins' activities with /mga ban, /mga unban and /mga bans
     default: op
   minigami.host:
     description: Run game nights with /mga night

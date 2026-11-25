@@ -29,6 +29,8 @@ final class Nodes {
     static final Predicate<CommandSourceStack> HELPER = source -> source.getSender().hasPermission("minigami.helper");
     /** Who runs game nights; admins can too. */
     static final Predicate<CommandSourceStack> HOST = source -> source.getSender().hasPermission(Nights.HOST_PERMISSION);
+    /** Bans players from MiniGami's games, game nights and plugins' scopes; mods can. */
+    static final Predicate<CommandSourceStack> BAN = source -> source.getSender().hasPermission("minigami.ban");
     static final Predicate<CommandSourceStack> PLAYER = source -> source.getExecutor() instanceof Player;
 
     /** What a command does with whoever runs it. */

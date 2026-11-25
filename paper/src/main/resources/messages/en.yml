@@ -39,6 +39,39 @@ leave:
   # %count%: players taken out, %total%: players named
   removed-several: "%prefix%<green>Took <white>%count%</white> of %total% players out of their matches."
 
+# Bans, shared with other plugins: /mga ban, /mga unban, /mga bans. A ban has a scope: all, nights, game:<id> or one a plugin
+# registers. Where a ban is named: %player%, %scope%, %left% ("for 2h 5m" or "for good"), %reason% and %by%: who banned
+ban:
+  # To a player kept out of a game, a night or a plugin's activity
+  you-are-banned: "%prefix%<red>You're banned from <white>%scope%</white> %left%<red>: <white>%reason%"
+  # To a party leader or staff, when one of the players named is banned
+  player-is-banned: "%prefix%<red>%player% is banned from <white>%scope%</white> %left%<red>: <white>%reason%"
+  # To the player, when the ban is made while they are online
+  you-were-banned: "%prefix%<red>You were banned from <white>%scope%</white> %left% by %by%<red>: <white>%reason%"
+  banned: "%prefix%<green>Banned <white>%player%</white> from <white>%scope%</white> %left%<green>."
+  # %count%: players banned, %total%: players named, %scope%, %left%
+  banned-several: "%prefix%<green>Banning <white>%count%</white> of %total% players from <white>%scope%</white> %left%<green>."
+  # %player%
+  failed: "%prefix%<red>Could not ban %player%; see the server log."
+  # %scope%: as typed, %scopes%: the ones there are
+  unknown-scope: "%prefix%<red>Unknown ban scope <white>%scope%</white><red>. Try: <white>%scopes%</white><red>, or a length like <white>7d</white><red>."
+  # %player%, %count%: bans lifted
+  unbanned: "%prefix%<green>Lifted <white>%count%</white> ban(s) of <white>%player%</white>."
+  # %count%: players whose bans are being lifted, %total%: players named
+  unbanned-several: "%prefix%<green>Lifting the bans of <white>%count%</white> of %total% players."
+  # %player%
+  not-banned: "%prefix%<red>%player% has no such ban."
+  # %player%: as typed
+  unknown-player: "%prefix%<red>No player named <white>%player%</white> is known."
+  # %count%: bans
+  list-header: "%prefix%<gold>Bans <gray>(%count%):"
+  list-entry: "<gray> - <white>%player%</white> <gray>from <white>%scope%</white> %left%<gray>, by %by%: <white>%reason%"
+  none: "%prefix%<gray>Nobody is banned."
+  # %time%: like 2h 5m
+  left: "<gray>for <white>%time%</white>"
+  forever: "<gray>for good"
+  no-reason: "<gray>no reason given"
+
 start:
   nothing-to-start: "%prefix%<red>No match is waiting to start."
   started: "%prefix%<green>Match started."

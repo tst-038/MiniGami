@@ -22,6 +22,7 @@ all without writing code.
 - [Game nights](#game-nights)
 - [Schedules and rewards](#schedules-and-rewards)
 - [Stats and placeholders](#stats-and-placeholders)
+- [Bans](#bans)
 - [For plugin developers](#for-plugin-developers)
 - [Building from source](#building-from-source)
 
@@ -181,6 +182,7 @@ such as `@a[distance=..10]`; the sender hears one summary for all of them.
 | `/mg match list`, `/mg match <match> info\|kick <players>` · `/mga leave <players>` (out of whatever match they are in) | helper |
 | `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <players>` | mod |
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
+| `/mga ban <players> [scope] [length] [reason...]` · `/mga unban <players> [scope]` (also an offline name) · `/mga bans [player]`; see [Bans](#bans) | ban (mod) |
 | `/mg schedule list` · `/mg schedule now\|next <schedule> [game] [variant]`, `start\|skip\|cancel\|pause\|resume <schedule>` | helper · mod |
 | `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `add <players>`, `team <players> <team>`, `kick <players>` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
@@ -223,9 +225,10 @@ it) or can't be played (its file didn't load); staff with `minigami.admin` also 
 | Permission | Default | Gives |
 |---|---|---|
 | `minigami.admin` | op | Set up arenas, games, kits and config, reload, restore players; includes `mod` |
-| `minigami.mod` | op | Start, stop and change matches, run game nights; includes `helper` and `host` |
+| `minigami.mod` | op | Start, stop and change matches, run game nights; includes `helper`, `host` and `ban` |
 | `minigami.helper` | op | List and inspect matches, kick players from matches and game nights |
 | `minigami.host` | op | Run game nights |
+| `minigami.ban` | op | Ban players with `/mga ban`, `/mga unban` and `/mga bans` |
 | `minigami.play.<game>` | everyone (`minigami.play.*`) | Join that game |
 | `minigami.night.join.<night>` | everyone (`minigami.night.join`) | Join that game night and hear when it opens |
 | `minigami.schedule.join.<schedule>` | everyone (`minigami.schedule.join`) | Hear and join that schedule's games, whatever `minigami.play.<game>` says |
@@ -335,6 +338,19 @@ With PlaceholderAPI installed:
 
 Without a variant, all of a game's variants are added up.
 
+## Bans
+
+`/mga ban <players> [scope] [length] [reason...]` keeps players out of part of the server, for a length like `30m`, `2h`,
+`7d` or `1d12h`, or for good without one. The scope is `all` (everything below), `nights` (game nights and the games
+schedules open), `game:<game>` (one game), or one another plugin registered, such as `koth`; without a scope the ban is
+from `all`. The reason is free text after the scope or length, e.g. `/mga ban Steve game:spleef 7d griefing`. Banning again
+in a scope replaces the ban there. `/mga unban <player> [scope]` lifts one scope or all of a player's bans, also of a player
+who is offline, and `/mga bans [player]` lists the bans that have not ended.
+
+A banned player can't join by any way in, a party, a game night, a schedule's call or staff adding them, and hears the
+time left and the reason; a party leader hears it for their members. A player who is in a match or night the ban covers
+is taken out at once, or when they log in if they were offline.
+
 ## For plugin developers
 
 MiniGami saves a player's own state (inventory, health, location) when it takes them over and gives it back
@@ -439,6 +455,35 @@ argument from `PlayerTargets.argument()` (a name or a selector), read it with `P
 act with `PlayerTargets.each(messages, sender, players, action, noneKey, summaryKey, tags...)`. The action does it for one
 player and tells the audience it is given how it went; with one player that is the sender, with several it is silent and the
 sender hears `summaryKey` once, with `%count%` and `%total%`. With none, the sender hears `noneKey`.
+
+### Bans
+
+`MiniGamiBans`, a Bukkit service in `io.github.tst_038.minigami.api.ban`, shares the bans of [`/mga ban`](#bans) with your
+plugin. `register(plugin, scope)` adds a scope players can be banned from (lower-case letters, digits, `_` and `-`; not
+`all` or `nights`); register it when your plugin enables, and it goes when your plugin is disabled. `ban(player, scope)`
+is the ban that keeps the player out of that scope, a ban from `all` too, or empty; it reads memory, so check it on
+every way into your activity. `bans()` lists those that have not ended. `ban(...)` and `unban(player, scope)` change bans
+and return futures that complete on the server thread once storage has them. `MiniGamiPlayerBannedEvent` fires on the
+server thread when a ban is made; `getBan().covers(scope)` says whether it is one for you, so take the player out then.
+
+```java
+var bans = getServer().getServicesManager().load(MiniGamiBans.class); // null without MiniGami
+bans.register(this, "koth");
+
+// On each way in
+var ban = bans.ban(player.getUniqueId(), "koth");
+if (ban.isPresent()) {
+    player.sendMessage("Banned from KOTH: " + ban.get().reason().orElse("no reason"));
+    return;
+}
+
+@EventHandler
+public void onBanned(MiniGamiPlayerBannedEvent event) {
+    if (event.getBan().covers("koth")) {
+        event.getPlayer().ifPresent(this::sendOut);
+    }
+}
+```
 
 ### Showing a sidebar
 
