@@ -16,7 +16,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.configuration.ConfigurationSection;
 
 /**
- * Player-facing text by key, written in MiniMessage. Every text can use {@code %prefix%}, plus the
+ * Player-facing text by key, written in MiniMessage or with legacy colour codes such as {@code &c}. Every text can use {@code %prefix%}, plus the
  * placeholders the caller passes, written {@code %name%} like PlaceholderAPI's; {@code <name>} works too.
  */
 public final class Messages {
@@ -92,10 +92,10 @@ public final class Messages {
     /** A text that isn't kept by key, such as a sidebar line from a game's file, read the same way as one that is. */
     public Component parse(String text, TagResolver... placeholders) {
         var prefixText = text("prefix");
-        var prefix = Placeholder.parsed("prefix", prefixText == null ? "" : prefixText);
+        var prefix = Placeholder.parsed("prefix", prefixText == null ? "" : LegacyColours.toMiniMessage(prefixText));
         var resolver = TagResolver.resolver(TagResolver.resolver(placeholders), prefix);
         // Any other %name% is left alone, for PlaceholderAPI to fill.
-        var tags = PERCENT_NAME.matcher(text).replaceAll(found -> resolver.has(found.group(1)) ? "<" + found.group(1) + ">" : "$0");
+        var tags = PERCENT_NAME.matcher(LegacyColours.toMiniMessage(text)).replaceAll(found -> resolver.has(found.group(1)) ? "<" + found.group(1) + ">" : "$0");
         return miniMessage.deserialize(tags, resolver);
     }
 

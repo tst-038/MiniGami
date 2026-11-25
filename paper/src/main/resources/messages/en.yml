@@ -10,6 +10,8 @@ join:
   # %player%: who tried to join
   already-in-match: "%prefix%<red>%player% is already in a match."
   name-a-player: "%prefix%<red>Who should join? <white>/mg join %game% %player% [variant]</white>"
+  # A selector such as @a picked only staff, who are passed over when adding players; add one by name. %count%: how many it picked
+  only-staff-picked: "%prefix%<yellow>The selector picked only staff (<white>%count%</white>), who are passed over. Add one by name instead."
   # %game%: the game as typed
   unknown-game: "%prefix%<red>Unknown game <white>%game%</white>. See <white>/mg list</white>."
   # %game%: the game's name, %variant%: as typed, %variants%: the ones it has
@@ -110,6 +112,8 @@ match:
   # schedule opened only minigami.schedule.join.<schedule>, and for a game night's only minigami.night.join.<night>.
   # %game%: the game's or variant's name; the rest as in winner, winner-team
   onlookers:
+    # To those who may still join a public or scheduled game, while it gathers. %player%, %players%, %needed%, %game%
+    joined: "%prefix%<white>%player%</white> <gray>joined %game%<gray> <dark_gray>(<white>%players%</white>/%needed%)"
     winner: "%prefix%<gold>%player%</gold> <gray>won %game%<gray>!"
     winner-team: "%prefix%%players% <gray>won %game%<gray>!"
     no-winner: "%prefix%<gray>Nobody won %game%<gray>."
@@ -701,11 +705,15 @@ night:
   joined: "%prefix%<green>You joined %name%<green>. <gray>(<white>%count%</white> players)"
   # %player%
   player-joined: "%prefix%<white>%player%</white> <green>joined the night."
+  # To those who may sign up for the night and haven't. %player%, %name%: the night, %count%: how many are in it now
+  onlooker-joined: "%prefix%<white>%player%</white> <gray>joined %name%<gray>. <dark_gray>(<white>%count%</white> players)"
   left: "%prefix%<yellow>You left the night. <gray>Your points are kept."
   player-left: "%prefix%<white>%player%</white> <yellow>left the night."
   # %player%: who the host kicked
   kicked: "%prefix%<green>Kicked <white>%player%</white> from the night."
   added: "%prefix%<green>Added <white>%player%</white> to the night."
+  # By a selector such as @a. %count%: players signed up, %skipped%: those picked who are staff, already in or not allowed to join
+  added-selected: "%prefix%<green>Added <white>%count%</white> players to the night. <gray>Skipped <white>%skipped%</white>: staff, already in or not allowed."
   # For several players at once. %count%: players it worked for, %total%: players named
   kicked-several: "%prefix%<green>Kicked <white>%count%</white> of %total% players from the night."
   added-several: "%prefix%<green>Added <white>%count%</white> of %total% players to the night."

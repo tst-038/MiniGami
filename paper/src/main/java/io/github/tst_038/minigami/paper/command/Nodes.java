@@ -5,16 +5,20 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.paper.night.Nights;
+import io.github.tst_038.minigami.paper.permission.Staff;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -68,6 +72,34 @@ final class Nodes {
     /** The online players named by the {@code players} argument, a {@link PlayerTargets#argument()}. */
     static List<Player> players(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return PlayerTargets.resolve(context, "players");
+    }
+
+    /**
+     * The players a {@code players} argument names, for a command that adds them somewhere: one by name, or those a selector
+     * picks who aren't staff, who run the games rather than play them. Empty, having told the sender, when that leaves nobody.
+     */
+    static Optional<List<Player>> joining(Messages messages, CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        var picked = players(context);
+        var sender = context.getSource().getSender();
+        if (picked.isEmpty()) {
+            messages.send(sender, "players.none");
+            return Optional.empty();
+        }
+        if (!isSelector(context, "players")) {
+            return Optional.of(picked);
+        }
+        var joining = picked.stream().filter(player -> !Staff.is(player)).toList();
+        if (joining.isEmpty()) {
+            messages.send(sender, "join.only-staff-picked", Formatter.number("count", picked.size()));
+            return Optional.empty();
+        }
+        return Optional.of(joining);
+    }
+
+    /** Whether the argument was typed as a selector such as {@code @a[distance=..20]} rather than a player's name. */
+    static <S> boolean isSelector(CommandContext<S> context, String argument) {
+        return context.getNodes().stream().filter(node -> node.getNode().getName().equals(argument)).findFirst()
+                .map(node -> node.getRange().get(context.getInput()).startsWith("@")).orElse(false);
     }
 
     static SuggestionProvider<CommandSourceStack> suggest(Supplier<? extends Collection<String>> ids) {

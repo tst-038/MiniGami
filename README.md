@@ -187,7 +187,7 @@ such as `@a[distance=..10]`; the sender hears one summary for all of them.
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
 | `/mga ban <players> [scope] [length] [reason...]` · `/mga unban <players> [scope]` (also an offline name) · `/mga bans [player]`; see [Bans](#bans) | ban (mod) |
 | `/mg schedule list` · `/mg schedule now\|next <schedule> [game] [variant]`, `start\|skip\|cancel\|pause\|resume <schedule>` | helper · mod |
-| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `add <players>`, `team <players> <team>`, `kick <players>` | host |
+| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `add <players>` (a selector passes staff over), `team <players> <team>`, `kick <players>` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
 | `/mg gametype list\|<id> info` · `/mga options [gametype]` | admin |
@@ -196,7 +196,12 @@ such as `@a[distance=..10]`; the sender hears one summary for all of them.
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |
 | `/mg lobby set\|tp` · `/mg config info` | admin |
 | `/mga player <player> snapshot [restore]` | admin |
-| `/mg join <game> [variant] <player>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
+| `/mg join <game> <players> [variant]` · `/mg leave <players>` (helper) · `/mg schedule join <schedule> <players>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
+
+Where a command takes players (`join`, `leave`, `schedule join`, `match <match> add\|kick`, `night add\|kick\|team`), a
+name picks one player and a selector such as `@a` or `@a[distance=..30]` picks several. Commands that add players pass
+over staff (`minigami.helper` or `minigami.host`) a selector picks, so `@a` doesn't bring in the host or the admins;
+add one by name to bring them in.
 
 ## Troubleshooting: `/mg doctor`
 
@@ -275,7 +280,9 @@ playlist:
   - { game: spleef, variant: lives, points: { places: { 1: 20, 2: 14, 3: 10 } } }
 ```
 
-Run it with `/mg night start <id>`, then `begin` and `next`. Players join with `/mg night join`.
+Run it with `/mg night start <id>`, then `begin` and `next`. Players join with `/mg night join`; `add <player>` signs up
+one player whatever their permission; `add @a` (any selector, such as `@a[distance=..30]`) signs up those it picks who
+may join, except staff (`minigami.helper` or `minigami.host`), who join themselves or are added by name.
 
 ## Schedules and rewards
 

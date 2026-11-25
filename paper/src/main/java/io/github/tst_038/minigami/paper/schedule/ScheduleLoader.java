@@ -39,7 +39,7 @@ public final class ScheduleLoader {
      * @param reader reads the rewards
      */
     static Schedule read(String id, ConfigReader root, Predicate<String> isGame, BiPredicate<String, String> isVariant, RewardReader reader) {
-        var name = root.has("name") ? root.string("name") : id;
+        var name = root.has("name") ? root.text("name") : id;
         root.suggest("when", List.of("\"*/30 * * * *\"", "\"0 20 * * 5\""));
         var when = root.cron("when").orElse(null);
         var pick = root.has("pick") ? root.choice("pick", Schedule.Pick.class) : Schedule.Pick.ROTATE;

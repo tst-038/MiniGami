@@ -31,6 +31,14 @@ class ConfigReaderTest {
     }
 
     @Test
+    void aTextPlayersReadMayUseLegacyColourCodes() throws Exception {
+        var reader = read("name: '&f«❄» &c&lYuletide Crate &f«❄»'\nid: 'r&d'");
+
+        assertEquals("<white>«❄» <red><bold>Yuletide Crate <reset><white>«❄»", reader.text("name"));
+        assertEquals("r&d", reader.string("id"));
+    }
+
+    @Test
     void suggestsValuesThatFitEachKey() throws Exception {
         var reader = read("");
 

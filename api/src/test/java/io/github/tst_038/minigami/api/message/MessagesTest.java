@@ -57,6 +57,20 @@ class MessagesTest {
     }
 
     @Test
+    void legacyColourCodesColourTheTextAndThePrefix() throws Exception {
+        var messages = messages("""
+                prefix: "&8[&6MG&8] "
+                line: "%prefix%&7Game: &f%game%"
+                """);
+
+        var text = messages.render("line", Placeholder.unparsed("game", "Spleef"));
+
+        assertEquals("[MG] Game: Spleef", plain(text));
+        assertEquals("<gray>Game: <white>Spleef", net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().serialize(
+                messages.parse("&7Game: &f%game%", Placeholder.unparsed("game", "Spleef"))));
+    }
+
+    @Test
     void placeholderValuesAreNotParsedAsTags() throws Exception {
         var messages = messages("greeting: \"Hi <player>\"");
 

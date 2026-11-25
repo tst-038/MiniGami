@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.edit;
 import io.github.tst_038.minigami.api.config.ConfigFiles;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
+import io.github.tst_038.minigami.api.message.LegacyColours;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.reward.RewardReader;
@@ -42,6 +43,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -61,6 +63,8 @@ import org.bukkit.plugin.Plugin;
  * <p>Call the public methods from the server thread.
  */
 public final class ConfigEditor {
+
+    private static final Pattern COMMENT = Pattern.compile("\\s#");
 
     /** The files that can be edited. */
     public enum Kind {
@@ -216,7 +220,7 @@ public final class ConfigEditor {
             if (config.contains(key)) {
                 throw new IllegalArgumentException("already has a variant " + variant);
             }
-            config.set(key + ".name", name);
+            config.set(key + ".name", text(name));
         }, "edit.variant-created", Placeholder.unparsed("variant", variant));
     }
 
@@ -363,7 +367,7 @@ public final class ConfigEditor {
     /** A game night playing one game, for solo players; change the rest with {@link #set} and {@link #change}. */
     public void createNight(CommandSender sender, String id, String game, String name) {
         edit(sender, Kind.NIGHT, id, true, config -> {
-            config.set("name", name);
+            config.set("name", text(name));
             config.set("teams", "solo");
             config.set("playlist", List.of(game));
         }, "edit.night-created");
@@ -564,8 +568,12 @@ public final class ConfigEditor {
         return ConfigLocations.write(location);
     }
 
-    /** The value a command typed, read as YAML; {@code null} if it isn't one. */
+    /** The value a command typed, read as YAML, so text may be put in quotes; {@code null} if it isn't one. */
     static Object parse(String text) {
+        // YAML would read a leading & as an anchor; here it is a colour code of a text, which is read when it is loaded.
+        if (LegacyColours.startsWithCode(text)) {
+            return text.strip();
+        }
         var yaml = new YamlConfiguration();
         try {
             yaml.loadFromString("value: " + text);
@@ -576,7 +584,16 @@ public final class ConfigEditor {
             return null;
         }
         var value = yaml.get("value");
+        // YAML reads " #" as the start of a comment, which would quietly cut "Night #1" to "Night".
+        if (COMMENT.matcher(text).find() && !String.valueOf(value).contains("#")) {
+            return null;
+        }
         return value instanceof ConfigurationSection section ? plain(section) : value;
+    }
+
+    /** A name typed as the rest of a command: the text {@link #parse} reads, quotes taken off, else what was typed as it is. */
+    static String text(String typed) {
+        return parse(typed) instanceof String text ? text : typed.strip();
     }
 
     private static Map<String, Object> plain(ConfigurationSection section) {

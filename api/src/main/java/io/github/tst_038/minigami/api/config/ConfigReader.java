@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.config;
 
 import io.github.tst_038.minigami.api.config.setting.Setting;
+import io.github.tst_038.minigami.api.message.LegacyColours;
 import io.github.tst_038.minigami.core.range.IntRange;
 import io.github.tst_038.minigami.core.schedule.Cron;
 import java.util.ArrayList;
@@ -94,6 +95,11 @@ public final class ConfigReader {
             return "";
         }
         return value.toString();
+    }
+
+    /** A text players read, such as a name: MiniMessage, with any legacy colour code such as {@code &c} turned into its tag. */
+    public String text(String key) {
+        return LegacyColours.toMiniMessage(string(key));
     }
 
     public int integer(String key, int min, int max) {

@@ -42,7 +42,7 @@ record ItemReward(Material material, int amount, Optional<String> givenName) imp
                 entry.problem("item", "unknown item '" + given + "'");
             }
             int amount = entry.has("amount") ? entry.integer("amount", 1, MOST) : 1;
-            var name = entry.has("name") ? Optional.of(entry.string("name")) : Optional.<String>empty();
+            var name = entry.has("name") ? Optional.of(entry.text("name")) : Optional.<String>empty();
             return new ItemReward(material == null ? Material.STONE : material, amount, name);
         }
     }

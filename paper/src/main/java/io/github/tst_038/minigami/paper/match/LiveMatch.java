@@ -68,6 +68,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.damage.DamageSource;
@@ -124,8 +125,8 @@ public final class LiveMatch {
     private CompletableFuture<Void> edits = CompletableFuture.completedFuture(null);
     /** Holds on players who wait in place: nothing of theirs is saved, but they count as in a match. */
     private final Map<UUID, Presence.Claim> placeClaims = new HashMap<>();
-    /** The team each spawn is for, by the spawn's place in the arena's list. */
-    private final List<Optional<String>> spawnTags;
+    /** The team each spawn is for, by the spawn's place in the arena's list; settled when play starts, see {@link #spawnTags}. */
+    private List<Optional<String>> spawnTags;
     /** The spawn each team without spawns of its own was given at the start; its players come back there. */
     private final Map<String, Integer> teamHomes = new HashMap<>();
     private final Lives lives = new Lives(this::livesOf);
@@ -527,8 +528,13 @@ public final class LiveMatch {
         match.roster().add(id);
         members.add(id);
         hud.show(player);
-        messages.send(audience(), "match.joined", Placeholder.component("player", player.name()),
-                Formatter.number("players", match.roster().size()), Formatter.number("needed", variant.minPlayers()));
+        var joined = new TagResolver[] { Placeholder.component("player", player.name()), Formatter.number("players", match.roster().size()),
+                Formatter.number("needed", variant.minPlayers()) };
+        messages.send(audience(), "match.joined", joined);
+        // Those who may still join see it fill up; a private match, such as a night's game, only takes who its opener puts in.
+        if (isPublic()) {
+            messages.send(onlookers(), "match.onlookers.joined", TagResolver.resolver(joined), Placeholder.parsed("game", variant.name()));
+        }
         if (startDelay == null && match.roster().size() >= variant.minPlayers()) {
             prepareStart();
             // The arena is built while they wait, and they land on spawns that stand in the finished maze.
@@ -878,6 +884,7 @@ public final class LiveMatch {
         teamRegions = variant.gametype().regionPerTeam()
                 .map(prefix -> TeamRegion.assign(prefix, match.roster().teams(), name -> Optional.ofNullable(arena.regions().get(name))))
                 .orElse(List.of());
+        spawnTags = spawnTags(teamRegions);
         var everyone = takingPart();
         var together = variant.teams().isPresent() && variant.teamSpawns() == TeamSpawns.TOGETHER;
         var scattered = variant.gametype().usesSpawns() && variant.randomSpawns() && arena.spawns().isEmpty();
@@ -932,6 +939,15 @@ public final class LiveMatch {
                 hud.started();
             }
         }));
+    }
+
+    /**
+     * The team each spawn is for: the one the arena tags it with, else the team whose region it stands in. A team then
+     * starts and comes back in the region the game gave it, not on whichever shared spawn it drew.
+     */
+    private List<Optional<String>> spawnTags(List<TeamRegion> regions) {
+        return arena.spawns().stream().map(spawn -> spawn.team().or(() -> regions.stream()
+                .filter(region -> region.region().contains(spawn.location())).findFirst().flatMap(TeamRegion::team))).toList();
     }
 
     /** Puts each player on a standable place of the highest floor, as far as it goes from those already placed; for a game that needs no spawns. */
@@ -1055,6 +1071,12 @@ public final class LiveMatch {
      */
     private void onDeath(PlayerDeathEvent event) {
         var player = event.getEntity();
+        // Asked for first: the death may decide the match and end its phase, and nothing that sets off may keep them dead.
+        player.getScheduler().run(plugin, task -> {
+            if (player.isDead()) {
+                player.spigot().respawn();
+            }
+        }, null);
         var message = event.deathMessage();
         event.deathMessage(null);
         if (message != null) {
@@ -1070,11 +1092,6 @@ public final class LiveMatch {
         if (playing && killer != null && !killer.equals(player) && isActive(killer.getUniqueId())) {
             hud.killed(killer);
         }
-        player.getScheduler().run(plugin, task -> {
-            if (player.isDead()) {
-                player.spigot().respawn();
-            }
-        }, null);
     }
 
     /**

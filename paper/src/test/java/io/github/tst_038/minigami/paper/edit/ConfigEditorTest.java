@@ -24,6 +24,23 @@ class ConfigEditorTest {
         assertNull(ConfigEditor.parse("[unclosed"));
         assertNull(ConfigEditor.parse("a: b"));
         assertNull(ConfigEditor.parse("# only a comment"));
+        // A comment would quietly cut the text short; in quotes the # is kept.
+        assertNull(ConfigEditor.parse("Night #1"));
+        assertEquals("Night #1", ConfigEditor.parse("\"Night #1\""));
+    }
+
+    @Test
+    void aTextMayStartWithAColourCode() {
+        assertEquals("&c&lYuletide Crate", ConfigEditor.parse("&c&lYuletide Crate"));
+    }
+
+    @Test
+    void aTypedNameLosesItsQuotesAndKeepsTheRest() {
+        assertEquals("<gold>Game Night: Finals", ConfigEditor.text("\"<gold>Game Night: Finals\""));
+        assertEquals("Game Night: Finals", ConfigEditor.text("Game Night: Finals"));
+        assertEquals("Night #1", ConfigEditor.text("Night #1"));
+        assertEquals("2026", ConfigEditor.text("2026"));
+        assertEquals("&cCrate", ConfigEditor.text("&cCrate"));
     }
 
     @Test

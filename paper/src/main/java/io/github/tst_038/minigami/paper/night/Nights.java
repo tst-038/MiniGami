@@ -21,6 +21,7 @@ import io.github.tst_038.minigami.paper.match.Opening;
 import io.github.tst_038.minigami.paper.match.RunningMatches;
 import io.github.tst_038.minigami.paper.party.PartyService;
 import io.github.tst_038.minigami.paper.permission.PlayPermissions;
+import io.github.tst_038.minigami.paper.permission.Staff;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import io.github.tst_038.minigami.paper.click.Clicks;
 import java.time.Clock;
@@ -175,8 +176,7 @@ public final class Nights implements Listener {
         var name = Placeholder.parsed("name", template.get().name());
         messages.send(host, "night.opened", name);
         var permission = PlayPermissions.night(template.get().id());
-        var mayJoin = plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(permission));
-        messages.send(mayJoin, "night.open", name, Placeholder.styling("join", Clicks.by(player -> {
+        messages.send(mayJoin(active.night), "night.open", name, Placeholder.styling("join", Clicks.by(player -> {
             if (player.hasPermission(permission)) {
                 join(player);
             }
@@ -233,9 +233,37 @@ public final class Nights implements Listener {
                 showSidebar(night, List.of(joining));
             }
             messages.send(joining, "night.joined", Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
+            messages.send(mayJoin(night), "night.onlooker-joined", Placeholder.component("player", joining.name()),
+                    Placeholder.parsed("name", night.template().name()), Formatter.number("count", night.players().size()));
             // shortcut: a party joining a night already underway is dealt into teams one by one; keep its members together when nights are joined late often.
             night.teams().ifPresent(formed -> tellTeam(night, joining));
         }
+    }
+
+    /**
+     * Signs up the players a selector such as {@code @a} picked who may join the night and aren't banned from it, except staff such as the host and
+     * admins, who run it rather than play; one of them who plays joins themselves, or is added by name.
+     */
+    public void addSelected(CommandSender host, Collection<? extends Player> selected) {
+        if (!hasNight(host)) {
+            return;
+        }
+        var night = active.night;
+        var permission = PlayPermissions.night(night.template().id());
+        var adding = selected.stream()
+                .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !Staff.is(player)
+                        && !bans.keepsOut(Audience.empty(), player, Set.of(MiniGamiBans.NIGHTS)))
+                .toList();
+        adding.forEach(this::signUp);
+        publish();
+        messages.send(host, "night.added-selected", Formatter.number("count", adding.size()), Formatter.number("skipped", selected.size() - adding.size()));
+    }
+
+    /** Online players outside the night who may sign up for it. */
+    private Audience mayJoin(Night night) {
+        var permission = PlayPermissions.night(night.template().id());
+        return plugin.getServer().filterAudience(audience -> audience instanceof Player player && player.hasPermission(permission)
+                && !night.players().contains(player.getUniqueId()));
     }
 
     /** A host signs players up, whatever their party or permission. */

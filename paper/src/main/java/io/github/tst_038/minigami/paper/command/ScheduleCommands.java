@@ -3,10 +3,10 @@ package io.github.tst_038.minigami.paper.command;
 import static io.github.tst_038.minigami.paper.command.Nodes.ADMIN;
 import static io.github.tst_038.minigami.paper.command.Nodes.HELPER;
 import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
-import static io.github.tst_038.minigami.paper.command.Nodes.player;
 import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
+import static io.github.tst_038.minigami.paper.command.Nodes.joining;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
@@ -14,6 +14,7 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
@@ -49,15 +50,18 @@ final class ScheduleCommands {
     }
 
     /** {@code /mga schedule …}, for staff; {@code join} also names a player to put in the call, for admins. */
-    static ArgumentBuilder<CommandSourceStack, ?> node(Schedules schedules, ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
+    static ArgumentBuilder<CommandSourceStack, ?> node(Messages messages, Schedules schedules, ConfigEditor editor, ConfigInfo info, Command<CommandSourceStack> help) {
         return Commands.literal("schedule")
                 .executes(help)
                 .then(Commands.literal("join")
                         .requires(ADMIN)
                         .then(Commands.argument("schedule", StringArgumentType.word())
                                 .suggests(suggest(schedules::ids))
-                                .then(Commands.argument("player", ArgumentTypes.player())
-                                        .executes(bySender((sender, context) -> schedules.join(sender, player(context), Optional.of(schedule(context))))))))
+                                .then(Commands.argument("players", ArgumentTypes.players())
+                                        .executes(bySender((sender, context) -> {
+                                            var schedule = Optional.of(schedule(context));
+                                            joining(messages, context).ifPresent(players -> players.forEach(player -> schedules.join(sender, player, schedule)));
+                                        })))))
                 .then(Commands.literal("list").requires(HELPER).executes(bySender((sender, context) -> schedules.list(sender))))
                 .then(picking("now", schedules, schedules::now))
                 .then(picking("next", schedules, schedules::next))

@@ -11,7 +11,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 /** The keys of one role under a game's {@code roles}, and of one rank under its {@code ranks}. */
 final class RoleSettings {
 
-    static final Setting<Optional<String>> NAME = Setting.of("name", Kind.optional(Kind.text()), "the name players see; left out, the id")
+    static final Setting<Optional<String>> NAME = Setting.of("name", Kind.optional(Kind.displayText()), "the name players see; left out, the id")
             .orElse(Optional.empty());
     static final Setting<Optional<String>> COLOR = Setting.of("color", Kind.optional(Kind.text(NamedTextColor.NAMES::keys)),
             "its colour; left out, the next team colour").orElse(Optional.empty());

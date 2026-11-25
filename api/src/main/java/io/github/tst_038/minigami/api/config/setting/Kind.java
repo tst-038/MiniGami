@@ -44,6 +44,11 @@ public final class Kind<T> {
         return plain(ConfigReader::string, List::of);
     }
 
+    /** A text players read, such as a name; see {@link ConfigReader#text}. */
+    public static Kind<String> displayText() {
+        return plain(ConfigReader::text, List::of);
+    }
+
     /** A text, offering these values, such as the ids it may name. */
     public static Kind<String> text(Supplier<? extends Collection<String>> values) {
         return plain(ConfigReader::string, values);
