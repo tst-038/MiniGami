@@ -119,14 +119,17 @@ public final class MatchHud {
         scope.register(() -> List.copyOf(boards.keySet()).forEach(this::hide));
     }
 
-    /** Gives a member the match's sidebar and boss bar. Showing it twice does nothing. */
+    /** Gives a member the match's sidebar and boss bar. Showing it twice does nothing, unless their claim on the board was dropped. */
     public void show(Player player) {
         var id = player.getUniqueId();
-        if (boards.containsKey(id)) {
+        var board = boards.get(id);
+        if (board == null) {
+            board = server.getScoreboardManager().getNewScoreboard();
+            boards.put(id, board);
+        } else if (claims.get(id).isActive()) {
             return;
         }
-        var board = server.getScoreboardManager().getNewScoreboard();
-        boards.put(id, board);
+        // A claim that was dropped (the player quit) is made again on the board they had.
         claims.put(id, boardClaims.claim(plugin, player, board, BoardPriority.MATCH));
         refresh(player, board);
     }

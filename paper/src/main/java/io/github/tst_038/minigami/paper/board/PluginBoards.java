@@ -34,7 +34,17 @@ public final class PluginBoards implements MiniGamiBoards, Listener {
         Objects.requireNonNull(board, "board");
         Objects.requireNonNull(priority, "priority");
         var claim = stack.add(player.getUniqueId(), player.getScoreboard(), owner, board, priority);
-        return () -> stack.release(claim);
+        return new BoardClaim() {
+            @Override
+            public void release() {
+                stack.release(claim);
+            }
+
+            @Override
+            public boolean isActive() {
+                return stack.isOpen(claim);
+            }
+        };
     }
 
     /** A player who leaves the server has nothing to give back; the server gives them a board when they return. */

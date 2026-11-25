@@ -8,4 +8,7 @@ public interface BoardClaim {
      * Releasing it again, or after the player quit, does nothing.
      */
     void release();
+
+    /** Whether the claim still holds: false once it is released, or dropped because the player quit or the owner was disabled. */
+    boolean isActive();
 }

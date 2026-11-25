@@ -102,6 +102,16 @@ class BoardStackTest {
     }
 
     @Test
+    void aClaimIsOpenUntilReleasedOrDropped() {
+        var released = stack.add("a", "own", this, "x", BoardPriority.PLUGIN);
+        var dropped = stack.add("b", "own", this, "y", BoardPriority.PLUGIN);
+        assertTrue(stack.isOpen(released) && stack.isOpen(dropped));
+        stack.release(released);
+        stack.drop("b");
+        assertTrue(!stack.isOpen(released) && !stack.isOpen(dropped));
+    }
+
+    @Test
     void aPluginsClaimsAreFoundByOwner() {
         var other = new Object();
         stack.add("p", "own", this, "a", BoardPriority.PLUGIN);

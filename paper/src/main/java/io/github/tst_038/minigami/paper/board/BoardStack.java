@@ -35,6 +35,11 @@ final class BoardStack<K, B> {
         }
     }
 
+    /** Whether the claim is still open. */
+    boolean isOpen(Claim<K, B> claim) {
+        return claim.open;
+    }
+
     private record Held<K, B>(B original, List<Claim<K, B>> claims) {
     }
 
