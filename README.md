@@ -158,7 +158,8 @@ features:
 ## Commands
 
 The main command is `/mg`. Typing any command without its final argument shows what can follow, so you can click your
-way through. The tables below give an overview.
+way through. The tables below give an overview. Where a command takes `<players>`, name one player or use a selector
+such as `@a[distance=..10]`; the sender hears one summary for all of them.
 
 **Players**
 
@@ -177,11 +178,11 @@ way through. The tables below give an overview.
 
 | Command | Rank |
 |---|---|
-| `/mg match list`, `/mg match <match> info\|kick <player>` | helper |
-| `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <player>` | mod |
+| `/mg match list`, `/mg match <match> info\|kick <players>` · `/mga leave <players>` (out of whatever match they are in) | helper |
+| `/mg match <match> start\|end\|phase <phase>\|pause\|resume\|stop\|add <players>` | mod |
 | `/mg start` (start your match, or the first one waiting, without waiting for more players) | mod |
 | `/mg schedule list` · `/mg schedule now\|next <schedule> [game] [variant]`, `start\|skip\|cancel\|pause\|resume <schedule>` | helper · mod |
-| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `team`, `kick` | host |
+| `/mg night start <night>`, `begin`, `next`, `skip`, `pause`, `resume`, `end`, `add <players>`, `team <players> <team>`, `kick <players>` | host |
 | `/mg arena list\|create <id>` · `/mg arena <arena> info\|tp\|spawn\|region\|map` | admin |
 | `/mg game list\|create <id> <gametype> <arena>` · `/mg game <game> info\|set\|unset\|variant\|delete` | admin |
 | `/mg gametype list\|<id> info` · `/mga options [gametype]` | admin |
@@ -430,6 +431,14 @@ setup.selection(player, "hill").ifPresentOrElse(hill -> {
     setup.show(player, hill);
 }, () -> player.sendMessage(setup.hasWorldEdit() ? "Select the hill first." : "Install WorldEdit."));
 ```
+
+### Commands that act on several players
+
+`PlayerTargets` in `io.github.tst_038.minigami.api.command` gives your commands MiniGami's way with players: take the
+argument from `PlayerTargets.argument()` (a name or a selector), read it with `PlayerTargets.resolve(context, name)`, and
+act with `PlayerTargets.each(messages, sender, players, action, noneKey, summaryKey, tags...)`. The action does it for one
+player and tells the audience it is given how it went; with one player that is the sender, with several it is silent and the
+sender hears `summaryKey` once, with `%count%` and `%total%`. With none, the sender hears `noneKey`.
 
 ### Showing a sidebar
 

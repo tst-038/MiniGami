@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper.match;
 
 import io.github.tst_038.minigami.api.board.MiniGamiBoards;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
@@ -9,6 +10,7 @@ import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -96,18 +98,19 @@ public final class RunningMatches implements Listener {
         return running().stream().anyMatch(match -> match.variant().game().equals(gameId));
     }
 
+    /** The player leaves their match, or hears they are in none. */
     public void leave(Player player) {
-        leave(player, player);
+        find(player.getUniqueId()).ifPresentOrElse(match -> match.leave(player), () -> messages.send(player, "leave.not-in-match"));
     }
 
-    /** Takes {@code player} out of their match; {@code by} is told if there is none, and is the player themselves or staff. */
-    public void leave(CommandSender by, Player player) {
-        var match = find(player.getUniqueId());
-        if (match.isEmpty()) {
-            messages.send(by, by == player ? "leave.not-in-match" : "leave.other-not-in-match", Placeholder.component("player", player.name()));
-            return;
-        }
-        match.get().leave(player);
+    /** Staff take players out of their matches. */
+    public void leave(CommandSender by, List<Player> players) {
+        PlayerTargets.each(messages, by, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            var left = find(player.getUniqueId()).filter(match -> match.leave(player)).isPresent();
+            messages.send(feedback, left ? "leave.removed" : "leave.other-not-in-match", playerTag);
+            return left;
+        }, "players.none", "leave.removed-several");
     }
 
     /** Starts the sender's own match, or else the first one waiting for players. */

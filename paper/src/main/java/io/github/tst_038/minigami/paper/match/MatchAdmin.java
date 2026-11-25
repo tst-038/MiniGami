@@ -1,10 +1,12 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.roster.Participant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Formatter;
@@ -153,33 +155,40 @@ public final class MatchAdmin {
         });
     }
 
-    /** Adds the player to a match that is still gathering players, even one that is full. */
-    public void add(CommandSender sender, String id, Player player) {
-        find(sender, id).ifPresent(live -> {
-            var playerTag = Placeholder.component("player", player.name());
-            if (matches.find(player.getUniqueId()).isPresent()) {
-                messages.send(sender, "join.already-in-match", playerTag);
-            } else if (!live.isJoinable()) {
-                messages.send(sender, "match.admin.started", Placeholder.unparsed("match", id));
-            } else {
-                try {
-                    live.join(player, true);
-                    messages.send(sender, "match.admin.added", playerTag, Placeholder.unparsed("match", id));
-                } catch (IllegalStateException e) {
-                    messages.send(sender, "join.failed", playerTag);
-                }
-            }
-        });
+    /** Adds the players to a match that is still gathering players, even one that is full. */
+    public void add(CommandSender sender, String id, List<Player> players) {
+        find(sender, id).ifPresent(live -> PlayerTargets.each(messages, sender, players, (feedback, player) -> add(feedback, live, player),
+                "players.none", "match.admin.added-several", Placeholder.unparsed("match", id)));
     }
 
-    public void kick(CommandSender sender, String id, Player player) {
-        find(sender, id).ifPresent(live -> {
-            if (!live.leave(player)) {
-                messages.send(sender, "match.admin.not-member", Placeholder.component("player", player.name()), Placeholder.unparsed("match", id));
-                return;
-            }
-            messages.send(sender, "match.admin.kicked", Placeholder.component("player", player.name()), Placeholder.unparsed("match", id));
-        });
+    private boolean add(Audience feedback, LiveMatch live, Player player) {
+        var playerTag = Placeholder.component("player", player.name());
+        var matchTag = Placeholder.unparsed("match", live.arena().id());
+        if (matches.find(player.getUniqueId()).isPresent()) {
+            messages.send(feedback, "join.already-in-match", playerTag);
+            return false;
+        }
+        if (!live.isJoinable()) {
+            messages.send(feedback, "match.admin.started", matchTag);
+            return false;
+        }
+        try {
+            live.join(player, true);
+        } catch (IllegalStateException e) {
+            messages.send(feedback, "join.failed", playerTag);
+            return false;
+        }
+        messages.send(feedback, "match.admin.added", playerTag, matchTag);
+        return true;
+    }
+
+    public void kick(CommandSender sender, String id, List<Player> players) {
+        find(sender, id).ifPresent(live -> PlayerTargets.each(messages, sender, players, (feedback, player) -> {
+            var tags = new TagResolver[] {Placeholder.component("player", player.name()), Placeholder.unparsed("match", id)};
+            var kicked = live.leave(player);
+            messages.send(feedback, kicked ? "match.admin.kicked" : "match.admin.not-member", tags);
+            return kicked;
+        }, "players.none", "match.admin.kicked-several", Placeholder.unparsed("match", id)));
     }
 
     private Optional<LiveMatch> find(CommandSender sender, String id) {

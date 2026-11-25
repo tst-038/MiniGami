@@ -7,12 +7,14 @@ import static io.github.tst_038.minigami.paper.command.Nodes.PLAYER;
 import static io.github.tst_038.minigami.paper.command.Nodes.byPlayer;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
 import static io.github.tst_038.minigami.paper.command.Nodes.player;
+import static io.github.tst_038.minigami.paper.command.Nodes.players;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
@@ -119,8 +121,8 @@ public final class GamesCommand {
                                                         string(context, "game"), Optional.of(string(context, "variant")))))))))
                 .then(Commands.literal("leave")
                         .requires(HELPER)
-                        .then(Commands.argument("player", ArgumentTypes.player())
-                                .executes(bySender((sender, context) -> running.leave(sender, player(context))))))
+                        .then(Commands.argument("players", PlayerTargets.argument())
+                                .executes(bySender((sender, context) -> running.leave(sender, players(context))))))
                 .then(Commands.literal("start").requires(MOD).executes(bySender((sender, context) -> running.forceStart(sender))))
                 .then(MatchCommands.node(matches, help))
                 .then(GameCommands.node(editor, gameRenamer, info, help))

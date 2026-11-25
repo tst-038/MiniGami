@@ -5,10 +5,12 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.paper.night.Nights;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,6 +61,11 @@ final class Nodes {
     /** The online player named by the {@code player} argument. */
     static Player player(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return context.getArgument("player", PlayerSelectorArgumentResolver.class).resolve(context.getSource()).getFirst();
+    }
+
+    /** The online players named by the {@code players} argument, a {@link PlayerTargets#argument()}. */
+    static List<Player> players(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return PlayerTargets.resolve(context, "players");
     }
 
     static SuggestionProvider<CommandSourceStack> suggest(Supplier<? extends Collection<String>> ids) {

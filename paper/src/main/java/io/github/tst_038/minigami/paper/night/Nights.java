@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.night;
 
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -226,18 +227,22 @@ public final class Nights implements Listener {
         }
     }
 
-    /** A host signs a player up, whatever their party or permission. */
-    public void add(CommandSender host, Player player) {
+    /** A host signs players up, whatever their party or permission. */
+    public void add(CommandSender host, List<Player> players) {
         if (!hasNight(host)) {
             return;
         }
-        if (active.night.players().contains(player.getUniqueId())) {
-            messages.send(host, "night.player-already-in-night", Placeholder.component("player", player.name()));
-            return;
-        }
-        signUp(player);
+        PlayerTargets.each(messages, host, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            if (active.night.players().contains(player.getUniqueId())) {
+                messages.send(feedback, "night.player-already-in-night", playerTag);
+                return false;
+            }
+            signUp(player);
+            messages.send(feedback, "night.added", playerTag);
+            return true;
+        }, "players.none", "night.added-several");
         publish();
-        messages.send(host, "night.added", Placeholder.component("player", player.name()));
     }
 
     /** The player leaves the night, and its current game; their points stay. */
@@ -252,16 +257,20 @@ public final class Nights implements Listener {
         messages.send(player, "night.left");
     }
 
-    public void kick(CommandSender host, Player player) {
+    public void kick(CommandSender host, List<Player> players) {
         if (!hasNight(host)) {
             return;
         }
-        if (!remove(player)) {
-            messages.send(host, "night.player-not-in-night", Placeholder.component("player", player.name()));
-            return;
-        }
-        messages.send(player, "night.you-were-kicked");
-        messages.send(host, "night.kicked", Placeholder.component("player", player.name()));
+        PlayerTargets.each(messages, host, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            if (!remove(player)) {
+                messages.send(feedback, "night.player-not-in-night", playerTag);
+                return false;
+            }
+            messages.send(player, "night.you-were-kicked");
+            messages.send(feedback, "night.kicked", playerTag);
+            return true;
+        }, "players.none", "night.kicked-several");
     }
 
     /** Closes sign-up: forms the night teams of a team night, then plays the first game. */
@@ -355,8 +364,8 @@ public final class Nights implements Listener {
         finish();
     }
 
-    /** Moves a player to another night team, which counts from the next game on. */
-    public void team(CommandSender host, Player player, String teamId) {
+    /** Moves players to another night team, which counts from the next game on. */
+    public void team(CommandSender host, List<Player> players, String teamId) {
         if (!hasNight(host)) {
             return;
         }
@@ -370,14 +379,18 @@ public final class Nights implements Listener {
             messages.send(host, "night.no-such-team", Placeholder.unparsed("team", teamId), Placeholder.unparsed("teams", String.join(", ", teams.get().ids())));
             return;
         }
-        if (!night.players().contains(player.getUniqueId())) {
-            messages.send(host, "night.player-not-in-night", Placeholder.component("player", player.name()));
-            return;
-        }
-        teams.get().move(player.getUniqueId(), teamId);
         var name = report.label(night, teamId);
-        messages.send(host, "night.moved", Placeholder.component("player", player.name()), Placeholder.component("team", name));
-        messages.send(player, "night.you-were-moved", Placeholder.component("team", name));
+        PlayerTargets.each(messages, host, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            if (!night.players().contains(player.getUniqueId())) {
+                messages.send(feedback, "night.player-not-in-night", playerTag);
+                return false;
+            }
+            teams.get().move(player.getUniqueId(), teamId);
+            messages.send(feedback, "night.moved", playerTag, Placeholder.component("team", name));
+            messages.send(player, "night.you-were-moved", Placeholder.component("team", name));
+            return true;
+        }, "players.none", "night.moved-several", Placeholder.component("team", name));
         publish();
     }
 

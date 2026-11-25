@@ -2,6 +2,10 @@
 # %prefix% works in every message. Other placeholders are listed per message; <name>…</name> ones wrap text, e.g. to make it clickable.
 prefix: "<gray>「<gradient:#FFB7C5:#FF5F9E:#FFB7C5>MiniGami</gradient><gray>」 "
 
+# A command named players by a selector that matched nobody online.
+players:
+  none: "%prefix%<red>No online player matched."
+
 join:
   # %player%: who tried to join
   already-in-match: "%prefix%<red>%player% is already in a match."
@@ -30,6 +34,10 @@ join:
 leave:
   not-in-match: "%prefix%<red>You're not in a match."
   other-not-in-match: "%prefix%<red>%player% is not in a match."
+  # Staff took a player out of their match. %player%
+  removed: "%prefix%<green>Took <white>%player%</white> out of their match."
+  # %count%: players taken out, %total%: players named
+  removed-several: "%prefix%<green>Took <white>%count%</white> of %total% players out of their matches."
 
 start:
   nothing-to-start: "%prefix%<red>No match is waiting to start."
@@ -113,6 +121,9 @@ match:
     added: "%prefix%<green>Added <white>%player%</white> to <white>%match%</white>."
     kicked: "%prefix%<green>Kicked <white>%player%</white> from <white>%match%</white>."
     not-member: "%prefix%<red><white>%player%</white> isn't in <white>%match%</white>."
+    # For several players at once. %count%: players it worked for, %total%: players named, %match%
+    added-several: "%prefix%<green>Added <white>%count%</white> of %total% players to <white>%match%</white>."
+    kicked-several: "%prefix%<green>Kicked <white>%count%</white> of %total% players from <white>%match%</white>."
 
 # Team names by id; teams are handed out in this order, and the id is also the team's colour.
 team:
@@ -662,6 +673,9 @@ night:
   # %player%: who the host kicked
   kicked: "%prefix%<green>Kicked <white>%player%</white> from the night."
   added: "%prefix%<green>Added <white>%player%</white> to the night."
+  # For several players at once. %count%: players it worked for, %total%: players named
+  kicked-several: "%prefix%<green>Kicked <white>%count%</white> of %total% players from the night."
+  added-several: "%prefix%<green>Added <white>%count%</white> of %total% players to the night."
   player-already-in-night: "%prefix%<red><white>%player%</white> is already in the night."
   you-were-kicked: "%prefix%<red>You were kicked from the night."
   # begin
@@ -704,6 +718,8 @@ night:
   no-such-team: "%prefix%<red>There is no night team <white>%team%</white>. There are: <white>%teams%</white>"
   # %player%: who is moved, %team%: the team's name
   moved: "%prefix%<green>Moved <white>%player%</white> to <white>%team%</white>."
+  # %count%: players moved, %total%: players named, %team%
+  moved-several: "%prefix%<green>Moved <white>%count%</white> of %total% players to <white>%team%</white>."
   you-were-moved: "%prefix%<gray>You were moved to <white>%team%</white><gray>."
   # %player%
   player-not-in-night: "%prefix%<red><white>%player%</white> is not in the night."
