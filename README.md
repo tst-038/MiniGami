@@ -444,6 +444,30 @@ var claim = boards.claim(this, player, myBoard, BoardPriority.PLUGIN);
 claim.release();
 ```
 
+### Menus
+
+`io.github.tst_038.minigami.api.menu` makes paged chest menus, such as a shop. A `Menu` is always a double chest: the top
+five rows hold your items (45 a page), the bottom row is the bar, with a previous-page arrow in its first slot and a
+next-page arrow in its last, each only where there is a page to go to, and an item of yours in the middle. Implement
+`MenuContent`: the `title()`, the `items()`, the `centre()` item, the two arrows for a page (counted from 0) and the
+page count, and optionally a `filler()` for the rest of the bar and `clickEmpty` for clicks on empty slots. You word
+everything, page numbers included. A `MenuItem` has an icon, a click handler that gets a `MenuClick` (player, click
+type, menu and `Place`), and optionally a `Place` (page and slot 0-44); items without one fill the next free slot.
+`Menu.open(player, content)` opens it, `refresh()` asks the content again and redraws it in place (after a purchase,
+say), `page(n)` turns the page, and `Menu.of(player)` finds the menu a player has open. MiniGami cancels every click
+and drag in a menu, shift-clicks from the player's own inventory too, and hands the clicks on, so menus need MiniGami
+enabled. Use them on the server thread.
+
+```java
+Menu.open(player, new MenuContent() {
+    public Component title() { return Component.text("Shop"); }
+    public List<MenuItem> items() { return List.of(MenuItem.of(ItemStack.of(Material.DIAMOND), click -> buy(click.player()))); }
+    public Optional<MenuItem> centre() { return Optional.empty(); }
+    public ItemStack previous(int page, int pages) { return arrow("Page " + page + "/" + pages); }
+    public ItemStack next(int page, int pages) { return arrow("Page " + (page + 2) + "/" + pages); }
+});
+```
+
 ## Building from source
 
 Requires Java 25. The Gradle wrapper downloads everything else.

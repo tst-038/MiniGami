@@ -11,6 +11,7 @@ import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
+import io.github.tst_038.minigami.api.menu.MenuListener;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.reward.RewardReader;
@@ -227,6 +228,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         var scheduled = new Schedules(this, messages, () -> schedules, () -> games, publicMatches, running, nights::isRunning, scheduleRewards,
                 Clock.systemDefaultZone(), RandomGenerator.getDefault());
         getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, rewardReader, running::isArenaInUse, this::loadAfterEdit);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, setup);
