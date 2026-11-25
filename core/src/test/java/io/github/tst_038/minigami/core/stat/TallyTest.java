@@ -15,6 +15,14 @@ class TallyTest {
     private final Stat deaths = new Stat("deaths");
 
     @Test
+    void refusesTheStatsMiniGamiKeepsFromTheResults() {
+        var tally = new Tally();
+
+        assertThrows(IllegalArgumentException.class, () -> tally.add(alice, new Stat(Stat.WINS), 1));
+        assertThrows(IllegalArgumentException.class, () -> tally.add(alice, new Stat(Stat.PLAYED), 1));
+    }
+
+    @Test
     void countsPerParticipantAndStatFromZero() {
         var tally = new Tally();
 

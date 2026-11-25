@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.paper.night.Nights;
 import io.github.tst_038.minigami.paper.permission.Staff;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -13,6 +14,7 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -31,6 +33,8 @@ final class Nodes {
     static final Predicate<CommandSourceStack> HELPER = source -> source.getSender().hasPermission("minigami.helper");
     /** Who runs game nights; admins can too. */
     static final Predicate<CommandSourceStack> HOST = source -> source.getSender().hasPermission(Nights.HOST_PERMISSION);
+    /** Bans players from MiniGami's games, game nights and plugins' scopes; mods can. */
+    static final Predicate<CommandSourceStack> BAN = source -> source.getSender().hasPermission("minigami.ban");
     static final Predicate<CommandSourceStack> PLAYER = source -> source.getExecutor() instanceof Player;
 
     /** What a command does with whoever runs it. */
@@ -65,25 +69,31 @@ final class Nodes {
         return context.getArgument("player", PlayerSelectorArgumentResolver.class).resolve(context.getSource()).getFirst();
     }
 
-    /** The players a {@code players} argument names, one by name or any number by a selector such as {@code @a}. */
-    static List<Player> players(CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException {
-        return context.getArgument(argument, PlayerSelectorArgumentResolver.class).resolve(context.getSource());
+    /** The online players named by the {@code players} argument, a {@link PlayerTargets#argument()}. */
+    static List<Player> players(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return PlayerTargets.resolve(context, "players");
     }
 
     /**
      * The players a {@code players} argument names, for a command that adds them somewhere: one by name, or those a selector
-     * picks who aren't staff, who run the games rather than play them. Tells the sender when it picked only staff.
+     * picks who aren't staff, who run the games rather than play them. Empty, having told the sender, when that leaves nobody.
      */
-    static List<Player> joining(Messages messages, CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException {
-        var picked = players(context, argument);
-        if (!isSelector(context, argument)) {
-            return picked;
+    static Optional<List<Player>> joining(Messages messages, CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        var picked = players(context);
+        var sender = context.getSource().getSender();
+        if (picked.isEmpty()) {
+            messages.send(sender, "players.none");
+            return Optional.empty();
+        }
+        if (!isSelector(context, "players")) {
+            return Optional.of(picked);
         }
         var joining = picked.stream().filter(player -> !Staff.is(player)).toList();
         if (joining.isEmpty()) {
-            messages.send(context.getSource().getSender(), "join.only-staff-picked", Formatter.number("count", picked.size()));
+            messages.send(sender, "join.only-staff-picked", Formatter.number("count", picked.size()));
+            return Optional.empty();
         }
-        return joining;
+        return Optional.of(joining);
     }
 
     /** Whether the argument was typed as a selector such as {@code @a[distance=..20]} rather than a player's name. */

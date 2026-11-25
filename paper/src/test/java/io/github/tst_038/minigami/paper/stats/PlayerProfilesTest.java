@@ -8,14 +8,16 @@ import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.core.result.MatchRecord.Entry;
 import io.github.tst_038.minigami.core.result.MatchResult;
 import io.github.tst_038.minigami.core.result.Placement;
+import io.github.tst_038.minigami.core.stat.Period;
 import io.github.tst_038.minigami.core.stat.Stat;
-import io.github.tst_038.minigami.paper.storage.Migrations;
-import io.github.tst_038.minigami.paper.storage.SqliteStorage;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +49,9 @@ class PlayerProfilesTest {
 
     @BeforeEach
     void open() {
-        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), LOGGER);
+        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         profiles = new PlayerProfiles(storage, serverThread::add, Clock.systemUTC(), LOGGER);
-        recorder = new StatsRecorder(storage, profiles, LOGGER);
+        recorder = new StatsRecorder(storage, profiles, Clock.systemUTC(), LOGGER);
     }
 
     @AfterEach
@@ -65,8 +67,12 @@ class PlayerProfilesTest {
     }
 
     private void play(Optional<String> variant, int alicePlace, long aliceKills) {
+        playOn(START, variant, alicePlace, aliceKills);
+    }
+
+    private void playOn(Instant start, Optional<String> variant, int alicePlace, long aliceKills) {
         var bobPlace = 3 - alicePlace;
-        recorder.record(new MatchRecord("team-deathmatch", "tdm", variant, "arena-1", START, START.plusSeconds(60),
+        recorder.record(new MatchRecord("team-deathmatch", "tdm", variant, "arena-1", start, start.plusSeconds(60),
                 new MatchResult(List.of(new Placement(alicePlace, List.of(alice)), new Placement(bobPlace, List.of(bob)))),
                 List.of(new Entry(alice, Optional.of("red"), false, Map.of(KILLS, aliceKills)),
                         new Entry(bob, Optional.of("blue"), false, Map.of())))).join();
@@ -96,6 +102,93 @@ class PlayerProfilesTest {
         assertEquals(Set.of("tdm"), profile.games());
         assertEquals(5, profile.variant("tdm", Optional.of("big")).stat(KILLS));
         assertEquals(Totals.NONE, profile.game("build-battle"));
+    }
+
+    @Test
+    void aProfileOfAWeekOrMonthHasOnlyTheDaysFromItsFirstOn() {
+        // The 28th of October 2026 is a Wednesday: the week started on the 26th and the month on the 1st.
+        var today = Clock.fixed(START, ZoneOffset.UTC);
+        profiles = new PlayerProfiles(storage, serverThread::add, today, LOGGER);
+        recorder = new StatsRecorder(storage, profiles, today, LOGGER);
+        playOn(START, Optional.empty(), 1, 3);
+        playOn(START, Optional.of("big"), 2, 1);
+        playOn(START.minus(Duration.ofDays(5)), Optional.empty(), 1, 10);
+        playOn(START.minus(Duration.ofDays(30)), Optional.empty(), 1, 100);
+
+        profiles.load(alice);
+        settle();
+
+        var week = profiles.of(alice, Period.WEEK).orElseThrow();
+        assertEquals(1, week.variant("tdm", Optional.empty()).played());
+        assertEquals(1, week.variant("tdm", Optional.empty()).wins());
+        assertEquals(3, week.variant("tdm", Optional.empty()).stat(KILLS));
+        assertEquals(2, week.game("tdm").played());
+        assertEquals(4, week.game("tdm").stat(KILLS));
+        var month = profiles.of(alice, Period.MONTH).orElseThrow();
+        assertEquals(3, month.game("tdm").played());
+        assertEquals(2, month.game("tdm").wins());
+        assertEquals(14, month.game("tdm").stat(KILLS));
+        var all = profiles.of(alice).orElseThrow();
+        assertEquals(profiles.of(alice, Period.ALL_TIME).orElseThrow(), all);
+        assertEquals(4, all.game("tdm").played());
+        assertEquals(114, all.game("tdm").stat(KILLS));
+        assertEquals(Duration.ZERO, week.game("tdm").timePlayed(), "kept in total only");
+        assertEquals(0, week.game("tdm").placed(), "kept in total only");
+        assertEquals(Totals.NONE, week.game("build-battle"));
+    }
+
+    @Test
+    void reloadingOnlineBringsTheWeekAndMonthUpToTheNewDate() {
+        var now = new Instant[] {START};
+        var clock = new Clock() {
+            @Override
+            public java.time.ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(java.time.ZoneId zone) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Instant instant() {
+                return now[0];
+            }
+        };
+        profiles = new PlayerProfiles(storage, serverThread::add, clock, LOGGER);
+        recorder = new StatsRecorder(storage, profiles, clock, LOGGER);
+        playOn(START, Optional.empty(), 1, 3);
+        profiles.load(alice);
+        settle();
+        assertEquals(1, profiles.of(alice, Period.WEEK).orElseThrow().game("tdm").played());
+
+        // Monday the 2nd of November: the week has none of the match of the Wednesday before, the month has.
+        now[0] = Instant.parse("2026-11-02T00:00:00Z");
+        profiles.reloadOnline();
+        settle();
+
+        assertEquals(0, profiles.of(alice, Period.WEEK).orElseThrow().game("tdm").played());
+        assertEquals(0, profiles.of(alice, Period.MONTH).orElseThrow().game("tdm").played());
+        assertEquals(1, profiles.of(alice).orElseThrow().game("tdm").played());
+    }
+
+    @Test
+    void statsWithoutAMatchRecordShowOnTotalsOfNothingPlayed() {
+        storage.submit(connection -> {
+            try (var statement = connection.createStatement()) {
+                statement.execute("INSERT INTO player_stat_totals (player, game, variant, stat, amount) VALUES ('" + alice + "', 'x', '', 'kills', 7)");
+            }
+            return null;
+        }).join();
+
+        profiles.load(alice);
+        settle();
+
+        var game = profiles.of(alice).orElseThrow().game("x");
+        assertEquals(7, game.stat(KILLS));
+        assertEquals(0, game.played());
+        assertEquals(Set.of("x"), profiles.of(alice).orElseThrow().games());
     }
 
     @Test

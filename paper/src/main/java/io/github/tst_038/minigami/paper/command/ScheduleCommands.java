@@ -59,9 +59,8 @@ final class ScheduleCommands {
                                 .suggests(suggest(schedules::ids))
                                 .then(Commands.argument("players", ArgumentTypes.players())
                                         .executes(bySender((sender, context) -> {
-                                            for (var player : joining(messages, context, "players")) {
-                                                schedules.join(sender, player, Optional.of(schedule(context)));
-                                            }
+                                            var schedule = Optional.of(schedule(context));
+                                            joining(messages, context).ifPresent(players -> players.forEach(player -> schedules.join(sender, player, schedule)));
                                         })))))
                 .then(Commands.literal("list").requires(HELPER).executes(bySender((sender, context) -> schedules.list(sender))))
                 .then(picking("now", schedules, schedules::now))

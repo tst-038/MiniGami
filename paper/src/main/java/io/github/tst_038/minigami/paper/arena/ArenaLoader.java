@@ -1,12 +1,13 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
 import io.github.tst_038.minigami.api.region.TeamRegion;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
-import io.github.tst_038.minigami.paper.config.ConfigLocations;
+import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.game.TeamSetup;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,11 +50,6 @@ public final class ArenaLoader {
     /** Where an arena's file is inside {@code arenas/}. */
     public static final String LAYOUT = "%s/" + FILE;
 
-    /** As far as a world reaches in Minecraft, in blocks. */
-    private static final int WORLD_BORDER = 30_000_000;
-    private static final int MIN_Y = -2048;
-    private static final int MAX_Y = 2047;
-
     private ArenaLoader() {
     }
 
@@ -67,19 +63,19 @@ public final class ArenaLoader {
         var spawns = config.has("spawns")
                 ? config.sections("spawns").stream().map(spawn -> spawn(spawn, world)).toList()
                 : List.<Arena.Spawn>of();
-        config.suggest("waiting-spot", List.of(ConfigLocations.HERE));
+        config.suggest("waiting-spot", List.of(LocationConfig.HERE));
         var waitingSpot = config.has("waiting-spot")
                 ? Optional.of(ConfigLocations.read(config.section("waiting-spot"), world))
                 : Optional.<Location>empty();
-        config.suggest("spectator-spot", List.of(ConfigLocations.HERE));
+        config.suggest("spectator-spot", List.of(LocationConfig.HERE));
         var spectatorSpot = config.has("spectator-spot")
                 ? Optional.of(ConfigLocations.read(config.section("spectator-spot"), world))
                 : Optional.<Location>empty();
-        config.suggest("respawning-spot", List.of(ConfigLocations.HERE));
+        config.suggest("respawning-spot", List.of(LocationConfig.HERE));
         var respawningSpot = config.has("respawning-spot")
                 ? Optional.of(ConfigLocations.read(config.section("respawning-spot"), world))
                 : Optional.<Location>empty();
-        var map = config.has("map") ? Optional.of(box("map", config.section("map"), world)) : Optional.<Region>empty();
+        var map = config.has("map") ? Optional.of(Region.read("map", config.section("map"), world)) : Optional.<Region>empty();
         return new Arena(id, world, spawns, waitingSpot, spectatorSpot, regions(config, world), map, LootPoint.read(config, world), List.of(), respawningSpot,
                 config.has("name") ? Optional.of(config.text("name")) : Optional.empty());
     }
@@ -97,24 +93,9 @@ public final class ArenaLoader {
                 region.keys();
                 continue;
             }
-            regions.put(name, box(name, region, world));
+            regions.put(name, Region.read(name, region, world));
         }
         return regions;
-    }
-
-    private static Region box(String name, ConfigReader config, World world) {
-        var from = config.section("from");
-        var to = config.section("to");
-        return Region.between(name, world, coordinate(from, "x"), height(from), coordinate(from, "z"),
-                coordinate(to, "x"), height(to), coordinate(to, "z"));
-    }
-
-    private static int coordinate(ConfigReader corner, String key) {
-        return corner.integer(key, -WORLD_BORDER, WORLD_BORDER);
-    }
-
-    private static int height(ConfigReader corner) {
-        return corner.integer("y", MIN_Y, MAX_Y);
     }
 
     private static Arena.Spawn spawn(ConfigReader config, World world) {

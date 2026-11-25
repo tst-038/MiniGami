@@ -13,10 +13,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.api.message.Messages;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 
 /** {@code /mga match list} and {@code /mga match <id> info|start|end|pause|resume|stop|phase <phase>|add <players>|kick <players>}; players by name or selector. */
 final class MatchCommands {
@@ -43,19 +43,11 @@ final class MatchCommands {
                         .then(Commands.literal("resume").requires(MOD).executes(bySender((sender, context) -> matches.resume(sender, match(context)))))
                         .then(Commands.literal("stop").requires(MOD).executes(bySender((sender, context) -> matches.stop(sender, match(context)))))
                         .then(Commands.literal("add").requires(MOD)
-                                .then(Commands.argument("players", ArgumentTypes.players())
-                                        .executes(bySender((sender, context) -> {
-                                            for (var player : joining(messages, context, "players")) {
-                                                matches.add(sender, match(context), player);
-                                            }
-                                        }))))
+                                .then(Commands.argument("players", PlayerTargets.argument())
+                                        .executes(bySender((sender, context) -> joining(messages, context).ifPresent(players -> matches.add(sender, match(context), players))))))
                         .then(Commands.literal("kick")
-                                .then(Commands.argument("players", ArgumentTypes.players())
-                                        .executes(bySender((sender, context) -> {
-                                            for (var player : players(context, "players")) {
-                                                matches.kick(sender, match(context), player);
-                                            }
-                                        })))));
+                                .then(Commands.argument("players", PlayerTargets.argument())
+                                        .executes(bySender((sender, context) -> matches.kick(sender, match(context), players(context)))))));
     }
 
     private static String match(CommandContext<CommandSourceStack> context) {

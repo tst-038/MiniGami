@@ -4,7 +4,7 @@ import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.result.MatchRecord;
 import io.github.tst_038.minigami.paper.match.LiveMatch;
-import io.github.tst_038.minigami.paper.reward.Reward;
+import io.github.tst_038.minigami.api.reward.Reward;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

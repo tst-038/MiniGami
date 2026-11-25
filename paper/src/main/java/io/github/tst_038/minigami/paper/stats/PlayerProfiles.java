@@ -1,12 +1,15 @@
 package io.github.tst_038.minigami.paper.stats;
 
+import io.github.tst_038.minigami.core.stat.Period;
 import io.github.tst_038.minigami.core.stat.Stat;
 import io.github.tst_038.minigami.paper.stats.Profile.VariantId;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -26,7 +29,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * The profiles of the players online, loaded from storage in the background when they join and
- * dropped when they quit, so showing stats never waits on the database. Also remembers the name
+ * dropped when they quit, so showing stats never waits on the database. Each has a profile per {@link Period}; the ones of a week
+ * or month count the days from its first up to today, so they are loaded again when the date changes. Also remembers the name
  * each player joined with, so offline players can be found by name. Used on the server thread; {@link #of} on any.
  */
 public final class PlayerProfiles implements Listener {
@@ -41,7 +45,7 @@ public final class PlayerProfiles implements Listener {
     private final Logger logger;
     /** Who a load is for; a load that finishes after they quit is thrown away. */
     private final Set<UUID> online = new HashSet<>();
-    private final Map<UUID, Profile> profiles = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Period, Profile>> profiles = new ConcurrentHashMap<>();
 
     public PlayerProfiles(Storage storage, Executor serverThread, Clock clock, Logger logger) {
         this.storage = storage;
@@ -50,9 +54,14 @@ public final class PlayerProfiles implements Listener {
         this.logger = logger;
     }
 
-    /** Empty while it is still loading, or if it couldn't be. */
+    /** Their profile of all time; empty while it is still loading, or if it couldn't be. */
     public Optional<Profile> of(UUID id) {
-        return Optional.ofNullable(profiles.get(id));
+        return of(id, Period.ALL_TIME);
+    }
+
+    /** Empty while it is still loading, or if it couldn't be. */
+    public Optional<Profile> of(UUID id, Period period) {
+        return Optional.ofNullable(profiles.get(id)).map(byPeriod -> byPeriod.get(period));
     }
 
     @EventHandler
@@ -101,7 +110,7 @@ public final class PlayerProfiles implements Listener {
      */
     void load(UUID id) {
         online.add(id);
-        storage.submit(connection -> read(connection, id)).whenCompleteAsync((profile, failure) -> {
+        storage.submit(connection -> readAll(connection, id)).whenCompleteAsync((profile, failure) -> {
             if (failure != null) {
                 logger.log(Level.SEVERE, "Could not load the stats of " + id, failure);
             } else if (online.contains(id)) {
@@ -115,8 +124,8 @@ public final class PlayerProfiles implements Listener {
         ids.stream().filter(online::contains).forEach(this::load);
     }
 
-    /** Reloads every player who is online. */
-    void reloadOnline() {
+    /** Reloads every player who is online; the week and month of each change with the date. */
+    public void reloadOnline() {
         reload(Set.copyOf(online));
     }
 
@@ -155,6 +164,48 @@ public final class PlayerProfiles implements Listener {
         return new VariantId(game, variant.isEmpty() ? Optional.empty() : Optional.of(variant));
     }
 
+    /** A profile per period, all read as of the same day. */
+    private Map<Period, Profile> readAll(Connection connection, UUID id) throws SQLException {
+        var today = LocalDate.now(clock);
+        var all = new EnumMap<Period, Profile>(Period.class);
+        for (var period : Period.values()) {
+            var first = period.firstDay(today);
+            all.put(period, first.isPresent() ? read(connection, id, first.get()) : read(connection, id));
+        }
+        return all;
+    }
+
+    /**
+     * What they did from that day on, added up from the days. Only played, wins and the stats are kept per day, so the places, the
+     * matches left and the time played are 0 in it.
+     */
+    private static Profile read(Connection connection, UUID id, LocalDate first) throws SQLException {
+        var amounts = new HashMap<VariantId, Map<String, Long>>();
+        try (var select = connection.prepareStatement(
+                "SELECT game, variant, stat, SUM(amount) FROM player_daily_stats WHERE player = ? AND day >= ? GROUP BY game, variant, stat")) {
+            select.setString(1, id.toString());
+            select.setLong(2, first.toEpochDay());
+            try (var rows = select.executeQuery()) {
+                while (rows.next()) {
+                    amounts.computeIfAbsent(variantId(rows.getString(1), rows.getString(2)), key -> new HashMap<>())
+                            .put(rows.getString(3), rows.getLong(4));
+                }
+            }
+        }
+        var byVariant = new HashMap<VariantId, Totals>();
+        amounts.forEach((key, byStat) -> {
+            var stats = new HashMap<Stat, Long>();
+            byStat.forEach((stat, amount) -> {
+                if (amount > 0 && !new Stat(stat).keptByMiniGami()) {
+                    stats.put(new Stat(stat), amount);
+                }
+            });
+            byVariant.put(key, new Totals(byStat.getOrDefault(Stat.PLAYED, 0L), byStat.getOrDefault(Stat.WINS, 0L), 0, 0, 0,
+                    Duration.ZERO, stats));
+        });
+        return new Profile(byVariant);
+    }
+
     private static Profile read(Connection connection, UUID id) throws SQLException {
         var stats = new HashMap<VariantId, Map<Stat, Long>>();
         try (var select = connection.prepareStatement("SELECT game, variant, stat, amount FROM player_stat_totals WHERE player = ?")) {
@@ -178,6 +229,8 @@ public final class PlayerProfiles implements Listener {
                 }
             }
         }
+        // Stats can exist without a match record, from an admin edit for instance: they still show, on totals of nothing played.
+        stats.forEach((key, amounts) -> byVariant.computeIfAbsent(key, ignored -> new Totals(0, 0, 0, 0, 0, Duration.ZERO, amounts)));
         return new Profile(byVariant);
     }
 }

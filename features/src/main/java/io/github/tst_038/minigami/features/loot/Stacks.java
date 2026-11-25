@@ -26,10 +26,12 @@ final class Stacks {
     /** The item, or nothing if it is a saved item that has since been deleted. */
     Optional<ItemStack> make(ItemSpec spec, RandomGenerator random) {
         int amount = spec.amount().pick(random);
-        return switch (spec) {
+        Optional<ItemStack> made = switch (spec) {
             case ItemSpec.Vanilla vanilla -> Optional.of(vanilla(vanilla, amount, random));
             case ItemSpec.Saved named -> saved.apply(named.name()).map(item -> item.asQuantity(amount));
         };
+        made.ifPresent(spec.look()::applyTo);
+        return made;
     }
 
     private static ItemStack vanilla(ItemSpec.Vanilla spec, int amount, RandomGenerator random) {

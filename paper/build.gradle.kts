@@ -1,6 +1,7 @@
 plugins {
     id("minigami.java-conventions")
     alias(libs.plugins.run.paper)
+    id("minigami.published")
 }
 
 dependencies {
@@ -26,6 +27,7 @@ dependencies {
     compileOnly(libs.placeholderapi) { isTransitive = false }
 
     testImplementation(libs.paper.api)
+    testImplementation(testFixtures(project(":api")))
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
@@ -61,5 +63,15 @@ tasks.runServer {
         modrinth("fastasyncworldedit", libs.versions.fawe.get())
         modrinth("placeholderapi", libs.versions.placeholderapi.get())
         modrinth("decentholograms", libs.versions.decentholograms.get())
+    }
+}
+
+publishing {
+    publications {
+        // The plugin jar itself, so a dependent plugin's test server can run it; it bundles everything, so no dependencies.
+        create<MavenPublication>("plugin") {
+            artifactId = "minigami-plugin"
+            artifact(tasks.jar)
+        }
     }
 }

@@ -2,6 +2,7 @@ package io.github.tst_038.minigami.paper.loot;
 
 import io.github.tst_038.minigami.api.loot.ItemSpec;
 import io.github.tst_038.minigami.api.loot.LootTables;
+import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.core.loot.Entry;
 import io.github.tst_038.minigami.core.range.IntRange;
@@ -96,7 +97,7 @@ public final class LootAdmin {
 
     /** Saves the held item, one of it, under the name, replacing one of that name. */
     public void save(Player player, String name) {
-        if (!SavedItems.isValidName(name)) {
+        if (!MiniGamiSavedItems.isValidName(name)) {
             messages.send(player, "loot.invalid-name", Placeholder.unparsed("name", name));
             return;
         }
@@ -105,18 +106,14 @@ public final class LootAdmin {
             messages.send(player, "loot.hold-an-item");
             return;
         }
-        var text = SavedItems.toText(held);
-        saved.put(name, held);
         var tags = new TagResolver[] { Placeholder.unparsed("name", name) };
-        plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
-            try {
-                saved.write(name, text);
-            } catch (IOException e) {
-                plugin.getLogger().log(Level.SEVERE, "Could not write the saved item " + name, e);
+        saved.save(name, held).whenComplete((done, failure) -> {
+            if (failure != null) {
+                plugin.getLogger().log(Level.SEVERE, "Could not write the saved item " + name, failure);
                 messages.send(player, "loot.save-failed", tags);
-                return;
+            } else {
+                messages.send(player, "loot.saved", tags);
             }
-            messages.send(player, "loot.saved", tags);
         });
     }
 

@@ -1,5 +1,8 @@
 package io.github.tst_038.minigami.paper.night;
 
+import io.github.tst_038.minigami.api.command.PlayerTargets;
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
+import io.github.tst_038.minigami.api.ban.MiniGamiPlayerBannedEvent;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.match.MatchEndEvent;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
@@ -9,6 +12,7 @@ import io.github.tst_038.minigami.gamenight.night.Night;
 import io.github.tst_038.minigami.gamenight.team.NightTeams;
 import io.github.tst_038.minigami.gamenight.template.NightTemplate;
 import io.github.tst_038.minigami.gamenight.template.PlaylistEntry;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.diagnosis.Doctor;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
@@ -47,9 +51,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -109,6 +116,7 @@ public final class Nights implements Listener {
     private final Clock clock;
     private final RandomGenerator random;
     private final Doctor doctor;
+    private final PluginBans bans;
     private Active active;
 
     /**
@@ -118,8 +126,10 @@ public final class Nights implements Listener {
      * @param values where the night publishes its state for placeholders
      */
     public Nights(Plugin plugin, Messages messages, Supplier<IdRegistry<NightTemplate>> templates, Supplier<IdRegistry<Game>> games, RunningMatches running,
-            Supplier<Optional<Location>> lobby, PlayerSessions sessions, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random, Doctor doctor) {
+            Supplier<Optional<Location>> lobby, PlayerSessions sessions, PartyService parties, NightStore store, NightReport report, NightSidebar sidebar, NightValues values, Clock clock, RandomGenerator random, Doctor doctor,
+            PluginBans bans) {
         this.plugin = plugin;
+        this.bans = bans;
         this.messages = messages;
         this.templates = templates;
         this.games = games;
@@ -201,6 +211,9 @@ public final class Nights implements Listener {
             messages.send(player, "night.not-allowed", Placeholder.component("player", denied.get().name()));
             return;
         }
+        if (group.stream().anyMatch(member -> bans.keepsOut(player, member, Set.of(MiniGamiBans.NIGHTS)))) {
+            return;
+        }
         var teams = night.template().teams();
         if (!teams.holds(group.size())) {
             messages.send(player, "night.party-too-big", Formatter.number("size", group.size()), Formatter.number("team", teams.size()));
@@ -228,7 +241,7 @@ public final class Nights implements Listener {
     }
 
     /**
-     * Signs up the players a selector such as {@code @a} picked who may join the night, except staff such as the host and
+     * Signs up the players a selector such as {@code @a} picked who may join the night and aren't banned from it, except staff such as the host and
      * admins, who run it rather than play; one of them who plays joins themselves, or is added by name.
      */
     public void addSelected(CommandSender host, Collection<? extends Player> selected) {
@@ -238,7 +251,8 @@ public final class Nights implements Listener {
         var night = active.night;
         var permission = PlayPermissions.night(night.template().id());
         var adding = selected.stream()
-                .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !Staff.is(player))
+                .filter(player -> !night.players().contains(player.getUniqueId()) && player.hasPermission(permission) && !Staff.is(player)
+                        && !bans.keepsOut(Audience.empty(), player, Set.of(MiniGamiBans.NIGHTS)))
                 .toList();
         adding.forEach(this::signUp);
         publish();
@@ -252,18 +266,25 @@ public final class Nights implements Listener {
                 && !night.players().contains(player.getUniqueId()));
     }
 
-    /** A host signs a player up, whatever their party or permission. */
-    public void add(CommandSender host, Player player) {
+    /** A host signs players up, whatever their party or permission. */
+    public void add(CommandSender host, List<Player> players) {
         if (!hasNight(host)) {
             return;
         }
-        if (active.night.players().contains(player.getUniqueId())) {
-            messages.send(host, "night.player-already-in-night", Placeholder.component("player", player.name()));
-            return;
-        }
-        signUp(player);
+        PlayerTargets.each(messages, host, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            if (active.night.players().contains(player.getUniqueId())) {
+                messages.send(feedback, "night.player-already-in-night", playerTag);
+                return false;
+            }
+            if (bans.keepsOut(feedback, player, Set.of(MiniGamiBans.NIGHTS))) {
+                return false;
+            }
+            signUp(player);
+            messages.send(feedback, "night.added", playerTag);
+            return true;
+        }, "players.none", "night.added-several");
         publish();
-        messages.send(host, "night.added", Placeholder.component("player", player.name()));
     }
 
     /** The player leaves the night, and its current game; their points stay. */
@@ -278,16 +299,20 @@ public final class Nights implements Listener {
         messages.send(player, "night.left");
     }
 
-    public void kick(CommandSender host, Player player) {
+    public void kick(CommandSender host, List<Player> players) {
         if (!hasNight(host)) {
             return;
         }
-        if (!remove(player)) {
-            messages.send(host, "night.player-not-in-night", Placeholder.component("player", player.name()));
-            return;
-        }
-        messages.send(player, "night.you-were-kicked");
-        messages.send(host, "night.kicked", Placeholder.component("player", player.name()));
+        PlayerTargets.each(messages, host, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            if (!remove(player)) {
+                messages.send(feedback, "night.player-not-in-night", playerTag);
+                return false;
+            }
+            messages.send(player, "night.you-were-kicked");
+            messages.send(feedback, "night.kicked", playerTag);
+            return true;
+        }, "players.none", "night.kicked-several");
     }
 
     /** Closes sign-up: forms the night teams of a team night, then plays the first game. */
@@ -381,8 +406,8 @@ public final class Nights implements Listener {
         finish();
     }
 
-    /** Moves a player to another night team, which counts from the next game on. */
-    public void team(CommandSender host, Player player, String teamId) {
+    /** Moves players to another night team, which counts from the next game on. */
+    public void team(CommandSender host, List<Player> players, String teamId) {
         if (!hasNight(host)) {
             return;
         }
@@ -396,14 +421,18 @@ public final class Nights implements Listener {
             messages.send(host, "night.no-such-team", Placeholder.unparsed("team", teamId), Placeholder.unparsed("teams", String.join(", ", teams.get().ids())));
             return;
         }
-        if (!night.players().contains(player.getUniqueId())) {
-            messages.send(host, "night.player-not-in-night", Placeholder.component("player", player.name()));
-            return;
-        }
-        teams.get().move(player.getUniqueId(), teamId);
         var name = report.label(night, teamId);
-        messages.send(host, "night.moved", Placeholder.component("player", player.name()), Placeholder.component("team", name));
-        messages.send(player, "night.you-were-moved", Placeholder.component("team", name));
+        PlayerTargets.each(messages, host, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            if (!night.players().contains(player.getUniqueId())) {
+                messages.send(feedback, "night.player-not-in-night", playerTag);
+                return false;
+            }
+            teams.get().move(player.getUniqueId(), teamId);
+            messages.send(feedback, "night.moved", playerTag, Placeholder.component("team", name));
+            messages.send(player, "night.you-were-moved", Placeholder.component("team", name));
+            return true;
+        }, "players.none", "night.moved-several", Placeholder.component("team", name));
         publish();
     }
 
@@ -430,6 +459,12 @@ public final class Nights implements Listener {
 
     private boolean waiting(Entity entity) {
         return active != null && active.state != State.PLAYING && entity instanceof Player player && active.night.players().contains(player.getUniqueId());
+    }
+
+    /** A player who leaves the server has nothing to give back; the server gives them a board when they return. */
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        sidebar.forget(event.getPlayer().getUniqueId());
     }
 
     /** Scores the finished game of the night, and goes on to the next one or ends the night. */
@@ -498,6 +533,7 @@ public final class Nights implements Listener {
         }
         var game = opened.get();
         game.joinableBy(PlayPermissions.night(night.template().id()));
+        game.bannedBy(Set.of(MiniGamiBans.NIGHTS));
         sidebar.hide(players);
         for (Player player : players) {
             try {
@@ -542,11 +578,16 @@ public final class Nights implements Listener {
             store.save(new NightStore.Played(active.id, template.id(), template.name(), active.start, clock.instant(), night.results()));
         }
         active.parties.forEach(parties::disband);
-        sidebar.hide(online);
+        dropSidebar(online);
         online.forEach(this::exit);
         releaseAll();
         active = null;
         values.clear();
+    }
+
+    private void dropSidebar(Collection<Player> online) {
+        sidebar.hide(online);
+        sidebar.clear();
     }
 
     /** A player still in another match is left there; that match gives them back their spot. */
@@ -584,8 +625,16 @@ public final class Nights implements Listener {
         release(player.getUniqueId(), hold);
     }
 
-    /** Gives back the state of everyone still held, for the night's end and the plugin's shutdown; players offline get theirs when they join. */
-    public void releaseAll() {
+    /** The plugin is shutting down: a night underway gives its players their boards and their state back. */
+    public void shutdown() {
+        if (active != null) {
+            dropSidebar(onlinePlayers(active.night));
+        }
+        releaseAll();
+    }
+
+    /** Gives back the state of everyone still held; players offline get theirs when they join. */
+    private void releaseAll() {
         List.copyOf(holds.entrySet()).forEach(entry -> release(entry.getKey(), entry.getValue()));
         holds.clear();
     }
@@ -604,8 +653,28 @@ public final class Nights implements Listener {
         night.current().ifPresent(entry -> messages.send(hosts(), "night.next-up", Placeholder.parsed("game", gameName(entry))));
     }
 
+    /** A player banned from game nights leaves the night they are in. */
+    @EventHandler
+    public void onBanned(MiniGamiPlayerBannedEvent event) {
+        if (event.getBan().covers(MiniGamiBans.NIGHTS)) {
+            event.getPlayer().ifPresent(this::remove);
+        }
+    }
+
+    /** A player banned from game nights while away leaves the night when they come back. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        var player = event.getPlayer();
+        if (active != null && active.night.players().contains(player.getUniqueId()) && bans.keepsOut(player, player, Set.of(MiniGamiBans.NIGHTS))) {
+            remove(player);
+        }
+    }
+
     /** Takes the player out of the night and its game; false if they were not in it. */
     private boolean remove(Player player) {
+        if (active == null) {
+            return false;
+        }
         var night = active.night;
         var id = player.getUniqueId();
         if (!night.players().contains(id)) {
@@ -615,6 +684,7 @@ public final class Nights implements Listener {
         if (active.game != null && active.game.isMember(id)) {
             active.game.leave(player);
         }
+        sidebar.forget(id);
         exit(player);
         messages.send(audience(onlinePlayers(night)), "night.player-left", Placeholder.component("player", player.name()));
         publish();

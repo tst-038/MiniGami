@@ -5,7 +5,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-/** A player's stored totals, per game and variant, as they were when it was loaded. */
+/**
+ * A player's stored totals, per game and variant, as they were when it was loaded: of all time, or of a week or month, which only
+ * keep played, wins and the stats.
+ */
 public record Profile(Map<VariantId, Totals> byVariant) {
 
     /** @param variant empty for the game itself */
@@ -27,7 +30,7 @@ public record Profile(Map<VariantId, Totals> byVariant) {
                 .map(Map.Entry::getValue).reduce(Totals.NONE, Totals::plus);
     }
 
-    /** The games they played, by id. */
+    /** The games they have stats or matches in, by id. */
     public Set<String> games() {
         var games = new TreeSet<String>();
         byVariant.keySet().forEach(key -> games.add(key.game()));

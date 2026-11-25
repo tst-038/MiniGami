@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.api.config;
 import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.message.LegacyColours;
 import io.github.tst_038.minigami.core.range.IntRange;
+import io.github.tst_038.minigami.core.schedule.Cron;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -116,6 +117,23 @@ public final class ConfigReader {
             return min;
         }
         return number;
+    }
+
+    /**
+     * A five-field cron line such as {@code 0 20 * * 5}. A missing key is reported by {@link #string},
+     * a line that does not parse is reported with the parser's message; either way the result is empty.
+     */
+    public Optional<Cron> cron(String key) {
+        var text = string(key);
+        if (text.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Cron.parse(text));
+        } catch (IllegalArgumentException e) {
+            problem(key, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     /**

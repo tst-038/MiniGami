@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.github.tst_038.minigami.api.config.setting.Kind;
 import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.core.range.IntRange;
+import io.github.tst_038.minigami.core.schedule.Cron;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.Material;
@@ -189,6 +190,17 @@ class ConfigReaderTest {
         assertEquals(Optional.empty(), reader.range("e", 0, 100));
         assertEquals(Optional.empty(), reader.range("f", 0, 10));
         assertEquals(3, problems(reader).size());
+    }
+
+    @Test
+    void readsCronLines() throws Exception {
+        var reader = read("good: \"*/30 * * * *\"\nbad: \"61 * * * *\"");
+        var message = assertThrows(IllegalArgumentException.class, () -> Cron.parse("61 * * * *")).getMessage();
+
+        assertEquals("*/30 * * * *", reader.cron("good").orElseThrow().toString());
+        assertEquals(Optional.empty(), reader.cron("bad"));
+        assertEquals(Optional.empty(), reader.cron("missing"));
+        assertEquals(List.of("modes/test.yml: bad: " + message, "modes/test.yml: missing: is missing"), problems(reader));
     }
 
     private static final Setting<Integer> DELAY = Setting.of("delay", Kind.integer(1, 20), "ticks to wait");

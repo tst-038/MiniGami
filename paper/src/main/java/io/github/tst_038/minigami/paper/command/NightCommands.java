@@ -17,6 +17,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.gamenight.template.PlaylistEdit;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
@@ -24,7 +25,6 @@ import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.night.Nights;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import java.util.List;
 import java.util.function.Function;
 import java.util.Optional;
@@ -58,12 +58,12 @@ final class NightCommands {
         return Commands.literal("night")
                 .executes(help)
                 .then(Commands.literal("add").requires(HOST)
-                        .then(Commands.argument("players", ArgumentTypes.players())
+                        .then(Commands.argument("players", PlayerTargets.argument())
                                 .executes(bySender((sender, context) -> {
                                     if (isSelector(context, "players")) {
-                                        nights.addSelected(sender, players(context, "players"));
+                                        nights.addSelected(sender, players(context));
                                     } else {
-                                        nights.add(sender, players(context, "players").getFirst());
+                                        nights.add(sender, players(context));
                                     }
                                 }))))
                 .then(Commands.literal("start").requires(HOST)
@@ -77,12 +77,8 @@ final class NightCommands {
                 .then(Commands.literal("resume").requires(HOST).executes(bySender((sender, context) -> nights.resume(sender))))
                 .then(Commands.literal("end").requires(HOST).executes(bySender((sender, context) -> nights.end(sender))))
                 .then(Commands.literal("kick").requires(HOST.or(HELPER))
-                        .then(Commands.argument("players", ArgumentTypes.players())
-                                .executes(bySender((sender, context) -> {
-                                    for (var player : players(context, "players")) {
-                                        nights.kick(sender, player);
-                                    }
-                                }))))
+                        .then(Commands.argument("players", PlayerTargets.argument())
+                                .executes(bySender((sender, context) -> nights.kick(sender, players(context))))))
                 .then(Commands.literal("list").requires(ADMIN).executes(bySender((sender, context) -> info.listNights(sender))))
                 .then(Commands.literal("info").requires(ADMIN)
                         .then(night(editor).executes(bySender((sender, context) -> info.night(sender, night(context))))))
@@ -105,14 +101,10 @@ final class NightCommands {
                                 .then(Edits.unset(editor, Kind.NIGHT, NightCommands::night))
                                 .then(playlist(editor, info, help))))
                 .then(Commands.literal("team").requires(HOST)
-                        .then(Commands.argument("players", ArgumentTypes.players())
+                        .then(Commands.argument("players", PlayerTargets.argument())
                                 .then(Commands.argument("team", StringArgumentType.word())
                                         .suggests(suggest(nights::teamIds))
-                                        .executes(bySender((sender, context) -> {
-                                            for (var player : players(context, "players")) {
-                                                nights.team(sender, player, string(context, "team"));
-                                            }
-                                        })))));
+                                        .executes(bySender((sender, context) -> nights.team(sender, players(context), string(context, "team")))))));
     }
 
     /** {@code playlist list|add <game> [variant]|remove <n>|move <n> <to>|points <n> <place> <points>|taking-part <n> <points>}. */

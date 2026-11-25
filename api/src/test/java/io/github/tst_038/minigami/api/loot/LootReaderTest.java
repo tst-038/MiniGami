@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.item.ItemLook;
 import io.github.tst_038.minigami.core.loot.Entry;
 import io.github.tst_038.minigami.core.range.IntRange;
 import io.github.tst_038.minigami.core.loot.LootTable;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +44,7 @@ class LootReaderTest {
     }
 
     private static ItemSpec.Vanilla plain(Material material, IntRange amount) {
-        return new ItemSpec.Vanilla(material, amount, Optional.empty(), Map.of(), Optional.empty());
+        return new ItemSpec.Vanilla(material, amount, Optional.empty(), Map.of(), Optional.empty(), ItemLook.NONE);
     }
 
     @Test
@@ -94,9 +96,9 @@ class LootReaderTest {
 
         assertDoesNotThrow(root::check);
         assertEquals(item(new ItemSpec.Vanilla(Material.IRON_SWORD, IntRange.of(1), Optional.of("<red>Sword of Testing"),
-                Map.of("sharpness", new IntRange(3, 5), "unbreaking", IntRange.of(2)), Optional.empty()), 1), entries.get(0));
-        assertEquals(item(new ItemSpec.Vanilla(Material.POTION, IntRange.of(1), Optional.empty(), Map.of(), Optional.of("healing")), 1), entries.get(1));
-        assertEquals(item(new ItemSpec.Saved("trident-of-doom", IntRange.of(2)), 1), entries.get(2));
+                Map.of("sharpness", new IntRange(3, 5), "unbreaking", IntRange.of(2)), Optional.empty(), ItemLook.NONE), 1), entries.get(0));
+        assertEquals(item(new ItemSpec.Vanilla(Material.POTION, IntRange.of(1), Optional.empty(), Map.of(), Optional.of("healing"), ItemLook.NONE), 1), entries.get(1));
+        assertEquals(item(new ItemSpec.Saved("trident-of-doom", IntRange.of(2), ItemLook.NONE), 1), entries.get(2));
     }
 
     @Test
@@ -176,5 +178,17 @@ class LootReaderTest {
         reader.read(root);
 
         assertEquals(List.of("loot/test.yml: role: unknown key", "loot/test.yml: entries[0].ammount: unknown key"), problems(root));
+    }
+
+    @Test
+    void itemsAndSavedItemsMayGlowAndHaveAModel() throws Exception {
+        var root = root("entries: [ { item: arrow, glow: true }, { saved: trident-of-doom, item-model: 'myserver:trident', custom-model-data: 3 } ]");
+
+        var entries = reader.read(root).orElseThrow().pools().getFirst().entries();
+
+        assertDoesNotThrow(root::check);
+        assertEquals(new ItemLook(Optional.of(true), Optional.empty(), Optional.empty()), ((Entry.Item<ItemSpec>) entries.get(0)).item().look());
+        assertEquals(new ItemLook(Optional.empty(), Optional.of(new NamespacedKey("myserver", "trident")), Optional.of(3f)),
+                ((Entry.Item<ItemSpec>) entries.get(1)).item().look());
     }
 }

@@ -4,6 +4,7 @@ import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -40,6 +41,7 @@ public final class ArenaMaps {
 
     private final Plugin plugin;
     private final Messages messages;
+    private final MiniGamiSetup setup;
     /** Only made when WorldEdit is there, since it loads WorldEdit's classes. */
     private final Optional<WorldEditMaps> worldEdit;
     private final Set<String> resetting = new HashSet<>();
@@ -47,10 +49,11 @@ public final class ArenaMaps {
     private final Map<String, CompletableFuture<Void>> pending = new ConcurrentHashMap<>();
 
     /** @param blocksPerTick how many blocks a tick may place when there is no FastAsyncWorldEdit; read at every edit, so a reload applies */
-    public ArenaMaps(Plugin plugin, Messages messages, IntSupplier blocksPerTick) {
+    public ArenaMaps(Plugin plugin, Messages messages, IntSupplier blocksPerTick, MiniGamiSetup setup) {
         this.plugin = plugin;
         this.messages = messages;
-        this.worldEdit = plugin.getServer().getPluginManager().getPlugin("WorldEdit") == null
+        this.setup = setup;
+        this.worldEdit = !setup.hasWorldEdit()
                 ? Optional.empty()
                 : Optional.of(new WorldEditMaps(plugin, plugin.getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null, blocksPerTick));
     }
@@ -175,7 +178,7 @@ public final class ArenaMaps {
         if (!canSelect(player, arena)) {
             return Optional.empty();
         }
-        var selection = worldEdit.get().selection(player, name);
+        var selection = setup.selection(player, name);
         if (selection.isEmpty()) {
             messages.send(player, "arena.region.no-selection");
         }
@@ -245,7 +248,7 @@ public final class ArenaMaps {
     /** Makes the box the player's WorldEdit selection; they must be in the arena's world. */
     void select(Player player, Arena arena, Region box) {
         if (canSelect(player, arena)) {
-            worldEdit.get().select(player, box);
+            setup.select(player, box);
             messages.send(player, "arena.region.selected", Placeholder.unparsed("region", box.id()));
         }
     }
