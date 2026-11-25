@@ -1,9 +1,9 @@
 package io.github.tst_038.minigami.paper.edit;
 
+import io.github.tst_038.minigami.api.config.ConfigFiles;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.gamenight.template.PlaylistEdit;
-import io.github.tst_038.minigami.paper.config.ConfigFiles;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.night.NightTemplateLoader;
 import io.github.tst_038.minigami.paper.schedule.ScheduleLoader;

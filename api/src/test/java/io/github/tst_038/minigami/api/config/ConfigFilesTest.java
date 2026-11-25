@@ -1,10 +1,9 @@
-package io.github.tst_038.minigami.paper.config;
+package io.github.tst_038.minigami.api.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.minigami.api.config.ConfigProblem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

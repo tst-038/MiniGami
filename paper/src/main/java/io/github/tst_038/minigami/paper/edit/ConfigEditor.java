@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.paper.edit;
 
+import io.github.tst_038.minigami.api.config.ConfigFiles;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -9,7 +10,6 @@ import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaFile;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
-import io.github.tst_038.minigami.paper.config.ConfigFiles;
 import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.config.Settings;

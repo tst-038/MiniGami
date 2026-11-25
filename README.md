@@ -412,6 +412,8 @@ arena commands use, for regions you keep in your own config: `selection(player, 
 selection as a `Region` (empty without WorldEdit, `hasWorldEdit()` tells it from nothing being selected), `select(player, region)`
 makes a region their selection, and `show(player, region)` outlines it in particles for them alone for a few seconds. Write
 what you save with `Region.toConfig()` and `ConfigLocations.write(location)`; they read back with `Region.read` and `ConfigLocations.read`.
+`ConfigFiles.update(path, change)`, in `io.github.tst_038.minigami.api.config`, changes a YAML file the way MiniGami's own commands
+do: it keeps the comments, writes through a temp file and makes one change at a time. It is blocking IO, so run it off the server thread.
 
 ```java
 var setup = getServer().getServicesManager().load(MiniGamiSetup.class); // null without MiniGami

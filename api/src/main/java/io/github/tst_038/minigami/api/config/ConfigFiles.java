@@ -1,6 +1,5 @@
-package io.github.tst_038.minigami.paper.config;
+package io.github.tst_038.minigami.api.config;
 
-import io.github.tst_038.minigami.api.config.ConfigProblem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,8 +11,9 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
- * Changes to config files made by commands. Synchronized, so two changes in a row never overwrite
- * each other, whichever command made them.
+ * Changes to config files made by commands, MiniGami's own and other plugins', such as a region set with
+ * {@link io.github.tst_038.minigami.api.region.Region#toConfig()}. Synchronized, so two changes in a row never overwrite each other, whichever command made
+ * them. A change or check that throws leaves the file as it was. Run them off the server thread.
  */
 public final class ConfigFiles {
 
