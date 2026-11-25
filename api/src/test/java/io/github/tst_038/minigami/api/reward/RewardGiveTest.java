@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.loot.FakeSavedItems;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
 class RewardGiveTest {
@@ -62,18 +61,7 @@ class RewardGiveTest {
 
     @Test
     void aSavedItemThatIsGoneIsAFailedReward() {
-        MiniGamiSavedItems none = new MiniGamiSavedItems() {
-            @Override
-            public Optional<ItemStack> find(String name) {
-                return Optional.empty();
-            }
-
-            @Override
-            public boolean has(String name) {
-                return false;
-            }
-        };
-        var reward = new SavedReward("crate-key", 1, Optional.empty(), none);
+        var reward = new SavedReward("crate-key", 1, Optional.empty(), new FakeSavedItems());
 
         var failed = assertThrows(RewardFailedException.class, () -> reward.give(player(true, new ArrayList<>())));
 

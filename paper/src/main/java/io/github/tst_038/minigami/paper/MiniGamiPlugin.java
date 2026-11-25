@@ -162,7 +162,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         // Until the first load has read the admin's copy.
         messages = new Messages(bundledMessages, getLogger());
         kits = new SavedKits(getDataPath().resolve("kits"), getLogger());
-        savedItems = new SavedItems(getDataPath().resolve("items"), getLogger());
+        savedItems = new SavedItems(getDataPath().resolve("items"), getLogger(), task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()));
         // Plugins that use saved items read them in their onEnable, before the first config load has finished.
         savedItems.replace(savedItems.read());
         playPermissions = new PlayPermissions(getServer().getPluginManager());

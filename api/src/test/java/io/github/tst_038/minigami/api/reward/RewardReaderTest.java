@@ -8,29 +8,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
+import io.github.tst_038.minigami.api.loot.FakeSavedItems;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
 import io.github.tst_038.minigami.core.reward.Rewards;
 import java.util.List;
 import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
 class RewardReaderTest {
 
-    /** Reading only asks whether an item exists; making an item needs a server. */
-    private final MiniGamiSavedItems saved = new MiniGamiSavedItems() {
-        @Override
-        public Optional<ItemStack> find(String name) {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean has(String name) {
-            return name.equals("crate-key");
-        }
-    };
+    private final MiniGamiSavedItems saved = new FakeSavedItems("crate-key");
     private final RewardReader reader = new RewardReader(saved);
 
     private static ConfigReader root(String yaml) throws Exception {

@@ -378,6 +378,9 @@ player's next login without a leave event, since no join was seen since the rest
 To read the same `saved:` items in your own config, the `io.github.tst_038.minigami.api.loot` package has
 `MiniGamiSavedItems`, another Bukkit service: `find(name)` gives a copy of the item saved with `/mga loot save <name>`,
 `has(name)` whether there is one. Items can be saved and deleted while the server runs, so look one up when you need it.
+`save(name, item)` saves one of an item the way `/mga loot save` does, replacing one of that name (names are lower-case letters,
+digits, `_` and `-`, see `isValidName`); it can be found at once, and the returned future completes, off the server thread,
+once its file is written. Prefix the names with your plugin's, as they share one folder with every other saved item.
 `io.github.tst_038.minigami.api.reward.RewardReader` reads reward entries (`{ saved: crate-key }`, `{ item: diamond }`,
 `{ command: ..., name: ... }`) into `Reward`s you can `give(player)`, which throws a `RewardFailedException` when it
 couldn't be given (a saved item since deleted, a command that failed); create it with the service:
