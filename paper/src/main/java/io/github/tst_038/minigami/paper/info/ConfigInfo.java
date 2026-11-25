@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.paper.info;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
+import io.github.tst_038.minigami.api.config.ConfigValues;
+import io.github.tst_038.minigami.api.config.FileEditor;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.config.setting.Setting;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
@@ -59,6 +61,7 @@ public final class ConfigInfo {
 
     private final Messages messages;
     private final ConfigEditor editor;
+    private final FileEditor fileEditor;
     private final IdRegistry<GameType> gametypes;
     private final IdRegistry<FeatureFactory> features;
     private final Supplier<IdRegistry<Arena>> arenas;
@@ -69,17 +72,19 @@ public final class ConfigInfo {
     private Files files = new Files(new YamlConfiguration(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), List.of());
 
     /**
+     * @param fileEditor shows values the way every plugin's {@code info} does
      * @param arenas the arenas currently loaded
      * @param games the games currently loaded
      * @param nights the game night templates currently loaded
      * @param schedules the schedules currently loaded
      * @param arenaInUse whether a running match uses the arena with this id
      */
-    public ConfigInfo(Messages messages, ConfigEditor editor, IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features,
+    public ConfigInfo(Messages messages, ConfigEditor editor, FileEditor fileEditor, IdRegistry<GameType> gametypes, IdRegistry<FeatureFactory> features,
             Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games,
             Supplier<IdRegistry<NightTemplate>> nights, Supplier<IdRegistry<Schedule>> schedules, Predicate<String> arenaInUse) {
         this.messages = messages;
         this.editor = editor;
+        this.fileEditor = fileEditor;
         this.gametypes = gametypes;
         this.features = features;
         this.arenas = arenas;
@@ -140,7 +145,7 @@ public final class ConfigInfo {
         var settings = YamlConfiguration.loadConfiguration(new StringReader(config.saveToString()));
         settings.set(PlaylistEdit.KEY, null);
         var set = "/mga night edit " + id + " set ";
-        values(sender, settings, settings, set);
+        fileEditor.showValues(sender, settings, settings, set);
         nightPlaylist(sender, id);
         problems(sender, Kind.NIGHT, id);
     }
@@ -161,7 +166,7 @@ public final class ConfigInfo {
             messages.send(sender, "info.night-playlist-entry", Placeholder.unparsed("n", String.valueOf(i + 1)),
                     Placeholder.unparsed("game", String.valueOf(entry.get("game"))),
                     Placeholder.unparsed("variant", variant == null ? "" : " (" + variant + ")"),
-                    Placeholder.unparsed("points", points == null ? "" : " " + show(points)));
+                    Placeholder.unparsed("points", points == null ? "" : " " + ConfigValues.show(points)));
         }
     }
 
@@ -189,7 +194,7 @@ public final class ConfigInfo {
         messages.send(sender, "info.schedule", Placeholder.unparsed("id", id), Placeholder.parsed("name", config.getString("name", id)),
                 Placeholder.component("status", status(Kind.SCHEDULE, id, schedules.get().find(id).isPresent(), null)));
         var set = "/mga schedule edit " + id + " set ";
-        values(sender, config, config, set);
+        fileEditor.showValues(sender, config, config, set);
         problems(sender, Kind.SCHEDULE, id);
     }
 
@@ -241,7 +246,7 @@ public final class ConfigInfo {
         });
         loaded.map(Variant::roles).filter(roles -> !roles.isEmpty()).ifPresent(roles -> messages.send(sender, "info.game-roles",
                 Placeholder.component("roles", Component.join(JoinConfiguration.commas(true), roles.stream().map(Role::displayName).toList()))));
-        values(sender, config, config, "/mga game " + id + " set ");
+        fileEditor.showValues(sender, config, config, "/mga game " + id + " set ");
         problems(sender, Kind.GAME, id);
     }
 
@@ -314,29 +319,13 @@ public final class ConfigInfo {
         merged.set("enabled", null);
         YamlFiles.overlay(merged, own);
         messages.send(sender, "info.variant", Placeholder.unparsed("game", id), Placeholder.unparsed("variant", variant));
-        values(sender, merged, own, "/mga game " + id + " variant " + variant + " set ");
+        fileEditor.showValues(sender, merged, own, "/mga game " + id + " variant " + variant + " set ");
     }
 
     public void config(CommandSender sender) {
         var current = files;
-        messages.send(sender, "info.config", Placeholder.unparsed("file", SettingsLoader.FILE));
-        values(sender, current.config(), current.config(), "/mga config set ");
-        problems(sender, Kind.CONFIG, "");
-    }
-
-    /** Leaf values one per line; a section of only plain values, such as a location, on one line. */
-    private void values(CommandSender sender, ConfigurationSection config, ConfigurationSection own, String set) {
-        for (String key : config.getKeys(false)) {
-            var path = config.getCurrentPath().isEmpty() ? key : config.getCurrentPath() + "." + key;
-            var value = config.get(key);
-            if (value instanceof ConfigurationSection section && section.getValues(false).values().stream().anyMatch(ConfigurationSection.class::isInstance)) {
-                values(sender, section, own, set);
-                continue;
-            }
-            var shown = show(value);
-            messages.send(sender, own.contains(path) ? "info.value" : "info.value-inherited", Placeholder.unparsed("key", path),
-                    Placeholder.unparsed("value", shown), Placeholder.styling("set", ClickEvent.suggestCommand(set + path + " " + shown)));
-        }
+        fileEditor.info(sender, SettingsLoader.FILE, current.config(),
+                current.problems().stream().filter(problem -> problem.file().equals(SettingsLoader.FILE)).toList(), "/mga config set ");
     }
 
     private void problems(CommandSender sender, Kind kind, String id) {
@@ -421,18 +410,5 @@ public final class ConfigInfo {
             return new SettingLine(entry.getKey(), entry.getValue(), top.map(Setting::required).orElse(false),
                     top.map(Setting::description).orElse(""));
         }).toList();
-    }
-
-    /** A value as YAML would write it inline, so it can be pasted back into {@code set}. */
-    static String show(Object value) {
-        return switch (value) {
-            case ConfigurationSection section -> show(section.getValues(false));
-            case Map<?, ?> map -> map.entrySet().stream().map(entry -> entry.getKey() + ": " + show(entry.getValue()))
-                    .collect(Collectors.joining(", ", "{", "}"));
-            case List<?> list -> list.stream().map(ConfigInfo::show).collect(Collectors.joining(", ", "[", "]"));
-            case Double number -> String.valueOf(Math.round(number * 100) / 100.0);
-            case null -> "";
-            default -> value.toString();
-        };
     }
 }

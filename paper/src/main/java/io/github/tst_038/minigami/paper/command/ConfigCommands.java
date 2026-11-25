@@ -7,8 +7,10 @@ import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.ArgumentBuilder;
+import io.github.tst_038.minigami.api.command.EditCommands;
+import io.github.tst_038.minigami.api.message.MessageEditor;
 import io.github.tst_038.minigami.api.message.Messages;
-import io.github.tst_038.minigami.paper.config.LocationConfig;
+import io.github.tst_038.minigami.api.config.ConfigValues;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
@@ -18,7 +20,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.bukkit.Location;
 
-/** {@code /mga config info|set|unset}, and {@code /mga lobby set|tp} for the one setting admins change most. */
+/** {@code /mga config info|set|unset}, {@code /mga messages set|unset|info}, and {@code /mga lobby set|tp} for the one setting admins change most. */
 final class ConfigCommands {
 
     private ConfigCommands() {
@@ -33,6 +35,10 @@ final class ConfigCommands {
                 .then(Edits.unset(editor, Kind.CONFIG, context -> ""));
     }
 
+    static ArgumentBuilder<CommandSourceStack, ?> messages(MessageEditor editor, Command<CommandSourceStack> help) {
+        return EditCommands.messages("messages", editor, "/mga messages set ").requires(ADMIN).executes(help);
+    }
+
     /** @param lobby the lobby currently loaded */
     static ArgumentBuilder<CommandSourceStack, ?> lobby(ConfigEditor editor, Supplier<Optional<Location>> lobby, Messages messages,
             Command<CommandSourceStack> help) {
@@ -40,7 +46,7 @@ final class ConfigCommands {
                 .requires(ADMIN.and(PLAYER))
                 .executes(help)
                 .then(Commands.literal("set").executes(byPlayer((player, context) ->
-                        editor.set(player, Kind.CONFIG, "", "lobby", LocationConfig.HERE))))
+                        editor.set(player, Kind.CONFIG, "", "lobby", ConfigValues.HERE))))
                 .then(Commands.literal("tp").executes(byPlayer((player, context) -> lobby.get().ifPresentOrElse(
                         player::teleportAsync, () -> messages.send(player, "lobby.none")))));
     }

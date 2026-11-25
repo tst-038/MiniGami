@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.message;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -68,6 +69,11 @@ public final class Messages {
     /** Whether there is a text for the key, for something that falls back to a general text when it has none of its own. */
     public boolean has(String key) {
         return text(key) != null;
+    }
+
+    /** The text for the key as it is written, before it is read; empty if there is none. */
+    public Optional<String> raw(String key) {
+        return Optional.ofNullable(text(key));
     }
 
     /** Every key with a text, such as for completing the keys a game may give its own wording for. */

@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.paper;
 
 import io.github.tst_038.minigami.api.config.ConfigProblem;
+import io.github.tst_038.minigami.api.config.FileEditor;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
@@ -13,6 +14,7 @@ import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
 import io.github.tst_038.minigami.api.menu.MenuListener;
+import io.github.tst_038.minigami.api.message.MessageEditor;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.presence.MiniGamiPlayers;
 import io.github.tst_038.minigami.api.reward.RewardReader;
@@ -238,20 +240,22 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
-        editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, rewardReader, running::isArenaInUse, this::loadAfterEdit);
+        var fileEditor = new FileEditor(getDataPath(), messages, task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), serverThread,
+                this::loadAfterEdit, getLogger());
+        editor = new ConfigEditor(this, fileEditor, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, rewardReader, running::isArenaInUse, this::loadAfterEdit);
         var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, setup);
         var lootSetup = new LootSetup(() -> arenas, () -> lootTables, editor, maps, messages, this);
         getServer().getPluginManager().registerEvents(lootSetup, this);
         var terrainSetup = new TerrainSetup(() -> arenas, () -> terrainStyles, maps, running::isArenaInUse,
                 task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), messages, this);
-        info = new ConfigInfo(messages, editor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
+        info = new ConfigInfo(messages, editor, fileEditor, gametypes, features, () -> arenas, () -> games, () -> nightTemplates, () -> schedules, running::isArenaInUse);
         var statsView = new StatsView(profiles, leaderboards, () -> games, getServer(), messages, getLogger());
         var statsAdmin = new StatsAdmin(storage, profiles, leaderboards, statsView, serverThread, messages, getLogger());
         var gameRenamer = new GameRenamer(this, messages, editor, running::isGameInUse, statsAdmin::renameGame, this::loadAfterEdit);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(GamesCommand.playerRoot(messages, publicMatches, running, parties, nights, scheduled, statsView), "Join, leave and see stats of minigames");
             event.registrar().register(GamesCommand.adminRoot(messages, publicMatches, running, new MatchAdmin(running, messages, getServer(), bans), editor, gameRenamer, arenaSetup, lootSetup, terrainSetup, info,
-                    gametypes.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), nights, scheduled,
+                    new MessageEditor(fileEditor, messages, MESSAGES, bundledMessages), gametypes.ids(), snapshotAdmin, new KitAdmin(this, kits, messages), new LootAdmin(this, () -> lootTables, savedItems, messages), nights, scheduled,
                     statsView, statsAdmin, new PlaceholderGuide(statsView, messages), new BanAdmin(bans, messages, getServer(), getLogger()), bans::scopes, doctor, () -> settings.lobby(), this::loadAfterEdit), "Manage minigames");
         });
         loadConfig(null);

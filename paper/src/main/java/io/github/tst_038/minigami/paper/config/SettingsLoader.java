@@ -3,6 +3,7 @@ package io.github.tst_038.minigami.paper.config;
 import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.config.ConfigValues;
 import io.github.tst_038.minigami.api.config.InvalidConfigException;
 import io.github.tst_038.minigami.api.config.YamlFiles;
 import io.github.tst_038.minigami.api.config.setting.Kind;
@@ -74,7 +75,7 @@ public final class SettingsLoader {
                     Collections.emptySortedMap());
         }
         var reader = ConfigReader.of(FILE, config);
-        reader.suggest("lobby", List.of(LocationConfig.HERE));
+        reader.suggest("lobby", List.of(ConfigValues.HERE));
         var lobby = reader.has("lobby")
                 ? Optional.of(ConfigLocations.readWithWorld(reader.section("lobby"), worlds))
                 : Optional.<Location>empty();

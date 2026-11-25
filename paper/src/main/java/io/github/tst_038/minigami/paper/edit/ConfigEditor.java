@@ -1,9 +1,10 @@
 package io.github.tst_038.minigami.paper.edit;
 
 import io.github.tst_038.minigami.api.config.ConfigFiles;
+import io.github.tst_038.minigami.api.config.ConfigValues;
+import io.github.tst_038.minigami.api.config.FileEditor;
 import io.github.tst_038.minigami.api.config.ConfigProblem;
 import io.github.tst_038.minigami.api.config.YamlFiles;
-import io.github.tst_038.minigami.api.message.LegacyColours;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.reward.RewardReader;
@@ -11,8 +12,6 @@ import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaFile;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
-import io.github.tst_038.minigami.api.config.ConfigLocations;
-import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
 import io.github.tst_038.minigami.paper.game.Game;
@@ -27,30 +26,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.regex.Pattern;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -63,8 +54,6 @@ import org.bukkit.plugin.Plugin;
  * <p>Call the public methods from the server thread.
  */
 public final class ConfigEditor {
-
-    private static final Pattern COMMENT = Pattern.compile("\\s#");
 
     /** The files that can be edited. */
     public enum Kind {
@@ -84,9 +73,9 @@ public final class ConfigEditor {
 
     /** Taken by commands such as {@code /mga game list}, so an arena, game or game night with one of these ids couldn't be reached. */
     private static final Set<String> RESERVED_IDS = Set.of("create", "list");
-    private static final long CHECK_TIMEOUT_SECONDS = 10;
 
     private final Plugin plugin;
+    private final FileEditor files;
     private final Messages messages;
     private final IdRegistry<GameType> gametypes;
     private final GameLoader gameLoader;
@@ -115,6 +104,7 @@ public final class ConfigEditor {
     }
 
     /**
+     * @param files writes the files, the same path every plugin's {@code set} and {@code unset} take
      * @param arenas the arenas currently loaded, which games are checked against
      * @param games the games currently loaded, which game nights are checked against
      * @param settings the settings currently loaded, for whether games may wait in the lobby
@@ -122,9 +112,10 @@ public final class ConfigEditor {
      * @param arenaInUse whether a running match uses the arena with this id; such an arena can't be changed
      * @param reload loads the config again, off the server thread, and tells this audience how that went
      */
-    public ConfigEditor(Plugin plugin, Messages messages, IdRegistry<GameType> gametypes, GameLoader gameLoader,
+    public ConfigEditor(Plugin plugin, FileEditor files, Messages messages, IdRegistry<GameType> gametypes, GameLoader gameLoader,
             Supplier<IdRegistry<Arena>> arenas, Supplier<IdRegistry<Game>> games, Supplier<Settings> settings, RewardReader rewards, Predicate<String> arenaInUse, Consumer<Audience> reload) {
         this.plugin = plugin;
+        this.files = files;
         this.messages = messages;
         this.gametypes = gametypes;
         this.gameLoader = gameLoader;
@@ -220,7 +211,7 @@ public final class ConfigEditor {
             if (config.contains(key)) {
                 throw new IllegalArgumentException("already has a variant " + variant);
             }
-            config.set(key + ".name", text(name));
+            config.set(key + ".name", ConfigValues.text(name));
         }, "edit.variant-created", Placeholder.unparsed("variant", variant));
     }
 
@@ -270,55 +261,15 @@ public final class ConfigEditor {
 
     /**
      * @param id ignored for {@link Kind#CONFIG}
-     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value LocationConfig#HERE}
+     * @param text a YAML value such as {@code 5}, {@code [a, b]} or {@code { y: 0 }}, or {@value ConfigValues#HERE}; see {@link FileEditor#set}
      */
     public void set(CommandSender sender, Kind kind, String id, String key, String text) {
-        Consumer<YamlConfiguration> change;
-        if (text.equals(LocationConfig.HERE)) {
-            if (!(sender instanceof Player player)) {
-                messages.send(sender, "edit.here-needs-player");
-                return;
-            }
-            var location = player.getLocation();
-            change = config -> config.set(key, location(config, location));
-        } else {
-            var value = parse(text);
-            if (value == null) {
-                messages.send(sender, "edit.bad-value", Placeholder.unparsed("value", text));
-                return;
-            }
-            change = config -> config.set(key, forKey(kind, id, config, key, value));
-        }
-        edit(sender, kind, id, false, change, "edit.set", Placeholder.unparsed("key", key));
-    }
-
-    /**
-     * A single value typed for a key that wants a list, such as {@code all} for {@code causes}, becomes a list of
-     * one, so values can be completed and typed without brackets. Found by trying it: runs off the server thread.
-     */
-    private Object forKey(Kind kind, String id, YamlConfiguration config, String key, Object value) {
-        if (value instanceof List<?> || value instanceof Map<?, ?>) {
-            return value;
-        }
-        var probe = new YamlConfiguration();
-        try {
-            probe.loadFromString(config.saveToString());
-        } catch (InvalidConfigurationException e) {
-            return value;
-        }
-        probe.set(key, value);
-        var wantsList = onServerThread(() -> check(kind, id, probe)).stream()
-                .anyMatch(problem -> problem.toString().contains(key + ": must be a list"));
-        return wantsList ? List.of(value) : value;
+        files.setter(sender, key, text, config -> check(kind, id, config))
+                .ifPresent(change -> edit(sender, kind, id, false, change, "edit.set", Placeholder.unparsed("key", key)));
     }
 
     public void unset(CommandSender sender, Kind kind, String id, String key) {
-        edit(sender, kind, id, false, config -> {
-            if (!config.contains(key)) {
-                throw new IllegalArgumentException("has no key " + key);
-            }
-            config.set(key, null);
-        }, "edit.unset", Placeholder.unparsed("key", key));
+        edit(sender, kind, id, false, FileEditor.unsetter(key), "edit.unset", Placeholder.unparsed("key", key));
     }
 
     /** An arena without spawns in the admin's world. */
@@ -367,7 +318,7 @@ public final class ConfigEditor {
     /** A game night playing one game, for solo players; change the rest with {@link #set} and {@link #change}. */
     public void createNight(CommandSender sender, String id, String game, String name) {
         edit(sender, Kind.NIGHT, id, true, config -> {
-            config.set("name", text(name));
+            config.set("name", ConfigValues.text(name));
             config.set("teams", "solo");
             config.set("playlist", List.of(game));
         }, "edit.night-created");
@@ -488,41 +439,20 @@ public final class ConfigEditor {
         return true;
     }
 
-    /** Changes the file off the server thread, checks it on the server thread, and only then writes it. */
+    /** Changes the file off the server thread, checks it on the server thread, and only then writes it; see {@link FileEditor#edit}. */
     private void edit(CommandSender sender, Kind kind, String id, boolean create, Consumer<YamlConfiguration> change,
             String done, TagResolver... placeholders) {
         if (!editable(sender, kind, id)) {
             return;
         }
         var file = kind.file(id);
-        var fileTag = Placeholder.unparsed("file", file);
-        plugin.getServer().getAsyncScheduler().runNow(plugin, task -> {
-            var path = plugin.getDataPath().resolve(file);
+        var path = plugin.getDataPath().resolve(file);
+        files.editAndReload(sender, file, config -> {
             if (create == Files.exists(path)) {
-                messages.send(sender, create ? "edit.exists" : "edit.unknown", fileTag);
-                return;
+                throw new FileEditor.Refusal(create ? "edit.exists" : "edit.unknown", Placeholder.unparsed("file", file));
             }
-            List<ConfigProblem> problems;
-            try {
-                problems = ConfigFiles.update(path, change, config -> {
-                    return onServerThread(() -> check(kind, id, config));
-                });
-            } catch (IllegalArgumentException e) {
-                problems = List.of(new ConfigProblem(file, "", e.getMessage()));
-            } catch (IOException | InvalidConfigurationException | IllegalStateException e) {
-                plugin.getLogger().log(Level.WARNING, "Could not write " + file, e);
-                messages.send(sender, "edit.save-failed", fileTag);
-                return;
-            }
-            if (!problems.isEmpty()) {
-                messages.send(sender, "edit.invalid", fileTag);
-                problems.forEach(problem -> messages.send(sender, "edit.problem", Placeholder.unparsed("problem", problem.toString())));
-                return;
-            }
-            plugin.getLogger().info(sender.getName() + " changed " + file);
-            messages.send(sender, done, TagResolver.resolver(TagResolver.resolver(placeholders), fileTag));
-            reload.accept(sender);
-        });
+            change.accept(config);
+        }, config -> check(kind, id, config), done, placeholders);
     }
 
     /**
@@ -538,67 +468,5 @@ public final class ConfigEditor {
             case NIGHT -> NightTemplateLoader.load(new YamlFiles(NightTemplateLoader.FOLDER, Map.of(id, config), List.of()), games.get()).problems();
             case SCHEDULE -> ScheduleLoader.load(new YamlFiles(ScheduleLoader.FOLDER, Map.of(id, config), List.of()), games.get(), rewards).problems();
         };
-    }
-
-    /** Blocks until the task ran on the server thread; never call it from there. */
-    private <T> T onServerThread(Supplier<T> task) {
-        try {
-            return CompletableFuture.supplyAsync(task, runnable -> plugin.getServer().getGlobalRegionScheduler().execute(plugin, runnable))
-                    .get(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while checking the file", e);
-        } catch (ExecutionException | TimeoutException e) {
-            throw new IllegalStateException("Could not check the file on the server thread", e);
-        }
-    }
-
-    /**
-     * A location for this file: files with a {@code world} key, such as arenas, keep their locations
-     * in that world; others, such as {@code config.yml}, name the world in each location.
-     */
-    static Map<String, Object> location(ConfigurationSection config, Location location) {
-        var world = config.getString("world");
-        if (world == null) {
-            return ConfigLocations.writeWithWorld(location);
-        }
-        if (!world.equals(location.getWorld().getName())) {
-            throw new IllegalArgumentException("you are in world " + location.getWorld().getName() + ", but its locations are in " + world);
-        }
-        return ConfigLocations.write(location);
-    }
-
-    /** The value a command typed, read as YAML, so text may be put in quotes; {@code null} if it isn't one. */
-    static Object parse(String text) {
-        // YAML would read a leading & as an anchor; here it is a colour code of a text, which is read when it is loaded.
-        if (LegacyColours.startsWithCode(text)) {
-            return text.strip();
-        }
-        var yaml = new YamlConfiguration();
-        try {
-            yaml.loadFromString("value: " + text);
-        } catch (InvalidConfigurationException e) {
-            return null;
-        }
-        if (yaml.getKeys(false).size() != 1) {
-            return null;
-        }
-        var value = yaml.get("value");
-        // YAML reads " #" as the start of a comment, which would quietly cut "Night #1" to "Night".
-        if (COMMENT.matcher(text).find() && !String.valueOf(value).contains("#")) {
-            return null;
-        }
-        return value instanceof ConfigurationSection section ? plain(section) : value;
-    }
-
-    /** A name typed as the rest of a command: the text {@link #parse} reads, quotes taken off, else what was typed as it is. */
-    static String text(String typed) {
-        return parse(typed) instanceof String text ? text : typed.strip();
-    }
-
-    private static Map<String, Object> plain(ConfigurationSection section) {
-        var map = new LinkedHashMap<String, Object>();
-        section.getValues(false).forEach((key, value) -> map.put(key, value instanceof ConfigurationSection child ? plain(child) : value));
-        return map;
     }
 }

@@ -18,6 +18,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.tst_038.minigami.api.command.PlayerTargets;
+import io.github.tst_038.minigami.api.message.MessageEditor;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.ban.BanAdmin;
@@ -116,7 +117,7 @@ public final class GamesCommand {
      * @param reload loads the config again and tells the sender how that went
      */
     public static LiteralCommandNode<CommandSourceStack> adminRoot(Messages messages, PublicMatches publicMatches, RunningMatches running, MatchAdmin matches, ConfigEditor editor, GameRenamer gameRenamer,
-            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, Collection<String> games, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, BanAdmin bans, Supplier<Set<String>> banScopes, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
+            ArenaSetup arenas, LootSetup loot, TerrainSetup terrain, ConfigInfo info, MessageEditor messageEditor, Collection<String> games, SnapshotAdmin snapshots, KitAdmin kits, LootAdmin lootAdmin, Nights nights, Schedules schedules, StatsView stats, StatsAdmin statsAdmin, PlaceholderGuide placeholders, BanAdmin bans, Supplier<Set<String>> banScopes, Doctor doctor, Supplier<Optional<Location>> lobby, Consumer<? super CommandSender> reload) {
         var help = Help.command(messages);
         return Commands.literal("mga")
                 .requires(HELPER.or(BAN))
@@ -146,6 +147,7 @@ public final class GamesCommand {
                 .then(GameTypeCommands.options(info, () -> games))
                 .then(ConfigCommands.lobby(editor, lobby, messages, help))
                 .then(ConfigCommands.config(editor, info, help))
+                .then(ConfigCommands.messages(messageEditor, help))
                 .then(PlayerCommands.node(snapshots))
                 .then(KitCommands.node(kits, help))
                 .then(LootCommands.node(lootAdmin, help))

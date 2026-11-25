@@ -16,7 +16,7 @@ import com.mojang.brigadier.context.CommandContext;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.arena.TerrainSetup;
-import io.github.tst_038.minigami.paper.config.LocationConfig;
+import io.github.tst_038.minigami.api.config.ConfigValues;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor;
 import io.github.tst_038.minigami.paper.info.ConfigInfo;
 import io.github.tst_038.minigami.paper.edit.ConfigEditor.Kind;
@@ -156,7 +156,7 @@ final class ArenaCommands {
                 .executes(help)
                 .then(Commands.literal("set")
                         .requires(PLAYER)
-                        .executes(byPlayer((player, context) -> editor.set(player, Kind.ARENA, arena(context), key, LocationConfig.HERE))))
+                        .executes(byPlayer((player, context) -> editor.set(player, Kind.ARENA, arena(context), key, ConfigValues.HERE))))
                 .then(Commands.literal("remove")
                         .executes(bySender((sender, context) -> editor.unset(sender, Kind.ARENA, arena(context), key))));
     }

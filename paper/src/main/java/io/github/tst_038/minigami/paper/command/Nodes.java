@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import io.github.tst_038.minigami.api.command.EditCommands;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.paper.night.Nights;
@@ -13,7 +14,6 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -107,9 +107,6 @@ final class Nodes {
     }
 
     static SuggestionProvider<CommandSourceStack> suggest(Function<CommandContext<CommandSourceStack>, ? extends Collection<String>> ids) {
-        return (context, builder) -> {
-            ids.apply(context).stream().filter(id -> id.toLowerCase(Locale.ROOT).startsWith(builder.getRemainingLowerCase())).forEach(builder::suggest);
-            return builder.buildFuture();
-        };
+        return EditCommands.suggest(ids);
     }
 }

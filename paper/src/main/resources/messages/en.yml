@@ -574,6 +574,16 @@ edit:
   problem: "<red> - %problem%"
   save-failed: "%prefix%<red>Could not save <white>%file%</white>; see the server log."
   set: "%prefix%<green>Set <white>%key%</white> in <white>%file%</white>."
+  unset: "%prefix%<green>Took <white>%key%</white> out of <white>%file%</white>; its default applies again."
+  # /mga messages: %key% is the message's key, such as join.joined or prefix
+  message-unknown: "%prefix%<red>There is no message <white>%key%</white>."
+  message-set: "%prefix%<green>Changed message <white>%key%</white> in <white>%file%</white>."
+  message-unset: "%prefix%<green>Message <white>%key%</white> is back to the default."
+  message-default: "%prefix%<gray>Message <white>%key%</white> already is the default."
+  # %text%: the message as written; click to change it
+  message-text: "<set><hover:show_text:'Click to change'><gold>%key%</gold><gray>: <white>%text%</white></hover></set>"
+  # %preview%: the message as players see it, its placeholders left unfilled
+  message-preview: "<gray> Shown as: </gray>%preview%"
   created: "%prefix%<green>Created <white>%file%</white>. Change it with <white>set</white> and <white>unset</white>."
   deleted: "%prefix%<green>Deleted <white>%file%</white>. A copy is kept as <white>%file%.deleted</white> until the next delete of it."
   # %game%: the old id, %to%: the new one

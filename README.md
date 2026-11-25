@@ -194,7 +194,8 @@ such as `@a[distance=..10]`; the sender hears one summary for all of them.
 | `/mg kit list\|save <name>\|delete <name>` · `/mg kit preview <name>` (look without taking) · `/mg kit get <name>` (into an empty inventory, to change and save again) | admin |
 | `/mg night list\|info\|create\|delete\|edit` | admin |
 | `/mg schedule info\|create <id> <game> <when>\|delete\|edit` | admin |
-| `/mg lobby set\|tp` · `/mg config info` | admin |
+| `/mg lobby set\|tp` · `/mg config info\|set\|unset <key> [value]` | admin |
+| `/mga messages set <key> <text>\|unset <key>\|info <key>` (any message, `prefix` included; `unset` goes back to the bundled text) | admin |
 | `/mga player <player> snapshot [restore]` | admin |
 | `/mg join <game> <players> [variant]` · `/mg leave <players>` (helper) · `/mg schedule join <schedule> <players>` · `/mg reload` · `/mg doctor [game\|arena]` · `/mg debug` | admin |
 
@@ -261,6 +262,10 @@ plugins/MiniGami/
 The file name is the id. Files are checked on load, and problems name the file and key. `/mg config info` lists every
 game, arena, night and schedule with its status. `/mg reload` applies changes, and running matches keep their old
 settings until they end.
+
+Every message can also be changed in game: `/mga messages set prefix <gold>[Games]</gold>` (MiniMessage or `&` colour codes),
+`/mga messages info <key>` shows the text as written and as players see it, and `/mga messages unset <key>` brings back the
+bundled text. Keys complete as you type. The file keeps its comments, and the messages reload at once.
 
 The example files are only written on the first start, when their folder doesn't exist yet. After that they are yours
 to change or delete.
@@ -456,6 +461,39 @@ setup.selection(player, "hill").ifPresentOrElse(hill -> {
     saveConfig();
     setup.show(player, hill);
 }, () -> player.sendMessage(setup.hasWorldEdit() ? "Select the hill first." : "Install WorldEdit."));
+```
+
+### Commands that edit your files
+
+`io.github.tst_038.minigami.api.config` and `api.command` give your plugin the `set`/`unset`/`info` commands MiniGami has,
+for its own config and messages, so admins set everything up in game the same way everywhere:
+
+- `FileEditor(folder, messages, fileIo, serverThread, reload, logger)` is the one write path: `edit(sender, file, change, check)`
+  changes the file off the server thread, runs your loader's `check` on the server thread, and writes it (comments kept) only
+  when it has no problems; `editAndReload(...)` then tells the sender and calls your reload. A change throws
+  `FileEditor.Refusal(messageKey, tags...)` to refuse with a message of yours, or `IllegalArgumentException` to show a problem.
+  `set(sender, file, key, text, check)` reads the text as YAML (`5`, `[a, b]`, `{ y: 0 }`, quotes for text, `here` for the
+  player's location), makes a single value a list of one where your loader wants a list, and `unset` takes a key out.
+- `EditableFile(fileEditor, "config.yml", check)` is one file to edit by command; hand it each load with
+  `loaded(config, YamlFiles.keys(config, reader), problems)` so keys and values complete from what your `ConfigReader` asked for.
+- `MessageEditor(fileEditor, messages, "messages/en.yml", bundled)` sets, unsets and shows texts of your messages file; only keys
+  it has can be set.
+- `EditCommands.config("config", file, "/myplugin config set ")` and `EditCommands.messages("messages", messageEditor,
+  "/myplugin messages set ")` are the Brigadier nodes; add your permission with `.requires(...)`. `EditCommands.set`/`unset` build
+  the bare nodes for files of your own kind.
+
+Your `messages` need the keys these send: `edit.invalid`, `edit.problem`, `edit.save-failed`, `edit.here-needs-player`,
+`edit.bad-value`, `edit.set`, `edit.unset`, `info.config`, `info.value`, `info.value-inherited`, and for messages
+`edit.message-unknown`, `edit.message-set`, `edit.message-unset`, `edit.message-default`, `edit.message-text` and
+`edit.message-preview`; MiniGami's `messages/en.yml` shows their placeholders.
+
+```java
+var files = new FileEditor(getDataPath(), messages, task -> getServer().getAsyncScheduler().runNow(this, t -> task.run()),
+        task -> getServer().getGlobalRegionScheduler().execute(this, task), this::reload, getLogger());
+var config = new EditableFile(files, "config.yml", yaml -> MyConfigLoader.load(yaml).problems());
+commands.then(EditCommands.config("config", config, "/myplugin config set ").requires(admin))
+        .then(EditCommands.messages("messages", new MessageEditor(files, messages, "messages/en.yml", bundled),
+                "/myplugin messages set ").requires(admin));
 ```
 
 ### Commands that act on several players
