@@ -2,7 +2,7 @@ package io.github.tst_038.minigami.paper.schedule;
 
 import io.github.tst_038.minigami.core.reward.Rewards;
 import io.github.tst_038.minigami.core.schedule.Cron;
-import io.github.tst_038.minigami.paper.reward.Reward;
+import io.github.tst_038.minigami.api.reward.Reward;
 import java.util.List;
 import java.util.Optional;
 

@@ -1,13 +1,18 @@
 package io.github.tst_038.minigami.paper.match;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiPlayerBannedEvent;
+import io.github.tst_038.minigami.api.board.MiniGamiBoards;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.hud.MatchValues;
 import io.github.tst_038.minigami.paper.session.PlayerSessions;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,19 +46,23 @@ public final class RunningMatches implements Listener {
     private final ActiveMatches matches;
     private final ArenaMaps maps;
     private final MatchValues values;
-    /** Per arena id, its latest match; finished ones are dropped lazily. */
+    private final MiniGamiBoards boards;
+    private final PluginBans bans;
+    /** Per arena id, its match from opening until its scope has closed. */
     private final Map<String, LiveMatch> byArena = new LinkedHashMap<>();
 
     /** @param lobby the lobby currently set */
     public RunningMatches(Plugin plugin, Supplier<Optional<Location>> lobby, PlayerSessions sessions, Messages messages,
-            ActiveMatches matches, ArenaMaps maps, MatchValues values) {
+            ActiveMatches matches, ArenaMaps maps, MatchValues values, MiniGamiBoards boards, PluginBans bans) {
         this.plugin = plugin;
+        this.bans = bans;
         this.lobby = lobby;
         this.sessions = sessions;
         this.messages = messages;
         this.matches = matches;
         this.maps = maps;
         this.values = values;
+        this.boards = boards;
     }
 
     /**
@@ -69,8 +78,9 @@ public final class RunningMatches implements Listener {
     }
 
     private LiveMatch open(Variant variant, Arena arena, Opening opening) {
-        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values, maps);
-        // Registered first so it runs last, once the match has let go of the arena.
+        var match = new LiveMatch(plugin, variant, arena, opening, lobby.get(), sessions, messages, values, maps, boards);
+        // Registered first so they run last, once the match has let go of the arena and its players.
+        match.match().scope().register(() -> byArena.remove(arena.id(), match));
         match.match().scope().register(() -> maps.reset(arena, Optional.empty()));
         try {
             maps.setUp(arena);
@@ -92,18 +102,19 @@ public final class RunningMatches implements Listener {
         return running().stream().anyMatch(match -> match.variant().game().equals(gameId));
     }
 
+    /** The player leaves their match, or hears they are in none. */
     public void leave(Player player) {
-        leave(player, player);
+        find(player.getUniqueId()).ifPresentOrElse(match -> match.leave(player), () -> messages.send(player, "leave.not-in-match"));
     }
 
-    /** Takes {@code player} out of their match; {@code by} is told if there is none, and is the player themselves or staff. */
-    public void leave(CommandSender by, Player player) {
-        var match = find(player.getUniqueId());
-        if (match.isEmpty()) {
-            messages.send(by, by == player ? "leave.not-in-match" : "leave.other-not-in-match", Placeholder.component("player", player.name()));
-            return;
-        }
-        match.get().leave(player);
+    /** Staff take players out of their matches. */
+    public void leave(CommandSender by, List<Player> players) {
+        PlayerTargets.each(messages, by, players, (feedback, player) -> {
+            var playerTag = Placeholder.component("player", player.name());
+            var left = find(player.getUniqueId()).filter(match -> match.leave(player)).isPresent();
+            messages.send(feedback, left ? "leave.removed" : "leave.other-not-in-match", playerTag);
+            return left;
+        }, "players.none", "leave.removed-several");
     }
 
     /** Starts the sender's own match, or else the first one waiting for players. */
@@ -147,13 +158,19 @@ public final class RunningMatches implements Listener {
         find(event.getPlayer().getUniqueId()).ifPresent(match -> match.quit(event.getPlayer()));
     }
 
-    /** A participant who quit with time to come back is put back in their match. */
+    /**
+     * A participant who quit with time to come back is put back in their match, and taken out at once if they were banned from
+     * it meanwhile, which gives them their own state back.
+     */
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
         running().stream().filter(match -> match.isAway(player.getUniqueId())).findFirst().ifPresent(match -> {
             try {
                 match.rejoin(player);
+                if (bans.keepsOut(player, player, match.banScopes())) {
+                    match.leave(player);
+                }
             } catch (IllegalStateException e) {
                 plugin.getLogger().log(Level.WARNING, player.getName() + " could not be brought back into their match", e);
                 messages.send(player, "join.failed", Placeholder.component("player", player.name()));
@@ -161,10 +178,17 @@ public final class RunningMatches implements Listener {
         });
     }
 
+    /** A player banned from the match they are in leaves it. */
+    @EventHandler
+    public void onBanned(MiniGamiPlayerBannedEvent event) {
+        var ban = event.getBan();
+        event.getPlayer().ifPresent(player -> find(player.getUniqueId())
+                .filter(match -> match.banScopes().stream().anyMatch(ban::covers)).ifPresent(match -> match.leave(player)));
+    }
+
     /** The matches that haven't finished, oldest first. */
     Collection<LiveMatch> running() {
-        byArena.values().removeIf(match -> match.match().isFinished());
-        return byArena.values();
+        return byArena.values().stream().filter(match -> !match.match().isFinished()).toList();
     }
 
     /** The match the player is in. */

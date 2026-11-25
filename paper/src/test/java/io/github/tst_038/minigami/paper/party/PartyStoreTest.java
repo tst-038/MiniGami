@@ -3,9 +3,9 @@ package io.github.tst_038.minigami.paper.party;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.tst_038.minigami.core.party.Parties.Party;
-import io.github.tst_038.minigami.paper.storage.Migrations;
-import io.github.tst_038.minigami.paper.storage.SqliteStorage;
-import io.github.tst_038.minigami.paper.storage.Storage;
+import io.github.tst_038.minigami.core.storage.Migrations;
+import io.github.tst_038.minigami.core.storage.SqliteStorage;
+import io.github.tst_038.minigami.core.storage.Storage;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +29,7 @@ class PartyStoreTest {
 
     @BeforeEach
     void open() {
-        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), LOGGER);
+        storage = new SqliteStorage(folder.resolve("stats.db"), new Migrations(getClass().getClassLoader(), "storage/sqlite"), "Test storage", LOGGER);
         store = new PartyStore(storage, LOGGER);
     }
 

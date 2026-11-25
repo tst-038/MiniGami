@@ -3,7 +3,7 @@ package io.github.tst_038.minigami.paper.command;
 import static io.github.tst_038.minigami.paper.command.Nodes.HELPER;
 import static io.github.tst_038.minigami.paper.command.Nodes.MOD;
 import static io.github.tst_038.minigami.paper.command.Nodes.bySender;
-import static io.github.tst_038.minigami.paper.command.Nodes.player;
+import static io.github.tst_038.minigami.paper.command.Nodes.players;
 import static io.github.tst_038.minigami.paper.command.Nodes.string;
 import static io.github.tst_038.minigami.paper.command.Nodes.suggest;
 
@@ -11,12 +11,12 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import io.github.tst_038.minigami.api.command.PlayerTargets;
 import io.github.tst_038.minigami.paper.match.MatchAdmin;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 
-/** {@code /mga match list} and {@code /mga match <id> info|start|end|pause|resume|stop|phase <phase>|add <player>|kick <player>}. */
+/** {@code /mga match list} and {@code /mga match <id> info|start|end|pause|resume|stop|phase <phase>|add <players>|kick <players>}. */
 final class MatchCommands {
 
     private MatchCommands() {
@@ -41,11 +41,11 @@ final class MatchCommands {
                         .then(Commands.literal("resume").requires(MOD).executes(bySender((sender, context) -> matches.resume(sender, match(context)))))
                         .then(Commands.literal("stop").requires(MOD).executes(bySender((sender, context) -> matches.stop(sender, match(context)))))
                         .then(Commands.literal("add").requires(MOD)
-                                .then(Commands.argument("player", ArgumentTypes.player())
-                                        .executes(bySender((sender, context) -> matches.add(sender, match(context), player(context))))))
+                                .then(Commands.argument("players", PlayerTargets.argument())
+                                        .executes(bySender((sender, context) -> matches.add(sender, match(context), players(context))))))
                         .then(Commands.literal("kick")
-                                .then(Commands.argument("player", ArgumentTypes.player())
-                                        .executes(bySender((sender, context) -> matches.kick(sender, match(context), player(context)))))));
+                                .then(Commands.argument("players", PlayerTargets.argument())
+                                        .executes(bySender((sender, context) -> matches.kick(sender, match(context), players(context)))))));
     }
 
     private static String match(CommandContext<CommandSourceStack> context) {

@@ -1,6 +1,5 @@
 package io.github.tst_038.minigami.paper.arena;
 
-import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -20,6 +19,7 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import io.github.tst_038.minigami.api.region.Fill;
 import io.github.tst_038.minigami.api.region.Grid;
 import io.github.tst_038.minigami.api.region.Region;
+import io.github.tst_038.minigami.paper.setup.WorldEditSelections;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -76,13 +76,13 @@ final class WorldEditMaps {
      */
     Optional<Saving> save(Player player, Path file) {
         var world = BukkitAdapter.adapt(player.getWorld());
-        var found = selection(player);
+        var found = WorldEditSelections.raw(player);
         if (found.isEmpty()) {
             return Optional.empty();
         }
         var selection = found.get();
         var min = selection.getMinimumPoint();
-        var box = box("map", player, selection);
+        var box = WorldEditSelections.box("map", player, selection);
         var clipboard = new BlockArrayClipboard(selection);
         clipboard.setOrigin(min);
         try (var edit = WorldEdit.getInstance().newEditSession(world)) {
@@ -93,39 +93,6 @@ final class WorldEditMaps {
             return Optional.of(new Saving(box, CompletableFuture.failedFuture(e)));
         }
         return Optional.of(new Saving(box, CompletableFuture.runAsync(() -> write(clipboard, file), offThread)));
-    }
-
-    /**
-     * The box around the player's selection, named {@code id}.
-     *
-     * @return empty if the player has no complete selection in their world
-     */
-    Optional<Region> selection(Player player, String id) {
-        return selection(player).map(selection -> box(id, player, selection));
-    }
-
-    private static Optional<com.sk89q.worldedit.regions.Region> selection(Player player) {
-        try {
-            return Optional.of(WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player))
-                    .getSelection(BukkitAdapter.adapt(player.getWorld())));
-        } catch (IncompleteRegionException e) {
-            return Optional.empty();
-        }
-    }
-
-    /** Makes the box the player's WorldEdit selection, so it needn't be selected by hand again. */
-    void select(Player player, Region box) {
-        var world = BukkitAdapter.adapt(box.world());
-        var session = WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player));
-        session.setRegionSelector(world, new com.sk89q.worldedit.regions.selector.CuboidRegionSelector(world,
-                BlockVector3.at(box.minX(), box.minY(), box.minZ()), BlockVector3.at(box.maxX(), box.maxY(), box.maxZ())));
-        session.dispatchCUISelection(BukkitAdapter.adapt(player));
-    }
-
-    private static Region box(String id, Player player, com.sk89q.worldedit.regions.Region selection) {
-        var min = selection.getMinimumPoint();
-        var max = selection.getMaximumPoint();
-        return Region.between(id, player.getWorld(), min.x(), min.y(), min.z(), max.x(), max.y(), max.z());
     }
 
     /**

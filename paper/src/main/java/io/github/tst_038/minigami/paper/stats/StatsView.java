@@ -50,18 +50,23 @@ public final class StatsView {
         return server.getOnlinePlayers().stream().map(Player::getName).toList();
     }
 
+    /** The games that are loaded, and those that only have stats, such as the ones other plugins keep; the latter once a board has them. */
     public SortedSet<String> gameIds() {
-        return games.get().ids();
+        var ids = new TreeSet<>(games.get().ids());
+        ids.addAll(leaderboards.games());
+        return ids;
     }
 
-    /** The stats the game has a board for, plus those it keeps, so a new game can be looked at before anyone played it. */
+    /**
+     * The stats the game has a board for, plus those a loaded game keeps, so a new game can be looked at before anyone played it.
+     * Empty for a game that is neither loaded nor has a board.
+     */
     public Set<String> boardStats(String gameId) {
-        var stats = new TreeSet<String>();
+        var stats = new TreeSet<>(leaderboards.stats(gameId));
         games.get().find(gameId).ifPresent(game -> {
-            stats.add(Leaderboards.WINS);
-            stats.add(Leaderboards.PLAYED);
+            stats.add(Stat.WINS);
+            stats.add(Stat.PLAYED);
             stats.addAll(statIds(game));
-            stats.addAll(leaderboards.stats(game.id()));
         });
         return stats;
     }
@@ -97,12 +102,11 @@ public final class StatsView {
 
     /** @param stat empty for all of them; only with a game */
     public void show(CommandSender sender, String name, Optional<String> gameId, Optional<String> stat) {
-        if (gameId.isPresent() && findGame(sender, gameId.get()).isEmpty()) {
+        if (gameId.isPresent() && !knownGame(sender, gameId.get())) {
             return;
         }
         if (stat.isPresent() && !boardStats(gameId.orElseThrow()).contains(stat.get())) {
-            messages.send(sender, "stats.unknown-stat", Placeholder.parsed("game", findGame(sender, gameId.get()).orElseThrow().name()),
-                    Placeholder.unparsed("stat", stat.get()));
+            messages.send(sender, "stats.unknown-stat", gameName(gameId.get()), Placeholder.unparsed("stat", stat.get()));
             return;
         }
         var online = server.getPlayerExact(name);
@@ -124,18 +128,17 @@ public final class StatsView {
 
     /** @param variantId empty for the whole game, its variants added up */
     public void top(CommandSender sender, String gameId, String stat, Optional<String> variantId) {
-        var game = findGame(sender, gameId);
-        if (game.isEmpty()) {
+        if (!knownGame(sender, gameId)) {
             return;
         }
-        var variant = game.get().variant(variantId);
-        if (variant.isEmpty()) {
-            messages.send(sender, "stats.unknown-variant", Placeholder.parsed("game", game.get().name()),
-                    Placeholder.unparsed("variant", variantId.orElseThrow()),
-                    Placeholder.unparsed("variants", String.join(", ", game.get().variants().keySet())));
+        var variant = games.get().find(gameId).flatMap(loaded -> loaded.variant(variantId));
+        // A game that is only stored has no variants to name, so only the game itself can be asked for.
+        if (variantId.isPresent() && variant.isEmpty()) {
+            messages.send(sender, "stats.unknown-variant", gameName(gameId), Placeholder.unparsed("variant", variantId.orElseThrow()),
+                    Placeholder.unparsed("variants", String.join(", ", variantIds(gameId))));
             return;
         }
-        var gameName = Placeholder.parsed("game", variant.get().name());
+        var gameName = variant.map(found -> Placeholder.parsed("game", found.name())).orElseGet(() -> gameName(gameId));
         if (!boardStats(gameId).contains(stat)) {
             messages.send(sender, "stats.unknown-stat", gameName, Placeholder.unparsed("stat", stat));
             return;
@@ -157,17 +160,19 @@ public final class StatsView {
     private void show(CommandSender sender, String name, Profile profile, Optional<String> gameId, Optional<String> only) {
         var player = Placeholder.unparsed("player", name);
         // Checked here, after a lookup, since a reload may have removed the game in the meantime.
-        var game = gameId.flatMap(id -> findGame(sender, id));
-        if (gameId.isPresent() && game.isEmpty()) {
+        if (gameId.isPresent() && !knownGame(sender, gameId.get())) {
             return;
         }
-        if (game.isPresent()) {
-            var totals = profile.game(game.get().id());
-            messages.send(sender, "stats.game-header", player, Placeholder.parsed("game", game.get().name()));
-            if (only.isEmpty()) {
+        if (gameId.isPresent()) {
+            var id = gameId.get();
+            var game = games.get().find(id);
+            var totals = profile.game(id);
+            messages.send(sender, "stats.game-header", player, gameName(id));
+            // A game that is only stored has no record to show until it has been played, as its stats come from another plugin.
+            if (only.isEmpty() && (game.isPresent() || totals.played() > 0)) {
                 sendRecord(sender, totals, true);
             }
-            var stats = statIds(game.get());
+            var stats = game.map(StatsView::statIds).orElseGet(TreeSet::new);
             totals.stats().keySet().forEach(stat -> stats.add(stat.id()));
             only.ifPresent(stat -> {
                 stats.clear();
@@ -175,7 +180,7 @@ public final class StatsView {
             });
             stats.forEach(stat -> messages.send(sender, "stats.stat",
                     Placeholder.component("stat", statName(stat)), Formatter.number("amount", amount(totals, stat))));
-            if (only.isEmpty() && !game.get().variants().isEmpty()) {
+            if (only.isEmpty() && game.isPresent() && !game.get().variants().isEmpty()) {
                 // shortcut: a variant since removed from the game's file isn't listed, though it still counts in the totals above.
                 game.get().all().forEach(variant -> {
                     var played = profile.variant(variant.game(), variant.id());
@@ -193,8 +198,7 @@ public final class StatsView {
         }
         profile.games().forEach(id -> {
             var totals = profile.game(id);
-            messages.send(sender, "stats.game-name",
-                    games.get().find(id).map(played -> Placeholder.parsed("game", played.name())).orElseGet(() -> Placeholder.unparsed("game", id)));
+            messages.send(sender, "stats.game-name", gameName(id));
             sendRecord(sender, totals, false);
             var kept = totals.stats().keySet().stream().map(Stat::id).sorted().map(stat -> messages.render("stats.stat-inline",
                     Placeholder.component("stat", statName(stat)), Formatter.number("amount", totals.stat(new Stat(stat))))).toList();
@@ -213,8 +217,8 @@ public final class StatsView {
 
     private static long amount(Totals totals, String stat) {
         return switch (stat) {
-            case Leaderboards.WINS -> totals.wins();
-            case Leaderboards.PLAYED -> totals.played();
+            case Stat.WINS -> totals.wins();
+            case Stat.PLAYED -> totals.played();
             default -> totals.stat(new Stat(stat));
         };
     }
@@ -230,11 +234,16 @@ public final class StatsView {
         return messages.render("stats.name." + stat);
     }
 
-    private Optional<Game> findGame(CommandSender sender, String gameId) {
-        var game = games.get().find(gameId);
-        if (game.isEmpty()) {
+    private boolean knownGame(CommandSender sender, String gameId) {
+        var known = gameIds().contains(gameId);
+        if (!known) {
             messages.send(sender, "stats.unknown-game", Placeholder.unparsed("game", gameId));
         }
-        return game;
+        return known;
+    }
+
+    /** The name of a loaded game, which may be written in MiniMessage; the id of one that is only stored. */
+    private TagResolver.Single gameName(String gameId) {
+        return games.get().find(gameId).map(game -> Placeholder.parsed("game", game.name())).orElseGet(() -> Placeholder.unparsed("game", gameId));
     }
 }

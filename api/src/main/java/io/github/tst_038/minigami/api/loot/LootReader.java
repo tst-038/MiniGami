@@ -1,6 +1,7 @@
 package io.github.tst_038.minigami.api.loot;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import io.github.tst_038.minigami.api.item.ItemLook;
 import io.github.tst_038.minigami.core.loot.Entry;
 import io.github.tst_038.minigami.core.range.IntRange;
 import io.github.tst_038.minigami.core.loot.LootTable;
@@ -18,7 +19,8 @@ import org.bukkit.Material;
  *
  * <p>Each entry has a {@code weight} (default 1) and is one of: {@code item} with optional {@code amount},
  * {@code name}, {@code enchants} and {@code potion}; {@code saved} naming an item saved with {@code /mga loot save};
- * {@code table} naming another table; or {@code empty: true}. An entry written as plain text is an item.
+ * {@code table} naming another table; or {@code empty: true}. An entry written as plain text is an item. An item or
+ * saved item may also have the keys of an {@link ItemLook}: {@code glow}, {@code item-model} and {@code custom-model-data}.
  *
  * <p>Problems go to the {@link ConfigReader}, which the caller checks when done. Whether the tables an entry names
  * exist is not decided here, since that depends on the other tables.
@@ -106,7 +108,7 @@ public final class LootReader {
             config.problem("saved", "no saved item '" + name + "'; save the item you hold with /mga loot save " + name);
             return Optional.empty();
         }
-        return Optional.of(new Entry.Item<>(new ItemSpec.Saved(name, amount(config, 99)), weight));
+        return Optional.of(new Entry.Item<>(new ItemSpec.Saved(name, amount(config, 99), ItemLook.read(config)), weight));
     }
 
     private Optional<Entry<ItemSpec>> item(ConfigReader config, int weight) {
@@ -141,7 +143,8 @@ public final class LootReader {
             }
         }
         var label = config.has("name") ? Optional.of(config.string("name")) : Optional.<String>empty();
-        var spec = new ItemSpec.Vanilla(material, amount(config, catalog.maxStack().applyAsInt(material)), label, enchants, potion);
+        var spec = new ItemSpec.Vanilla(material, amount(config, catalog.maxStack().applyAsInt(material)), label, enchants, potion,
+                ItemLook.read(config));
         return Optional.of(new Entry.Item<>(spec, weight));
     }
 

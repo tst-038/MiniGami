@@ -1,8 +1,10 @@
 package io.github.tst_038.minigami.paper.schedule;
 
+import io.github.tst_038.minigami.api.ban.MiniGamiBans;
 import io.github.tst_038.minigami.api.message.Messages;
 import io.github.tst_038.minigami.api.registry.IdRegistry;
 import io.github.tst_038.minigami.core.schedule.Rotation;
+import io.github.tst_038.minigami.paper.ban.PluginBans;
 import io.github.tst_038.minigami.paper.game.Game;
 import io.github.tst_038.minigami.paper.game.Variant;
 import io.github.tst_038.minigami.paper.match.LiveMatch;
@@ -112,6 +114,7 @@ public final class Schedules {
     private final ScheduleRewards rewards;
     private final Clock clock;
     private final RandomGenerator random;
+    private final PluginBans bans;
     private final Map<String, Turn> turns = new HashMap<>();
     // shortcut: pauses are kept in memory, so a restart resumes every schedule; store them if staff need a pause to last.
     private final Set<String> paused = new HashSet<>();
@@ -127,8 +130,9 @@ public final class Schedules {
      * @param clock tells the time schedules are written in, the server's
      */
     public Schedules(Plugin plugin, Messages messages, Supplier<IdRegistry<Schedule>> schedules, Supplier<IdRegistry<Game>> games, PublicMatches publicMatches,
-            RunningMatches running, BooleanSupplier nightRunning, ScheduleRewards rewards, Clock clock, RandomGenerator random) {
+            RunningMatches running, BooleanSupplier nightRunning, ScheduleRewards rewards, Clock clock, RandomGenerator random, PluginBans bans) {
         this.plugin = plugin;
+        this.bans = bans;
         this.messages = messages;
         this.schedules = schedules;
         this.games = games;
@@ -202,11 +206,17 @@ public final class Schedules {
         if (match.isEmpty()) {
             return Outcome.OPEN_FAILED;
         }
-        match.get().joinableBy(PlayPermissions.schedule(turn.schedule.id()));
+        offer(match.get(), turn.schedule);
         var call = new Call(turn.schedule, match.get(), clock.instant());
         calls.add(call);
         announce(call, "schedule.call");
         return Outcome.OPENED;
+    }
+
+    /** Lets those who may answer the schedule join the match, unless banned from its game or from nights. */
+    private static void offer(LiveMatch match, Schedule schedule) {
+        match.joinableBy(PlayPermissions.schedule(schedule.id()));
+        match.bannedBy(Set.of(MiniGamiBans.game(match.variant().game()), MiniGamiBans.NIGHTS));
     }
 
     private Optional<Variant> variant(Schedule.Entry entry) {
@@ -218,11 +228,12 @@ public final class Schedules {
         return variant.minPlayers() <= players && variant.arenas().stream().anyMatch(arena -> !running.isArenaInUse(arena.id()));
     }
 
-    /** Online, allowed to answer the schedule's calls, and not playing. */
+    /** Online, allowed to answer the schedule's calls, not banned from nights, and not playing. */
     private List<Player> couldJoin(Schedule schedule) {
         var permission = PlayPermissions.schedule(schedule.id());
         return plugin.getServer().getOnlinePlayers().stream()
-                .filter(player -> player.hasPermission(permission) && running.find(player.getUniqueId()).isEmpty())
+                .filter(player -> player.hasPermission(permission) && running.find(player.getUniqueId()).isEmpty()
+                        && bans.find(player.getUniqueId(), Set.of(MiniGamiBans.NIGHTS)).isEmpty())
                 .map(Player.class::cast).toList();
     }
 
@@ -302,7 +313,7 @@ public final class Schedules {
                 return;
             }
             call.match = match.get();
-            call.match.joinableBy(PlayPermissions.schedule(call.schedule.id()));
+            offer(call.match, call.schedule);
         }
         publicMatches.join(player, call.match);
     }
