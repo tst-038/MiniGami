@@ -1,5 +1,6 @@
 package io.github.tst_038.minigami.api.loot;
 
+import io.github.tst_038.minigami.api.item.ItemLook;
 import io.github.tst_038.minigami.core.range.IntRange;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +15,9 @@ public sealed interface ItemSpec {
     /** How many of it are given. */
     IntRange amount();
 
+    /** Glow and model, on top of the item. */
+    ItemLook look();
+
     /**
      * A vanilla item, with the touches a table may add.
      *
@@ -21,7 +25,8 @@ public sealed interface ItemSpec {
      * @param enchants enchantment name to the level it is given at
      * @param potion the potion type of a potion, tipped arrow or the like
      */
-    record Vanilla(Material material, IntRange amount, Optional<String> name, Map<String, IntRange> enchants, Optional<String> potion)
+    record Vanilla(Material material, IntRange amount, Optional<String> name, Map<String, IntRange> enchants, Optional<String> potion,
+            ItemLook look)
             implements ItemSpec {
         public Vanilla {
             enchants = Map.copyOf(enchants);
@@ -29,6 +34,6 @@ public sealed interface ItemSpec {
     }
 
     /** An item saved from a held stack with {@code /mga loot save}, for anything the other fields can't describe. */
-    record Saved(String name, IntRange amount) implements ItemSpec {
+    record Saved(String name, IntRange amount, ItemLook look) implements ItemSpec {
     }
 }

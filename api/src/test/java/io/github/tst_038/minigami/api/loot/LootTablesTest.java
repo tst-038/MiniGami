@@ -92,6 +92,6 @@ class LootTablesTest {
         var entries = loaded.tables().find("junk").orElseThrow().pools().getFirst().entries();
 
         assertEquals(List.of(new Entry.Item<ItemSpec>(new ItemSpec.Vanilla(Material.STICK, io.github.tst_038.minigami.core.range.IntRange.of(1),
-                java.util.Optional.empty(), java.util.Map.of(), java.util.Optional.empty()), 2), new Entry.Nothing<ItemSpec>(1)), entries);
+                java.util.Optional.empty(), java.util.Map.of(), java.util.Optional.empty(), io.github.tst_038.minigami.api.item.ItemLook.NONE), 2), new Entry.Nothing<ItemSpec>(1)), entries);
     }
 }

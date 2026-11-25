@@ -385,6 +385,10 @@ once its file is written. Prefix the names with your plugin's, as they share one
 `{ command: ..., name: ... }`) into `Reward`s you can `give(player)`, which throws a `RewardFailedException` when it
 couldn't be given (a saved item since deleted, a command that failed); create it with the service:
 `new RewardReader(getServer().getServicesManager().load(MiniGamiSavedItems.class))`.
+`io.github.tst_038.minigami.api.item.ItemLook` reads how an item looks from the keys next to it, `glow: true` (the
+enchantment glint without an enchantment, `false` hides it), `item-model: <key>` (another item's model or one from a
+resource pack, such as `myserver:ruby`) and `custom-model-data: <number>`, and `applyTo(item)` puts it on a stack, on
+top of a saved item too. Loot table items and saved items take the same keys.
 
 ### Keeping stats outside matches
 
