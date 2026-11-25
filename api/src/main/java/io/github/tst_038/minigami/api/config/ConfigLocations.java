@@ -1,5 +1,7 @@
 package io.github.tst_038.minigami.api.config;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Function;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -36,5 +38,31 @@ public final class ConfigLocations {
     /** A location that names its own world: {@code { world: world, x: 0.5, ... }}. Looks up worlds, so run it on the server thread. */
     public static Location readWithWorld(ConfigReader config, Function<String, World> worlds) {
         return read(config, world(config, "world", worlds));
+    }
+
+    /**
+     * The other way round from {@link #read}: {@code x}, {@code y}, {@code z}, {@code yaw} and {@code pitch}, rounded so the file
+     * stays readable. Put it into a config with {@code section.set(key, ConfigLocations.write(location))}.
+     */
+    public static Map<String, Object> write(Location location) {
+        var map = new LinkedHashMap<String, Object>();
+        map.put("x", round(location.getX(), 100));
+        map.put("y", round(location.getY(), 100));
+        map.put("z", round(location.getZ(), 100));
+        map.put("yaw", round(location.getYaw(), 10));
+        map.put("pitch", round(location.getPitch(), 10));
+        return map;
+    }
+
+    /** The other way round from {@link #readWithWorld}: {@link #write} with the world's name in front. */
+    public static Map<String, Object> writeWithWorld(Location location) {
+        var map = new LinkedHashMap<String, Object>();
+        map.put("world", location.getWorld().getName());
+        map.putAll(write(location));
+        return map;
+    }
+
+    private static double round(double value, int scale) {
+        return Math.round(value * scale) / (double) scale;
     }
 }

@@ -402,6 +402,24 @@ if (stats != null) {
 }
 ```
 
+### Setting up regions
+
+`MiniGamiSetup`, a Bukkit service in `io.github.tst_038.minigami.api.setup`, gives your plugin the tools MiniGami's
+arena commands use, for regions you keep in your own config: `selection(player, id)` is the box around the player's WorldEdit
+selection as a `Region` (empty without WorldEdit, `hasWorldEdit()` tells it from nothing being selected), `select(player, region)`
+makes a region their selection, and `show(player, region)` outlines it in particles for them alone for a few seconds. Write
+what you save with `Region.toConfig()` and `ConfigLocations.write(location)`; they read back with `Region.read` and `ConfigLocations.read`.
+
+```java
+var setup = getServer().getServicesManager().load(MiniGamiSetup.class); // null without MiniGami
+setup.selection(player, "hill").ifPresentOrElse(hill -> {
+    getConfig().set("hill", hill.toConfig());
+    getConfig().set("spawn", ConfigLocations.write(player.getLocation()));
+    saveConfig();
+    setup.show(player, hill);
+}, () -> player.sendMessage(setup.hasWorldEdit() ? "Select the hill first." : "Install WorldEdit."));
+```
+
 ## Building from source
 
 Requires Java 25. The Gradle wrapper downloads everything else.

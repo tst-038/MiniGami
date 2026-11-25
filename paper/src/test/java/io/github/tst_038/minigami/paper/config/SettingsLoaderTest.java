@@ -8,6 +8,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -41,7 +42,7 @@ class SettingsLoaderTest {
         try (var bundled = getClass().getClassLoader().getResourceAsStream(SettingsLoader.FILE)) {
             config.loadFromString(new String(bundled.readAllBytes(), StandardCharsets.UTF_8));
         }
-        config.set("lobby", LocationConfig.writeWithWorld(new Location(world, 1.5, 70, -2.5, 90, 10)));
+        config.set("lobby", ConfigLocations.writeWithWorld(new Location(world, 1.5, 70, -2.5, 90, 10)));
 
         var saved = config.saveToString();
 

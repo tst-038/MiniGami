@@ -1,10 +1,9 @@
 package io.github.tst_038.minigami.paper.arena;
 
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.api.loot.LootPoint;
 import io.github.tst_038.minigami.api.region.Region;
-import io.github.tst_038.minigami.paper.config.LocationConfig;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Location;
@@ -26,7 +25,7 @@ public final class ArenaFile {
     /** @param team the only team that starts there, or empty for everyone */
     public static void addSpawn(YamlConfiguration config, Location location, Optional<String> team) {
         var spawns = new ArrayList<Map<?, ?>>(config.getMapList("spawns"));
-        var spawn = LocationConfig.write(location);
+        var spawn = ConfigLocations.write(location);
         team.ifPresent(id -> spawn.put("team", id));
         spawns.add(spawn);
         config.set("spawns", spawns);
@@ -78,12 +77,12 @@ public final class ArenaFile {
 
     /** The box the saved map is pasted back into. */
     public static void setMap(YamlConfiguration config, Region box) {
-        config.set("map", box(box));
+        config.set("map", box.toConfig());
     }
 
     /** Adds the region, or replaces the one with its name in place. */
     public static void setRegion(YamlConfiguration config, Region region) {
-        config.set("regions." + region.id(), box(region));
+        config.set("regions." + region.id(), region.toConfig());
     }
 
     /** @return {@code false} if there is no region with that name */
@@ -96,20 +95,5 @@ public final class ArenaFile {
             config.set("regions", null);
         }
         return true;
-    }
-
-    private static Map<String, Object> box(Region region) {
-        var box = new LinkedHashMap<String, Object>();
-        box.put("from", corner(region.minX(), region.minY(), region.minZ()));
-        box.put("to", corner(region.maxX(), region.maxY(), region.maxZ()));
-        return box;
-    }
-
-    private static Map<String, Integer> corner(int x, int y, int z) {
-        var corner = new LinkedHashMap<String, Integer>();
-        corner.put("x", x);
-        corner.put("y", y);
-        corner.put("z", z);
-        return corner;
     }
 }

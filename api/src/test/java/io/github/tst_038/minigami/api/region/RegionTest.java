@@ -30,6 +30,20 @@ class RegionTest {
     private final Region hill = Region.between("hill", world, 10, 64, -5, 0, 66, 5);
 
     @Test
+    void writesWhatItReads() throws Exception {
+        var config = new YamlConfiguration();
+        config.set("hill", hill.toConfig());
+
+        var saved = new YamlConfiguration();
+        saved.loadFromString(config.saveToString());
+        var reader = ConfigReader.of("arena.yml", saved.getConfigurationSection("hill"));
+
+        assertEquals(hill, Region.read("hill", reader, world));
+        reader.check();
+        assertEquals(java.util.List.of("from", "to"), java.util.List.copyOf(hill.toConfig().keySet()));
+    }
+
+    @Test
     void cornersMayBeGivenInAnyOrder() {
         assertEquals(new Region("hill", world, 0, 64, -5, 10, 66, 5), hill);
     }

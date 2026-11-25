@@ -45,6 +45,33 @@ class ConfigLocationsTest {
     }
 
     @Test
+    void writesWhatItReadsRoundedForTheFile() throws Exception {
+        var config = new YamlConfiguration();
+        config.set("spot", ConfigLocations.write(new org.bukkit.Location(world, 0.123456, 64, -3.5, 90.04f, 10)));
+
+        var reader = read(config.saveToString()).section("spot");
+        var location = ConfigLocations.read(reader, world);
+
+        assertEquals(0.12, location.getX());
+        assertEquals(-3.5, location.getZ());
+        assertEquals(90f, location.getYaw());
+        reader.check();
+    }
+
+    @Test
+    void writesTheWorldWhenAskedTo() {
+        var mapped = ConfigLocations.writeWithWorld(new org.bukkit.Location(worldNamed("lobby"), 1, 2, 3));
+
+        assertEquals("lobby", mapped.get("world"));
+        assertEquals(1.0, mapped.get("x"));
+    }
+
+    private static World worldNamed(String name) {
+        return (World) Proxy.newProxyInstance(World.class.getClassLoader(), new Class<?>[] {World.class},
+                (proxy, method, args) -> method.getName().equals("getName") ? name : null);
+    }
+
+    @Test
     void yawAndPitchAreZeroWhenLeftOut() throws Exception {
         var location = ConfigLocations.read(read("{ x: 1, y: 2, z: 3 }"), world);
 

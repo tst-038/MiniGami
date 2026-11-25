@@ -10,6 +10,7 @@ import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaFile;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.config.ConfigFiles;
+import io.github.tst_038.minigami.api.config.ConfigLocations;
 import io.github.tst_038.minigami.paper.config.LocationConfig;
 import io.github.tst_038.minigami.paper.config.Settings;
 import io.github.tst_038.minigami.paper.config.SettingsLoader;
@@ -555,12 +556,12 @@ public final class ConfigEditor {
     static Map<String, Object> location(ConfigurationSection config, Location location) {
         var world = config.getString("world");
         if (world == null) {
-            return LocationConfig.writeWithWorld(location);
+            return ConfigLocations.writeWithWorld(location);
         }
         if (!world.equals(location.getWorld().getName())) {
             throw new IllegalArgumentException("you are in world " + location.getWorld().getName() + ", but its locations are in " + world);
         }
-        return LocationConfig.write(location);
+        return ConfigLocations.write(location);
     }
 
     /** The value a command typed, read as YAML; {@code null} if it isn't one. */

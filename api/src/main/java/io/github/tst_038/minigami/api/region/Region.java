@@ -1,6 +1,8 @@
 package io.github.tst_038.minigami.api.region;
 
 import io.github.tst_038.minigami.api.config.ConfigReader;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -41,6 +43,22 @@ public record Region(String id, World world, int minX, int minY, int minZ, int m
         var to = config.section("to");
         return between(id, world, coordinate(from, "x"), height(from), coordinate(from, "z"),
                 coordinate(to, "x"), height(to), coordinate(to, "z"));
+    }
+
+    /** The other way round from {@link #read}: {@code { from: { x, y, z }, to: { x, y, z } }}, the lower corner first. */
+    public Map<String, Object> toConfig() {
+        var box = new LinkedHashMap<String, Object>();
+        box.put("from", corner(minX, minY, minZ));
+        box.put("to", corner(maxX, maxY, maxZ));
+        return box;
+    }
+
+    private static Map<String, Integer> corner(int x, int y, int z) {
+        var corner = new LinkedHashMap<String, Integer>();
+        corner.put("x", x);
+        corner.put("y", y);
+        corner.put("z", z);
+        return corner;
     }
 
     private static int coordinate(ConfigReader corner, String key) {

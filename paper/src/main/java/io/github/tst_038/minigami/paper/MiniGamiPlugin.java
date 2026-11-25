@@ -6,6 +6,7 @@ import io.github.tst_038.minigami.api.feature.FeatureFactory;
 import io.github.tst_038.minigami.api.game.GameType;
 import io.github.tst_038.minigami.api.loot.ItemCatalog;
 import io.github.tst_038.minigami.api.loot.MiniGamiSavedItems;
+import io.github.tst_038.minigami.api.setup.MiniGamiSetup;
 import io.github.tst_038.minigami.api.loot.LootTables;
 import io.github.tst_038.minigami.api.terrain.BlockCatalog;
 import io.github.tst_038.minigami.api.terrain.TerrainStyles;
@@ -23,6 +24,7 @@ import io.github.tst_038.minigami.itemrace.ItemRace;
 import io.github.tst_038.minigami.paper.arena.Arena;
 import io.github.tst_038.minigami.paper.arena.ArenaLoader;
 import io.github.tst_038.minigami.paper.arena.ArenaMaps;
+import io.github.tst_038.minigami.paper.setup.PluginSetup;
 import io.github.tst_038.minigami.paper.arena.ArenaSetup;
 import io.github.tst_038.minigami.paper.arena.LootSetup;
 import io.github.tst_038.minigami.paper.arena.TerrainSetup;
@@ -202,7 +204,9 @@ public final class MiniGamiPlugin extends JavaPlugin {
                 task -> getServer().getAsyncScheduler().runNow(this, ignored -> task.run()), getLogger()::info,
                 () -> getServer().filterAudience(audience -> audience instanceof CommandSender sender && sender.hasPermission("minigami.admin"))).forEach(features::register);
         BuiltIns.statGroups().forEach(statGroups::register);
-        maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick());
+        var setup = new PluginSetup(this);
+        getServer().getServicesManager().register(MiniGamiSetup.class, setup, this, ServicePriority.Normal);
+        maps = new ArenaMaps(this, messages, () -> settings.blocksPerTick(), setup);
         gameLoader = new GameLoader(gametypes, features, statGroups, Hosting.checks(maps.hasWorldEdit(), () -> lootTables), messages::keys);
         doctor = new Doctor(messages, getLogger(), () -> games);
         var running = new RunningMatches(this, () -> settings.lobby(), sessions, messages, matches, maps, matchValues);
@@ -220,7 +224,7 @@ public final class MiniGamiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InventoryPreview(), this);
         var snapshotAdmin = new SnapshotAdmin(this, snapshots, sessions, messages);
         editor = new ConfigEditor(this, messages, gametypes, gameLoader, () -> arenas, () -> games, () -> settings, rewardReader, running::isArenaInUse, this::loadAfterEdit);
-        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, this);
+        var arenaSetup = new ArenaSetup(() -> arenas, editor, maps, running::isArenaInUse, messages, setup);
         var lootSetup = new LootSetup(() -> arenas, () -> lootTables, editor, maps, messages, this);
         getServer().getPluginManager().registerEvents(lootSetup, this);
         var terrainSetup = new TerrainSetup(() -> arenas, () -> terrainStyles, maps, running::isArenaInUse,
